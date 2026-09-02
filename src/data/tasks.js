@@ -33,10 +33,10 @@ export function tasksForSurface(surface) {
   return TASKS.filter((task) => task.surface === surface);
 }
 
-export function taskDuration(taskId, level) {
+export function taskDuration(taskId, level, timeMult = 1) {
   const task = getTask(taskId);
   if (!task?.usesQualityLevel) return TASK_MINUTES[taskId];
-  return Math.round(TASK_MINUTES[taskId] * QUALITY_LEVELS[level].timeMultiplier);
+  return Math.round(TASK_MINUTES[taskId] * QUALITY_LEVELS[level].timeMultiplier * timeMult);
 }
 
 export function taskGain(level) {

@@ -1,6 +1,15 @@
 import { getTask, LEVEL_LABELS } from '../data/tasks.js';
 
-export default function TimeBar({ remaining, used, capacity, plannedTasks, onRemove, onEndDay }) {
+export default function TimeBar({
+  remaining,
+  used,
+  capacity,
+  plannedTasks,
+  onRemove,
+  onEndDay,
+  onMove,
+  onOpenShed,
+}) {
   const usedPercent = capacity <= 0 ? 0 : (used / capacity) * 100;
 
   return (
@@ -23,7 +32,7 @@ export default function TimeBar({ remaining, used, capacity, plannedTasks, onRem
               const task = getTask(planned.taskId);
               const level = planned.level ? LEVEL_LABELS[planned.level] : null;
               return (
-                <li key={planned.taskId}>
+                <li key={planned.taskId} className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => onRemove(planned.taskId)}
@@ -32,12 +41,25 @@ export default function TimeBar({ remaining, used, capacity, plannedTasks, onRem
                     {task.name}
                     {level ? ` · ${level}` : ''} · {planned.minutes} min
                   </button>
+                  <button type="button" onClick={() => onMove(planned.taskId, -1)} className="text-sm text-[var(--paint)]">
+                    Up
+                  </button>
+                  <button type="button" onClick={() => onMove(planned.taskId, 1)} className="text-sm text-[var(--paint)]">
+                    Down
+                  </button>
                 </li>
               );
             })}
           </ul>
         </div>
       </div>
+      <button
+        type="button"
+        onClick={onOpenShed}
+        className="border border-[var(--sand)] px-4 text-lg text-[var(--paint)]"
+      >
+        Shed
+      </button>
       <button
         type="button"
         onClick={onEndDay}

@@ -103,3 +103,7 @@ export const HOLES = HOLE_LAYOUT.map(buildHole);
 export const MAP_WIDTH = 1040;
 export const MAP_HEIGHT = 760;
 export const MAP_VIEWBOX = `0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`;
+export const SHED_X = 470;
+export const SHED_Y = 200;
+export const SHED_WIDTH = 100;
+export const SHED_HEIGHT = 64;

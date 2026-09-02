@@ -7,7 +7,7 @@ import {
   DAY_LENGTH_MINUTES,
   DECAY_ACCELERATION,
   DECAY_BASE,
-  EQUIPMENT_CEILING,
+  PUSH_ROTARY_CEILING,
   LEVEL_STANDARD_GAIN,
   LEVEL_THOROUGH_TIME_MULT,
   QUALITY_MAX,
@@ -88,7 +88,7 @@ for (let i = 0; i < 10; i += 1) {
   greensOnly = plan(greensOnly, 'cutGreens', 'thorough');
   greensOnly = end(greensOnly);
 }
-assert.equal(greensOnly.surfaces.greens.quality, EQUIPMENT_CEILING);
+assert.equal(greensOnly.surfaces.greens.quality, PUSH_ROTARY_CEILING);
 assert.ok(greensOnly.surfaces.tees.quality < greensOnly.surfaces.greens.quality);
 assert.ok(greensOnly.surfaces.fairways.quality < 20);
 assert.ok(greensOnly.surfaces.rough.quality < 20);
@@ -96,7 +96,7 @@ assert.ok(greensOnly.surfaces.bunkers.quality < 20);
 
 assert.equal(clampQuality(QUALITY_MAX + DECAY_BASE), QUALITY_MAX);
 assert.equal(clampQuality(QUALITY_MIN - DECAY_BASE), QUALITY_MIN);
-assert.equal(applyGain(EQUIPMENT_CEILING, LEVEL_STANDARD_GAIN), EQUIPMENT_CEILING);
+assert.equal(applyGain(PUSH_ROTARY_CEILING, LEVEL_STANDARD_GAIN, PUSH_ROTARY_CEILING), PUSH_ROTARY_CEILING);
 assert.equal(applyDecay(DECAY_BASE / DECAY_ACCELERATION, STARTING_SEASON), QUALITY_MIN);
 
 const mid = plan(createInitialState(), 'rollGreens', 'quick');

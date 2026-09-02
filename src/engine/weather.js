@@ -39,8 +39,7 @@ export function applyWeatherToWorkers(workers, weather) {
   }));
 }
 
-export function rollMorning(state, season) {
-  const rng = createRng(state.rngSeed);
+export function rollMorningWithRng(state, season, rng) {
   const weights = WEATHER_WEIGHTS[season];
   let weather;
   if (state.forecast) {
@@ -53,5 +52,11 @@ export function rollMorning(state, season) {
     weather = pickWeather(weights, rng);
   }
   const forecast = pickWeather(weights, rng);
-  return { weather, forecast, rngSeed: rng.seed };
+  return { weather, forecast };
+}
+
+export function rollMorning(state, season) {
+  const rng = createRng(state.rngSeed);
+  const morning = rollMorningWithRng(state, season, rng);
+  return { ...morning, rngSeed: rng.seed };
 }

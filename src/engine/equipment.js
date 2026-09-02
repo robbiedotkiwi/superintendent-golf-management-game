@@ -1,0 +1,295 @@
+import {
+  AUTO_INTERRUPT_MAX_COUNT,
+  AUTO_INTERRUPT_MAX_MINUTES,
+  AUTO_INTERRUPT_MIN_COUNT,
+  AUTO_INTERRUPT_MIN_MINUTES,
+  BREAKDOWN_BASE,
+  BREAKDOWN_PER_WEAR,
+  DAYS_PER_WEEK,
+  FOLEY_GRINDER_COST,
+  FOLEY_GRIND_MINUTES,
+  GRIND_AWAY_COST,
+  GRIND_AWAY_DAYS,
+  PLAYER_ID,
+  QUALITY_MAX,
+  REPAIR_MINUTES,
+  STARTING_MACHINE_ID,
+  WEAR_GAIN_PENALTY,
+  WEAR_MAX,
+  WEAR_PER_USE,
+  WEAR_THRESHOLD,
+} from '../data/constants.js';
+import { getMachine, MACHINES, machineAllows, TURF_DAMAGE_REASON } from '../data/equipment.js';
+import { getTask, taskDuration } from '../data/tasks.js';
+import { createRng } from './rng.js';
+
+function remainingMinutes(state) {
+  return state.workers.reduce((total, worker) => total + (worker.minutesToday - worker.minutesUsed), 0);
+}
+
+export function isMachineAvailable(state, machineId) {
+  if (!state.ownedMachines.includes(machineId)) return false;
+  if (state.machineBroken[machineId]) return false;
+  const awayUntil = state.machineAwayUntil[machineId];
+  if (awayUntil && state.day < awayUntil) return false;
+  return true;
+}
+
+export function ownedMachineList(state) {
+  return state.ownedMachines.map(getMachine).filter(Boolean);
+}
+
+export function pickMachine(state, task) {
+  if (!task?.surface) return null;
+  const candidates = ownedMachineList(state).filter(
+    (machine) => isMachineAvailable(state, machine.id) && machineAllows(machine, task.surface, task),
+  );
+  if (!candidates.length) return null;
+  return candidates.sort((a, b) => a.timeMult - b.timeMult)[0];
+}
+
+export function machineTimeMultiplier(state, task) {
+  const machine = pickMachine(state, task);
+  if (!machine) return 1;
+  return machine.timeMult;
+}
+
+export function surfaceCeiling(state, surface) {
+  let best = 0;
+  for (const machine of ownedMachineList(state)) {
+    if (machine.rollOnly || machine.autonomous) continue;
+    if (!machine.surfaces[surface]) continue;
+    const value = machine.ceiling[surface];
+    if (value > best) best = value;
+  }
+  return best || QUALITY_MAX;
+}
+
+export function ineligibleMachines(state, task) {
+  if (!task?.surface) return [];
+  return ownedMachineList(state)
+    .filter((machine) => !machineAllows(machine, task.surface, task) && machine.surfaces[task.surface] === false)
+    .map((machine) => ({
+      machine,
+      reason: TURF_DAMAGE_REASON,
+    }));
+}
+
+export function durationForTask(state, taskId, level) {
+  const task = getTask(taskId);
+  return taskDuration(taskId, level, machineTimeMultiplier(state, task));
+}
+
+export function wearMultiplier(state, machineId) {
+  const wear = state.machineWear[machineId] ?? 0;
+  if (wear > WEAR_THRESHOLD) return 1 - WEAR_GAIN_PENALTY;
+  return 1;
+}
+
+export function ownsAutonomous(state) {
+  return isMachineAvailable(state, 'autonomousMower') || state.ownedMachines.includes('autonomousMower');
+}
+
+export function autonomousReady(state) {
+  return state.ownedMachines.includes('autonomousMower') && isMachineAvailable(state, 'autonomousMower');
+}
+
+export function canBuyMachine(state, machineId) {
+  const machine = getMachine(machineId);
+  if (!machine || machine.ownedAtStart) return { ok: false, reason: 'Already in the shed.' };
+  if (state.ownedMachines.includes(machineId)) return { ok: false, reason: 'Already owned.' };
+  if (state.cash < machine.cost) return { ok: false, reason: `Needs ${machine.cost}, only ${state.cash} in the tin.` };
+  return { ok: true };
+}
+
+export function canBuyFoley(state) {
+  if (state.hasFoleyGrinder) return { ok: false, reason: 'Already installed.' };
+  if (state.cash < FOLEY_GRINDER_COST) {
+    return { ok: false, reason: `Needs ${FOLEY_GRINDER_COST}, only ${state.cash} in the tin.` };
+  }
+  return { ok: true };
+}
+
+export function canSendGrind(state, machineId) {
+  const machine = getMachine(machineId);
+  if (!machine?.reel) return { ok: false, reason: 'Not a reel machine.' };
+  if (!isMachineAvailable(state, machineId) && !state.machineBroken[machineId]) {
+    return { ok: false, reason: 'That unit is not here.' };
+  }
+  if (state.cash < GRIND_AWAY_COST) {
+    return { ok: false, reason: `Needs ${GRIND_AWAY_COST}, only ${state.cash} in the tin.` };
+  }
+  return { ok: true };
+}
+
+export function canGrindInHouse(state, machineId) {
+  if (!state.hasFoleyGrinder) return { ok: false, reason: 'No Foley grinder in the shed.' };
+  const machine = getMachine(machineId);
+  if (!machine?.reel) return { ok: false, reason: 'Not a reel machine.' };
+  if (!state.ownedMachines.includes(machineId)) return { ok: false, reason: 'Not owned.' };
+  if (state.machineAwayUntil[machineId] && state.day < state.machineAwayUntil[machineId]) {
+    return { ok: false, reason: 'Still away for grinding.' };
+  }
+  if (remainingMinutes(state) < FOLEY_GRIND_MINUTES) {
+    return { ok: false, reason: `Needs ${FOLEY_GRIND_MINUTES} min.` };
+  }
+  return { ok: true };
+}
+
+export function canRepair(state, machineId) {
+  if (!state.machineBroken[machineId]) return { ok: false, reason: 'Not broken.' };
+  if (remainingMinutes(state) < REPAIR_MINUTES) {
+    return { ok: false, reason: `Needs ${REPAIR_MINUTES} min.` };
+  }
+  return { ok: true };
+}
+
+export function spendWorkerMinutes(state, minutes) {
+  const worker = state.workers.find((item) => item.id === PLAYER_ID) ?? state.workers[0];
+  return {
+    ...state,
+    workers: state.workers.map((item) =>
+      item.id === worker.id ? { ...item, minutesUsed: item.minutesUsed + minutes } : item,
+    ),
+  };
+}
+
+export function recomputePlannedMinutes(state) {
+  const oldByWorker = {};
+  for (const planned of state.plannedTasks) {
+    oldByWorker[planned.workerId] = (oldByWorker[planned.workerId] ?? 0) + planned.minutes;
+  }
+  const plannedTasks = state.plannedTasks.map((planned) => ({
+    ...planned,
+    minutes: durationForTask(state, planned.taskId, planned.level),
+  }));
+  const newByWorker = {};
+  for (const planned of plannedTasks) {
+    newByWorker[planned.workerId] = (newByWorker[planned.workerId] ?? 0) + planned.minutes;
+  }
+  return {
+    ...state,
+    plannedTasks,
+    workers: state.workers.map((worker) => {
+      const extra = worker.minutesUsed - (oldByWorker[worker.id] ?? 0);
+      return { ...worker, minutesUsed: extra + (newByWorker[worker.id] ?? 0) };
+    }),
+  };
+}
+
+export function buyMachine(state, machineId) {
+  const check = canBuyMachine(state, machineId);
+  if (!check.ok) return state;
+  const machine = getMachine(machineId);
+  let next = {
+    ...state,
+    cash: state.cash - machine.cost,
+    ownedMachines: [...state.ownedMachines, machineId],
+    machineWear: { ...state.machineWear, [machineId]: 0 },
+  };
+  if (machine.autonomous) {
+    const rng = createRng(next.rngSeed);
+    const scheduled = ensureAutoWeek(next, rng, true);
+    next = { ...scheduled.state, rngSeed: rng.seed };
+  }
+  return recomputePlannedMinutes(next);
+}
+
+export function buyFoley(state) {
+  const check = canBuyFoley(state);
+  if (!check.ok) return state;
+  return { ...state, cash: state.cash - FOLEY_GRINDER_COST, hasFoleyGrinder: true };
+}
+
+export function sendForGrind(state, machineId) {
+  const check = canSendGrind(state, machineId);
+  if (!check.ok) return state;
+  const next = {
+    ...state,
+    cash: state.cash - GRIND_AWAY_COST,
+    machineAwayUntil: { ...state.machineAwayUntil, [machineId]: state.day + GRIND_AWAY_DAYS },
+    machineWear: { ...state.machineWear, [machineId]: 0 },
+    machineBroken: { ...state.machineBroken, [machineId]: false },
+  };
+  return recomputePlannedMinutes(next);
+}
+
+export function grindInHouse(state, machineId) {
+  const check = canGrindInHouse(state, machineId);
+  if (!check.ok) return state;
+  const spent = spendWorkerMinutes(state, FOLEY_GRIND_MINUTES);
+  return {
+    ...spent,
+    machineWear: { ...spent.machineWear, [machineId]: 0 },
+  };
+}
+
+export function repairMachine(state, machineId) {
+  const check = canRepair(state, machineId);
+  if (!check.ok) return state;
+  const spent = spendWorkerMinutes(state, REPAIR_MINUTES);
+  const next = {
+    ...spent,
+    machineBroken: { ...spent.machineBroken, [machineId]: false },
+  };
+  return recomputePlannedMinutes(next);
+}
+
+export function breakdownChance(wear) {
+  return BREAKDOWN_BASE + wear * BREAKDOWN_PER_WEAR;
+}
+
+export function rollBreakdowns(state, usedIds, rng) {
+  const machineBroken = { ...state.machineBroken };
+  const breakdowns = [];
+  for (const id of usedIds) {
+    const wear = state.machineWear[id] ?? 0;
+    if (rng.next() < breakdownChance(wear)) {
+      machineBroken[id] = true;
+      breakdowns.push(id);
+    }
+  }
+  return { machineBroken, breakdowns };
+}
+
+export function applyWear(state, usedIds) {
+  const machineWear = { ...state.machineWear };
+  for (const id of usedIds) {
+    const machine = getMachine(id);
+    if (!machine?.reel) continue;
+    machineWear[id] = Math.min(WEAR_MAX, (machineWear[id] ?? 0) + WEAR_PER_USE);
+  }
+  return machineWear;
+}
+
+export function ensureAutoWeek(state, rng, force = false) {
+  const weekStart = state.day - ((state.day - 1) % DAYS_PER_WEEK);
+  if (!force && state.autoWeek?.weekStart === weekStart) return { state, rng };
+  if (!state.ownedMachines.includes('autonomousMower')) {
+    return { state: { ...state, autoWeek: { weekStart, hits: [] } }, rng };
+  }
+  const span = AUTO_INTERRUPT_MAX_COUNT - AUTO_INTERRUPT_MIN_COUNT;
+  const count = AUTO_INTERRUPT_MIN_COUNT + Math.floor(rng.next() * (span + 1));
+  const hits = [];
+  const usedOffsets = new Set();
+  for (let i = 0; i < count; i += 1) {
+    let offset = Math.floor(rng.next() * DAYS_PER_WEEK);
+    let guard = 0;
+    while (usedOffsets.has(offset) && guard < DAYS_PER_WEEK) {
+      offset = (offset + 1) % DAYS_PER_WEEK;
+      guard += 1;
+    }
+    usedOffsets.add(offset);
+    const spanMin = AUTO_INTERRUPT_MAX_MINUTES - AUTO_INTERRUPT_MIN_MINUTES;
+    const minutes = AUTO_INTERRUPT_MIN_MINUTES + Math.floor(rng.next() * (spanMin + 1));
+    hits.push({ day: weekStart + offset, minutes });
+  }
+  return { state: { ...state, autoWeek: { weekStart, hits } }, rng };
+}
+
+export function interruptionMinutesForDay(state) {
+  if (!state.ownedMachines.includes('autonomousMower')) return 0;
+  return (state.autoWeek?.hits ?? []).filter((hit) => hit.day === state.day).reduce((sum, hit) => sum + hit.minutes, 0);
+}
+
+export { MACHINES, getMachine, TURF_DAMAGE_REASON };

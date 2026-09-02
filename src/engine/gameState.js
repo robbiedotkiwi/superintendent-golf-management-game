@@ -1,7 +1,8 @@
-import { getTask, taskDuration } from '../data/tasks.js';
+import { getTask } from '../data/tasks.js';
 import { calendarFromDay } from './calendar.js';
 import { pickWeather } from './weather.js';
 import { createRng } from './rng.js';
+import { durationForTask, buyFoley, buyMachine, grindInHouse, repairMachine, sendForGrind, pickMachine } from './equipment.js';
 import { resolveDay } from './simulation.js';
 import {
   DAY_LENGTH_MINUTES,
@@ -22,6 +23,7 @@ import {
   STARTING_QUALITY_GREENS,
   STARTING_QUALITY_ROUGH,
   STARTING_QUALITY_TEES,
+  STARTING_MACHINE_ID,
   STARTING_RNG_SEED,
   STARTING_WEATHER,
   TASK_MINUTES,
@@ -69,6 +71,12 @@ export function createInitialState() {
     },
     plannedTasks: [],
     log: [],
+    ownedMachines: [STARTING_MACHINE_ID],
+    machineWear: { [STARTING_MACHINE_ID]: 0 },
+    machineBroken: {},
+    machineAwayUntil: {},
+    hasFoleyGrinder: false,
+    autoWeek: { weekStart: STARTING_DAY, hits: [] },
   };
 }
 
@@ -115,7 +123,11 @@ export function canPlanTask(state, taskId, level) {
     return { ok: false, reason: 'Mowing is off today.' };
   }
 
-  const minutes = taskDuration(taskId, level);
+  if (task.mowing && !pickMachine(state, task)) {
+    return { ok: false, reason: 'No machine available. Check the shed.' };
+  }
+
+  const minutes = durationForTask(state, taskId, level);
   const remaining = combinedMinutesRemaining(state);
   if (minutes > remaining) {
     return { ok: false, reason: `Needs ${minutes} min, only ${remaining} left.` };
@@ -167,6 +179,26 @@ export function reducer(state, action) {
     case 'END_DAY': {
       const { state: next, summary } = resolveDay(state);
       return { ...next, log: [...next.log, summary] };
+    }
+    case 'BUY_MACHINE':
+      return buyMachine(state, action.machineId);
+    case 'BUY_FOLEY':
+      return buyFoley(state);
+    case 'SEND_GRIND':
+      return sendForGrind(state, action.machineId);
+    case 'GRIND_IN_HOUSE':
+      return grindInHouse(state, action.machineId);
+    case 'REPAIR_MACHINE':
+      return repairMachine(state, action.machineId);
+    case 'MOVE_TASK': {
+      const list = [...state.plannedTasks];
+      const index = list.findIndex((item) => item.taskId === action.taskId);
+      const nextIndex = index + action.direction;
+      if (index < 0 || nextIndex < 0 || nextIndex >= list.length) return state;
+      const swap = list[index];
+      list[index] = list[nextIndex];
+      list[nextIndex] = swap;
+      return { ...state, plannedTasks: list };
     }
     default:
       return state;

@@ -1,6 +1,6 @@
 import { qualityColor } from '../engine/color.js';
 import { HOLE_COUNT } from '../data/constants.js';
-import { HOLES, MAP_HEIGHT, MAP_VIEWBOX, MAP_WIDTH } from '../data/course.js';
+import { HOLES, MAP_HEIGHT, MAP_VIEWBOX, MAP_WIDTH, SHED_HEIGHT, SHED_WIDTH, SHED_X, SHED_Y } from '../data/course.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 
 function activate(event, surface, onSelect) {
@@ -17,7 +17,7 @@ function surfaceClass(selected, surface) {
   ].join(' ');
 }
 
-export default function CourseMap({ surfaces, selected, onSelect }) {
+export default function CourseMap({ surfaces, selected, onSelect, onOpenShed }) {
   const fills = {
     greens: qualityColor(surfaces.greens.quality),
     tees: qualityColor(surfaces.tees.quality),
@@ -34,6 +34,27 @@ export default function CourseMap({ surfaces, selected, onSelect }) {
       aria-label={`${HOLE_COUNT}-hole course map`}
     >
       <rect width={MAP_WIDTH} height={MAP_HEIGHT} fill="var(--soil)" onClick={() => onSelect(null)} />
+      <g
+        tabIndex={0}
+        role="button"
+        aria-label="Shed"
+        className="course-surface cursor-pointer outline-none"
+        onClick={(event) => {
+          event.stopPropagation();
+          onOpenShed();
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            onOpenShed();
+          }
+        }}
+      >
+        <rect x={SHED_X} y={SHED_Y} width={SHED_WIDTH} height={SHED_HEIGHT} fill="var(--sand)" stroke="var(--paint)" />
+        <text x={SHED_X + SHED_WIDTH / 2} y={SHED_Y + SHED_HEIGHT / 2 + 5} textAnchor="middle" fill="var(--soil)" fontSize="16">
+          Shed
+        </text>
+      </g>
       {HOLES.map((hole) => (
         <g key={hole.id}>
           <path

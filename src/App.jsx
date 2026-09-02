@@ -2,6 +2,8 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import CourseMap from './components/CourseMap.jsx';
 import DaySummary from './components/DaySummary.jsx';
 import TaskPanel from './components/TaskPanel.jsx';
+import Shed from './components/Shed.jsx';
+import TimeBar from './components/TimeBar.jsx';
 import WeatherStrip from './components/WeatherStrip.jsx';
 import {
   HOLE_COUNT,
@@ -39,6 +41,7 @@ export default function App() {
   const [state, dispatch] = useReducer(reducer, null, () => loadGame() ?? createInitialState());
   const [selected, setSelected] = useState(null);
   const [summary, setSummary] = useState(null);
+  const [view, setView] = useState('course');
   const seenLog = useRef(state.log.length);
 
   useEffect(() => {
@@ -65,6 +68,7 @@ export default function App() {
     setSavePresent(false);
     setSelected(null);
     setSummary(null);
+    setView('course');
     seenLog.current = 0;
     setScreen('game');
   }
@@ -76,6 +80,7 @@ export default function App() {
     dispatch({ type: 'LOAD_GAME', state: saved });
     setSelected(null);
     setSummary(null);
+    setView('course');
     setScreen('game');
   }
 
@@ -91,6 +96,7 @@ export default function App() {
           state={state}
           selected={selected}
           summary={summary}
+          view={view}
           minutesRemaining={minutesRemaining}
           minutesUsed={minutesUsed}
           minutesCapacity={minutesCapacity}
@@ -100,6 +106,14 @@ export default function App() {
           onRemove={(taskId) => dispatch({ type: 'REMOVE_TASK', taskId })}
           onEndDay={() => dispatch({ type: 'END_DAY' })}
           onDismissSummary={() => setSummary(null)}
+          onOpenShed={() => setView('shed')}
+          onCloseShed={() => setView('course')}
+          onBuy={(machineId) => dispatch({ type: 'BUY_MACHINE', machineId })}
+          onBuyFoley={() => dispatch({ type: 'BUY_FOLEY' })}
+          onSendGrind={(machineId) => dispatch({ type: 'SEND_GRIND', machineId })}
+          onGrindInHouse={(machineId) => dispatch({ type: 'GRIND_IN_HOUSE', machineId })}
+          onRepair={(machineId) => dispatch({ type: 'REPAIR_MACHINE', machineId })}
+          onMove={(taskId, direction) => dispatch({ type: 'MOVE_TASK', taskId, direction })}
         />
       )}
     </div>
@@ -137,6 +151,7 @@ function GameScreen({
   state,
   selected,
   summary,
+  view,
   minutesRemaining,
   minutesUsed,
   minutesCapacity,
@@ -146,7 +161,29 @@ function GameScreen({
   onRemove,
   onEndDay,
   onDismissSummary,
+  onOpenShed,
+  onCloseShed,
+  onBuy,
+  onBuyFoley,
+  onSendGrind,
+  onGrindInHouse,
+  onRepair,
+  onMove,
 }) {
+  if (view === 'shed') {
+    return (
+      <Shed
+        state={state}
+        onBack={onCloseShed}
+        onBuy={onBuy}
+        onBuyFoley={onBuyFoley}
+        onSendGrind={onSendGrind}
+        onGrindInHouse={onGrindInHouse}
+        onRepair={onRepair}
+      />
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <TimeBar
@@ -156,6 +193,8 @@ function GameScreen({
         plannedTasks={state.plannedTasks}
         onRemove={onRemove}
         onEndDay={onEndDay}
+        onMove={onMove}
+        onOpenShed={onOpenShed}
       />
       <WeatherStrip state={state} onPlan={onPlan} onRemove={onRemove} />
       <div className="flex flex-wrap items-end gap-8 px-4 py-3">
@@ -165,7 +204,7 @@ function GameScreen({
         <Stat label="Condition" value={condition} />
       </div>
       <div className="min-h-0 flex-1 px-3 pb-3">
-        <CourseMap surfaces={state.surfaces} selected={selected} onSelect={onSelect} />
+        <CourseMap surfaces={state.surfaces} selected={selected} onSelect={onSelect} onOpenShed={onOpenShed} />
       </div>
       <TaskPanel
         surface={selected}

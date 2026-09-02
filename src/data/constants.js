@@ -116,3 +116,45 @@ export const WEATHER_WEIGHTS = {
   autumn: { fine: 25, overcast: 25, rain: 25, heavyRain: 10, storm: 10, frost: 5 },
   winter: { fine: 15, overcast: 25, rain: 15, heavyRain: 5, storm: 5, frost: 35 },
 };
+
+export const DAYS_PER_WEEK = 7;
+export const WEAR_PER_USE = 8;
+export const WEAR_THRESHOLD = 60;
+export const WEAR_GAIN_PENALTY = 0.3;
+export const WEAR_MAX = 100;
+export const GRIND_AWAY_COST = 400;
+export const GRIND_AWAY_DAYS = 2;
+export const FOLEY_GRINDER_COST = 15000;
+export const FOLEY_GRIND_MINUTES = 90;
+export const REPAIR_MINUTES = 120;
+export const BREAKDOWN_BASE = 0.005;
+export const BREAKDOWN_PER_WEAR = 0.0005;
+export const AUTO_INTERRUPT_MIN_COUNT = 1;
+export const AUTO_INTERRUPT_MAX_COUNT = 3;
+export const AUTO_INTERRUPT_MIN_MINUTES = 10;
+export const AUTO_INTERRUPT_MAX_MINUTES = 40;
+export const ROLLER_GAIN_BONUS = 4;
+
+export const PUSH_ROTARY_CEILING = 65;
+export const PUSH_ROTARY_TIME_MULT = 1;
+export const WALK_BEHIND_COST = 4500;
+export const WALK_BEHIND_CEILING = 80;
+export const WALK_BEHIND_TIME_MULT = 0.85;
+export const RIDE_ON_REEL_COST = 22000;
+export const RIDE_ON_REEL_CEILING = 92;
+export const RIDE_ON_REEL_TIME_MULT = 0.5;
+export const PREMIUM_REEL_COST = 48000;
+export const PREMIUM_REEL_CEILING = 97;
+export const PREMIUM_REEL_TIME_MULT = 0.4;
+export const FAIRWAY_UNIT_COST = 30000;
+export const FAIRWAY_UNIT_CEILING = 88;
+export const FAIRWAY_UNIT_TIME_MULT = 0.35;
+export const VENTRAC_COST = 18000;
+export const VENTRAC_FAIRWAY_CEILING = 85;
+export const VENTRAC_ROUGH_CEILING = 90;
+export const VENTRAC_TIME_MULT = 0.45;
+export const GREENS_ROLLER_COST = 9000;
+export const GREENS_ROLLER_TIME_MULT = 0.7;
+export const AUTONOMOUS_COST = 35000;
+export const AUTONOMOUS_CEILING = 85;
+export const STARTING_MACHINE_ID = 'pushRotary';

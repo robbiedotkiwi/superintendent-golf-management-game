@@ -1,5 +1,6 @@
 import { LEVEL_KEYS } from '../data/constants.js';
-import { LEVEL_LABELS, SURFACE_LABELS, taskDuration, tasksForSurface } from '../data/tasks.js';
+import { LEVEL_LABELS, SURFACE_LABELS, tasksForSurface } from '../data/tasks.js';
+import { durationForTask, ineligibleMachines, pickMachine, surfaceCeiling } from '../engine/equipment.js';
 import { canPlanTask } from '../engine/gameState.js';
 
 function formatQuality(value) {
@@ -32,13 +33,22 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onClose })
           <div className="px-5 py-4">
             <div className="text-sm">Quality</div>
             <div className="font-condensed text-6xl font-bold leading-none">{formatQuality(quality)}</div>
+            <p className="mt-1 text-sm">Ceiling {surfaceCeiling(state, surface)}</p>
           </div>
           <div className="flex-1 space-y-5 overflow-auto px-5 pb-6">
             {tasks.map((task) => {
               const planned = state.plannedTasks.find((item) => item.taskId === task.id);
+              const machine = pickMachine(state, task);
+              const blocked = ineligibleMachines(state, task);
               return (
                 <section key={task.id} className="border border-[var(--soil)] p-3">
                   <h3 className="text-lg font-semibold">{task.name}</h3>
+                  {machine ? <p className="text-sm">Using {machine.name}</p> : null}
+                  {blocked.map((item) => (
+                    <p key={item.machine.id} className="text-sm">
+                      {item.machine.name} not offered — {item.reason}
+                    </p>
+                  ))}
                   {planned ? (
                     <div className="mt-2 flex items-center justify-between gap-2">
                       <p>
@@ -55,7 +65,7 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onClose })
                   ) : (
                     <div className="mt-3 grid grid-cols-3 gap-2">
                       {LEVEL_KEYS.map((level) => {
-                        const minutes = taskDuration(task.id, level);
+                        const minutes = durationForTask(state, task.id, level);
                         const check = canPlanTask(state, task.id, level);
                         return (
                           <button

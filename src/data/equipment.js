@@ -1,0 +1,162 @@
+import {
+  AUTONOMOUS_CEILING,
+  AUTONOMOUS_COST,
+  FAIRWAY_UNIT_CEILING,
+  FAIRWAY_UNIT_COST,
+  FAIRWAY_UNIT_TIME_MULT,
+  GREENS_ROLLER_COST,
+  GREENS_ROLLER_TIME_MULT,
+  PREMIUM_REEL_CEILING,
+  PREMIUM_REEL_COST,
+  PREMIUM_REEL_TIME_MULT,
+  PUSH_ROTARY_CEILING,
+  PUSH_ROTARY_TIME_MULT,
+  RIDE_ON_REEL_CEILING,
+  RIDE_ON_REEL_COST,
+  RIDE_ON_REEL_TIME_MULT,
+  ROLLER_GAIN_BONUS,
+  STARTING_MACHINE_ID,
+  VENTRAC_COST,
+  VENTRAC_FAIRWAY_CEILING,
+  VENTRAC_ROUGH_CEILING,
+  VENTRAC_TIME_MULT,
+  WALK_BEHIND_CEILING,
+  WALK_BEHIND_COST,
+  WALK_BEHIND_TIME_MULT,
+} from './constants.js';
+
+export const MACHINES = [
+  {
+    id: STARTING_MACHINE_ID,
+    name: 'Push rotary',
+    brand: null,
+    cost: 0,
+    ownedAtStart: true,
+    reel: false,
+    autonomous: false,
+    rollOnly: false,
+    timeMult: PUSH_ROTARY_TIME_MULT,
+    surfaces: { greens: true, tees: true, fairways: true, rough: true },
+    ceiling: {
+      greens: PUSH_ROTARY_CEILING,
+      tees: PUSH_ROTARY_CEILING,
+      fairways: PUSH_ROTARY_CEILING,
+      rough: PUSH_ROTARY_CEILING,
+    },
+  },
+  {
+    id: 'walkBehindReel',
+    name: 'Walk-behind reel',
+    brand: 'Toro',
+    cost: WALK_BEHIND_COST,
+    ownedAtStart: false,
+    reel: true,
+    autonomous: false,
+    rollOnly: false,
+    timeMult: WALK_BEHIND_TIME_MULT,
+    surfaces: { greens: true, tees: true, fairways: false, rough: false },
+    ceiling: { greens: WALK_BEHIND_CEILING, tees: WALK_BEHIND_CEILING },
+  },
+  {
+    id: 'rideOnReel',
+    name: 'Ride-on reel',
+    brand: 'Toro',
+    cost: RIDE_ON_REEL_COST,
+    ownedAtStart: false,
+    reel: true,
+    autonomous: false,
+    rollOnly: false,
+    timeMult: RIDE_ON_REEL_TIME_MULT,
+    surfaces: { greens: true, tees: true, fairways: true, rough: false },
+    ceiling: {
+      greens: RIDE_ON_REEL_CEILING,
+      tees: RIDE_ON_REEL_CEILING,
+      fairways: RIDE_ON_REEL_CEILING,
+    },
+  },
+  {
+    id: 'premiumRideOn',
+    name: 'Premium ride-on reel',
+    brand: 'Toro',
+    cost: PREMIUM_REEL_COST,
+    ownedAtStart: false,
+    reel: true,
+    autonomous: false,
+    rollOnly: false,
+    timeMult: PREMIUM_REEL_TIME_MULT,
+    surfaces: { greens: true, tees: true, fairways: true, rough: false },
+    ceiling: {
+      greens: PREMIUM_REEL_CEILING,
+      tees: PREMIUM_REEL_CEILING,
+      fairways: PREMIUM_REEL_CEILING,
+    },
+  },
+  {
+    id: 'fairwayUnit',
+    name: 'Large ride-on fairway unit',
+    brand: 'Toro',
+    cost: FAIRWAY_UNIT_COST,
+    ownedAtStart: false,
+    reel: true,
+    autonomous: false,
+    rollOnly: false,
+    timeMult: FAIRWAY_UNIT_TIME_MULT,
+    surfaces: { greens: false, tees: false, fairways: true, rough: true },
+    ceiling: { fairways: FAIRWAY_UNIT_CEILING, rough: FAIRWAY_UNIT_CEILING },
+  },
+  {
+    id: 'ventrac',
+    name: 'Rough/utility mower',
+    brand: 'Ventrac',
+    cost: VENTRAC_COST,
+    ownedAtStart: false,
+    reel: false,
+    autonomous: false,
+    rollOnly: false,
+    timeMult: VENTRAC_TIME_MULT,
+    surfaces: { greens: false, tees: false, fairways: true, rough: true },
+    ceiling: { fairways: VENTRAC_FAIRWAY_CEILING, rough: VENTRAC_ROUGH_CEILING },
+  },
+  {
+    id: 'greensRoller',
+    name: 'Greens roller',
+    brand: 'Salsco',
+    cost: GREENS_ROLLER_COST,
+    ownedAtStart: false,
+    reel: false,
+    autonomous: false,
+    rollOnly: true,
+    rollGainBonus: ROLLER_GAIN_BONUS,
+    timeMult: GREENS_ROLLER_TIME_MULT,
+    surfaces: { greens: 'roll' },
+    ceiling: {},
+  },
+  {
+    id: 'autonomousMower',
+    name: 'Autonomous mower',
+    brand: 'Nexmow',
+    cost: AUTONOMOUS_COST,
+    ownedAtStart: false,
+    reel: false,
+    autonomous: true,
+    rollOnly: false,
+    timeMult: 0,
+    surfaces: { greens: false, tees: false, fairways: true, rough: true },
+    ceiling: { fairways: AUTONOMOUS_CEILING, rough: AUTONOMOUS_CEILING },
+  },
+];
+
+export function getMachine(id) {
+  return MACHINES.find((machine) => machine.id === id);
+}
+
+export function machineAllows(machine, surface, task) {
+  const allow = machine.surfaces[surface];
+  if (!allow) return false;
+  if (machine.rollOnly) return task?.id === 'rollGreens';
+  if (task?.id === 'rollGreens') return false;
+  if (machine.autonomous) return false;
+  return allow === true;
+}
+
+export const TURF_DAMAGE_REASON = 'Would damage the turf.';

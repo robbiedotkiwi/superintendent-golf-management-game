@@ -25,3 +25,11 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Frost shortens the whole time pool by 120 minutes (360 remaining). Greens tasks are available during that shortened day — the late start is the 10am rule.
 - Growth scales decay only. Heavy rain subtracts an extra 10 bunker quality after gains and decay, even if bunkers were raked.
 - Forecast is kept with 70% accuracy: 30% of mornings pick a different type. A mismatch is normal, not an error.
+
+## Phase 3
+
+- Starting ceiling is the push rotary (65), replacing the Phase 1 flat 70.
+- Reel machines take wear; rotary, roller, Ventrac and the autonomous unit do not.
+- Send-away grinding sets `awayUntil = day + 2`, so a machine sent on day 1 is back on day 3.
+- Autonomous mowers auto-cut fairways and rough at standard quality when those surfaces were not planned, skip rain/storm mowing days, and drop the last planned task if interruptions overrun the day. Planned-task order is priority (first = keep).
+- Old saves missing equipment fields get the starting push rotary on load.

@@ -1,23 +1,35 @@
 import {
   CONDITION_WEIGHTS,
-  DAY_LENGTH_MINUTES,
   DECAY_ACCELERATION,
   DECAY_ACCELERATION_BELOW,
   DECAY_BASE,
-  EQUIPMENT_CEILING,
   GAIN_DIMINISH,
   GAIN_DIMINISH_ABOVE,
   HEAVY_RAIN_BUNKER_LOSS,
+  LEVEL_STANDARD_GAIN,
+  MOWING_WEATHER,
   QUALITY_MAX,
   QUALITY_MIN,
+  ROLLER_GAIN_BONUS,
   SEASON_GROWTH,
-  STARTING_MINUTES_USED,
   SURFACE_KEYS,
   WEATHER_HEAVY_RAIN,
 } from '../data/constants.js';
 import { getTask, taskGain } from '../data/tasks.js';
 import { calendarFromDay } from './calendar.js';
-import { applyWeatherToWorkers, rollMorning } from './weather.js';
+import {
+  applyWear,
+  autonomousReady,
+  ensureAutoWeek,
+  interruptionMinutesForDay,
+  isMachineAvailable,
+  pickMachine,
+  rollBreakdowns,
+  surfaceCeiling,
+  wearMultiplier,
+} from './equipment.js';
+import { createRng } from './rng.js';
+import { applyWeatherToWorkers, rollMorningWithRng } from './weather.js';
 
 export function clampQuality(value) {
   return Math.min(QUALITY_MAX, Math.max(QUALITY_MIN, value));
@@ -36,7 +48,7 @@ export function decayAmount(quality, season) {
   return decay;
 }
 
-export function applyGain(quality, gain, ceiling = EQUIPMENT_CEILING) {
+export function applyGain(quality, gain, ceiling = QUALITY_MAX) {
   let adjusted = gain;
   if (quality > GAIN_DIMINISH_ABOVE) {
     adjusted *= GAIN_DIMINISH;
@@ -58,40 +70,95 @@ function cloneSurfaces(surfaces) {
   }, {});
 }
 
+function capacityOf(state) {
+  return state.workers.reduce((total, worker) => total + worker.minutesToday, 0);
+}
+
 export function resolveDay(state) {
+  const rng = createRng(state.rngSeed);
   const surfaces = cloneSurfaces(state.surfaces);
   const before = cloneSurfaces(state.surfaces);
   const conditionBefore = courseCondition(state.surfaces);
   const worked = new Set();
   const done = [];
+  const usedMachineIds = [];
+  const dropped = [];
 
-  for (const planned of state.plannedTasks) {
-    const task = getTask(planned.taskId);
+  let planned = [...state.plannedTasks];
+  const extra = interruptionMinutesForDay(state);
+  let plannedMinutes = planned.reduce((sum, item) => sum + item.minutes, 0);
+  while (extra > 0 && plannedMinutes + extra > capacityOf(state) && planned.length) {
+    const item = planned.pop();
+    plannedMinutes -= item.minutes;
+    dropped.push(item);
+  }
+
+  function markUsed(id) {
+    if (id && !usedMachineIds.includes(id)) usedMachineIds.push(id);
+  }
+
+  for (const plannedTask of planned) {
+    const task = getTask(plannedTask.taskId);
     if (!task.surface) {
       done.push({
-        taskId: planned.taskId,
+        taskId: plannedTask.taskId,
         name: task.name,
         surface: null,
-        level: planned.level,
-        minutes: planned.minutes,
+        level: plannedTask.level,
+        minutes: plannedTask.minutes,
         before: null,
         after: null,
       });
       continue;
     }
+
+    const machine = pickMachine(state, task);
+    if (machine) markUsed(machine.id);
+    if (task.id === 'rollGreens' && isMachineAvailable(state, 'greensRoller')) {
+      markUsed('greensRoller');
+    }
+
+    let gain = plannedTask.level ? taskGain(plannedTask.level) : LEVEL_STANDARD_GAIN;
+    if (task.id === 'rollGreens' && isMachineAvailable(state, 'greensRoller')) {
+      gain += ROLLER_GAIN_BONUS;
+    }
+    if (machine) {
+      gain *= wearMultiplier(state, machine.id);
+    }
+
     const qualityBefore = surfaces[task.surface].quality;
-    const qualityAfter = applyGain(qualityBefore, taskGain(planned.level));
+    const qualityAfter = applyGain(qualityBefore, gain, surfaceCeiling(state, task.surface));
     surfaces[task.surface].quality = qualityAfter;
     worked.add(task.surface);
     done.push({
-      taskId: planned.taskId,
+      taskId: plannedTask.taskId,
       name: task.name,
       surface: task.surface,
-      level: planned.level,
-      minutes: planned.minutes,
+      level: plannedTask.level,
+      minutes: plannedTask.minutes,
       before: qualityBefore,
       after: qualityAfter,
     });
+  }
+
+  if (autonomousReady(state) && !MOWING_WEATHER.includes(state.weather)) {
+    markUsed('autonomousMower');
+    for (const surface of ['fairways', 'rough']) {
+      if (worked.has(surface)) continue;
+      const qualityBefore = surfaces[surface].quality;
+      const qualityAfter = applyGain(qualityBefore, LEVEL_STANDARD_GAIN, surfaceCeiling(state, surface));
+      surfaces[surface].quality = qualityAfter;
+      worked.add(surface);
+      done.push({
+        taskId: 'autonomousMower',
+        name: 'Autonomous cut',
+        surface,
+        level: 'standard',
+        minutes: 0,
+        before: qualityBefore,
+        after: qualityAfter,
+      });
+    }
   }
 
   const skipped = [];
@@ -107,21 +174,31 @@ export function resolveDay(state) {
     surfaces.bunkers.quality = clampQuality(surfaces.bunkers.quality - HEAVY_RAIN_BUNKER_LOSS);
   }
 
+  const machineWear = applyWear(state, usedMachineIds);
+  const wornState = { ...state, machineWear };
+  const { machineBroken, breakdowns } = rollBreakdowns(wornState, usedMachineIds, rng);
+
   const day = state.day + 1;
   const calendar = calendarFromDay(day);
-  const morning = rollMorning(state, calendar.season);
-
-  const nextState = {
+  let next = {
     ...state,
     day,
     season: calendar.season,
     year: calendar.year,
     surfaces,
+    machineWear,
+    machineBroken,
+    plannedTasks: [],
+  };
+  const scheduled = ensureAutoWeek(next, rng);
+  next = scheduled.state;
+  const morning = rollMorningWithRng(next, calendar.season, rng);
+  next = {
+    ...next,
     weather: morning.weather,
     forecast: morning.forecast,
-    rngSeed: morning.rngSeed,
+    rngSeed: rng.seed,
     workers: applyWeatherToWorkers(state.workers, morning.weather),
-    plannedTasks: [],
   };
 
   const summary = {
@@ -129,11 +206,14 @@ export function resolveDay(state) {
     weather: state.weather,
     done,
     skipped,
+    dropped,
+    interruptions: extra,
+    breakdowns,
     before,
     after: cloneSurfaces(surfaces),
     conditionBefore,
     conditionAfter: courseCondition(surfaces),
   };
 
-  return { state: nextState, summary };
+  return { state: next, summary };
 }

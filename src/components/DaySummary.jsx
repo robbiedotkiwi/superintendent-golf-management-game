@@ -25,7 +25,7 @@ export default function DaySummary({ summary, onContinue }) {
         ) : (
           <ul className="mt-2 space-y-1">
             {summary.done.map((item) => (
-              <li key={item.taskId}>
+              <li key={`${item.taskId}-${item.surface ?? 'none'}`}>
                 {item.surface
                   ? `${item.name} (${item.level ? LEVEL_LABELS[item.level] : 'done'}): ${SURFACE_LABELS[item.surface]} ${formatQuality(item.before)} → ${formatQuality(item.after)}`
                   : `${item.name} · ${item.minutes} min`}
@@ -46,6 +46,23 @@ export default function DaySummary({ summary, onContinue }) {
             ))}
           </ul>
         )}
+
+        <h3 className="mt-6 text-lg font-semibold">Dropped</h3>
+        {summary.dropped?.length ? (
+          <ul className="mt-2 space-y-1">
+            {summary.dropped.map((item) => (
+              <li key={`${item.taskId}-dropped`}>
+                {item.taskId} ran out of time after interruptions ({item.minutes} min)
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>Nothing dropped.</p>
+        )}
+        {summary.interruptions ? <p className="mt-3">Autonomous interruptions: {summary.interruptions} min</p> : null}
+        {summary.breakdowns?.length ? (
+          <p className="mt-2">Broke down: {summary.breakdowns.join(', ')}</p>
+        ) : null}
 
         <button
           type="button"
