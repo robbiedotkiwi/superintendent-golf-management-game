@@ -9,13 +9,14 @@ export const SURFACE_LABELS = {
 };
 
 export const TASKS = [
-  { id: 'cutGreens', surface: 'greens', name: 'Cut greens' },
-  { id: 'rollGreens', surface: 'greens', name: 'Roll' },
-  { id: 'changeCups', surface: 'greens', name: 'Change cups' },
-  { id: 'cutTees', surface: 'tees', name: 'Cut' },
-  { id: 'cutFairways', surface: 'fairways', name: 'Cut' },
-  { id: 'cutRough', surface: 'rough', name: 'Cut' },
-  { id: 'rakeBunkers', surface: 'bunkers', name: 'Rake' },
+  { id: 'cutGreens', surface: 'greens', name: 'Cut greens', mowing: true, usesQualityLevel: true },
+  { id: 'rollGreens', surface: 'greens', name: 'Roll', mowing: false, usesQualityLevel: true },
+  { id: 'changeCups', surface: 'greens', name: 'Change cups', mowing: false, usesQualityLevel: true },
+  { id: 'cutTees', surface: 'tees', name: 'Cut', mowing: true, usesQualityLevel: true },
+  { id: 'cutFairways', surface: 'fairways', name: 'Cut', mowing: true, usesQualityLevel: true },
+  { id: 'cutRough', surface: 'rough', name: 'Cut', mowing: true, usesQualityLevel: true },
+  { id: 'rakeBunkers', surface: 'bunkers', name: 'Rake', mowing: false, usesQualityLevel: true },
+  { id: 'clearDebris', surface: null, name: 'Clear debris', mowing: false, usesQualityLevel: false },
 ];
 
 export const LEVEL_LABELS = {
@@ -33,6 +34,8 @@ export function tasksForSurface(surface) {
 }
 
 export function taskDuration(taskId, level) {
+  const task = getTask(taskId);
+  if (!task?.usesQualityLevel) return TASK_MINUTES[taskId];
   return Math.round(TASK_MINUTES[taskId] * QUALITY_LEVELS[level].timeMultiplier);
 }
 

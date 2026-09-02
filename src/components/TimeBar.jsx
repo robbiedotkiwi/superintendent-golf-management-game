@@ -21,6 +21,7 @@ export default function TimeBar({ remaining, used, capacity, plannedTasks, onRem
           <ul className="hidden max-w-xl flex-wrap justify-end gap-2 md:flex">
             {plannedTasks.map((planned) => {
               const task = getTask(planned.taskId);
+              const level = planned.level ? LEVEL_LABELS[planned.level] : null;
               return (
                 <li key={planned.taskId}>
                   <button
@@ -28,7 +29,8 @@ export default function TimeBar({ remaining, used, capacity, plannedTasks, onRem
                     onClick={() => onRemove(planned.taskId)}
                     className="border border-[var(--soil)] bg-[var(--sand)] px-2 py-1 text-sm text-[var(--soil)]"
                   >
-                    {task.name} · {LEVEL_LABELS[planned.level]} · {planned.minutes} min ×
+                    {task.name}
+                    {level ? ` · ${level}` : ''} · {planned.minutes} min
                   </button>
                 </li>
               );

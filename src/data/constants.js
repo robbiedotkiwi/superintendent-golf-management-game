@@ -39,6 +39,7 @@ export const TASK_MINUTES = {
   cutFairways: 150,
   cutRough: 180,
   rakeBunkers: 50,
+  clearDebris: 90,
 };
 
 export const LEVEL_QUICK_TIME_MULT = 0.7;
@@ -84,3 +85,34 @@ export const BUNKER_RX = 16;
 export const BUNKER_RY = 10;
 export const BUNKER_OFFSET = 32;
 export const HOLE_PATH_SAMPLES = 16;
+
+export const DAYS_PER_SEASON = 30;
+export const SEASON_ORDER = ['spring', 'summer', 'autumn', 'winter'];
+export const DAYS_PER_YEAR = DAYS_PER_SEASON * SEASON_ORDER.length;
+export const SEASON_GROWTH = {
+  spring: 1.2,
+  summer: 1.4,
+  autumn: 1.0,
+  winter: 0.5,
+};
+
+export const WEATHER_FINE = 'fine';
+export const WEATHER_OVERCAST = 'overcast';
+export const WEATHER_RAIN = 'rain';
+export const WEATHER_HEAVY_RAIN = 'heavyRain';
+export const WEATHER_STORM = 'storm';
+export const WEATHER_FROST = 'frost';
+
+export const STARTING_WEATHER = WEATHER_FINE;
+export const STARTING_RNG_SEED = 1;
+export const FORECAST_ACCURACY = 0.7;
+export const FROST_SHORT_MINUTES = 120;
+export const HEAVY_RAIN_BUNKER_LOSS = 10;
+export const MOWING_WEATHER = [WEATHER_RAIN, WEATHER_HEAVY_RAIN, WEATHER_STORM];
+
+export const WEATHER_WEIGHTS = {
+  spring: { fine: 35, overcast: 25, rain: 20, heavyRain: 8, storm: 7, frost: 5 },
+  summer: { fine: 40, overcast: 20, rain: 15, heavyRain: 12, storm: 13, frost: 0 },
+  autumn: { fine: 25, overcast: 25, rain: 25, heavyRain: 10, storm: 10, frost: 5 },
+  winter: { fine: 15, overcast: 25, rain: 15, heavyRain: 5, storm: 5, frost: 35 },
+};

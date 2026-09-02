@@ -16,3 +16,12 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - The Phase 1 ceiling is the flat `EQUIPMENT_CEILING` of 70. Gain-diminish above 70 is implemented but does not fire until a later ceiling is higher.
 - One planned entry per task id. Change level by taking the task off first.
 - Day summaries live in `state.log`. The modal only opens for summaries appended while the game screen is open, so Continue does not replay old days.
+
+## Phase 2
+
+- Day number is continuous. Season and year are derived from it: 30 days per season, spring → summer → autumn → winter, then year increments. Day 31 is summer year 1; day 121 is spring year 2.
+- Per-season weather weights are in `WEATHER_WEIGHTS` (the plan asked for tables but did not give numbers). Summer has no frost.
+- Day 1 weather is always Fine so the opening day is a full 480 minutes. The forecast is still rolled.
+- Frost shortens the whole time pool by 120 minutes (360 remaining). Greens tasks are available during that shortened day — the late start is the 10am rule.
+- Growth scales decay only. Heavy rain subtracts an extra 10 bunker quality after gains and decay, even if bunkers were raked.
+- Forecast is kept with 70% accuracy: 30% of mornings pick a different type. A mismatch is normal, not an error.

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import CourseMap from './components/CourseMap.jsx';
 import DaySummary from './components/DaySummary.jsx';
 import TaskPanel from './components/TaskPanel.jsx';
-import TimeBar from './components/TimeBar.jsx';
+import WeatherStrip from './components/WeatherStrip.jsx';
 import {
   HOLE_COUNT,
   machineOrange,
@@ -157,9 +157,10 @@ function GameScreen({
         onRemove={onRemove}
         onEndDay={onEndDay}
       />
+      <WeatherStrip state={state} onPlan={onPlan} onRemove={onRemove} />
       <div className="flex flex-wrap items-end gap-8 px-4 py-3">
         <Stat label="Day" value={state.day} />
-        <Stat label="Season" value={state.season} />
+        <Stat label="Season" value={`${state.season} · ${state.year}`} />
         <Stat label="Cash" value={state.cash} />
         <Stat label="Condition" value={condition} />
       </div>

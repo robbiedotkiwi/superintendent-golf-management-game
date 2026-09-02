@@ -26,8 +26,9 @@ export default function DaySummary({ summary, onContinue }) {
           <ul className="mt-2 space-y-1">
             {summary.done.map((item) => (
               <li key={item.taskId}>
-                {item.name} ({LEVEL_LABELS[item.level]}): {SURFACE_LABELS[item.surface]} {formatQuality(item.before)} →{' '}
-                {formatQuality(item.after)}
+                {item.surface
+                  ? `${item.name} (${item.level ? LEVEL_LABELS[item.level] : 'done'}): ${SURFACE_LABELS[item.surface]} ${formatQuality(item.before)} → ${formatQuality(item.after)}`
+                  : `${item.name} · ${item.minutes} min`}
               </li>
             ))}
           </ul>

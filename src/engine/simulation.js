@@ -1,4 +1,5 @@
 import {
+  CONDITION_WEIGHTS,
   DAY_LENGTH_MINUTES,
   DECAY_ACCELERATION,
   DECAY_ACCELERATION_BELOW,
@@ -6,13 +7,17 @@ import {
   EQUIPMENT_CEILING,
   GAIN_DIMINISH,
   GAIN_DIMINISH_ABOVE,
+  HEAVY_RAIN_BUNKER_LOSS,
   QUALITY_MAX,
   QUALITY_MIN,
+  SEASON_GROWTH,
   STARTING_MINUTES_USED,
   SURFACE_KEYS,
-  CONDITION_WEIGHTS,
+  WEATHER_HEAVY_RAIN,
 } from '../data/constants.js';
 import { getTask, taskGain } from '../data/tasks.js';
+import { calendarFromDay } from './calendar.js';
+import { applyWeatherToWorkers, rollMorning } from './weather.js';
 
 export function clampQuality(value) {
   return Math.min(QUALITY_MAX, Math.max(QUALITY_MIN, value));
@@ -22,11 +27,13 @@ export function courseCondition(surfaces) {
   return SURFACE_KEYS.reduce((total, key) => total + surfaces[key].quality * CONDITION_WEIGHTS[key], 0);
 }
 
-export function decayAmount(quality) {
+export function decayAmount(quality, season) {
+  let decay = DECAY_BASE;
   if (quality < DECAY_ACCELERATION_BELOW) {
-    return DECAY_BASE * DECAY_ACCELERATION;
+    decay *= DECAY_ACCELERATION;
   }
-  return DECAY_BASE;
+  decay *= SEASON_GROWTH[season];
+  return decay;
 }
 
 export function applyGain(quality, gain, ceiling = EQUIPMENT_CEILING) {
@@ -40,8 +47,8 @@ export function applyGain(quality, gain, ceiling = EQUIPMENT_CEILING) {
   return clampQuality(Math.min(ceiling, quality + adjusted));
 }
 
-export function applyDecay(quality) {
-  return clampQuality(quality - decayAmount(quality));
+export function applyDecay(quality, season) {
+  return clampQuality(quality - decayAmount(quality, season));
 }
 
 function cloneSurfaces(surfaces) {
@@ -60,15 +67,26 @@ export function resolveDay(state) {
 
   for (const planned of state.plannedTasks) {
     const task = getTask(planned.taskId);
-    const surface = task.surface;
-    const qualityBefore = surfaces[surface].quality;
+    if (!task.surface) {
+      done.push({
+        taskId: planned.taskId,
+        name: task.name,
+        surface: null,
+        level: planned.level,
+        minutes: planned.minutes,
+        before: null,
+        after: null,
+      });
+      continue;
+    }
+    const qualityBefore = surfaces[task.surface].quality;
     const qualityAfter = applyGain(qualityBefore, taskGain(planned.level));
-    surfaces[surface].quality = qualityAfter;
-    worked.add(surface);
+    surfaces[task.surface].quality = qualityAfter;
+    worked.add(task.surface);
     done.push({
       taskId: planned.taskId,
       name: task.name,
-      surface,
+      surface: task.surface,
       level: planned.level,
       minutes: planned.minutes,
       before: qualityBefore,
@@ -80,27 +98,35 @@ export function resolveDay(state) {
   for (const key of SURFACE_KEYS) {
     if (worked.has(key)) continue;
     const qualityBefore = surfaces[key].quality;
-    const qualityAfter = applyDecay(qualityBefore);
+    const qualityAfter = applyDecay(qualityBefore, state.season);
     surfaces[key].quality = qualityAfter;
     skipped.push({ surface: key, before: qualityBefore, after: qualityAfter });
   }
 
-  const nextWorkers = state.workers.map((worker) => ({
-    ...worker,
-    minutesUsed: STARTING_MINUTES_USED,
-    minutesToday: DAY_LENGTH_MINUTES,
-  }));
+  if (state.weather === WEATHER_HEAVY_RAIN) {
+    surfaces.bunkers.quality = clampQuality(surfaces.bunkers.quality - HEAVY_RAIN_BUNKER_LOSS);
+  }
+
+  const day = state.day + 1;
+  const calendar = calendarFromDay(day);
+  const morning = rollMorning(state, calendar.season);
 
   const nextState = {
     ...state,
-    day: state.day + 1,
+    day,
+    season: calendar.season,
+    year: calendar.year,
     surfaces,
-    workers: nextWorkers,
+    weather: morning.weather,
+    forecast: morning.forecast,
+    rngSeed: morning.rngSeed,
+    workers: applyWeatherToWorkers(state.workers, morning.weather),
     plannedTasks: [],
   };
 
   const summary = {
     day: state.day,
+    weather: state.weather,
     done,
     skipped,
     before,

@@ -1,8 +1,12 @@
 import { getTask, taskDuration } from '../data/tasks.js';
+import { calendarFromDay } from './calendar.js';
+import { pickWeather } from './weather.js';
+import { createRng } from './rng.js';
 import { resolveDay } from './simulation.js';
 import {
   DAY_LENGTH_MINUTES,
   HOLE_COUNT,
+  MOWING_WEATHER,
   PLAYER_ID,
   PLAYER_MORALE,
   PLAYER_NAME,
@@ -18,17 +22,26 @@ import {
   STARTING_QUALITY_GREENS,
   STARTING_QUALITY_ROUGH,
   STARTING_QUALITY_TEES,
-  STARTING_SEASON,
-  STARTING_YEAR,
+  STARTING_RNG_SEED,
+  STARTING_WEATHER,
+  TASK_MINUTES,
+  WEATHER_STORM,
+  WEATHER_WEIGHTS,
 } from '../data/constants.js';
 
 export function createInitialState() {
+  const calendar = calendarFromDay(STARTING_DAY);
+  const rng = createRng(STARTING_RNG_SEED);
+  const forecast = pickWeather(WEATHER_WEIGHTS[calendar.season], rng);
   return {
     day: STARTING_DAY,
-    season: STARTING_SEASON,
-    year: STARTING_YEAR,
+    season: calendar.season,
+    year: calendar.year,
     cash: STARTING_CASH,
     holes: HOLE_COUNT,
+    weather: STARTING_WEATHER,
+    forecast,
+    rngSeed: rng.seed,
     workers: [
       {
         id: PLAYER_ID,
@@ -82,9 +95,26 @@ function assignPlayer(state) {
 }
 
 export function canPlanTask(state, taskId, level) {
+  const task = getTask(taskId);
+  if (!task) return { ok: false, reason: 'Unknown job.' };
+
+  if (task.id === 'clearDebris' && state.weather !== WEATHER_STORM) {
+    return { ok: false, reason: 'No debris to clear.' };
+  }
+
+  const debrisPlanned = state.plannedTasks.some((planned) => planned.taskId === 'clearDebris');
+  if (state.weather === WEATHER_STORM && task.id !== 'clearDebris' && !debrisPlanned) {
+    return { ok: false, reason: `Clear debris first (${TASK_MINUTES.clearDebris} min).` };
+  }
+
   if (state.plannedTasks.some((planned) => planned.taskId === taskId)) {
     return { ok: false, reason: 'Already planned. Take it off the list first.' };
   }
+
+  if (task.mowing && MOWING_WEATHER.includes(state.weather)) {
+    return { ok: false, reason: 'Mowing is off today.' };
+  }
+
   const minutes = taskDuration(taskId, level);
   const remaining = combinedMinutesRemaining(state);
   if (minutes > remaining) {
