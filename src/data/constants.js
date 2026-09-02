@@ -4,6 +4,8 @@ export const soil = '#4A3B2E';
 export const sand = '#D8C9A8';
 export const paint = '#E8E4DA';
 export const machineOrange = '#D9541E';
+export const pondWater = '#2F6A72';
+export const pondStressed = '#6B6A3A';
 
 export const DAY_LENGTH_MINUTES = 480;
 export const STARTING_DAY = 1;
@@ -31,6 +33,8 @@ export const SAVE_KEY = 'greenkeeper.save.v1';
 
 export const SURFACE_KEYS = ['greens', 'tees', 'fairways', 'rough', 'bunkers'];
 
+export const HAND_WATER_MINUTES = 60;
+
 export const TASK_MINUTES = {
   cutGreens: 120,
   rollGreens: 75,
@@ -40,6 +44,7 @@ export const TASK_MINUTES = {
   cutRough: 180,
   rakeBunkers: 50,
   clearDebris: 90,
+  handWater: HAND_WATER_MINUTES,
 };
 
 export const LEVEL_QUICK_TIME_MULT = 0.7;
@@ -85,6 +90,14 @@ export const BUNKER_RX = 16;
 export const BUNKER_RY = 10;
 export const BUNKER_OFFSET = 32;
 export const HOLE_PATH_SAMPLES = 16;
+export const POND_CX = 520;
+export const POND_CY = 430;
+export const POND_RX = 58;
+export const POND_RY = 34;
+export const AERATOR_RX = 8;
+export const AERATOR_RY = 8;
+export const AERATOR_ARM = 18;
+export const POND_LABEL_OFFSET = 18;
 
 export const DAYS_PER_SEASON = 30;
 export const SEASON_ORDER = ['spring', 'summer', 'autumn', 'winter'];
@@ -195,3 +208,39 @@ export const WAGE_BASE = 45;
 export const WAGE_PER_SKILL = 12;
 export const CANDIDATE_COUNT = 3;
 export const WEAR_MECHANIC_FACTOR = 0.5;
+
+export const POND_CAPACITY = 8000;
+export const POND_START_VOLUME = 6000;
+export const POND_HEALTH_START = 70;
+export const POND_HEALTH_MAX = 100;
+export const POND_HEALTH_STRESSED = 40;
+export const POND_LOW_FRACTION = 0.35;
+export const POND_HEALTH_SUMMER_DROP = 5;
+export const POND_HEALTH_LOW_DROP = 6;
+export const GROUNDWATER_M3 = 20;
+export const RAIN_POND_M3 = 150;
+export const STORM_POND_M3 = 400;
+export const MAINS_COST_PER_M3 = 2.5;
+export const AERATOR_COST = 6000;
+export const SUMMER_UNDERWATER_DECAY = {
+  greens: 10,
+  tees: 4,
+  fairways: 3,
+};
+export const IRRIGATION_M3 = {
+  greens: { light: 12, full: 25 },
+  tees: { light: 7, full: 15 },
+  fairways: { light: 60, full: 120 },
+};
+export const SEASON_WATER = {
+  spring: 1.0,
+  summer: 1.6,
+  autumn: 0.7,
+  winter: 0.2,
+};
+export const STARTING_IRRIGATION = {
+  greens: 'full',
+  tees: 'light',
+  fairways: 'off',
+};
+export const IRRIGATION_POLICIES = ['off', 'light', 'full'];

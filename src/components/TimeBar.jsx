@@ -10,6 +10,7 @@ export default function TimeBar({
   onMove,
   onOpenShed,
   onOpenCrew,
+  onOpenPond,
 }) {
   const usedPercent = capacity <= 0 ? 0 : (used / capacity) * 100;
 
@@ -54,6 +55,13 @@ export default function TimeBar({
           </ul>
         </div>
       </div>
+      <button
+        type="button"
+        onClick={onOpenPond}
+        className="border border-[var(--sand)] px-4 text-lg text-[var(--paint)]"
+      >
+        Pond
+      </button>
       <button
         type="button"
         onClick={onOpenCrew}

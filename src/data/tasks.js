@@ -17,6 +17,7 @@ export const TASKS = [
   { id: 'cutRough', surface: 'rough', name: 'Cut', mowing: true, usesQualityLevel: true },
   { id: 'rakeBunkers', surface: 'bunkers', name: 'Rake', mowing: false, usesQualityLevel: true },
   { id: 'clearDebris', surface: null, name: 'Clear debris', mowing: false, usesQualityLevel: false },
+  { id: 'handWater', surface: 'greens', name: 'Hand water', mowing: false, usesQualityLevel: false },
 ];
 
 export const LEVEL_LABELS = {

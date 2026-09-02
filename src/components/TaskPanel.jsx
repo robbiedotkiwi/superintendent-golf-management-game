@@ -53,7 +53,9 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
                   {planned ? (
                     <div className="mt-2 space-y-2">
                       <p>
-                        Planned {LEVEL_LABELS[planned.level]} · {planned.minutes} min · {workerById(state, planned.workerId)?.name}
+                        Planned
+                        {task.usesQualityLevel && planned.level ? ` ${LEVEL_LABELS[planned.level]}` : ''} · {planned.minutes}{' '}
+                        min · {workerById(state, planned.workerId)?.name}
                       </p>
                       <label className="block text-sm">
                         Worker
@@ -78,6 +80,7 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
                       </button>
                     </div>
                   ) : (
+                    task.usesQualityLevel ? (
                     <div className="mt-3 grid grid-cols-3 gap-2">
                       {LEVEL_KEYS.map((level) => {
                         const assigned = assignWorker(state, task, level);
@@ -99,6 +102,26 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
                         );
                       })}
                     </div>
+                    ) : (
+                      (() => {
+                        const assigned = assignWorker(state, task);
+                        const minutes = durationForTask(state, task.id, undefined, assigned);
+                        const check = canPlanTask(state, task.id);
+                        return (
+                          <button
+                            type="button"
+                            disabled={!check.ok}
+                            onClick={() => onPlan(task.id)}
+                            className="mt-3 border border-[var(--soil)] px-3 py-2 text-left disabled:opacity-40"
+                            title={check.ok ? undefined : check.reason}
+                          >
+                            <div className="font-semibold">Plan</div>
+                            <div className="text-sm">{minutes} min</div>
+                            {!check.ok ? <div className="mt-1 text-xs">{check.reason}</div> : null}
+                          </button>
+                        );
+                      })()
+                    )
                   )}
                 </section>
               );

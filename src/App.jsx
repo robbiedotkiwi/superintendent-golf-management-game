@@ -3,13 +3,17 @@ import CourseMap from './components/CourseMap.jsx';
 import DaySummary from './components/DaySummary.jsx';
 import TaskPanel from './components/TaskPanel.jsx';
 import Crew from './components/Crew.jsx';
+import IrrigationPanel from './components/IrrigationPanel.jsx';
 import Shed from './components/Shed.jsx';
 import TimeBar from './components/TimeBar.jsx';
 import WeatherStrip from './components/WeatherStrip.jsx';
 import {
   HOLE_COUNT,
+  POND_CAPACITY,
   machineOrange,
   paint,
+  pondStressed,
+  pondWater,
   sand,
   soil,
   turf,
@@ -23,6 +27,7 @@ import {
   reducer,
 } from './engine/gameState.js';
 import { courseCondition } from './engine/simulation.js';
+import { pondPercent } from './engine/irrigation.js';
 import { clearSave, hasSave, loadGame, saveGame } from './engine/save.js';
 
 function paletteStyle() {
@@ -33,6 +38,8 @@ function paletteStyle() {
     '--sand': sand,
     '--paint': paint,
     '--machine-orange': machineOrange,
+    '--pond-water': pondWater,
+    '--pond-stressed': pondStressed,
   };
 }
 
@@ -121,6 +128,8 @@ export default function App() {
           onVolunteerDay={(weekday) => dispatch({ type: 'SET_VOLUNTEER_WEEKDAY', weekday })}
           onEarlyStart={(value) => dispatch({ type: 'SET_EARLY_START', value })}
           onSetWorker={(taskId, workerId) => dispatch({ type: 'SET_TASK_WORKER', taskId, workerId })}
+          onSetIrrigation={(surface, policy) => dispatch({ type: 'SET_IRRIGATION', surface, policy })}
+          onBuyAerator={() => dispatch({ type: 'BUY_AERATOR' })}
         />
       )}
     </div>
@@ -182,6 +191,8 @@ function GameScreen({
   onVolunteerDay,
   onEarlyStart,
   onSetWorker,
+  onSetIrrigation,
+  onBuyAerator,
 }) {
   if (view === 'shed') {
     return (
@@ -222,6 +233,7 @@ function GameScreen({
         onMove={onMove}
         onOpenShed={onOpenShed}
         onOpenCrew={onOpenCrew}
+        onOpenPond={() => onSelect('pond')}
       />
       <WeatherStrip state={state} onPlan={onPlan} onRemove={onRemove} />
       <div className="flex flex-wrap items-end gap-8 px-4 py-3">
@@ -229,28 +241,50 @@ function GameScreen({
         <Stat label="Season" value={`${state.season} · ${state.year}`} />
         <Stat label="Cash" value={state.cash} />
         <Stat label="Condition" value={condition} />
+        <Stat
+          label="Pond"
+          value={`${Math.round(state.pond.volume)} m³`}
+          hint={`${Math.round(pondPercent(state.pond.volume))}% of ${POND_CAPACITY} · health ${Math.round(state.pond.health)}`}
+        />
       </div>
       <div className="min-h-0 flex-1 px-3 pb-3">
-        <CourseMap surfaces={state.surfaces} selected={selected} onSelect={onSelect} onOpenShed={onOpenShed} />
+        <CourseMap
+          surfaces={state.surfaces}
+          pond={state.pond}
+          hasAerator={state.hasAerator}
+          selected={selected}
+          onSelect={onSelect}
+          onOpenShed={onOpenShed}
+        />
       </div>
-      <TaskPanel
-        surface={selected}
-        state={state}
-        onPlan={onPlan}
-        onRemove={onRemove}
-        onSetWorker={onSetWorker}
-        onClose={() => onSelect(null)}
-      />
+      {selected === 'pond' ? (
+        <IrrigationPanel
+          state={state}
+          onSetPolicy={onSetIrrigation}
+          onBuyAerator={onBuyAerator}
+          onClose={() => onSelect(null)}
+        />
+      ) : (
+        <TaskPanel
+          surface={selected}
+          state={state}
+          onPlan={onPlan}
+          onRemove={onRemove}
+          onSetWorker={onSetWorker}
+          onClose={() => onSelect(null)}
+        />
+      )}
       <DaySummary summary={summary} onContinue={onDismissSummary} />
     </div>
   );
 }
 
-function Stat({ label, value }) {
+function Stat({ label, value, hint }) {
   return (
     <div>
       <dt className="text-[var(--sand)]">{label}</dt>
       <dd className="font-condensed text-5xl font-bold leading-none">{value}</dd>
+      {hint ? <p className="mt-1 text-sm text-[var(--sand)]">{hint}</p> : null}
     </div>
   );
 }

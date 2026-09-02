@@ -26,9 +26,9 @@ export default function DaySummary({ summary, onContinue }) {
           <ul className="mt-2 space-y-1">
             {summary.done.map((item) => (
               <li key={`${item.taskId}-${item.surface ?? 'none'}`}>
-                {item.surface
-                  ? `${item.name} (${item.level ? LEVEL_LABELS[item.level] : 'done'}): ${SURFACE_LABELS[item.surface]} ${formatQuality(item.before)} → ${formatQuality(item.after)}`
-                  : `${item.name} · ${item.minutes} min`}
+                {item.before == null
+                  ? `${item.name} · ${item.minutes} min`
+                  : `${item.name} (${item.level ? LEVEL_LABELS[item.level] : 'done'}): ${SURFACE_LABELS[item.surface]} ${formatQuality(item.before)} → ${formatQuality(item.after)}`}
               </li>
             ))}
           </ul>
@@ -64,6 +64,16 @@ export default function DaySummary({ summary, onContinue }) {
         {summary.neighbourFine ? <p className="mt-2">Fine {summary.neighbourFine} for the early starts.</p> : null}
         {summary.breakdowns?.length ? (
           <p className="mt-2">Broke down: {summary.breakdowns.join(', ')}</p>
+        ) : null}
+        {summary.mainsCost ? (
+          <p className="mt-2">
+            Mains water {summary.mainsM3} m³ · {summary.mainsCost}
+          </p>
+        ) : null}
+        {summary.pond ? (
+          <p className="mt-2">
+            Pond {Math.round(summary.pond.volume)} m³ · health {Math.round(summary.pond.health)}
+          </p>
         ) : null}
 
         <button

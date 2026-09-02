@@ -1,7 +1,19 @@
 import { qualityColor } from '../engine/color.js';
-import { HOLE_COUNT } from '../data/constants.js';
+import {
+  AERATOR_ARM,
+  AERATOR_RX,
+  AERATOR_RY,
+  HOLE_COUNT,
+  POND_CX,
+  POND_CY,
+  POND_HEALTH_STRESSED,
+  POND_RX,
+  POND_RY,
+  POND_LABEL_OFFSET,
+} from '../data/constants.js';
 import { HOLES, MAP_HEIGHT, MAP_VIEWBOX, MAP_WIDTH, SHED_HEIGHT, SHED_WIDTH, SHED_X, SHED_Y } from '../data/course.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
+import { pondPercent } from '../engine/irrigation.js';
 
 function activate(event, surface, onSelect) {
   if (event.key === 'Enter' || event.key === ' ') {
@@ -17,7 +29,7 @@ function surfaceClass(selected, surface) {
   ].join(' ');
 }
 
-export default function CourseMap({ surfaces, selected, onSelect, onOpenShed }) {
+export default function CourseMap({ surfaces, pond, hasAerator, selected, onSelect, onOpenShed }) {
   const fills = {
     greens: qualityColor(surfaces.greens.quality),
     tees: qualityColor(surfaces.tees.quality),
@@ -120,6 +132,36 @@ export default function CourseMap({ surfaces, selected, onSelect, onOpenShed }) 
           />
         </g>
       ))}
+      <g
+        tabIndex={0}
+        role="button"
+        aria-label={`Pond ${Math.round(pond.volume)} cubic metres, ${Math.round(pondPercent(pond.volume))} percent`}
+        className="course-surface cursor-pointer outline-none"
+        onClick={(event) => {
+          event.stopPropagation();
+          onSelect('pond');
+        }}
+        onKeyDown={(event) => activate(event, 'pond', onSelect)}
+      >
+        <ellipse
+          cx={POND_CX}
+          cy={POND_CY}
+          rx={POND_RX}
+          ry={POND_RY}
+          fill={pond.health < POND_HEALTH_STRESSED ? 'var(--pond-stressed)' : 'var(--pond-water)'}
+          className={selected === 'pond' ? 'stroke-[var(--paint)] stroke-[3]' : 'stroke-[var(--soil)] stroke-1'}
+        />
+        {hasAerator ? (
+          <g fill="none" stroke="var(--paint)" strokeWidth="2">
+            <ellipse cx={POND_CX} cy={POND_CY} rx={AERATOR_RX} ry={AERATOR_RY} fill="var(--machine-orange)" />
+            <line x1={POND_CX - AERATOR_ARM} y1={POND_CY} x2={POND_CX + AERATOR_ARM} y2={POND_CY} />
+            <line x1={POND_CX} y1={POND_CY - AERATOR_ARM} x2={POND_CX} y2={POND_CY + AERATOR_ARM} />
+          </g>
+        ) : null}
+        <text x={POND_CX} y={POND_CY + POND_RY + POND_LABEL_OFFSET} textAnchor="middle" fill="var(--sand)" fontSize="14">
+          Pond
+        </text>
+      </g>
       <text x="24" y="36" fill="var(--sand)" fontSize="18">
         Click a surface — {SURFACE_LABELS.greens.toLowerCase()} work all nine.
       </text>

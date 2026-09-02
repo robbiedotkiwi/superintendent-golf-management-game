@@ -11,6 +11,7 @@ import {
   trainWorker,
 } from './staff.js';
 import { generateCandidates } from '../data/staff.js';
+import { canBuyAerator, IRRIGATED_SURFACES, isIrrigationPolicy } from './irrigation.js';
 import { resolveDay } from './simulation.js';
 import {
   DAY_LENGTH_MINUTES,
@@ -42,6 +43,10 @@ import {
   VOLUNTEER_SPEED_SKILL,
   WEATHER_STORM,
   WEATHER_WEIGHTS,
+  POND_HEALTH_START,
+  POND_START_VOLUME,
+  STARTING_IRRIGATION,
+  AERATOR_COST,
 } from '../data/constants.js';
 
 export function createInitialState() {
@@ -113,6 +118,9 @@ export function createInitialState() {
     earlyStart: false,
     neighbourComplaintsThisSeason: 0,
     nextHireId: 1,
+    pond: { volume: POND_START_VOLUME, health: POND_HEALTH_START },
+    irrigation: { ...STARTING_IRRIGATION },
+    hasAerator: false,
   };
 }
 
@@ -279,6 +287,18 @@ export function reducer(state, action) {
         ),
       };
       return next;
+    }
+    case 'SET_IRRIGATION': {
+      if (!IRRIGATED_SURFACES.includes(action.surface) || !isIrrigationPolicy(action.policy)) return state;
+      return {
+        ...state,
+        irrigation: { ...state.irrigation, [action.surface]: action.policy },
+      };
+    }
+    case 'BUY_AERATOR': {
+      const check = canBuyAerator(state);
+      if (!check.ok) return state;
+      return { ...state, cash: state.cash - AERATOR_COST, hasAerator: true };
     }
     default:
       return state;

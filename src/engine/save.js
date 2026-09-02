@@ -1,15 +1,23 @@
-import { SAVE_KEY, STARTING_MACHINE_ID } from '../data/constants.js';
+import {
+  POND_HEALTH_START,
+  POND_START_VOLUME,
+  SAVE_KEY,
+  STARTING_IRRIGATION,
+  STARTING_MACHINE_ID,
+} from '../data/constants.js';
 
 function withDefaults(state) {
-  if (state.ownedMachines) return state;
   return {
     ...state,
-    ownedMachines: [STARTING_MACHINE_ID],
-    machineWear: { [STARTING_MACHINE_ID]: 0 },
-    machineBroken: {},
-    machineAwayUntil: {},
-    hasFoleyGrinder: false,
-    autoWeek: { weekStart: state.day ?? 1, hits: [] },
+    ownedMachines: state.ownedMachines ?? [STARTING_MACHINE_ID],
+    machineWear: state.machineWear ?? { [STARTING_MACHINE_ID]: 0 },
+    machineBroken: state.machineBroken ?? {},
+    machineAwayUntil: state.machineAwayUntil ?? {},
+    hasFoleyGrinder: Boolean(state.hasFoleyGrinder),
+    autoWeek: state.autoWeek ?? { weekStart: state.day ?? 1, hits: [] },
+    pond: state.pond ?? { volume: POND_START_VOLUME, health: POND_HEALTH_START },
+    irrigation: state.irrigation ?? { ...STARTING_IRRIGATION },
+    hasAerator: Boolean(state.hasAerator),
   };
 }
 

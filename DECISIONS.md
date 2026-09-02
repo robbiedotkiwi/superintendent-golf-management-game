@@ -41,3 +41,9 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Mechanic repairs cost 0 minutes if any mechanic is employed; wear is halved whenever a mechanic is on the books.
 - Morale: −12 if a worker exceeds 420 minutes, extra −8 if they work more than 6 days running, +18 on a day off.
 - Candidate list is always one fast/sloppy, one slow/careful, and one mechanic, names rolled each season.
+
+## Phase 5
+
+- Pond health is a 0–100 number separate from volume. Without an aerator it drops `POND_HEALTH_SUMMER_DROP` (5) every summer day and `POND_HEALTH_LOW_DROP` (6) whenever volume is below `POND_LOW_FRACTION` (35% of capacity). An aerator stops both drops and is drawn as a cross in the pond.
+- Invented nightly draw, groundwater, rain fill, and extra summer decay live in `constants.js`. Hand watering zeros greens irrigation demand that night and counts the greens as watered.
+- Irrigation policy UI is the pond side panel (map click or Pond button). Volume and percent sit on the main HUD.

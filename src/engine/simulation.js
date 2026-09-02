@@ -34,6 +34,7 @@ import {
 import { qualityRandomFactor, workerQualityMultiplier } from './skills.js';
 import { applyEarlyStartComplaints, applyMorale, prepareMorningWorkers, wageBill } from './staff.js';
 import { createRng } from './rng.js';
+import { resolveIrrigation, summerUnderwaterDecay } from './irrigation.js';
 import { rollMorningWithRng } from './weather.js';
 
 export function clampQuality(value) {
@@ -81,6 +82,7 @@ function capacityOf(state) {
 
 export function resolveDay(state) {
   const rng = createRng(state.rngSeed);
+  const irrigation = resolveIrrigation(state);
   const surfaces = cloneSurfaces(state.surfaces);
   const before = cloneSurfaces(state.surfaces);
   const conditionBefore = courseCondition(state.surfaces);
@@ -104,6 +106,19 @@ export function resolveDay(state) {
 
   for (const plannedTask of planned) {
     const task = getTask(plannedTask.taskId);
+    if (!task.usesQualityLevel) {
+      done.push({
+        taskId: plannedTask.taskId,
+        name: task.name,
+        surface: task.surface,
+        level: plannedTask.level,
+        minutes: plannedTask.minutes,
+        before: null,
+        after: null,
+      });
+      continue;
+    }
+
     if (!task.surface) {
       done.push({
         taskId: plannedTask.taskId,
@@ -182,6 +197,13 @@ export function resolveDay(state) {
     surfaces.bunkers.quality = clampQuality(surfaces.bunkers.quality - HEAVY_RAIN_BUNKER_LOSS);
   }
 
+  const extraDecay = summerUnderwaterDecay(state, irrigation.watered);
+  for (const [surface, amount] of Object.entries(extraDecay)) {
+    surfaces[surface].quality = clampQuality(surfaces[surface].quality - amount);
+    const skip = skipped.find((item) => item.surface === surface);
+    if (skip) skip.after = surfaces[surface].quality;
+  }
+
   const machineWear = applyWear(state, usedMachineIds);
   const wornState = { ...state, machineWear };
   const { machineBroken, breakdowns } = rollBreakdowns(wornState, usedMachineIds, rng);
@@ -198,7 +220,7 @@ export function resolveDay(state) {
     );
   }
   workers = applyMorale(workers);
-  let cash = state.cash - wageBill(state.workers);
+  let cash = state.cash - wageBill(state.workers) - irrigation.mainsCost;
   const complaint = applyEarlyStartComplaints({ ...state, cash, workers });
   cash = complaint.state.cash;
 
@@ -212,6 +234,7 @@ export function resolveDay(state) {
     year: calendar.year,
     cash,
     surfaces,
+    pond: irrigation.pond,
     machineWear,
     machineBroken,
     plannedTasks: [],
@@ -248,6 +271,9 @@ export function resolveDay(state) {
     wages: wageBill(state.workers),
     gmWarning: complaint.warning,
     neighbourFine: complaint.fine,
+    mainsCost: irrigation.mainsCost,
+    mainsM3: irrigation.shortfall,
+    pond: irrigation.pond,
     before,
     after: cloneSurfaces(surfaces),
     conditionBefore,
