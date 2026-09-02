@@ -1,0 +1,25 @@
+@import 'tailwindcss';
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: Archivo, 'Arial Narrow', sans-serif;
+  font-variation-settings: 'wdth' 100;
+  background: var(--soil, #4a3b2e);
+  color: var(--paint, #e8e4da);
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--machine-orange, #d9541e);
+  outline-offset: 3px;
+}
+
+.font-condensed {
+  font-variation-settings: 'wdth' 75;
+}
