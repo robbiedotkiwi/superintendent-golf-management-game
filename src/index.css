@@ -23,3 +23,8 @@ a:focus-visible {
 .font-condensed {
   font-variation-settings: 'wdth' 75;
 }
+
+.course-surface:focus-visible {
+  stroke: var(--paint);
+  stroke-width: 3px;
+}

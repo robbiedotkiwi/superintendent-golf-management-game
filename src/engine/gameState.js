@@ -1,3 +1,5 @@
+import { getTask, taskDuration } from '../data/tasks.js';
+import { resolveDay } from './simulation.js';
 import {
   DAY_LENGTH_MINUTES,
   HOLE_COUNT,
@@ -67,12 +69,75 @@ export function combinedMinutesRemaining(state) {
   return state.workers.reduce((total, worker) => total + workerMinutesRemaining(worker), 0);
 }
 
+export function combinedMinutesCapacity(state) {
+  return state.workers.reduce((total, worker) => total + worker.minutesToday, 0);
+}
+
+export function combinedMinutesUsed(state) {
+  return state.workers.reduce((total, worker) => total + worker.minutesUsed, 0);
+}
+
+function assignPlayer(state) {
+  return state.workers.find((worker) => worker.id === PLAYER_ID) ?? state.workers[0];
+}
+
+export function canPlanTask(state, taskId, level) {
+  if (state.plannedTasks.some((planned) => planned.taskId === taskId)) {
+    return { ok: false, reason: 'Already planned. Take it off the list first.' };
+  }
+  const minutes = taskDuration(taskId, level);
+  const remaining = combinedMinutesRemaining(state);
+  if (minutes > remaining) {
+    return { ok: false, reason: `Needs ${minutes} min, only ${remaining} left.` };
+  }
+  return { ok: true, minutes };
+}
+
 export function reducer(state, action) {
   switch (action.type) {
     case 'NEW_GAME':
       return createInitialState();
     case 'LOAD_GAME':
       return action.state;
+    case 'PLAN_TASK': {
+      const task = getTask(action.taskId);
+      const check = canPlanTask(state, action.taskId, action.level);
+      if (!task || !check.ok) return state;
+      const worker = assignPlayer(state);
+      return {
+        ...state,
+        plannedTasks: [
+          ...state.plannedTasks,
+          {
+            taskId: action.taskId,
+            surface: task.surface,
+            level: action.level,
+            workerId: worker.id,
+            minutes: check.minutes,
+          },
+        ],
+        workers: state.workers.map((item) =>
+          item.id === worker.id ? { ...item, minutesUsed: item.minutesUsed + check.minutes } : item,
+        ),
+      };
+    }
+    case 'REMOVE_TASK': {
+      const planned = state.plannedTasks.find((item) => item.taskId === action.taskId);
+      if (!planned) return state;
+      return {
+        ...state,
+        plannedTasks: state.plannedTasks.filter((item) => item.taskId !== action.taskId),
+        workers: state.workers.map((item) =>
+          item.id === planned.workerId
+            ? { ...item, minutesUsed: item.minutesUsed - planned.minutes }
+            : item,
+        ),
+      };
+    }
+    case 'END_DAY': {
+      const { state: next, summary } = resolveDay(state);
+      return { ...next, log: [...next.log, summary] };
+    }
     default:
       return state;
   }

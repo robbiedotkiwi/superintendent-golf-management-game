@@ -1,4 +1,8 @@
-import { useEffect, useMemo, useReducer, useState } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import CourseMap from './components/CourseMap.jsx';
+import DaySummary from './components/DaySummary.jsx';
+import TaskPanel from './components/TaskPanel.jsx';
+import TimeBar from './components/TimeBar.jsx';
 import {
   HOLE_COUNT,
   machineOrange,
@@ -9,10 +13,13 @@ import {
   turfStressed,
 } from './data/constants.js';
 import {
+  combinedMinutesCapacity,
   combinedMinutesRemaining,
+  combinedMinutesUsed,
   createInitialState,
   reducer,
 } from './engine/gameState.js';
+import { courseCondition } from './engine/simulation.js';
 import { clearSave, hasSave, loadGame, saveGame } from './engine/save.js';
 
 function paletteStyle() {
@@ -30,6 +37,9 @@ export default function App() {
   const [screen, setScreen] = useState('entry');
   const [savePresent, setSavePresent] = useState(() => hasSave());
   const [state, dispatch] = useReducer(reducer, null, () => loadGame() ?? createInitialState());
+  const [selected, setSelected] = useState(null);
+  const [summary, setSummary] = useState(null);
+  const seenLog = useRef(state.log.length);
 
   useEffect(() => {
     if (screen !== 'game') return;
@@ -37,19 +47,35 @@ export default function App() {
     setSavePresent(true);
   }, [state, screen]);
 
+  useEffect(() => {
+    if (state.log.length > seenLog.current) {
+      setSummary(state.log[state.log.length - 1]);
+      seenLog.current = state.log.length;
+    }
+  }, [state.log]);
+
   const minutesRemaining = useMemo(() => combinedMinutesRemaining(state), [state]);
+  const minutesUsed = useMemo(() => combinedMinutesUsed(state), [state]);
+  const minutesCapacity = useMemo(() => combinedMinutesCapacity(state), [state]);
+  const condition = useMemo(() => Math.round(courseCondition(state.surfaces)), [state.surfaces]);
 
   function handleNewGame() {
     clearSave();
     dispatch({ type: 'NEW_GAME' });
     setSavePresent(false);
+    setSelected(null);
+    setSummary(null);
+    seenLog.current = 0;
     setScreen('game');
   }
 
   function handleContinue() {
     const saved = loadGame();
     if (!saved) return;
+    seenLog.current = saved.log?.length ?? 0;
     dispatch({ type: 'LOAD_GAME', state: saved });
+    setSelected(null);
+    setSummary(null);
     setScreen('game');
   }
 
@@ -61,7 +87,20 @@ export default function App() {
       {screen === 'entry' ? (
         <EntryScreen savePresent={savePresent} onNewGame={handleNewGame} onContinue={handleContinue} />
       ) : (
-        <GameScreen state={state} minutesRemaining={minutesRemaining} />
+        <GameScreen
+          state={state}
+          selected={selected}
+          summary={summary}
+          minutesRemaining={minutesRemaining}
+          minutesUsed={minutesUsed}
+          minutesCapacity={minutesCapacity}
+          condition={condition}
+          onSelect={setSelected}
+          onPlan={(taskId, level) => dispatch({ type: 'PLAN_TASK', taskId, level })}
+          onRemove={(taskId) => dispatch({ type: 'REMOVE_TASK', taskId })}
+          onEndDay={() => dispatch({ type: 'END_DAY' })}
+          onDismissSummary={() => setSummary(null)}
+        />
       )}
     </div>
   );
@@ -94,16 +133,48 @@ function EntryScreen({ savePresent, onNewGame, onContinue }) {
   );
 }
 
-function GameScreen({ state, minutesRemaining }) {
+function GameScreen({
+  state,
+  selected,
+  summary,
+  minutesRemaining,
+  minutesUsed,
+  minutesCapacity,
+  condition,
+  onSelect,
+  onPlan,
+  onRemove,
+  onEndDay,
+  onDismissSummary,
+}) {
   return (
-    <main className="px-6 py-8">
-      <dl className="grid max-w-3xl grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
+    <div className="flex min-h-screen flex-col">
+      <TimeBar
+        remaining={minutesRemaining}
+        used={minutesUsed}
+        capacity={minutesCapacity}
+        plannedTasks={state.plannedTasks}
+        onRemove={onRemove}
+        onEndDay={onEndDay}
+      />
+      <div className="flex flex-wrap items-end gap-8 px-4 py-3">
         <Stat label="Day" value={state.day} />
         <Stat label="Season" value={state.season} />
         <Stat label="Cash" value={state.cash} />
-        <Stat label="Minutes left" value={minutesRemaining} />
-      </dl>
-    </main>
+        <Stat label="Condition" value={condition} />
+      </div>
+      <div className="min-h-0 flex-1 px-3 pb-3">
+        <CourseMap surfaces={state.surfaces} selected={selected} onSelect={onSelect} />
+      </div>
+      <TaskPanel
+        surface={selected}
+        state={state}
+        onPlan={onPlan}
+        onRemove={onRemove}
+        onClose={() => onSelect(null)}
+      />
+      <DaySummary summary={summary} onContinue={onDismissSummary} />
+    </div>
   );
 }
 
