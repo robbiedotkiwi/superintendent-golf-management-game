@@ -17,9 +17,9 @@ import {
   WEAR_THRESHOLD,
 } from '../src/data/constants.js';
 import { getTask } from '../src/data/tasks.js';
+import { durationForTask } from '../src/engine/assignment.js';
 import {
   canBuyMachine,
-  durationForTask,
   ineligibleMachines,
   isMachineAvailable,
   pickMachine,

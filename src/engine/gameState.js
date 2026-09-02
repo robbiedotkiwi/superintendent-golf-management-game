@@ -2,7 +2,15 @@ import { getTask } from '../data/tasks.js';
 import { calendarFromDay } from './calendar.js';
 import { pickWeather } from './weather.js';
 import { createRng } from './rng.js';
-import { durationForTask, buyFoley, buyMachine, grindInHouse, repairMachine, sendForGrind, pickMachine } from './equipment.js';
+import { buyFoley, buyMachine, grindInHouse, repairMachine, sendForGrind, pickMachine } from './equipment.js';
+import { assignWorker, durationForTask, workerById, workerAllows, isWorkerPresent } from './assignment.js';
+import {
+  applyEarlyStartComplaints,
+  hireWorker,
+  setVolunteerWeekday,
+  trainWorker,
+} from './staff.js';
+import { generateCandidates } from '../data/staff.js';
 import { resolveDay } from './simulation.js';
 import {
   DAY_LENGTH_MINUTES,
@@ -17,16 +25,21 @@ import {
   STARTING_CASH,
   STARTING_DAY,
   STARTING_DAYS_WORKED_RUNNING,
+  STARTING_MACHINE_ID,
   STARTING_MINUTES_USED,
   STARTING_QUALITY_BUNKERS,
   STARTING_QUALITY_FAIRWAYS,
   STARTING_QUALITY_GREENS,
   STARTING_QUALITY_ROUGH,
   STARTING_QUALITY_TEES,
-  STARTING_MACHINE_ID,
   STARTING_RNG_SEED,
   STARTING_WEATHER,
   TASK_MINUTES,
+  VOLUNTEER_DEFAULT_WEEKDAY,
+  VOLUNTEER_ID,
+  VOLUNTEER_NAME,
+  VOLUNTEER_QUALITY_SKILL,
+  VOLUNTEER_SPEED_SKILL,
   WEATHER_STORM,
   WEATHER_WEIGHTS,
 } from '../data/constants.js';
@@ -61,6 +74,22 @@ export function createInitialState() {
         minutesUsed: STARTING_MINUTES_USED,
         daysWorkedRunning: STARTING_DAYS_WORKED_RUNNING,
       },
+      {
+        id: VOLUNTEER_ID,
+        name: VOLUNTEER_NAME,
+        speedSkill: VOLUNTEER_SPEED_SKILL,
+        qualitySkill: VOLUNTEER_QUALITY_SKILL,
+        morale: PLAYER_MORALE,
+        wage: PLAYER_WAGE,
+        sprayCertified: false,
+        isMechanic: false,
+        isVolunteer: true,
+        allowedSurfaces: ['fairways', 'rough'],
+        availableFromDay: STARTING_DAY,
+        minutesToday: STARTING_MINUTES_USED,
+        minutesUsed: STARTING_MINUTES_USED,
+        daysWorkedRunning: STARTING_DAYS_WORKED_RUNNING,
+      },
     ],
     surfaces: {
       greens: { quality: STARTING_QUALITY_GREENS },
@@ -77,6 +106,13 @@ export function createInitialState() {
     machineAwayUntil: {},
     hasFoleyGrinder: false,
     autoWeek: { weekStart: STARTING_DAY, hits: [] },
+    candidates: generateCandidates(rng),
+    candidatesSeason: calendar.season,
+    volunteerWeekday: VOLUNTEER_DEFAULT_WEEKDAY,
+    volunteerDayChangedThisSeason: false,
+    earlyStart: false,
+    neighbourComplaintsThisSeason: 0,
+    nextHireId: 1,
   };
 }
 
@@ -98,11 +134,7 @@ export function combinedMinutesUsed(state) {
   return state.workers.reduce((total, worker) => total + worker.minutesUsed, 0);
 }
 
-function assignPlayer(state) {
-  return state.workers.find((worker) => worker.id === PLAYER_ID) ?? state.workers[0];
-}
-
-export function canPlanTask(state, taskId, level) {
+export function canPlanTask(state, taskId, level, workerId) {
   const task = getTask(taskId);
   if (!task) return { ok: false, reason: 'Unknown job.' };
 
@@ -127,12 +159,22 @@ export function canPlanTask(state, taskId, level) {
     return { ok: false, reason: 'No machine available. Check the shed.' };
   }
 
-  const minutes = durationForTask(state, taskId, level);
-  const remaining = combinedMinutesRemaining(state);
-  if (minutes > remaining) {
+  const worker = workerId ? workerById(state, workerId) : assignWorker(state, task, level);
+  if (!worker) {
+    const fallback = state.workers.find((item) => isWorkerPresent(item) && workerAllows(item, task.surface));
+    if (!fallback) {
+      return { ok: false, reason: 'No one available for that job.' };
+    }
+    const minutes = durationForTask(state, taskId, level, fallback);
+    const remaining = fallback.minutesToday - fallback.minutesUsed;
     return { ok: false, reason: `Needs ${minutes} min, only ${remaining} left.` };
   }
-  return { ok: true, minutes };
+  const minutes = durationForTask(state, taskId, level, worker);
+  const remaining = worker.minutesToday - worker.minutesUsed;
+  if (minutes > remaining) {
+    return { ok: false, reason: `Needs ${minutes} min on ${worker.name}, only ${remaining} left.` };
+  }
+  return { ok: true, minutes, workerId: worker.id };
 }
 
 export function reducer(state, action) {
@@ -143,9 +185,8 @@ export function reducer(state, action) {
       return action.state;
     case 'PLAN_TASK': {
       const task = getTask(action.taskId);
-      const check = canPlanTask(state, action.taskId, action.level);
+      const check = canPlanTask(state, action.taskId, action.level, action.workerId);
       if (!task || !check.ok) return state;
-      const worker = assignPlayer(state);
       return {
         ...state,
         plannedTasks: [
@@ -154,12 +195,12 @@ export function reducer(state, action) {
             taskId: action.taskId,
             surface: task.surface,
             level: action.level,
-            workerId: worker.id,
+            workerId: check.workerId,
             minutes: check.minutes,
           },
         ],
         workers: state.workers.map((item) =>
-          item.id === worker.id ? { ...item, minutesUsed: item.minutesUsed + check.minutes } : item,
+          item.id === check.workerId ? { ...item, minutesUsed: item.minutesUsed + check.minutes } : item,
         ),
       };
     }
@@ -199,6 +240,45 @@ export function reducer(state, action) {
       list[index] = list[nextIndex];
       list[nextIndex] = swap;
       return { ...state, plannedTasks: list };
+    }
+    case 'HIRE_WORKER': {
+      const candidate = state.candidates.find((item) => item.id === action.candidateId);
+      if (!candidate) return state;
+      return hireWorker(state, candidate);
+    }
+    case 'TRAIN_WORKER':
+      return trainWorker(state, action.workerId, action.axis);
+    case 'SET_VOLUNTEER_WEEKDAY':
+      return setVolunteerWeekday(state, action.weekday);
+    case 'SET_EARLY_START':
+      return { ...state, earlyStart: Boolean(action.value) };
+    case 'SET_TASK_WORKER': {
+      const planned = state.plannedTasks.find((item) => item.taskId === action.taskId);
+      const worker = workerById(state, action.workerId);
+      const task = planned ? getTask(planned.taskId) : null;
+      if (!planned || !worker || !task) return state;
+      if (!workerAllows(worker, task.surface) || !isWorkerPresent(worker)) return state;
+      const minutes = durationForTask(state, planned.taskId, planned.level, worker);
+      if (worker.minutesToday - worker.minutesUsed + (planned.workerId === worker.id ? planned.minutes : 0) < minutes) {
+        return state;
+      }
+      let next = {
+        ...state,
+        workers: state.workers.map((item) => {
+          if (item.id === planned.workerId) return { ...item, minutesUsed: item.minutesUsed - planned.minutes };
+          return item;
+        }),
+      };
+      next = {
+        ...next,
+        plannedTasks: next.plannedTasks.map((item) =>
+          item.taskId === action.taskId ? { ...item, workerId: worker.id, minutes } : item,
+        ),
+        workers: next.workers.map((item) =>
+          item.id === worker.id ? { ...item, minutesUsed: item.minutesUsed + minutes } : item,
+        ),
+      };
+      return next;
     }
     default:
       return state;

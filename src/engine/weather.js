@@ -32,11 +32,16 @@ export function minutesTodayForWeather(weather) {
 
 export function applyWeatherToWorkers(workers, weather) {
   const minutesToday = minutesTodayForWeather(weather);
-  return workers.map((worker) => ({
-    ...worker,
-    minutesToday,
-    minutesUsed: STARTING_MINUTES_USED,
-  }));
+  return workers.map((worker) => {
+    if (worker.isVolunteer) {
+      return { ...worker, minutesUsed: STARTING_MINUTES_USED };
+    }
+    return {
+      ...worker,
+      minutesToday,
+      minutesUsed: STARTING_MINUTES_USED,
+    };
+  });
 }
 
 export function rollMorningWithRng(state, season, rng) {

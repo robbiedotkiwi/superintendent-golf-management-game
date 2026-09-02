@@ -2,6 +2,7 @@ import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import CourseMap from './components/CourseMap.jsx';
 import DaySummary from './components/DaySummary.jsx';
 import TaskPanel from './components/TaskPanel.jsx';
+import Crew from './components/Crew.jsx';
 import Shed from './components/Shed.jsx';
 import TimeBar from './components/TimeBar.jsx';
 import WeatherStrip from './components/WeatherStrip.jsx';
@@ -107,6 +108,7 @@ export default function App() {
           onEndDay={() => dispatch({ type: 'END_DAY' })}
           onDismissSummary={() => setSummary(null)}
           onOpenShed={() => setView('shed')}
+          onOpenCrew={() => setView('crew')}
           onCloseShed={() => setView('course')}
           onBuy={(machineId) => dispatch({ type: 'BUY_MACHINE', machineId })}
           onBuyFoley={() => dispatch({ type: 'BUY_FOLEY' })}
@@ -114,6 +116,11 @@ export default function App() {
           onGrindInHouse={(machineId) => dispatch({ type: 'GRIND_IN_HOUSE', machineId })}
           onRepair={(machineId) => dispatch({ type: 'REPAIR_MACHINE', machineId })}
           onMove={(taskId, direction) => dispatch({ type: 'MOVE_TASK', taskId, direction })}
+          onHire={(candidateId) => dispatch({ type: 'HIRE_WORKER', candidateId })}
+          onTrain={(workerId, axis) => dispatch({ type: 'TRAIN_WORKER', workerId, axis })}
+          onVolunteerDay={(weekday) => dispatch({ type: 'SET_VOLUNTEER_WEEKDAY', weekday })}
+          onEarlyStart={(value) => dispatch({ type: 'SET_EARLY_START', value })}
+          onSetWorker={(taskId, workerId) => dispatch({ type: 'SET_TASK_WORKER', taskId, workerId })}
         />
       )}
     </div>
@@ -162,6 +169,7 @@ function GameScreen({
   onEndDay,
   onDismissSummary,
   onOpenShed,
+  onOpenCrew,
   onCloseShed,
   onBuy,
   onBuyFoley,
@@ -169,6 +177,11 @@ function GameScreen({
   onGrindInHouse,
   onRepair,
   onMove,
+  onHire,
+  onTrain,
+  onVolunteerDay,
+  onEarlyStart,
+  onSetWorker,
 }) {
   if (view === 'shed') {
     return (
@@ -184,6 +197,19 @@ function GameScreen({
     );
   }
 
+  if (view === 'crew') {
+    return (
+      <Crew
+        state={state}
+        onBack={onCloseShed}
+        onHire={onHire}
+        onTrain={onTrain}
+        onVolunteerDay={onVolunteerDay}
+        onEarlyStart={onEarlyStart}
+      />
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <TimeBar
@@ -195,6 +221,7 @@ function GameScreen({
         onEndDay={onEndDay}
         onMove={onMove}
         onOpenShed={onOpenShed}
+        onOpenCrew={onOpenCrew}
       />
       <WeatherStrip state={state} onPlan={onPlan} onRemove={onRemove} />
       <div className="flex flex-wrap items-end gap-8 px-4 py-3">
@@ -211,6 +238,7 @@ function GameScreen({
         state={state}
         onPlan={onPlan}
         onRemove={onRemove}
+        onSetWorker={onSetWorker}
         onClose={() => onSelect(null)}
       />
       <DaySummary summary={summary} onContinue={onDismissSummary} />

@@ -15,7 +15,10 @@ import {
   SURFACE_KEYS,
   WEATHER_HEAVY_RAIN,
 } from '../data/constants.js';
+import { PLAYER_ID } from '../data/constants.js';
+import { generateCandidates } from '../data/staff.js';
 import { getTask, taskGain } from '../data/tasks.js';
+import { workerById } from './assignment.js';
 import { calendarFromDay } from './calendar.js';
 import {
   applyWear,
@@ -28,8 +31,10 @@ import {
   surfaceCeiling,
   wearMultiplier,
 } from './equipment.js';
+import { qualityRandomFactor, workerQualityMultiplier } from './skills.js';
+import { applyEarlyStartComplaints, applyMorale, prepareMorningWorkers, wageBill } from './staff.js';
 import { createRng } from './rng.js';
-import { applyWeatherToWorkers, rollMorningWithRng } from './weather.js';
+import { rollMorningWithRng } from './weather.js';
 
 export function clampQuality(value) {
   return Math.min(QUALITY_MAX, Math.max(QUALITY_MIN, value));
@@ -125,6 +130,9 @@ export function resolveDay(state) {
     if (machine) {
       gain *= wearMultiplier(state, machine.id);
     }
+    const worker = workerById(state, plannedTask.workerId) ?? state.workers[0];
+    gain *= workerQualityMultiplier(worker);
+    gain *= qualityRandomFactor(worker, rng);
 
     const qualityBefore = surfaces[task.surface].quality;
     const qualityAfter = applyGain(qualityBefore, gain, surfaceCeiling(state, task.surface));
@@ -178,18 +186,46 @@ export function resolveDay(state) {
   const wornState = { ...state, machineWear };
   const { machineBroken, breakdowns } = rollBreakdowns(wornState, usedMachineIds, rng);
 
+  let workers = state.workers.map((worker) => ({ ...worker }));
+  for (const item of dropped) {
+    workers = workers.map((worker) =>
+      worker.id === item.workerId ? { ...worker, minutesUsed: worker.minutesUsed - item.minutes } : worker,
+    );
+  }
+  if (extra > 0) {
+    workers = workers.map((worker) =>
+      worker.id === PLAYER_ID ? { ...worker, minutesUsed: worker.minutesUsed + extra } : worker,
+    );
+  }
+  workers = applyMorale(workers);
+  let cash = state.cash - wageBill(state.workers);
+  const complaint = applyEarlyStartComplaints({ ...state, cash, workers });
+  cash = complaint.state.cash;
+
   const day = state.day + 1;
   const calendar = calendarFromDay(day);
+  const seasonChanged = calendar.season !== state.season;
   let next = {
-    ...state,
+    ...complaint.state,
     day,
     season: calendar.season,
     year: calendar.year,
+    cash,
     surfaces,
     machineWear,
     machineBroken,
     plannedTasks: [],
+    workers,
   };
+  if (seasonChanged) {
+    next = {
+      ...next,
+      candidates: generateCandidates(rng),
+      candidatesSeason: calendar.season,
+      volunteerDayChangedThisSeason: false,
+      neighbourComplaintsThisSeason: 0,
+    };
+  }
   const scheduled = ensureAutoWeek(next, rng);
   next = scheduled.state;
   const morning = rollMorningWithRng(next, calendar.season, rng);
@@ -198,7 +234,7 @@ export function resolveDay(state) {
     weather: morning.weather,
     forecast: morning.forecast,
     rngSeed: rng.seed,
-    workers: applyWeatherToWorkers(state.workers, morning.weather),
+    workers: prepareMorningWorkers({ ...next, weather: morning.weather }, morning.weather, rng),
   };
 
   const summary = {
@@ -209,6 +245,9 @@ export function resolveDay(state) {
     dropped,
     interruptions: extra,
     breakdowns,
+    wages: wageBill(state.workers),
+    gmWarning: complaint.warning,
+    neighbourFine: complaint.fine,
     before,
     after: cloneSurfaces(surfaces),
     conditionBefore,

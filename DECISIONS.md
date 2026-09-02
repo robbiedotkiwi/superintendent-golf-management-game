@@ -33,3 +33,11 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Send-away grinding sets `awayUntil = day + 2`, so a machine sent on day 1 is back on day 3.
 - Autonomous mowers auto-cut fairways and rough at standard quality when those surfaces were not planned, skip rain/storm mowing days, and drop the last planned task if interruptions overrun the day. Planned-task order is priority (first = keep).
 - Old saves missing equipment fields get the starting push rotary on load.
+
+## Phase 4
+
+- Quality-gain randomness applies to hired staff only, so the player's skill-3 work stays deterministic (1.0×).
+- Volunteer is always in `workers` with 0 minutes except on their weekday (default 6).
+- Mechanic repairs cost 0 minutes if any mechanic is employed; wear is halved whenever a mechanic is on the books.
+- Morale: −12 if a worker exceeds 420 minutes, extra −8 if they work more than 6 days running, +18 on a day off.
+- Candidate list is always one fast/sloppy, one slow/careful, and one mechanic, names rolled each season.

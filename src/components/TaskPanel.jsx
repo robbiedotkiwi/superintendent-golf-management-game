@@ -1,13 +1,14 @@
 import { LEVEL_KEYS } from '../data/constants.js';
 import { LEVEL_LABELS, SURFACE_LABELS, tasksForSurface } from '../data/tasks.js';
-import { durationForTask, ineligibleMachines, pickMachine, surfaceCeiling } from '../engine/equipment.js';
+import { durationForTask, assignWorker, workerById } from '../engine/assignment.js';
+import { ineligibleMachines, pickMachine, surfaceCeiling } from '../engine/equipment.js';
 import { canPlanTask } from '../engine/gameState.js';
 
 function formatQuality(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
-export default function TaskPanel({ surface, state, onPlan, onRemove, onClose }) {
+export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorker, onClose }) {
   const open = Boolean(surface);
   const quality = surface ? state.surfaces[surface].quality : 0;
   const tasks = surface ? tasksForSurface(surface) : [];
@@ -50,10 +51,24 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onClose })
                     </p>
                   ))}
                   {planned ? (
-                    <div className="mt-2 flex items-center justify-between gap-2">
+                    <div className="mt-2 space-y-2">
                       <p>
-                        Planned {LEVEL_LABELS[planned.level]} · {planned.minutes} min
+                        Planned {LEVEL_LABELS[planned.level]} · {planned.minutes} min · {workerById(state, planned.workerId)?.name}
                       </p>
+                      <label className="block text-sm">
+                        Worker
+                        <select
+                          className="ml-2 border border-[var(--soil)] bg-[var(--sand)] p-1"
+                          value={planned.workerId}
+                          onChange={(event) => onSetWorker(task.id, event.target.value)}
+                        >
+                          {state.workers.map((worker) => (
+                            <option key={worker.id} value={worker.id}>
+                              {worker.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
                       <button
                         type="button"
                         onClick={() => onRemove(task.id)}
@@ -65,7 +80,8 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onClose })
                   ) : (
                     <div className="mt-3 grid grid-cols-3 gap-2">
                       {LEVEL_KEYS.map((level) => {
-                        const minutes = durationForTask(state, task.id, level);
+                        const assigned = assignWorker(state, task, level);
+                        const minutes = durationForTask(state, task.id, level, assigned);
                         const check = canPlanTask(state, task.id, level);
                         return (
                           <button

@@ -59,7 +59,9 @@ export default function DaySummary({ summary, onContinue }) {
         ) : (
           <p>Nothing dropped.</p>
         )}
-        {summary.interruptions ? <p className="mt-3">Autonomous interruptions: {summary.interruptions} min</p> : null}
+        {summary.wages ? <p className="mt-3">Wages {summary.wages}</p> : null}
+        {summary.gmWarning ? <p className="mt-2">GM warning: neighbours are complaining about the early start.</p> : null}
+        {summary.neighbourFine ? <p className="mt-2">Fine {summary.neighbourFine} for the early starts.</p> : null}
         {summary.breakdowns?.length ? (
           <p className="mt-2">Broke down: {summary.breakdowns.join(', ')}</p>
         ) : null}

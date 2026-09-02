@@ -16,11 +16,14 @@ import {
   STARTING_MACHINE_ID,
   WEAR_GAIN_PENALTY,
   WEAR_MAX,
+  WEAR_MECHANIC_FACTOR,
   WEAR_PER_USE,
   WEAR_THRESHOLD,
 } from '../data/constants.js';
 import { getMachine, MACHINES, machineAllows, TURF_DAMAGE_REASON } from '../data/equipment.js';
 import { getTask, taskDuration } from '../data/tasks.js';
+import { workerTimeMultiplier } from './skills.js';
+import { hasMechanic } from './staff.js';
 import { createRng } from './rng.js';
 
 function remainingMinutes(state) {
@@ -75,7 +78,7 @@ export function ineligibleMachines(state, task) {
     }));
 }
 
-export function durationForTask(state, taskId, level) {
+export function machineDurationForTask(state, taskId, level) {
   const task = getTask(taskId);
   return taskDuration(taskId, level, machineTimeMultiplier(state, task));
 }
@@ -138,10 +141,11 @@ export function canGrindInHouse(state, machineId) {
 
 export function canRepair(state, machineId) {
   if (!state.machineBroken[machineId]) return { ok: false, reason: 'Not broken.' };
-  if (remainingMinutes(state) < REPAIR_MINUTES) {
-    return { ok: false, reason: `Needs ${REPAIR_MINUTES} min.` };
+  const cost = hasMechanic(state) ? 0 : REPAIR_MINUTES;
+  if (remainingMinutes(state) < cost) {
+    return { ok: false, reason: `Needs ${cost} min.` };
   }
-  return { ok: true };
+  return { ok: true, minutes: cost };
 }
 
 export function spendWorkerMinutes(state, minutes) {
@@ -159,10 +163,12 @@ export function recomputePlannedMinutes(state) {
   for (const planned of state.plannedTasks) {
     oldByWorker[planned.workerId] = (oldByWorker[planned.workerId] ?? 0) + planned.minutes;
   }
-  const plannedTasks = state.plannedTasks.map((planned) => ({
-    ...planned,
-    minutes: durationForTask(state, planned.taskId, planned.level),
-  }));
+  const plannedTasks = state.plannedTasks.map((planned) => {
+    const worker = state.workers.find((item) => item.id === planned.workerId);
+    const base = machineDurationForTask(state, planned.taskId, planned.level);
+    const minutes = worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
+    return { ...planned, minutes };
+  });
   const newByWorker = {};
   for (const planned of plannedTasks) {
     newByWorker[planned.workerId] = (newByWorker[planned.workerId] ?? 0) + planned.minutes;
@@ -227,7 +233,7 @@ export function grindInHouse(state, machineId) {
 export function repairMachine(state, machineId) {
   const check = canRepair(state, machineId);
   if (!check.ok) return state;
-  const spent = spendWorkerMinutes(state, REPAIR_MINUTES);
+  const spent = spendWorkerMinutes(state, check.minutes ?? 0);
   const next = {
     ...spent,
     machineBroken: { ...spent.machineBroken, [machineId]: false },
@@ -257,7 +263,8 @@ export function applyWear(state, usedIds) {
   for (const id of usedIds) {
     const machine = getMachine(id);
     if (!machine?.reel) continue;
-    machineWear[id] = Math.min(WEAR_MAX, (machineWear[id] ?? 0) + WEAR_PER_USE);
+    const step = hasMechanic(state) ? WEAR_PER_USE * WEAR_MECHANIC_FACTOR : WEAR_PER_USE;
+    machineWear[id] = Math.min(WEAR_MAX, (machineWear[id] ?? 0) + step);
   }
   return machineWear;
 }
