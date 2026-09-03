@@ -107,4 +107,9 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Planned-task `level` is stripped on migrate. Changing height or pattern recomputes planned mowing minutes and drops that cut if it no longer fits the worker.
 - Days since last worked is `day - lastMownDay` (or `lastRakedDay` for bunkers) on the current morning. Neglect mail and the satisfaction drain are evaluated against tomorrow morning during end-of-day resolve so the inbox matches the number the player sees after End day.
 - A golfer email fires on the first morning past the threshold (`daysSince === threshold + 1`). Greens therefore complain after three skipped days; rough does not complain after ten. A GM email and −2 satisfaction per neglected surface per day start when `daysSince` reaches double the threshold.
+- Sidebar rows mark `overdue` when `daysSince >= threshold`, which is the first morning the surface has reached the limit. Mail still waits one extra day.
+- Pond, surfaces, and map clicks share one `selected` id. Choosing pond collapses every surface row and shows irrigation under Locations; choosing a surface hides irrigation.
+- Tournament line, disease, GM meeting, ball pick, and storm debris sit after Money and before Surfaces so those actions stay reachable without the old top weather strip.
+- Sound stays next to End day in the pinned footer. Task reorder arrows sit under the time bar, not inside it.
+- The map pane is an unpadded `flex-1` column with the SVG `absolute inset-0`. `xMidYMid meet` is kept so the whole course stays visible; leftover pane area is the same soil fill as the map, not a HUD gutter.
 

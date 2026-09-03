@@ -423,6 +423,7 @@ export const NEGLECT_THRESHOLD = {
 export const NEGLECT_GM_MULTIPLIER = 2;
 export const NEGLECT_SATISFACTION_PENALTY = 2;
 export const NEGLECT_GOLFER_AFTER = 1;
+export const SIDEBAR_WIDTH = 380;
 export const TOURNAMENT_WEIGHTS = {
   greens: 0.55,
   tees: 0.15,

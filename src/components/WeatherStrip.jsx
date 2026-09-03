@@ -12,7 +12,7 @@ import { DISEASE_SURFACES } from '../engine/disease.js';
 import { meetingDue } from '../engine/mail.js';
 import { daysUntilNextTournament, nextTournament } from '../engine/tournament.js';
 
-function DiseaseReadout({ state }) {
+export function DiseaseReadout({ state }) {
   const hot = DISEASE_SURFACES.map((surface) => {
     const entry = state.disease?.[surface];
     return {

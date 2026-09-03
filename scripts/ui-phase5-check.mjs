@@ -1,5 +1,5 @@
 /**
- * UI Phase 5: HUD hierarchy, money format, no Holes stat, collapsed disease.
+ * UI Phase 5: money format, no Holes stat, collapsed disease, condition in the sidebar.
  * Run: node scripts/ui-phase5-check.mjs
  */
 import assert from 'node:assert/strict';
@@ -11,17 +11,17 @@ assert.equal(formatMoney(STARTING_CASH), '$8,000');
 assert.equal(formatMoney(12000), '$12,000');
 assert.equal(formatMoney(40000), '$40,000');
 
-const hud = readFileSync(new URL('../src/components/Hud.jsx', import.meta.url), 'utf8');
-assert.match(hud, /Budgets/);
-assert.match(hud, /formatMoney\(state\.cash\)/);
-assert.match(hud, /formatMoney\(state\.maintenanceBudget\)/);
-assert.match(hud, /formatMoney\(state\.capitalBudget\)/);
-assert.match(hud, /qualityColor\(condition\)/);
-assert.match(hud, /size="condition"/);
-assert.doesNotMatch(hud, /label="Holes"/);
+const sidebar = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
+assert.match(sidebar, /Budgets/);
+assert.match(sidebar, /formatMoney\(state\.cash\)/);
+assert.match(sidebar, /formatMoney\(state\.maintenanceBudget\)/);
+assert.match(sidebar, /formatMoney\(state\.capitalBudget\)/);
+assert.match(sidebar, /qualityColor\(condition\)/);
+assert.doesNotMatch(sidebar, /label="Holes"/);
 
 const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
-assert.match(app, /<Hud /);
+assert.match(app, /<Sidebar/);
+assert.doesNotMatch(app, /<Hud /);
 assert.doesNotMatch(app, /label="Holes"/);
 
 const office = readFileSync(new URL('../src/components/Office.jsx', import.meta.url), 'utf8');

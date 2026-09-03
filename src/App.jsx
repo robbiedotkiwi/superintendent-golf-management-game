@@ -1,18 +1,14 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import CourseMap from './components/CourseMap.jsx';
 import DaySummary from './components/DaySummary.jsx';
-import TaskPanel from './components/TaskPanel.jsx';
 import Crew from './components/Crew.jsx';
 import GameOver from './components/GameOver.jsx';
-import IrrigationPanel from './components/IrrigationPanel.jsx';
 import Office from './components/Office.jsx';
 import SeasonStart from './components/SeasonStart.jsx';
+import Sidebar from './components/Sidebar.jsx';
 import Tutorial from './components/Tutorial.jsx';
 import YearReview from './components/YearReview.jsx';
 import Shed from './components/Shed.jsx';
-import TimeBar from './components/TimeBar.jsx';
-import Hud from './components/Hud.jsx';
-import WeatherStrip from './components/WeatherStrip.jsx';
 import {
   HOLE_COUNT,
   WEATHER_FINE,
@@ -304,7 +300,7 @@ function GameScreen({
   }
 
   return (
-    <div className="flex h-screen max-h-screen flex-col overflow-hidden bg-[var(--soil)] text-[var(--paint)]">
+    <div className="flex h-screen max-h-screen overflow-hidden bg-[var(--soil)] text-[var(--paint)]">
       {state.dismissed ? <GameOver onNewGame={onNewGame} /> : null}
       {!state.dismissed && state.pendingYearReview && !summary ? (
         <YearReview review={state.lastYearReview} onContinue={onDismissYearReview} />
@@ -322,25 +318,32 @@ function GameScreen({
       !summary ? (
         <Tutorial onDismiss={onDismissTutorial} />
       ) : null}
-      <TimeBar
-        remaining={minutesRemaining}
-        used={minutesUsed}
-        capacity={minutesCapacity}
-        plannedTasks={state.plannedTasks}
+      <Sidebar
+        state={state}
+        selected={selected}
+        condition={condition}
+        minutesRemaining={minutesRemaining}
+        minutesUsed={minutesUsed}
+        minutesCapacity={minutesCapacity}
+        unread={unreadCount(state)}
+        onSelect={onSelect}
+        onPlan={onPlan}
         onRemove={onRemove}
         onEndDay={onEndDay}
         onMove={onMove}
         onOpenShed={onOpenShed}
         onOpenCrew={onOpenCrew}
         onOpenOffice={onOpenOffice}
-        onOpenPond={() => onSelect('pond')}
-        unread={unreadCount(state)}
-        soundOn={state.soundEnabled}
+        onSetWorker={onSetWorker}
+        onSetHoc={onSetHoc}
+        onSetPattern={onSetPattern}
+        onSetAngle={onSetAngle}
+        onSetAutoRotate={onSetAutoRotate}
+        onSetIrrigation={onSetIrrigation}
+        onBuyAerator={onBuyAerator}
         onToggleSound={onToggleSound}
       />
-      <WeatherStrip state={state} onPlan={onPlan} onRemove={onRemove} />
-      <Hud state={state} condition={condition} />
-      <div className="relative min-h-0 flex-1 overflow-hidden">
+      <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
         <CourseMap
           surfaces={state.surfaces}
           pond={state.pond}
@@ -352,27 +355,6 @@ function GameScreen({
           onSelect={onSelect}
           onOpenShed={onOpenShed}
         />
-        {selected === 'pond' ? (
-          <IrrigationPanel
-            state={state}
-            onSetPolicy={onSetIrrigation}
-            onBuyAerator={onBuyAerator}
-            onClose={() => onSelect(null)}
-          />
-        ) : selected ? (
-          <TaskPanel
-            surface={selected}
-            state={state}
-            onPlan={onPlan}
-            onRemove={onRemove}
-            onSetWorker={onSetWorker}
-            onSetHoc={onSetHoc}
-            onSetPattern={onSetPattern}
-            onSetAngle={onSetAngle}
-            onSetAutoRotate={onSetAutoRotate}
-            onClose={() => onSelect(null)}
-          />
-        ) : null}
       </div>
       <DaySummary summary={summary} onContinue={onDismissSummary} />
     </div>
