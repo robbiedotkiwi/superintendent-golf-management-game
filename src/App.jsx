@@ -344,24 +344,24 @@ function GameScreen({
           onSelect={onSelect}
           onOpenShed={onOpenShed}
         />
+        {selected === 'pond' ? (
+          <IrrigationPanel
+            state={state}
+            onSetPolicy={onSetIrrigation}
+            onBuyAerator={onBuyAerator}
+            onClose={() => onSelect(null)}
+          />
+        ) : (
+          <TaskPanel
+            surface={selected}
+            state={state}
+            onPlan={onPlan}
+            onRemove={onRemove}
+            onSetWorker={onSetWorker}
+            onClose={() => onSelect(null)}
+          />
+        )}
       </div>
-      {selected === 'pond' ? (
-        <IrrigationPanel
-          state={state}
-          onSetPolicy={onSetIrrigation}
-          onBuyAerator={onBuyAerator}
-          onClose={() => onSelect(null)}
-        />
-      ) : (
-        <TaskPanel
-          surface={selected}
-          state={state}
-          onPlan={onPlan}
-          onRemove={onRemove}
-          onSetWorker={onSetWorker}
-          onClose={() => onSelect(null)}
-        />
-      )}
       <DaySummary summary={summary} onContinue={onDismissSummary} />
     </div>
   );

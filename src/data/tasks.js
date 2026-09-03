@@ -41,6 +41,10 @@ export function getTask(taskId) {
   return TASKS.find((task) => task.id === taskId);
 }
 
+export function taskUsesMachine(task) {
+  return Boolean(task?.mowing || task?.id === 'rollGreens');
+}
+
 export function tasksForSurface(surface) {
   return TASKS.filter((task) => task.surface === surface);
 }
