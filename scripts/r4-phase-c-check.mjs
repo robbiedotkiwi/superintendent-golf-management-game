@@ -8,18 +8,20 @@ import {
   DAY_LENGTH_MINUTES,
   DEFAULT_DAY_OVERLOAD_MINUTES,
   DEFAULT_DAY_OVERLOAD_RATIO,
+  GREENSMASTER_ID,
+  GREENSMASTER_START_CONDITION,
   PATTERN_BLOCK,
   PATTERN_STRIPES,
   PATTERN_SURFACE_DEFAULT,
   PATTERN_TIME_MULT,
   PATTERNED_SURFACES,
-  STARTING_MACHINE_CONDITION,
+  REELMASTER_ID,
+  REELMASTER_START_CONDITION,
   STARTING_MACHINE_IDS,
   TASK_MINUTES,
 } from '../src/data/constants.js';
 import { durationForTask } from '../src/engine/assignment.js';
 import { createInitialState } from '../src/engine/gameState.js';
-import { mowingMinutes } from '../src/engine/mowing.js';
 
 assert.equal(PATTERN_SURFACE_DEFAULT.greens, PATTERN_STRIPES);
 assert.equal(PATTERN_SURFACE_DEFAULT.tees, PATTERN_STRIPES);
@@ -27,14 +29,15 @@ assert.equal(PATTERN_SURFACE_DEFAULT.fairways, PATTERN_BLOCK);
 assert.equal(PATTERN_SURFACE_DEFAULT.rough, PATTERN_BLOCK);
 assert.equal(PATTERN_TIME_MULT[PATTERN_BLOCK], 1);
 assert.ok(PATTERNED_SURFACES.includes('rough'));
-assert.deepEqual(STARTING_MACHINE_IDS, ['pushRotary']);
+assert.deepEqual(STARTING_MACHINE_IDS, [GREENSMASTER_ID, REELMASTER_ID]);
 
 const start = createInitialState();
 assert.equal(start.surfaces.fairways.pattern, PATTERN_BLOCK);
 assert.equal(start.surfaces.rough.pattern, PATTERN_BLOCK);
 assert.equal(start.surfaces.greens.pattern, PATTERN_STRIPES);
 assert.deepEqual(start.ownedMachines, STARTING_MACHINE_IDS);
-assert.equal(start.machineCondition[STARTING_MACHINE_IDS[0]], STARTING_MACHINE_CONDITION);
+assert.equal(start.machineCondition[GREENSMASTER_ID], GREENSMASTER_START_CONDITION);
+assert.equal(start.machineCondition[REELMASTER_ID], REELMASTER_START_CONDITION);
 
 const player = start.workers[0];
 const tasks = ['cutGreens', 'rollGreens', 'changeCups', 'cutTees', 'cutFairways', 'cutRough', 'rakeBunkers'];
@@ -45,12 +48,12 @@ const percent = Math.round(ratio * 100);
 assert.equal(dayTotal, DEFAULT_DAY_OVERLOAD_MINUTES);
 assert.equal(
   dayTotal,
-  mowingMinutes(start, 'cutGreens') +
+  durationForTask(start, 'cutGreens', player) +
     TASK_MINUTES.rollGreens +
     TASK_MINUTES.changeCups +
-    mowingMinutes(start, 'cutTees') +
-    mowingMinutes(start, 'cutFairways') +
-    mowingMinutes(start, 'cutRough') +
+    durationForTask(start, 'cutTees', player) +
+    durationForTask(start, 'cutFairways', player) +
+    durationForTask(start, 'cutRough', player) +
     TASK_MINUTES.rakeBunkers,
 );
 assert.ok(ratio > 1.3);
@@ -61,7 +64,7 @@ console.log(
   `FULL_DAY_TOTAL=${dayTotal} DAY_LENGTH=${DAY_LENGTH_MINUTES} RATIO=${ratio.toFixed(3)} PERCENT=${percent}% TARGET=${DEFAULT_DAY_OVERLOAD_RATIO} BASE_MINUTES=${JSON.stringify(BASE_MINUTES)}`,
 );
 console.log('GATE C1 PASS block cut is the fairway and rough default');
-console.log('GATE C2 PASS starting fleet is the named STARTING_MACHINE_IDS list at condition 100');
+console.log('GATE C2 PASS starting fleet is Greensmaster 1000 and Reelmaster 3100 at 28/24');
 console.log(`GATE C3 PASS full-day total ${dayTotal} is ${percent}% of ${DAY_LENGTH_MINUTES} (140% target)`);
-console.log('GATE C4 PASS condition penalty is in durationForTask (1.0× at starter condition 100)');
+console.log('GATE C4 PASS durationForTask includes machine timeMult and condition penalty');
 console.log('round 4 phase C checks passed');

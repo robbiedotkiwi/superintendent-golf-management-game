@@ -33,6 +33,7 @@ import {
   QUALITY_MAX,
   REPAIR_MINUTES,
   STARTING_MACHINE_CONDITION,
+  STARTING_MACHINE_CONDITIONS,
   STARTING_MACHINE_IDS,
   WEAR_GAIN_PENALTY,
   WEAR_MAX,
@@ -63,6 +64,10 @@ export function clampCondition(value) {
 
 export function conditionTimeMultiplier(condition) {
   return 1 + (CONDITION_MAX - clampCondition(condition)) * CONDITION_TIME_PENALTY_PER_POINT;
+}
+
+export function startingConditionFor(machineId) {
+  return STARTING_MACHINE_CONDITIONS[machineId] ?? STARTING_MACHINE_CONDITION;
 }
 
 export function conditionOf(state, machineId) {

@@ -21,8 +21,9 @@ import {
   createInitialState,
   reducer,
 } from '../src/engine/gameState.js';
+import { durationForTask } from '../src/engine/assignment.js';
 import { surfaceCeiling } from '../src/engine/equipment.js';
-import { mowingGain, mowingMinutes } from '../src/engine/mowing.js';
+import { mowingGain } from '../src/engine/mowing.js';
 import { applyDecay, applyGain, clampQuality } from '../src/engine/simulation.js';
 import { applyWeatherToWorkers } from '../src/engine/weather.js';
 
@@ -41,10 +42,10 @@ function end(state) {
 
 let state = createInitialState();
 const startMinutes = combinedMinutesRemaining(state);
-const greensTime = mowingMinutes(state, 'cutGreens');
-const teesTime = mowingMinutes(state, 'cutTees');
-const fairwaysTime = mowingMinutes(state, 'cutFairways');
-const roughTime = mowingMinutes(state, 'cutRough');
+const greensTime = durationForTask(state, 'cutGreens');
+const teesTime = durationForTask(state, 'cutTees');
+const fairwaysTime = durationForTask(state, 'cutFairways');
+const roughTime = durationForTask(state, 'cutRough');
 
 state = plan(state, 'cutGreens');
 assert.equal(state.plannedTasks.length, 1);

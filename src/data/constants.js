@@ -75,13 +75,13 @@ export const TASK_MINUTES = {
 };
 
 export const BASE_MINUTES = {
-  greens: 104,
-  tees: 64,
-  fairways: 136,
-  rough: 152,
+  greens: 91,
+  tees: 56,
+  fairways: 118,
+  rough: 130,
 };
 
-export const DEFAULT_DAY_OVERLOAD_MINUTES = 670;
+export const DEFAULT_DAY_OVERLOAD_MINUTES = 672;
 export const DEFAULT_DAY_OVERLOAD_RATIO = 1.4;
 
 export const BASE_GAIN = 6;
@@ -429,8 +429,20 @@ export const AUTO_INTERRUPT_MIN_MINUTES = 10;
 export const AUTO_INTERRUPT_MAX_MINUTES = 40;
 export const ROLLER_GAIN_BONUS = 4;
 
+export const PUSH_ROTARY_ID = 'pushRotary';
+export const PUSH_ROTARY_COST = 1200;
 export const PUSH_ROTARY_CEILING = 65;
 export const PUSH_ROTARY_TIME_MULT = 1;
+export const GREENSMASTER_ID = 'greensmaster1000';
+export const GREENSMASTER_COST = 0;
+export const GREENSMASTER_CEILING = 68;
+export const GREENSMASTER_TIME_MULT = 1;
+export const GREENSMASTER_START_CONDITION = 28;
+export const REELMASTER_ID = 'reelmaster3100';
+export const REELMASTER_COST = 0;
+export const REELMASTER_CEILING = 62;
+export const REELMASTER_TIME_MULT = 0.75;
+export const REELMASTER_START_CONDITION = 24;
 export const WALK_BEHIND_COST = 4500;
 export const WALK_BEHIND_CEILING = 80;
 export const WALK_BEHIND_TIME_MULT = 0.85;
@@ -451,8 +463,12 @@ export const GREENS_ROLLER_COST = 9000;
 export const GREENS_ROLLER_TIME_MULT = 0.7;
 export const AUTONOMOUS_COST = 35000;
 export const AUTONOMOUS_CEILING = 85;
-export const STARTING_MACHINE_ID = 'pushRotary';
-export const STARTING_MACHINE_IDS = [STARTING_MACHINE_ID];
+export const STARTING_MACHINE_ID = GREENSMASTER_ID;
+export const STARTING_MACHINE_IDS = [GREENSMASTER_ID, REELMASTER_ID];
+export const STARTING_MACHINE_CONDITIONS = {
+  [GREENSMASTER_ID]: GREENSMASTER_START_CONDITION,
+  [REELMASTER_ID]: REELMASTER_START_CONDITION,
+};
 
 export const CONDITION_MIN = 0;
 export const CONDITION_MAX = 100;

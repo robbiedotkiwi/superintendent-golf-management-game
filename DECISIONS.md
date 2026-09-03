@@ -194,4 +194,11 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Auto-pick ranks owned, permitted, available machines by highest surface ceiling, then lowest catalogue `timeMult`. A per-surface `machineOverride` is a preference: if that unit is missing, broken, away, or out of daily minutes, planning falls back to auto and the UI shows `MACHINE_OVERRIDE_FALLBACK`.
 - Turf tabs are Summary · Mowing · Irrigation · Other · Presets. `TURF_TAB_BUNKERS` and `TURF_TAB_POND` alias Other; old `bunkers` / `pond` tab values migrate. Pond map clicks still use `TURF_TAB_POND`.
 
+### Phase C
+
+- Starting fleet is two new catalogue ids (`greensmaster1000`, `reelmaster3100`) rather than retuning the shop walk-behind / fairway unit. Push rotary stays in the shop (`ownedAtStart` false) at invented `PUSH_ROTARY_COST` 1200.
+- Starter hulls are `GREENSMASTER_START_CONDITION` 28 and `REELMASTER_START_CONDITION` 24. `STARTING_MACHINE_CONDITION` stays 100 for new buys and lookups that omit a stored value. Old saves that already list `ownedMachines` keep that fleet.
+- Phase 1 / Round 4 duration equalities now use `durationForTask` (base × catalogue `timeMult` × condition penalty). `BASE_MINUTES` retuned to 91 / 56 / 118 / 130 so the default full day is exactly 672 minutes = 140% of 480. Fairways/rough stay under one worker-day and remain plannable on day 1.
+- Claiming is unchanged. Round 4 booked-mower checks now fill the Reelmaster's daily pool explicitly, because two machines no longer share one 480-minute claim.
+
 

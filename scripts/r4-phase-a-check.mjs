@@ -14,8 +14,14 @@ import {
   MIGRATED_MACHINE_CONDITION,
   NEW_PURCHASE_CONDITION,
   SALESMAN_RELATIONSHIP_START,
+  GREENSMASTER_ID,
+  GREENSMASTER_START_CONDITION,
+  GREENSMASTER_TIME_MULT,
+  REELMASTER_ID,
+  REELMASTER_START_CONDITION,
   STARTING_MACHINE_CONDITION,
   STARTING_MACHINE_ID,
+  STARTING_MACHINE_IDS,
   USED_LISTING_COUNT,
   WALK_BEHIND_TIME_MULT,
 } from '../src/data/constants.js';
@@ -23,6 +29,7 @@ import { durationForTask } from '../src/engine/assignment.js';
 import {
   conditionOf,
   conditionTimeMultiplier,
+  machineMultiplierFor,
   machineTimeMultiplier,
 } from '../src/engine/equipment.js';
 import { createInitialState, reducer } from '../src/engine/gameState.js';
@@ -46,29 +53,39 @@ assert.equal(conditionTimeMultiplier(CONDITION_MIN), 1 + CONDITION_MAX * CONDITI
 assert.equal(conditionTimeMultiplier(50), 1.25);
 
 const start = createInitialState();
-assert.equal(start.machineCondition[STARTING_MACHINE_ID], STARTING_MACHINE_CONDITION);
+assert.deepEqual(start.ownedMachines, STARTING_MACHINE_IDS);
+assert.equal(start.machineCondition[GREENSMASTER_ID], GREENSMASTER_START_CONDITION);
+assert.equal(start.machineCondition[REELMASTER_ID], REELMASTER_START_CONDITION);
 assert.equal(start.machineDailyMinutes[STARTING_MACHINE_ID], MACHINE_DAILY_MINUTES);
 assert.equal(start.salesmanRelationship, SALESMAN_RELATIONSHIP_START);
 assert.equal(start.usedListings.length, USED_LISTING_COUNT);
 assert.deepEqual(start.pendingDeliveries, []);
 assert.deepEqual(start.activeSales, []);
 assert.deepEqual(start.eventInvitations, []);
-assert.equal(conditionOf(start, STARTING_MACHINE_ID), STARTING_MACHINE_CONDITION);
+assert.equal(conditionOf(start, GREENSMASTER_ID), GREENSMASTER_START_CONDITION);
+assert.equal(conditionOf(start, REELMASTER_ID), REELMASTER_START_CONDITION);
 
 const greensTask = getTask('cutGreens');
-assert.equal(machineTimeMultiplier(start, greensTask), 1);
-assert.equal(durationForTask(start, 'cutGreens'), mowingMinutes(start, 'cutGreens'));
+assert.equal(machineTimeMultiplier(start, greensTask), machineMultiplierFor(start, GREENSMASTER_ID));
+assert.equal(
+  durationForTask(start, 'cutGreens'),
+  Math.round(mowingMinutes(start, 'cutGreens') * GREENSMASTER_TIME_MULT * conditionTimeMultiplier(GREENSMASTER_START_CONDITION)),
+);
 
 const worn = {
   ...start,
-  machineCondition: { [STARTING_MACHINE_ID]: 50 },
+  machineCondition: { ...start.machineCondition, [GREENSMASTER_ID]: 50 },
+};
+const mint = {
+  ...start,
+  machineCondition: { ...start.machineCondition, [GREENSMASTER_ID]: CONDITION_MAX },
 };
 assert.equal(machineTimeMultiplier(worn, greensTask), 1.25);
 assert.equal(
   durationForTask(worn, 'cutGreens'),
-  Math.round(mowingMinutes(worn, 'cutGreens') * conditionTimeMultiplier(50)),
+  Math.round(mowingMinutes(worn, 'cutGreens') * GREENSMASTER_TIME_MULT * conditionTimeMultiplier(50)),
 );
-assert.ok(durationForTask(worn, 'cutGreens') > durationForTask(start, 'cutGreens'));
+assert.ok(durationForTask(worn, 'cutGreens') > durationForTask(mint, 'cutGreens'));
 
 const migrated = migrateSave({
   day: 4,
@@ -105,7 +122,7 @@ assert.equal(kept.machineCondition[STARTING_MACHINE_ID], 62);
 
 let used = reducer(createInitialState(), { type: 'PLAN_TASK', taskId: 'cutGreens' });
 used = reducer(used, { type: 'END_DAY' });
-assert.equal(used.machineCondition[STARTING_MACHINE_ID], STARTING_MACHINE_CONDITION - CONDITION_LOSS_PER_USE);
+assert.equal(used.machineCondition[GREENSMASTER_ID], GREENSMASTER_START_CONDITION - CONDITION_LOSS_PER_USE);
 
 let bought = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
 assert.equal(bought.machineCondition.walkBehindReel, NEW_PURCHASE_CONDITION);
@@ -124,8 +141,8 @@ const equipmentSrc = readFileSync(new URL('../src/engine/equipment.js', import.m
 assert.match(equipmentSrc, /conditionTimeMultiplier/);
 
 console.log('GATE A1 PASS named condition constants exported');
-console.log('GATE A2 PASS new game starter condition is 100');
-console.log('GATE A3 PASS condition 100 leaves duration unchanged');
+console.log('GATE A2 PASS new game starters are condition 28 and 24');
+console.log('GATE A3 PASS durationForTask includes machine timeMult and condition penalty');
 console.log('GATE A4 PASS condition 50 applies 1.25× time penalty in the engine');
 console.log('GATE A5 PASS old saves migrate missing condition to 80');
 console.log('GATE A6 PASS mowing drops condition by CONDITION_LOSS_PER_USE');

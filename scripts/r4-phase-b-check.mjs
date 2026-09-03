@@ -5,8 +5,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  GREENSMASTER_ID,
   MACHINE_DAILY_MINUTES,
   PLAYER_ID,
+  REELMASTER_ID,
   STARTING_MACHINE_ID,
 } from '../src/data/constants.js';
 import { durationForTask } from '../src/engine/assignment.js';
@@ -18,7 +20,6 @@ import {
   pickMachineForTask,
 } from '../src/engine/equipment.js';
 import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
-import { mowingMinutes } from '../src/engine/mowing.js';
 import { getTask } from '../src/data/tasks.js';
 
 assert.equal(MACHINE_DAILY_MINUTES, 480);
@@ -30,23 +31,23 @@ assert.equal(start.machineDailyMinutes[STARTING_MACHINE_ID], MACHINE_DAILY_MINUT
 assert.equal(machineMinutesRemaining(start, STARTING_MACHINE_ID), MACHINE_DAILY_MINUTES);
 
 const greens = reducer(start, { type: 'PLAN_TASK', taskId: 'cutGreens' });
-assert.equal(greens.plannedTasks[0].machineId, STARTING_MACHINE_ID);
-assert.equal(greens.plannedTasks[0].minutes, mowingMinutes(start, 'cutGreens'));
-assert.equal(claimedMinutesByMachine(greens)[STARTING_MACHINE_ID], greens.plannedTasks[0].minutes);
+assert.equal(greens.plannedTasks[0].machineId, GREENSMASTER_ID);
+assert.equal(greens.plannedTasks[0].minutes, durationForTask(start, 'cutGreens'));
+assert.equal(claimedMinutesByMachine(greens)[GREENSMASTER_ID], greens.plannedTasks[0].minutes);
 assert.equal(
-  machineMinutesRemaining(greens, STARTING_MACHINE_ID),
+  machineMinutesRemaining(greens, GREENSMASTER_ID),
   MACHINE_DAILY_MINUTES - greens.plannedTasks[0].minutes,
 );
 
 let packed = greens;
 packed = reducer(packed, { type: 'PLAN_TASK', taskId: 'cutTees' });
 packed = reducer(packed, { type: 'PLAN_TASK', taskId: 'cutFairways' });
-const packedClaim = claimedMinutesByMachine(packed)[STARTING_MACHINE_ID];
+assert.equal(packed.plannedTasks.find((item) => item.taskId === 'cutFairways').machineId, REELMASTER_ID);
+const packedClaim = claimedMinutesByMachine(packed)[GREENSMASTER_ID];
 assert.equal(
   packedClaim,
-  packed.plannedTasks.reduce((sum, item) => sum + item.minutes, 0),
+  packed.plannedTasks.filter((item) => item.machineId === GREENSMASTER_ID).reduce((sum, item) => sum + item.minutes, 0),
 );
-assert.ok(packedClaim > MACHINE_DAILY_MINUTES - mowingMinutes(start, 'cutRough'));
 
 const soloBlocked = canPlanTask(packed, 'cutRough');
 assert.equal(soloBlocked.ok, false);
@@ -57,9 +58,12 @@ assert.ok(candidate);
 let crew = reducer(createInitialState(), { type: 'HIRE_WORKER', candidateId: candidate.id });
 const hire = crew.workers.find((item) => item.id !== PLAYER_ID && !item.isVolunteer);
 assert.ok(hire);
-crew = reducer(crew, { type: 'PLAN_TASK', taskId: 'cutGreens' });
-crew = reducer(crew, { type: 'PLAN_TASK', taskId: 'cutTees' });
 crew = reducer(crew, { type: 'PLAN_TASK', taskId: 'cutFairways' });
+const fairwayMinutes = crew.plannedTasks.find((item) => item.taskId === 'cutFairways').minutes;
+crew = {
+  ...crew,
+  machineDailyMinutes: { ...crew.machineDailyMinutes, [REELMASTER_ID]: fairwayMinutes },
+};
 const booked = canPlanTask(crew, 'cutRough', hire.id);
 assert.equal(booked.ok, false);
 assert.equal(booked.reason, MACHINE_BOOKED_REASON);
@@ -92,7 +96,7 @@ assert.match(shedSrc, /claimedMinutesByMachine/);
 
 const task = getTask('cutGreens');
 assert.equal(pickMachineForTask(start, task, start.workers[0])?.id, STARTING_MACHINE_ID);
-assert.equal(durationForTask(start, 'cutGreens', start.workers[0]), mowingMinutes(start, 'cutGreens'));
+assert.equal(durationForTask(start, 'cutGreens', start.workers[0]), durationForTask(start, 'cutGreens'));
 
 console.log('GATE B1 PASS MACHINE_DAILY_MINUTES is 480');
 console.log('GATE B2 PASS planning stores machineId and claims minutes');

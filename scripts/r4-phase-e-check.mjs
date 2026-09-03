@@ -47,7 +47,7 @@ assert.equal(start.usedListings.length, USED_LISTING_COUNT);
 assert.deepEqual(start.pendingDeliveries, []);
 assert.deepEqual(start.activeSales, []);
 assert.equal(canSellMachine(start, STARTING_MACHINE_ID).ok, false);
-assert.match(canSellMachine(start, STARTING_MACHINE_ID).reason, /Keep at least one/);
+assert.match(canSellMachine(start, STARTING_MACHINE_ID).reason, /No buyer|Keep at least one/);
 
 const listing = [...start.usedListings].sort((a, b) => a.price - b.price)[0];
 assert.ok(listing);

@@ -153,12 +153,12 @@ const dayTotal = ['cutGreens', 'rollGreens', 'changeCups', 'cutTees', 'cutFairwa
 assert.equal(dayTotal, DEFAULT_DAY_OVERLOAD_MINUTES);
 assert.equal(
   dayTotal,
-  mowingMinutes(start, 'cutGreens') +
+  durationForTask(start, 'cutGreens', player) +
     TASK_MINUTES.rollGreens +
     TASK_MINUTES.changeCups +
-    mowingMinutes(start, 'cutTees') +
-    mowingMinutes(start, 'cutFairways') +
-    mowingMinutes(start, 'cutRough') +
+    durationForTask(start, 'cutTees', player) +
+    durationForTask(start, 'cutFairways', player) +
+    durationForTask(start, 'cutRough', player) +
     TASK_MINUTES.rakeBunkers,
 );
 assert.ok(dayTotal / DAY_LENGTH_MINUTES > 1.3);

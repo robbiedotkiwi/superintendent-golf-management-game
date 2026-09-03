@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import {
   FOLEY_GRIND_MINUTES,
+  GREENSMASTER_ID,
   GRIND_AWAY_DAYS,
   REPAIR_MINUTES,
   GM_STANDING_START,
@@ -23,6 +24,7 @@ import {
   canBuyMachine,
   ineligibleMachines,
   isMachineAvailable,
+  machineMultiplierFor,
   pickMachine,
   surfaceCeiling,
   wearMultiplier,
@@ -50,7 +52,11 @@ function end(state) {
 
 const start = createInitialState();
 const baseTime = durationForTask(start, 'cutGreens');
-assert.equal(baseTime, mowingMinutes(start, 'cutGreens'));
+assert.equal(
+  baseTime,
+  Math.round(mowingMinutes(start, 'cutGreens') * machineMultiplierFor(start, GREENSMASTER_ID)),
+);
+assert.equal(pickMachine(start, getTask('cutGreens'))?.id, GREENSMASTER_ID);
 
 let bought = reducer(start, { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
 assert.equal(bought.capitalBudget, capitalGrant(SATISFACTION_START, GM_STANDING_START) - WALK_BEHIND_COST);
@@ -64,7 +70,7 @@ const withVentrac = reducer({ ...createInitialState(), cash: 100000 }, { type: '
 const blocked = ineligibleMachines(withVentrac, getTask('cutGreens'));
 assert.ok(blocked.some((item) => item.machine.id === 'ventrac'));
 assert.match(blocked[0].reason, /damage/i);
-assert.equal(pickMachine(withVentrac, getTask('cutGreens'))?.id, 'pushRotary');
+assert.equal(pickMachine(withVentrac, getTask('cutGreens'))?.id, GREENSMASTER_ID);
 
 const startCeiling = surfaceCeiling(createInitialState(), 'greens');
 assert.ok(startCeiling > 0);
