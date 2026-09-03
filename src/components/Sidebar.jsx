@@ -4,6 +4,7 @@ import {
   SECTION_SHED,
   SECTION_TURF,
   SIDEBAR_WIDTH,
+  START_DAY_LABEL,
 } from '../data/constants.js';
 import { WEATHER_LABELS } from '../data/events.js';
 import { qualityColor } from '../engine/color.js';
@@ -111,9 +112,11 @@ export default function Sidebar({
           type="button"
           onClick={onEndDay}
           disabled={playoutActive}
+          title={START_DAY_LABEL}
+          aria-label={START_DAY_LABEL}
           className="mt-2 w-full bg-[var(--machine-orange)] px-4 py-3 text-lg font-semibold text-[var(--paint)] disabled:opacity-40"
         >
-          End day
+          {START_DAY_LABEL}
         </button>
         <div className="mt-2 flex items-center gap-2">
           <button

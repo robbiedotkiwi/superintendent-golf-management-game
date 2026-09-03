@@ -1,5 +1,5 @@
 /**
- * UI Phase 7: location group, sound icon, End day pinned in the sidebar.
+ * UI Phase 7: location group, sound icon, Start day pinned in the sidebar.
  * Run: node scripts/ui-phase7-check.mjs
  */
 import assert from 'node:assert/strict';
@@ -11,7 +11,7 @@ assert.match(src, /onOpenOffice/);
 assert.match(src, /onOpenCrew/);
 assert.match(src, /onOpenShed/);
 assert.match(src, /onOpenTurf/);
-assert.match(src, /End day/);
+assert.match(src, /START_DAY_LABEL/);
 assert.match(src, /rounded-full bg-\[var\(--machine-orange\)\]/);
 assert.doesNotMatch(src, /Sound \{soundOn \? 'on' : 'off'\}/);
 assert.match(src, /Turn sound off/);

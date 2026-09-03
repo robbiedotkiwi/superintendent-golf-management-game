@@ -127,7 +127,7 @@ Move from a top HUD to a left sidebar. The current top row is a loose string of 
 5. **Surfaces** — one row per surface: name, quality, days since worked. Rows past their neglect threshold are marked. Clicking a row selects that surface, same as clicking the map.
 6. **Selected surface** — expands in place when a surface is selected. Height slider, pattern picker, angle slider, auto-rotate toggle, then the task buttons with their computed minutes.
 7. **Locations** — Pond, Office, Crew, Shed as one group.
-8. **Pinned to the bottom** — the time bar full sidebar width, then End day beneath it.
+8. **Pinned to the bottom** — the time bar full sidebar width, then Start day beneath it.
 
 **Time bar.** It currently sits in a wide empty box at the top with the number outside it. In the sidebar it becomes a full-width segmented bar with remaining and total inside it, segments per planned task, click a segment to remove, hover to name it. It must look like a bar even at 480/480 — show the empty track clearly.
 
@@ -137,7 +137,7 @@ Move from a top HUD to a left sidebar. The current top row is a loose string of 
 2. The map fills all space to the right of the sidebar with no dead brown margins.
 3. Selecting a surface on the map expands that row in the sidebar; nothing floats over the map.
 4. The time bar is visibly a track with a fill, segments are clickable and removable.
-5. End day is always visible without scrolling the sidebar.
+5. Start day is always visible without scrolling the sidebar.
 
 ---
 

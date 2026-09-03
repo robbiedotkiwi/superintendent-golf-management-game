@@ -6,7 +6,7 @@ import GameOver from './components/GameOver.jsx';
 import Office from './components/Office.jsx';
 import PlayoutBar from './components/PlayoutBar.jsx';
 import MapJobPopover from './components/MapJobPopover.jsx';
-import Sidebar from './components/Sidebar.jsx';
+import StartDayDialog from './components/StartDayDialog.jsx';
 import Tutorial from './components/Tutorial.jsx';
 import Turf from './components/Turf.jsx';
 import YearReview from './components/YearReview.jsx';
@@ -321,10 +321,15 @@ function GameScreen({
 }) {
   const view = state.section ?? SECTION_MAP;
   const tabs = state.tabs ?? {};
+  const [startDayOpen, setStartDayOpen] = useState(false);
 
   useEffect(() => {
     function onKey(event) {
       if (event.key !== 'Escape') return;
+      if (startDayOpen) {
+        setStartDayOpen(false);
+        return;
+      }
       if (view !== SECTION_MAP) {
         onCloseShed();
         return;
@@ -333,7 +338,7 @@ function GameScreen({
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onSelect, onCloseShed, view]);
+  }, [onSelect, onCloseShed, view, startDayOpen]);
 
   useEffect(() => {
     if (state.weather === WEATHER_FINE) playBirds(state.soundEnabled);
@@ -383,15 +388,8 @@ function GameScreen({
         minutesUsed={minutesUsed}
         minutesCapacity={minutesCapacity}
         onRemove={onRemove}
-        onEndDay={
-          watching
-            ? () => {}
-            : () => {
-                onCloseShed();
-                onEndDay();
-              }
-        }
-        playoutActive={watching}
+        onEndDay={watching ? () => {} : () => setStartDayOpen(true)}
+        playoutActive={watching || startDayOpen}
         section={view}
         onOpenTurf={onOpenTurf}
         onOpenShed={onOpenShed}
@@ -510,6 +508,20 @@ function GameScreen({
           </>
         )}
       </div>
+      {startDayOpen && !watching ? (
+        <StartDayDialog
+          state={state}
+          minutesRemaining={minutesRemaining}
+          onRemove={onRemove}
+          onSetIrrigation={onSetIrrigation}
+          onConfirm={() => {
+            onCloseShed();
+            onEndDay();
+            setStartDayOpen(false);
+          }}
+          onBack={() => setStartDayOpen(false)}
+        />
+      ) : null}
       <DaySummary summary={summary} onContinue={onDismissSummary} />
     </div>
   );

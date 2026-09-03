@@ -185,7 +185,7 @@ Displayed cut times at those defaults are 120 / 70 / 150 / 175. With roll (75), 
 
 Adding a task decrements the pool and fills the time bar. A task that would exceed remaining time is shown but disabled, with the reason stated. Tasks can be removed to refund the time.
 
-**End day** resolves:
+**Start day** resolves:
 
 - Planned tasks apply their gain, capped at the equipment ceiling (Phase 3; use a flat cap of 70 for now).
 - Unworked surfaces decay by `DECAY_BASE = 8`.

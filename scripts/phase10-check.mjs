@@ -24,7 +24,7 @@ assert.equal(createInitialState().saveVersion, SAVE_VERSION);
 
 const tutorial = readFileSync(new URL('../src/components/Tutorial.jsx', import.meta.url), 'utf8');
 assert.match(tutorial, /DAY_LENGTH_MINUTES/);
-assert.match(tutorial, /End the day|end the day/i);
+assert.match(tutorial, /start the day/i);
 
 let play = createInitialState();
 play = reducer(play, { type: 'DISMISS_TUTORIAL' });

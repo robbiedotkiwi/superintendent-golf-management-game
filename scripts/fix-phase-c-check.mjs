@@ -26,7 +26,7 @@ assert.match(sidebar, /SIDEBAR_WIDTH/);
 assert.match(sidebar, /Condition/);
 assert.match(sidebar, /shrink-0 border-t/);
 assert.match(sidebar, /<TimeBar/);
-assert.match(sidebar, /End day/);
+assert.match(sidebar, /START_DAY_LABEL|Start day/);
 assert.doesNotMatch(sidebar, /ForecastStrip/);
 assert.doesNotMatch(sidebar, /Satisfaction/);
 assert.doesNotMatch(sidebar, /Budgets/);
@@ -40,7 +40,7 @@ assert.match(timebar, /bg-\[var\(--paint\)\]\/20/);
 assert.match(timebar, /onRemove\(planned\.taskId\)/);
 assert.match(timebar, /\{remaining\}/);
 assert.match(timebar, /\{capacity\}/);
-assert.doesNotMatch(timebar, /End day/);
+assert.doesNotMatch(timebar, /Start day/);
 
 const panel = readFileSync(new URL('../src/components/TaskPanel.jsx', import.meta.url), 'utf8');
 assert.doesNotMatch(panel, /absolute inset-y-0/);

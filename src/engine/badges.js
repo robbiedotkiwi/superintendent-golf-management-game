@@ -1,4 +1,5 @@
 import {
+  DAY_FULLY_COMMITTED_COPY,
   DAYS_PER_WEEK,
   GM_MEETING_LEAD_DAYS,
   MOISTURE_SURFACES,
@@ -89,6 +90,16 @@ export function shedDot(state) {
   if ((state.activeSales ?? []).length > 0) return true;
   if (state.lastDeliveryDay === state.day) return true;
   return (state.pendingDeliveries ?? []).some((item) => item.arrivesDay === state.day);
+}
+
+export function skippedOverdueSurfaces(state) {
+  const planned = new Set((state.plannedTasks ?? []).map((item) => item.surface));
+  return overdueSurfaces(state).filter((surface) => !planned.has(surface));
+}
+
+export function unusedTimeCopy(remaining) {
+  if (remaining <= 0) return DAY_FULLY_COMMITTED_COPY;
+  return `You still have ${remaining} minutes unused.`;
 }
 
 export function sectionBadge(state, section) {

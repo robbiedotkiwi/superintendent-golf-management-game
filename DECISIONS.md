@@ -89,8 +89,8 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Course routing is out-and-back, not a ring around a hub: 1–4 go out, 5 turns down the west, 8–9 close along the shed. The pond sits west of the holes as a hazard, not in the middle. A returning nine still loops, so the convex property line looks oval; the shed is on the south edge rather than the centre. Tee numbers sit on cream discs behind each tee (`TEE_MARKER_RADIUS` 20) so they stay readable after the map scales to the HUD leftover. Flags sit on the north edge of each green. The property line is a convex hull of the roughs, shed and pond, expanded by `BOUNDARY_EXPAND`. The range bbox stays in the camera even before the range exists so the view does not jump.
 - Time-bar segments are the planned tasks: width is `minutes / capacity`, orange fill, paint hairline, native `title` for name + cost, click removes. Remaining/total sits immediately beside the track. Task reorder stays as tiny ↑↓ next to the numeral so MOVE_TASK is still reachable.
 - HUD tiers: condition is `text-6xl` and turf-coloured via `qualityColor`; day/season `text-4xl`; cash/satisfaction `text-2xl` with `$` and `en-US` grouping; maintenance and capital share a "Budgets" label at `text-lg`. Hole count leaves the HUD for the map label and the Office line. Disease is a single word until any surface pressure is above zero.
-- Task panel (and the pond panel) is `absolute` inside the map pane so it cannot shift layout or cover End day. It unmounts when closed so it cannot leave a soil slab over the map. Machine copy only for mowing and roll; cups and hand water stay silent. Plan buttons lead with minutes.
-- Nav: Pond/Office/Crew/Shed share one bordered group. Sound is a 40px speaker toggle. End day keeps a `ml-6` gap and the orange fill. Office unread is a corner badge, not `(n)` text.
+- Task panel (and the pond panel) is `absolute` inside the map pane so it cannot shift layout or cover Start day. It unmounts when closed so it cannot leave a soil slab over the map. Machine copy only for mowing and roll; cups and hand water stay silent. Plan buttons lead with minutes.
+- Nav: Pond/Office/Crew/Shed share one bordered group. Sound is a 40px speaker toggle. Start day keeps a `ml-6` gap and the orange fill. Office unread is a corner badge, not `(n)` text.
 
 ## Fixes Round 2
 
@@ -105,12 +105,12 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Double-cut greens is mowing, so it uses `TASK_MINUTES.doubleCutGreens` × height × pattern, and it applies mowing gain as well as the prep bonus.
 - Slider steps: 0.1 mm on greens, 1 mm on tees, fairways and rough. Old saves get default height, stripes at 0°, `lastMownDay` / `lastRakedDay` of day 1, `moisture: null`, and `view: { zoom: 1, panX: 0, panY: 0 }`.
 - Planned-task `level` is stripped on migrate. Changing height or pattern recomputes planned mowing minutes and drops that cut if it no longer fits the worker.
-- Days since last worked is `day - lastMownDay` (or `lastRakedDay` for bunkers) on the current morning. Neglect mail and the satisfaction drain are evaluated against tomorrow morning during end-of-day resolve so the inbox matches the number the player sees after End day.
+- Days since last worked is `day - lastMownDay` (or `lastRakedDay` for bunkers) on the current morning. Neglect mail and the satisfaction drain are evaluated against tomorrow morning during end-of-day resolve so the inbox matches the number the player sees after Start day.
 - A golfer email fires on the first morning past the threshold (`daysSince === threshold + 1`). Greens therefore complain after three skipped days; rough does not complain after ten. A GM email and −2 satisfaction per neglected surface per day start when `daysSince` reaches double the threshold.
 - Sidebar rows mark `overdue` when `daysSince >= threshold`, which is the first morning the surface has reached the limit. Mail still waits one extra day.
 - Pond, surfaces, and map clicks share one `selected` id. Choosing pond collapses every surface row and shows irrigation under Locations; choosing a surface hides irrigation.
 - Tournament line, disease, GM meeting, ball pick, and storm debris sit after Money and before Surfaces so those actions stay reachable without the old top weather strip.
-- Sound stays next to End day in the pinned footer. Task reorder arrows sit under the time bar, not inside it.
+- Sound stays next to Start day in the pinned footer. Task reorder arrows sit under the time bar, not inside it.
 - The map pane is an unpadded `flex-1` column with the SVG `absolute inset-0`. `xMidYMid meet` is kept so the whole course stays visible; leftover pane area is the same soil fill as the map, not a HUD gutter.
 - Course layout lives in `courseLayout.js` as centerline coordinates plus bunker placements. `holeShape.js` expands those into polygons; `CourseMap` only draws the polygons so a later generator can replace the data file.
 - Rough polygons are asserted with a `ROUGH_GAP_MIN` inflate so a visible gap is required, not just a non-touching edge. Sequential green-to-tee walks may be up to `HOLE_WALK_MAX` because pinched collars still need space.
@@ -128,11 +128,11 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - `END_DAY` still resolves immediately in the reducer. The map then paints `summary.before` and applies each done task's `after` as the film cursor moves. Skip jumps the film; it does not resolve again.
 - `prefers-reduced-motion` takes the skip path. In-progress film is local React state and is not saved; reload shows the already-resolved morning.
 - Speed/skip live on the save object so old saves pick up defaults. Custom presets and section/tab wait for later phases.
-- Office, Crew and Shed replace the map pane only. The sidebar stays mounted. End day returns to the map so the day film has a course to play on. Location ids stay `course` / `office` / `crew` / `shed` so existing view strings keep working.
+- Office, Crew and Shed replace the map pane only. The sidebar stays mounted. Start day returns to the map so the day film has a course to play on. Location ids stay `course` / `office` / `crew` / `shed` so existing view strings keep working.
 - Office tabs are Inbox (mail + GM meeting), Money, Projects. Crew is Roster / Hire. Shed is Yard / Buy. Tab state lives in App for now and is not saved until the persist phase.
 - Escape from Office, Crew or Shed (any sub-tab) returns to the map in one step. It does not walk back through tabs. On the map it still clears the selected surface.
 - Custom presets store height, pattern, angle and auto-rotate for one surface. Cap is `PRESET_MAX` (8). Apply uses the existing HOC/pattern actions, so the mowing model is unchanged.
-- Section and tab live on the save object (`state.section`, `state.tabs`). Continue restores them. Camera zoom stays in `state.view`. End day still jumps to the map via `SET_SECTION`, which is also saved.
+- Section and tab live on the save object (`state.section`, `state.tabs`). Continue restores them. Camera zoom stays in `state.view`. Start day still jumps to the map via `SET_SECTION`, which is also saved.
 - `view` / `tabs` are read at the top of `GameScreen` so the Escape handler never closes over a later `const`. Environments with `prefers-reduced-motion` take the skip-film path, same as the skip checkbox.
 
 ## Fixes Round 4
@@ -159,8 +159,13 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 
 ### Phase B
 
-- Sidebar is day / season·year, one-line today+tomorrow weather, the condition number, Turf/Office/Crew/Shed, then a pinned footer (time bar, day button, Fit / moisture / sound). The footer still says End day until Phase C. Skip-film lives only on the playout bar. Reorder arrows are gone until Phase D drag.
+- Sidebar is day / season·year, one-line today+tomorrow weather, the condition number, Turf/Office/Crew/Shed, then a pinned footer (time bar, day button, Fit / moisture / sound). Skip-film lives only on the playout bar. Reorder arrows are gone until Phase D drag.
 - Surfaces, mowing, irrigation, pond, disease and the 7-day strip live in Turf (Summary · Mowing · Irrigation · Bunkers · Pond · Presets). Cash, budgets, satisfaction and tournaments stay in Office. Map surface clicks open `MapJobPopover` (one-click jobs at current settings). Pond clicks open the Turf Pond tab.
 - Invented shipped presets `Daily`, `Tournament` and `Recovery` are course-wide packs applied through the existing HOC/pattern patches. Badge numbers: overdue surface count, unread mail, low-morale workers + unread golfer/neglect mail, machines broken or away. Dots: outbreak or out-of-band moisture; GM meeting in `GM_MEETING_LEAD_DAYS` (2) or an open tournament decision; someone whose `trainingUntilDay` is tomorrow; used listings, an active sale, or `lastDeliveryDay` today. `MORALE_BADGE_BELOW` is `MORALE_SLOW_BELOW`. `lastMainsCost` is stored from the night's irrigation for the Pond tab.
 - Round 2/UI checks that required money, surfaces and the forecast in the sidebar now look at Office/Turf. `SIDEBAR_FIT_HEIGHT` is 720; the sidebar itself does not scroll.
+
+### Phase C
+
+- The reducer action stays `END_DAY`. The button, tutorial and copy use `START_DAY_LABEL` ("Start day"). Pressing it opens `StartDayDialog` (local UI state, not saved). Confirm still calls `SET_SECTION` to the map then `END_DAY`. Back closes the dialog with the plan and any in-dialog irrigation edits intact. Irrigation uses the existing `SET_IRRIGATION` action, so the night is planned from the same field as Turf.
+- Unused copy is `You still have N minutes unused.` or `DAY_FULLY_COMMITTED_COPY`. Overdue-and-skipped is `skippedOverdueSurfaces`. The 7-day `ForecastStrip` is in the dialog. The spec file `FIXES_ROUND_5.md` still contains the old phrase because it describes the rename; every other file does not.
 

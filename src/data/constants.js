@@ -723,6 +723,8 @@ export const TURF_TAB_LABELS = {
 };
 export const GM_MEETING_LEAD_DAYS = 2;
 export const MORALE_BADGE_BELOW = MORALE_SLOW_BELOW;
+export const START_DAY_LABEL = 'Start day';
+export const DAY_FULLY_COMMITTED_COPY = 'The day is fully committed.';
 export const SIDEBAR_FIT_HEIGHT = 720;
 export const SHIPPED_PRESET_DAILY = 'daily';
 export const SHIPPED_PRESET_TOURNAMENT = 'tournament';

@@ -140,7 +140,7 @@ assert.match(sidebar, /label="Office"/);
 assert.match(sidebar, /label="Crew"/);
 assert.match(sidebar, /label="Shed"/);
 assert.match(sidebar, /<TimeBar/);
-assert.match(sidebar, /End day/);
+assert.match(sidebar, /START_DAY_LABEL/);
 assert.match(sidebar, /Fit/);
 assert.match(sidebar, /onToggleMoistureOverlay/);
 assert.match(sidebar, /Turn sound off/);
