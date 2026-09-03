@@ -389,7 +389,8 @@ function MachinePicker({ state, surface, onSetMachineOverride }) {
 
 function PondPanel({ state, percent, aerator, onBuyAerator }) {
   return (
-    <div className="space-y-3">
+    <section className="border border-[var(--sand)] p-3 space-y-3">
+      <h3 className="text-lg font-semibold">Pond</h3>
       <div>
         <div className="text-sm text-[var(--sand)]">Volume</div>
         <div className="font-condensed text-4xl font-bold leading-none">{Math.round(state.pond.volume)}</div>
@@ -415,7 +416,7 @@ function PondPanel({ state, percent, aerator, onBuyAerator }) {
           </button>
         </>
       )}
-    </div>
+    </section>
   );
 }
 

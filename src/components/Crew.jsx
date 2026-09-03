@@ -110,7 +110,11 @@ export default function Crew({
             type="button"
             disabled={state.volunteerDayChangedThisSeason && weekday !== state.volunteerWeekday}
             onClick={() => onVolunteerDay(weekday)}
-            className="border border-[var(--sand)] px-3 py-1 disabled:opacity-40"
+            className={`border border-[var(--sand)] px-3 py-1 disabled:opacity-40 ${
+              weekday === (state.volunteerWeekday ?? VOLUNTEER_DEFAULT_WEEKDAY)
+                ? 'bg-[var(--machine-orange)]'
+                : ''
+            }`}
           >
             Day {weekday}
           </button>
