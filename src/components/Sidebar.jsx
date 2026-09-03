@@ -1,5 +1,6 @@
 import {
   GM_MEETING_MINUTES,
+  MOISTURE_SURFACES,
   SIDEBAR_WIDTH,
   SURFACE_KEYS,
   TASK_MINUTES,
@@ -17,6 +18,7 @@ import { daysUntilNextTournament, nextTournament } from '../engine/tournament.js
 import { fitCourse } from '../engine/view.js';
 import ForecastStrip from './ForecastStrip.jsx';
 import IrrigationPanel from './IrrigationPanel.jsx';
+import { MoistureLine } from './MoistureReadout.jsx';
 import TaskPanel from './TaskPanel.jsx';
 import TimeBar from './TimeBar.jsx';
 import { DiseaseReadout } from './WeatherStrip.jsx';
@@ -49,6 +51,10 @@ export default function Sidebar({
   onSetIrrigation,
   onSetView,
   onBuyAerator,
+  onBuyGreensSensors,
+  onBuyTurfRad,
+  onToggleMoistureOverlay,
+  onSetHandWaterTargets,
   onToggleSound,
 }) {
   const debris = state.plannedTasks.find((item) => item.taskId === 'clearDebris');
@@ -197,6 +203,12 @@ export default function Sidebar({
                     {' · '}
                     {days}d
                     {neglected ? ' · overdue' : ''}
+                    {MOISTURE_SURFACES.includes(surface) ? (
+                      <>
+                        {' · '}
+                        <MoistureLine state={state} surface={surface} />
+                      </>
+                    ) : null}
                   </span>
                 </button>
                 {open ? (
@@ -211,6 +223,7 @@ export default function Sidebar({
                       onSetPattern={onSetPattern}
                       onSetAngle={onSetAngle}
                       onSetAutoRotate={onSetAutoRotate}
+                      onSetHandWaterTargets={onSetHandWaterTargets}
                     />
                   </div>
                 ) : null}
@@ -244,7 +257,13 @@ export default function Sidebar({
           </button>
         </nav>
         {selected === 'pond' ? (
-          <IrrigationPanel state={state} onSetPolicy={onSetIrrigation} onBuyAerator={onBuyAerator} />
+          <IrrigationPanel
+            state={state}
+            onSetPolicy={onSetIrrigation}
+            onBuyAerator={onBuyAerator}
+            onBuyGreensSensors={onBuyGreensSensors}
+            onBuyTurfRad={onBuyTurfRad}
+          />
         ) : null}
       </div>
 
@@ -277,6 +296,16 @@ export default function Sidebar({
             className="border border-[var(--sand)] px-3 py-2 text-sm"
           >
             Fit
+          </button>
+          <button
+            type="button"
+            onClick={onToggleMoistureOverlay}
+            aria-pressed={Boolean(state.moistureOverlay)}
+            className={`border px-3 py-2 text-sm ${
+              state.moistureOverlay ? 'border-[var(--machine-orange)] bg-[var(--machine-orange)]' : 'border-[var(--sand)]'
+            }`}
+          >
+            Moisture
           </button>
           <button
             type="button"

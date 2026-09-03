@@ -11,8 +11,10 @@ import { tasksForSurface, taskUsesMachine } from '../data/tasks.js';
 import { durationForTask, assignWorker, certifiedPresent, workerById } from '../engine/assignment.js';
 import { ineligibleMachines, pickMachine, surfaceCeiling } from '../engine/equipment.js';
 import { hasHoc, hasPattern, inHocStressBand } from '../engine/mowing.js';
+import { allGreenIds } from '../engine/moisture.js';
 import { inPrepWindow } from '../engine/tournament.js';
 import { canPlanTask } from '../engine/gameState.js';
+import { GreensMoistureList } from './MoistureReadout.jsx';
 
 function formatQuality(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -28,6 +30,7 @@ export default function TaskPanel({
   onSetPattern,
   onSetAngle,
   onSetAutoRotate,
+  onSetHandWaterTargets,
 }) {
   const record = state.surfaces[surface];
   const tasks = tasksForSurface(surface);
@@ -105,6 +108,30 @@ export default function TaskPanel({
             />
             Auto-rotate each cut
           </label>
+        </section>
+      ) : null}
+      {surface === 'greens' ? <GreensMoistureList state={state} /> : null}
+      {surface === 'greens' ? (
+        <section className="border border-[var(--sand)] p-3">
+          <div className="text-sm text-[var(--sand)]">Hand-water greens</div>
+          <div className="mt-2 grid grid-cols-3 gap-1">
+            {allGreenIds(state.holes).map((id) => {
+              const on = (state.handWaterTargets ?? []).includes(id);
+              return (
+                <label key={id} className="flex items-center gap-1 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={on}
+                    onChange={() => {
+                      const current = state.handWaterTargets ?? [];
+                      onSetHandWaterTargets(on ? current.filter((item) => item !== id) : [...current, id]);
+                    }}
+                  />
+                  {id}
+                </label>
+              );
+            })}
+          </div>
         </section>
       ) : null}
       {tasks.some((task) => task.requiresSpray) && !certifiedPresent(state, surface) ? (

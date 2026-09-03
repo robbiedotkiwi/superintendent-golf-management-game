@@ -139,6 +139,10 @@ export default function App() {
           onSetIrrigation={(surface, policy) => dispatch({ type: 'SET_IRRIGATION', surface, policy })}
           onSetView={(view) => dispatch({ type: 'SET_VIEW', view })}
           onBuyAerator={() => dispatch({ type: 'BUY_AERATOR' })}
+          onBuyGreensSensors={() => dispatch({ type: 'BUY_GREENS_SENSORS' })}
+          onBuyTurfRad={() => dispatch({ type: 'BUY_TURFRAD' })}
+          onToggleMoistureOverlay={() => dispatch({ type: 'TOGGLE_MOISTURE_OVERLAY' })}
+          onSetHandWaterTargets={(targets) => dispatch({ type: 'SET_HAND_WATER_TARGETS', targets })}
           onLease={(machineId) => dispatch({ type: 'LEASE_MACHINE', machineId })}
           onStopLease={(machineId) => dispatch({ type: 'STOP_LEASE', machineId })}
           onSnap={() => dispatch({ type: 'SNAP_TOURNAMENT' })}
@@ -221,6 +225,10 @@ function GameScreen({
   onSetIrrigation,
   onSetView,
   onBuyAerator,
+  onBuyGreensSensors,
+  onBuyTurfRad,
+  onToggleMoistureOverlay,
+  onSetHandWaterTargets,
   onLease,
   onStopLease,
   onSnap,
@@ -337,6 +345,10 @@ function GameScreen({
         onSetIrrigation={onSetIrrigation}
         onSetView={onSetView}
         onBuyAerator={onBuyAerator}
+        onBuyGreensSensors={onBuyGreensSensors}
+        onBuyTurfRad={onBuyTurfRad}
+        onToggleMoistureOverlay={onToggleMoistureOverlay}
+        onSetHandWaterTargets={onSetHandWaterTargets}
         onToggleSound={onToggleSound}
       />
       <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
@@ -353,6 +365,7 @@ function GameScreen({
           day={state.day}
           view={state.view}
           onView={onSetView}
+          moistureState={state}
         />
       </div>
       <DaySummary summary={summary} onContinue={onDismissSummary} />

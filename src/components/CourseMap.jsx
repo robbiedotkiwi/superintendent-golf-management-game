@@ -30,6 +30,11 @@ import {
   TEE_MARKER_RADIUS,
   VIEW_ZOOM_STEP,
   VIEW_ZOOM_WHEEL_FACTOR,
+  MOISTURE_BAND_MARK_WIDTH,
+  MOISTURE_HATCH_SIZE,
+  MOISTURE_HATCH_WIDTH,
+  MOISTURE_OVERLAY_OPACITY,
+  MOISTURE_STALE_OPACITY,
   paint,
 } from '../data/constants.js';
 import {
@@ -48,6 +53,7 @@ import {
 } from '../data/course.js';
 import { pondPercent } from '../engine/irrigation.js';
 import { hasPattern } from '../engine/mowing.js';
+import { moistureOverlayColor, moistureStatus, outOfBand } from '../engine/moisture.js';
 import { patternRotate, patternStripeColor, surfacePatternOpacity } from '../engine/pattern.js';
 import { prefersReducedMotion } from '../engine/sound.js';
 import {
@@ -64,6 +70,41 @@ import {
   zoomAround,
   zoomBy,
 } from '../engine/view.js';
+
+function MoistureOverlayShape({ kind, d, cx, cy, rx, ry, x, y, width, height, surface, state, greenIndex }) {
+  if (!state?.moistureOverlay) return null;
+  const status = moistureStatus(state, surface, greenIndex);
+  if (status.kind === 'hidden') return null;
+  const color = moistureOverlayColor(status.value, surface);
+  const opacity = status.kind === 'stale' ? MOISTURE_STALE_OPACITY : MOISTURE_OVERLAY_OPACITY;
+  const marked = outOfBand(status.value, surface);
+  const hatch = status.kind === 'stale' ? 'url(#moisture-hatch)' : null;
+  const stroke = marked ? 'var(--machine-orange)' : 'none';
+  const strokeWidth = marked ? MOISTURE_BAND_MARK_WIDTH : 0;
+  const common = { pointerEvents: 'none', opacity };
+  if (kind === 'path') {
+    return (
+      <>
+        <path d={d} fill={color} stroke={stroke} strokeWidth={strokeWidth} {...common} />
+        {hatch ? <path d={d} fill={hatch} pointerEvents="none" opacity={opacity} /> : null}
+      </>
+    );
+  }
+  if (kind === 'rect') {
+    return (
+      <>
+        <rect x={x} y={y} width={width} height={height} fill={color} stroke={stroke} strokeWidth={strokeWidth} {...common} />
+        {hatch ? <rect x={x} y={y} width={width} height={height} fill={hatch} pointerEvents="none" opacity={opacity} /> : null}
+      </>
+    );
+  }
+  return (
+    <>
+      <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill={color} stroke={stroke} strokeWidth={strokeWidth} {...common} />
+      {hatch ? <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill={hatch} pointerEvents="none" opacity={opacity} /> : null}
+    </>
+  );
+}
 
 function activate(event, surface, onSelect) {
   if (event.key === 'Enter' || event.key === ' ') {
@@ -141,6 +182,7 @@ export default function CourseMap({
   day = 1,
   view = defaultView(),
   onView,
+  moistureState = null,
 }) {
   const svgRef = useRef(null);
   const dragRef = useRef(null);
@@ -276,6 +318,22 @@ export default function CourseMap({
             color={patternStripeColor(fills[surface], paint)}
           />
         ))}
+        <pattern
+          id="moisture-hatch"
+          width={MOISTURE_HATCH_SIZE}
+          height={MOISTURE_HATCH_SIZE}
+          patternUnits="userSpaceOnUse"
+          patternTransform="rotate(45)"
+        >
+          <line
+            x1="0"
+            y1="0"
+            x2="0"
+            y2={MOISTURE_HATCH_SIZE}
+            stroke="var(--paint)"
+            strokeWidth={MOISTURE_HATCH_WIDTH}
+          />
+        </pattern>
       </defs>
       <rect
         x={bounds.minX}
@@ -369,6 +427,7 @@ export default function CourseMap({
             opacity={surfacePatternOpacity(patternState, 'fairways')}
             pointerEvents="none"
           />
+          <MoistureOverlayShape kind="path" d={holePath(hole.fairway)} surface="fairways" state={moistureState} />
         </g>
       ))}
       {layout.map((hole) =>
@@ -422,6 +481,15 @@ export default function CourseMap({
             opacity={surfacePatternOpacity(patternState, 'tees')}
             pointerEvents="none"
           />
+          <MoistureOverlayShape
+            kind="rect"
+            x={hole.tee.cx - hole.tee.rx}
+            y={hole.tee.cy - hole.tee.ry}
+            width={hole.tee.rx * 2}
+            height={hole.tee.ry * 2}
+            surface="tees"
+            state={moistureState}
+          />
         </g>
       ))}
       {layout.map((hole) => (
@@ -453,6 +521,16 @@ export default function CourseMap({
             fill="url(#mow-greens)"
             opacity={surfacePatternOpacity(patternState, 'greens')}
             pointerEvents="none"
+          />
+          <MoistureOverlayShape
+            kind="ellipse"
+            cx={hole.green.cx}
+            cy={hole.green.cy}
+            rx={hole.green.rx}
+            ry={hole.green.ry}
+            surface="greens"
+            state={moistureState}
+            greenIndex={hole.id - 1}
           />
         </g>
       ))}

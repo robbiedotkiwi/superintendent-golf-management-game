@@ -12,7 +12,6 @@ import {
   RAIN_POND_M3,
   SEASON_WATER,
   STORM_POND_M3,
-  SUMMER_UNDERWATER_DECAY,
   WEATHER_HEAVY_RAIN,
   WEATHER_RAIN,
   WEATHER_STORM,
@@ -32,9 +31,6 @@ export function irrigationDemand(state) {
     if (policy === 'light' || policy === 'full') {
       const factor = hocFactor(surface, state.surfaces?.[surface]?.hoc);
       amount = IRRIGATION_M3[surface][policy] * seasonMult * HOC_WATER_MULT(factor);
-    }
-    if (surface === 'greens' && state.plannedTasks.some((item) => item.taskId === 'handWater')) {
-      amount = 0;
     }
     demand[surface] = amount;
     total += amount;
@@ -65,28 +61,12 @@ export function resolveIrrigation(state) {
   }
   health = Math.max(0, Math.min(POND_HEALTH_MAX, health));
 
-  const watered = {};
-  for (const surface of IRRIGATED_SURFACES) {
-    const hand = surface === 'greens' && state.plannedTasks.some((item) => item.taskId === 'handWater');
-    watered[surface] = demand[surface] > 0 || hand;
-  }
-
   return {
     pond: { volume, health },
     mainsCost,
     shortfall,
     demand,
-    watered,
   };
-}
-
-export function summerUnderwaterDecay(state, watered) {
-  if (state.season !== 'summer') return {};
-  const extra = {};
-  for (const surface of IRRIGATED_SURFACES) {
-    if (!watered[surface]) extra[surface] = SUMMER_UNDERWATER_DECAY[surface];
-  }
-  return extra;
 }
 
 export function canBuyAerator(state) {

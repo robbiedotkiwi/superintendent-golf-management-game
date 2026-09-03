@@ -97,6 +97,7 @@ export function expandHole(recipe) {
     tee: { cx: teePt[0], cy: teePt[1], rx: TEE_RX, ry: TEE_RY },
     green: { cx: greenPt[0], cy: greenPt[1], rx: GREEN_RX, ry: GREEN_RY },
     marker: { cx: marker[0], cy: marker[1] },
+    dryingFactor: recipe.dryingFactor,
   };
 }
 

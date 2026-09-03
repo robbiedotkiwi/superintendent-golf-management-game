@@ -12,6 +12,13 @@ import {
 } from './staff.js';
 import { generateCandidates } from '../data/staff.js';
 import { emptyDisease, emptyUntil } from './disease.js';
+import {
+  allGreenIds,
+  canBuyGreensSensors,
+  canBuyTurfRad,
+  emptyMoisture,
+  emptyMoistureReadDay,
+} from './moisture.js';
 import { canBuyAerator, IRRIGATED_SURFACES, isIrrigationPolicy } from './irrigation.js';
 import { capitalGrant, leaseMachine, maintenanceGrant, stopLease, takeLoan } from './budget.js';
 import { emptyDaysSinceWorked, markMailRead, meetingDue } from './mail.js';
@@ -63,6 +70,8 @@ import {
   GM_STANDING_START,
   GM_TOURNAMENT_DECLINE_STANDING,
   AERATOR_COST,
+  GREENS_SENSORS_COST,
+  TURFRAD_COST,
   SAVE_VERSION,
   SOUND_DEFAULT_ON,
   PATTERN_KEYS,
@@ -152,6 +161,12 @@ export function createInitialState() {
     pond: { volume: POND_START_VOLUME, health: POND_HEALTH_START },
     irrigation: { ...STARTING_IRRIGATION },
     hasAerator: false,
+    moisture: emptyMoisture(HOLE_COUNT),
+    moistureReadDay: emptyMoistureReadDay(HOLE_COUNT),
+    handWaterTargets: allGreenIds(HOLE_COUNT),
+    hasGreensSensors: false,
+    hasTurfRad: false,
+    moistureOverlay: false,
     disease: emptyDisease(),
     sprayedUntil: emptyUntil(),
     fertiliserUntil: emptyUntil(),
@@ -231,6 +246,10 @@ export function canPlanTask(state, taskId, workerId) {
 
   if (task.kind === 'prep' && !inPrepWindow(state)) {
     return { ok: false, reason: 'Prep only in the three days before a tournament.' };
+  }
+
+  if (task.id === 'handWater' && (state.handWaterTargets ?? []).length === 0) {
+    return { ok: false, reason: 'Select at least one green.' };
   }
 
   if (state.plannedTasks.some((planned) => planned.taskId === taskId)) {
@@ -343,6 +362,7 @@ export function reducer(state, action) {
             surface: task.surface,
             workerId: check.workerId,
             minutes: check.minutes,
+            ...(action.taskId === 'handWater' ? { greens: [...(state.handWaterTargets ?? [])] } : {}),
           },
         ],
         workers: state.workers.map((item) =>
@@ -500,6 +520,46 @@ export function reducer(state, action) {
         { ...state, capitalBudget: state.capitalBudget - AERATOR_COST, hasAerator: true },
         AERATOR_COST,
       );
+    }
+    case 'BUY_GREENS_SENSORS': {
+      const check = canBuyGreensSensors(state);
+      if (!check.ok) return state;
+      return bumpCapitalSpent(
+        { ...state, capitalBudget: state.capitalBudget - GREENS_SENSORS_COST, hasGreensSensors: true },
+        GREENS_SENSORS_COST,
+      );
+    }
+    case 'BUY_TURFRAD': {
+      const check = canBuyTurfRad(state);
+      if (!check.ok) return state;
+      return bumpCapitalSpent(
+        { ...state, capitalBudget: state.capitalBudget - TURFRAD_COST, hasTurfRad: true },
+        TURFRAD_COST,
+      );
+    }
+    case 'TOGGLE_MOISTURE_OVERLAY':
+      return { ...state, moistureOverlay: !state.moistureOverlay };
+    case 'SET_HAND_WATER_TARGETS': {
+      const holes = state.holes ?? HOLE_COUNT;
+      const allowed = new Set(allGreenIds(holes));
+      const targets = [...new Set((action.targets ?? []).filter((id) => allowed.has(id)))].sort((a, b) => a - b);
+      let next = { ...state, handWaterTargets: targets };
+      if (next.plannedTasks.some((item) => item.taskId === 'handWater')) {
+        if (targets.length === 0) return removePlannedTask(next, 'handWater');
+        next = {
+          ...next,
+          plannedTasks: next.plannedTasks.map((item) =>
+            item.taskId === 'handWater' ? { ...item, greens: targets } : item,
+          ),
+        };
+        next = recomputePlannedMinutes(next);
+        const planned = next.plannedTasks.find((item) => item.taskId === 'handWater');
+        const worker = planned ? next.workers.find((item) => item.id === planned.workerId) : null;
+        if (worker && worker.minutesUsed > worker.minutesToday) {
+          return removePlannedTask(next, 'handWater');
+        }
+      }
+      return next;
     }
     case 'SET_VIEW': {
       const layout = holesForCount(state.holes ?? HOLE_COUNT);

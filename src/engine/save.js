@@ -24,6 +24,7 @@ import { emptyDisease, emptyUntil } from './disease.js';
 import { emptyYearRecord } from './history.js';
 import { emptyDaysSinceWorked } from './mail.js';
 import { mergeSurfaceFields } from './mowing.js';
+import { migrateMoisture } from './moisture.js';
 import { createRng } from './rng.js';
 import { buildForecast } from './weather.js';
 
@@ -84,6 +85,7 @@ export function withDefaults(state) {
     pond: state.pond ?? { volume: POND_START_VOLUME, health: POND_HEALTH_START },
     irrigation: state.irrigation ?? { ...STARTING_IRRIGATION },
     hasAerator: Boolean(state.hasAerator),
+    ...migrateMoisture(state),
     maintenanceBudget: state.maintenanceBudget ?? STARTING_MAINTENANCE_BUDGET,
     capitalBudget: state.capitalBudget ?? STARTING_CAPITAL_BUDGET,
     disease: state.disease ?? emptyDisease(),

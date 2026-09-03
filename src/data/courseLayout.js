@@ -4,6 +4,7 @@ import { expandHole } from '../engine/holeShape.js';
 const HOLE_RECIPES = [
   {
     id: 1,
+    dryingFactor: 1.12,
     dogleg: true,
     centerline: [
       [520, 770],
@@ -17,6 +18,7 @@ const HOLE_RECIPES = [
   },
   {
     id: 2,
+    dryingFactor: 0.86,
     dogleg: true,
     centerline: [
       [830, 460],
@@ -30,6 +32,7 @@ const HOLE_RECIPES = [
   },
   {
     id: 3,
+    dryingFactor: 1.3,
     dogleg: false,
     centerline: [
       [980, 140],
@@ -40,6 +43,7 @@ const HOLE_RECIPES = [
   },
   {
     id: 4,
+    dryingFactor: 0.8,
     dogleg: false,
     centerline: [
       [520, 70],
@@ -50,6 +54,7 @@ const HOLE_RECIPES = [
   },
   {
     id: 5,
+    dryingFactor: 1.24,
     dogleg: true,
     centerline: [
       [250, 330],
@@ -63,6 +68,7 @@ const HOLE_RECIPES = [
   },
   {
     id: 6,
+    dryingFactor: 0.93,
     dogleg: false,
     centerline: [
       [340, 710],
@@ -73,6 +79,7 @@ const HOLE_RECIPES = [
   },
   {
     id: 7,
+    dryingFactor: 1.0,
     dogleg: false,
     centerline: [
       [530, 880],
@@ -83,6 +90,7 @@ const HOLE_RECIPES = [
   },
   {
     id: 8,
+    dryingFactor: 1.18,
     dogleg: true,
     centerline: [
       [750, 870],
@@ -96,6 +104,7 @@ const HOLE_RECIPES = [
   },
   {
     id: 9,
+    dryingFactor: 1.06,
     dogleg: false,
     centerline: [
       [1060, 960],

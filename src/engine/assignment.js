@@ -2,6 +2,7 @@ import { getTask } from '../data/tasks.js';
 import { AUTO_PICK_MINUTES, BALL_PICK_MINUTES, TASK_MINUTES } from '../data/constants.js';
 import { machineTimeMultiplier } from './equipment.js';
 import { mowingMinutes } from './mowing.js';
+import { handWaterMinutes } from './moisture.js';
 import { taskTimeMultiplier } from './projects.js';
 import { isWorkerPresent, workerAllows, workerTimeMultiplier } from './skills.js';
 
@@ -16,6 +17,7 @@ export function preferredStat(surface) {
 export function baseTaskMinutes(state, taskId) {
   const task = getTask(taskId);
   if (taskId === 'pickBalls') return state.hasAutoPicker ? AUTO_PICK_MINUTES : BALL_PICK_MINUTES;
+  if (taskId === 'handWater') return handWaterMinutes(state);
   if (task?.mowing) return mowingMinutes(state, taskId);
   return TASK_MINUTES[taskId];
 }

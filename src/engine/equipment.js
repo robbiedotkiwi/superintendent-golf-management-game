@@ -28,6 +28,7 @@ import {
 import { getMachine, MACHINES, machineAllows, TURF_DAMAGE_REASON } from '../data/equipment.js';
 import { getTask } from '../data/tasks.js';
 import { hocFactor, mowingMinutes } from './mowing.js';
+import { handWaterMinutes } from './moisture.js';
 import { taskTimeMultiplier } from './projects.js';
 import { bumpCapitalSpent } from './history.js';
 import { workerTimeMultiplier } from './skills.js';
@@ -105,7 +106,11 @@ export function ineligibleMachines(state, task) {
 
 export function machineDurationForTask(state, taskId) {
   const task = getTask(taskId);
-  const base = task?.mowing ? mowingMinutes(state, taskId) : TASK_MINUTES[taskId];
+  const base = taskId === 'handWater'
+    ? handWaterMinutes(state)
+    : task?.mowing
+      ? mowingMinutes(state, taskId)
+      : TASK_MINUTES[taskId];
   return Math.round(base * machineTimeMultiplier(state, task) * taskTimeMultiplier(state, task));
 }
 

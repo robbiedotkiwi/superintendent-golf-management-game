@@ -377,7 +377,7 @@ Pond refills: `GROUNDWATER_M3 = 20` per day, rain adds 150, heavy rain or storm 
 
 If the pond cannot cover the night's draw, the shortfall comes from mains at `MAINS_COST_PER_M3 = 2.5`, straight out of cash and itemised in the summary.
 
-Under-watering in summer adds extra decay, heaviest on greens. **Hand watering** is a task (60 minutes, greens) that offsets a shortfall without using pond water — the way out when the pond is low and cash is tight.
+Moisture is a percentage, hidden until a check, greens sensors, or TurfRad. Below the band is drought stress (any season). Above the band raises disease pressure and cuts quality gain; the extra irrigation still draws the pond. Hand watering targets individual greens at 15 minutes each.
 
 **Pond health** 0–100, separate from level. Falls in summer and when the pond sits low. Low health reduces golfer satisfaction (Phase 7). An **aerator** (6,000) holds health up and is drawn on the map.
 
@@ -388,7 +388,7 @@ Under-watering in summer adds extra decay, heaviest on greens. **Hand watering**
 3. Rain raises the pond volume.
 4. A shortfall draws mains water, deducts cash at 2.5 per m³, and is itemised in the day summary.
 5. Turning irrigation off in summer produces obvious extra decay on greens within five days.
-6. Hand watering prevents that penalty and costs 60 minutes.
+6. Hand watering can target individual greens and prevents drought when it keeps moisture in band.
 7. Pond health declines when the pond sits low; buying an aerator holds it up and changes the map.
 
 **Not yet:** spraying, fertiliser, disease.

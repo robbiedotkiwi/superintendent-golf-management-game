@@ -6,6 +6,7 @@ import {
   GAIN_DIMINISH,
   GAIN_DIMINISH_ABOVE,
   HEAVY_RAIN_BUNKER_LOSS,
+  HOLE_COUNT,
   BASE_GAIN,
   HOC_STRESS_DAMAGE,
   HOC_SURFACES,
@@ -22,6 +23,7 @@ import {
   SURFACE_KEYS,
   SATISFACTION_MAX,
   SATISFACTION_MIN,
+  WET_GAIN_MULT,
   WEATHER_HEAVY_RAIN,
 } from '../data/constants.js';
 import { PLAYER_ID } from '../data/constants.js';
@@ -44,7 +46,17 @@ import {
 import { applyEarlyStartComplaints, applyMorale, prepareMorningWorkers, wageBill } from './staff.js';
 import { createRng } from './rng.js';
 import { applyFertiliser, applySpray, emptyDisease, resolveDisease } from './disease.js';
-import { resolveIrrigation, summerUnderwaterDecay } from './irrigation.js';
+import { resolveIrrigation } from './irrigation.js';
+import {
+  applyHandWater,
+  droughtDecay,
+  emptyMoisture,
+  emptyMoistureReadDay,
+  isAboveBand,
+  isBelowBand,
+  revealMoisture,
+  tickMoisture,
+} from './moisture.js';
 import { rollMorningWithRng } from './weather.js';
 import { closeSeason } from './budget.js';
 import { golferMail, gmMissedTournamentMail, gmSeasonMail, gmTournamentRequestMail, meetingDue, pushMail, tickDaysSinceWorked } from './mail.js';
@@ -139,6 +151,9 @@ export function resolveDay(state) {
   }
 
   const wearIncremented = new Set();
+  const holes = state.holes ?? HOLE_COUNT;
+  let moisture = state.moisture ?? emptyMoisture(holes);
+  let moistureReadDay = state.moistureReadDay ?? emptyMoistureReadDay(holes);
 
   for (const plannedTask of planned) {
     const task = getTask(plannedTask.taskId);
@@ -157,6 +172,15 @@ export function resolveDay(state) {
     if (task.kind === 'prep') {
       tournamentPrepScore += task.prepBonus ?? 0;
       if (task.surface) worked.add(task.surface);
+    }
+    if (task.kind === 'moistureCheck' && task.surface) {
+      moistureReadDay = revealMoisture(moistureReadDay, task.surface, state.day, holes);
+    }
+    if (task.id === 'handWater') {
+      moisture = applyHandWater(moisture, plannedTask.greens ?? state.handWaterTargets, holes);
+    }
+    if (task.mowing && state.hasTurfRad && task.surface) {
+      moistureReadDay = revealMoisture(moistureReadDay, task.surface, state.day, holes);
     }
 
     const machine = pickMachine(state, task);
@@ -188,6 +212,7 @@ export function resolveDay(state) {
       gain *= wearMultiplier(state, machine.id);
     }
     gain *= qualityRandomFactor(worker, rng);
+    if (isAboveBand(moisture, task.surface)) gain *= WET_GAIN_MULT;
 
     const qualityBefore = surfaces[task.surface].quality;
     let qualityAfter = applyGain(qualityBefore, gain, surfaceCeiling({ ...state, fertiliserUntil, surfaces }, task.surface));
@@ -216,7 +241,7 @@ export function resolveDay(state) {
     for (const surface of ['fairways', 'rough']) {
       if (worked.has(surface)) continue;
       const qualityBefore = surfaces[surface].quality;
-      const gain = mowingGain({ ...state, surfaces }, autoBySurface[surface], 1);
+      const gain = mowingGain({ ...state, surfaces }, autoBySurface[surface], 1) * (isAboveBand(moisture, surface) ? WET_GAIN_MULT : 1);
       let qualityAfter = applyGain(
         qualityBefore,
         gain,
@@ -230,6 +255,9 @@ export function resolveDay(state) {
       );
       qualityAfter = surfaces[surface].quality;
       worked.add(surface);
+      if (state.hasTurfRad) {
+        moistureReadDay = revealMoisture(moistureReadDay, surface, state.day, holes);
+      }
       done.push({
         taskId: 'autonomousMower',
         name: 'Autonomous cut',
@@ -254,7 +282,8 @@ export function resolveDay(state) {
     surfaces.bunkers.quality = clampQuality(surfaces.bunkers.quality - HEAVY_RAIN_BUNKER_LOSS);
   }
 
-  const extraDecay = summerUnderwaterDecay(state, irrigation.watered);
+  moisture = tickMoisture({ ...state, moisture, surfaces });
+  const extraDecay = droughtDecay(moisture);
   for (const [surface, amount] of Object.entries(extraDecay)) {
     surfaces[surface].quality = clampQuality(surfaces[surface].quality - amount);
     const skip = skipped.find((item) => item.surface === surface);
@@ -277,7 +306,7 @@ export function resolveDay(state) {
   }
 
   for (const key of HOC_SURFACES) {
-    if (hocStressApplies({ ...state, surfaces }, key, irrigation.watered)) {
+    if (hocStressApplies({ ...state, surfaces, moisture }, key, isBelowBand(moisture, key))) {
       surfaces[key] = {
         ...surfaces[key],
         quality: clampQuality(surfaces[key].quality - HOC_STRESS_DAMAGE),
@@ -285,7 +314,7 @@ export function resolveDay(state) {
     }
   }
 
-  const diseaseTick = resolveDisease({ ...state, disease, sprayedUntil }, irrigation.watered);
+  const diseaseTick = resolveDisease({ ...state, disease, sprayedUntil, moisture });
   disease = diseaseTick.disease;
   for (const item of diseaseTick.ongoing) {
     surfaces[item.surface].quality = clampQuality(surfaces[item.surface].quality - item.drop);
@@ -367,6 +396,8 @@ export function resolveDay(state) {
     year: calendar.year,
     cash: tournament.state.cash,
     surfaces,
+    moisture,
+    moistureReadDay,
     pond: irrigation.pond,
     maintenanceBudget,
     disease,

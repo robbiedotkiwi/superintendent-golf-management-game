@@ -58,10 +58,10 @@ export function inHocStressBand(surface, height) {
   return hocFactor(surface, height) > HOC_STRESS_THRESHOLD;
 }
 
-export function hocStressApplies(state, surface, watered) {
+export function hocStressApplies(state, surface, dry) {
   if (!inHocStressBand(surface, state.surfaces[surface]?.hoc)) return false;
   if (state.season === 'summer') return true;
-  if (PATTERNED_SURFACES.includes(surface) && watered?.[surface] === false) return true;
+  if (PATTERNED_SURFACES.includes(surface) && dry) return true;
   return false;
 }
 

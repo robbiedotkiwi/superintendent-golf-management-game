@@ -40,7 +40,9 @@ export const SAVE_KEY = 'greenkeeper.save.v1';
 
 export const SURFACE_KEYS = ['greens', 'tees', 'fairways', 'rough', 'bunkers'];
 
-export const HAND_WATER_MINUTES = 60;
+export const HAND_WATER_MINUTES_PER_GREEN = 15;
+export const HAND_WATER_MINUTES = HAND_WATER_MINUTES_PER_GREEN * HOLE_COUNT;
+export const MOISTURE_CHECK_MINUTES = { greens: 40, tees: 25, fairways: 45 };
 export const SPRAY_MINUTES = 90;
 export const FERTILISER_MINUTES = 75;
 export const GM_MEETING_MINUTES = 60;
@@ -56,6 +58,9 @@ export const TASK_MINUTES = {
   rakeBunkers: 50,
   clearDebris: 90,
   handWater: HAND_WATER_MINUTES,
+  checkMoistureGreens: MOISTURE_CHECK_MINUTES.greens,
+  checkMoistureTees: MOISTURE_CHECK_MINUTES.tees,
+  checkMoistureFairways: MOISTURE_CHECK_MINUTES.fairways,
   sprayGreens: SPRAY_MINUTES,
   sprayTees: SPRAY_MINUTES,
   sprayFairways: SPRAY_MINUTES,
@@ -177,6 +182,68 @@ export const VIEW_PAN_STEP = 48;
 export const VIEW_DRAG_THRESHOLD = 5;
 export const MOISTURE_HIDDEN = null;
 export const MOISTURE_SURFACES = ['greens', 'tees', 'fairways'];
+export const MOISTURE_BAND = {
+  greens: { min: 18, max: 26 },
+  tees: { min: 20, max: 30 },
+  fairways: { min: 20, max: 32 },
+};
+export const WET_DISEASE_MULT = 1.5;
+export const WET_GAIN_MULT = 0.85;
+export const MOISTURE_DATA_FRESH_DAYS = 2;
+export const GREENS_SENSORS_COST = 12000;
+export const TURFRAD_COST = 20000;
+export const GREEN_DRYING_FACTOR_MIN = 0.8;
+export const GREEN_DRYING_FACTOR_MAX = 1.3;
+export const MOISTURE_MIN = 0;
+export const MOISTURE_MAX = 100;
+export const MOISTURE_START = {
+  greens: 22,
+  tees: 25,
+  fairways: 26,
+};
+export const MOISTURE_IRRIGATION_ADD = {
+  off: 0,
+  light: 5,
+  full: 8,
+};
+export const MOISTURE_ET_BASE = {
+  greens: 4,
+  tees: 3.5,
+  fairways: 3.5,
+};
+export const MOISTURE_ET_SEASON = {
+  spring: 1.0,
+  summer: 1.6,
+  autumn: 0.7,
+  winter: 0.35,
+};
+export const MOISTURE_ET_WEATHER = {
+  fine: 1.3,
+  overcast: 0.75,
+  rain: 0.2,
+  heavyRain: 0,
+  storm: 0,
+  frost: 0.4,
+};
+export const MOISTURE_RAIN_ADD = {
+  fine: 0,
+  overcast: 0,
+  rain: 4,
+  heavyRain: 8,
+  storm: 10,
+  frost: 0,
+};
+export const MOISTURE_WIND_ET_PER = 0.012;
+export const MOISTURE_HAND_WATER_ADD = 10;
+export const MOISTURE_OVERLAY_OPACITY = 0.55;
+export const MOISTURE_HATCH_SIZE = 8;
+export const MOISTURE_HATCH_WIDTH = 1.5;
+export const MOISTURE_BAND_MARK_WIDTH = 3;
+export const MOISTURE_STALE_OPACITY = 0.35;
+export const MOISTURE_OVERLAY_DRY_MIX = 0.35;
+export const MOISTURE_OVERLAY_OK_MIX_LOW = 0.28;
+export const MOISTURE_OVERLAY_OK_MIX_HIGH = 0.55;
+export const MOISTURE_OVERLAY_WET_MIX = 0.45;
 
 export const DECAY_BASE = 8;
 export const DECAY_ACCELERATION = 1.5;
@@ -383,6 +450,7 @@ export const SUMMER_UNDERWATER_DECAY = {
   tees: 4,
   fairways: 3,
 };
+export const DROUGHT_DECAY = SUMMER_UNDERWATER_DECAY;
 export const IRRIGATION_M3 = {
   greens: { light: 12, full: 25 },
   tees: { light: 7, full: 15 },
