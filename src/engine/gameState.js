@@ -79,6 +79,9 @@ import {
   VIEW_ZOOM_DEFAULT,
   VIEW_PAN_X_DEFAULT,
   VIEW_PAN_Y_DEFAULT,
+  PLAYOUT_SPEED_DEFAULT,
+  PLAYOUT_SKIP_DEFAULT,
+  PLAYOUT_SPEEDS,
 } from '../data/constants.js';
 import { clampAngle, clampHoc, hasHoc, hasPattern, mergeSurfaceFields, angleDelta } from './mowing.js';
 import { courseBounds, holesForCount } from '../data/course.js';
@@ -202,6 +205,8 @@ export function createInitialState() {
     yearRecord: emptyYearRecord(calendar.year, [PLAYER_ID]),
     inbox: [],
     nextMailId: 1,
+    playoutSpeed: PLAYOUT_SPEED_DEFAULT,
+    skipPlayout: PLAYOUT_SKIP_DEFAULT,
   };
 }
 
@@ -581,6 +586,10 @@ export function reducer(state, action) {
       return applySnapTournament(state);
     case 'READ_MAIL':
       return markMailRead(state, action.id);
+    case 'SET_PLAYOUT_SPEED':
+      return PLAYOUT_SPEEDS.includes(action.speed) ? { ...state, playoutSpeed: action.speed } : state;
+    case 'SET_SKIP_PLAYOUT':
+      return { ...state, skipPlayout: Boolean(action.value) };
     default:
       return state;
   }

@@ -121,3 +121,11 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Tournament prompt day is `seasonEndDay - TOURNAMENT_SETUP_LEAD_DAYS` (day 23 in spring). The email is for the coming season; the first spring has no events. Booking 0 from the picker is an answer and does not drop standing. The Decline button drops standing and also counts as an answer. Silence through season end books zero dates and sends `tournamentMissed`. Booked coming-season dates are kept when the season rolls. `SET_TOURNAMENTS` replaces only that season's dates so leftover current-season events survive. The picker lives in the inbox, not a blocking modal.
 - Moisture is always simulated; the UI stays hidden until a check, greens sensors, or TurfRad. Starting moisture is the band midpoint. Nightly: irrigation add, then ET (season × weather × HOC × dryingFactor × wind on fine/overcast), then rain add. Hand watering adds to selected greens and does not cancel sprinklers. Drought uses the old summer under-water quality hits whenever a surface is below band, any season. Wet disease and wet gain use mean greens moisture for the grouped greens surface. Stale means `day - readDay >= MOISTURE_DATA_FRESH_DAYS`. Overlay mix values live in `constants.js`; drying factors live on hole recipes.
 
+## Fixes Round 3
+
+- `FIXES_ROUND_3.md` was not in the repo or uploads when this round started. Phase A follows the user brief: playout is a film of an already-resolved day and must not call `resolveDay`. Watch vs skip of the same planned seed must leave identical game state.
+- Invented presentation timings, since the spec file was missing: `PLAYOUT_SPEEDS` 1/2/4, `PLAYOUT_MS_PER_MINUTE` 12, `PLAYOUT_MIN_EVENT_MS` 480, `PLAYOUT_EMPTY_MS` 600, `PLAYOUT_END_HOLD_MS` 240. Speed and skip prefs default to 1× and off.
+- `END_DAY` still resolves immediately in the reducer. The map then paints `summary.before` and applies each done task's `after` as the film cursor moves. Skip jumps the film; it does not resolve again.
+- `prefers-reduced-motion` takes the skip path. In-progress film is local React state and is not saved; reload shows the already-resolved morning.
+- Speed/skip live on the save object so old saves pick up defaults. Custom presets and section/tab wait for later phases.
+

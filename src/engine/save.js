@@ -19,6 +19,9 @@ import {
   VIEW_PAN_X_DEFAULT,
   VIEW_PAN_Y_DEFAULT,
   VIEW_ZOOM_DEFAULT,
+  PLAYOUT_SPEED_DEFAULT,
+  PLAYOUT_SKIP_DEFAULT,
+  PLAYOUT_SPEEDS,
 } from '../data/constants.js';
 import { emptyDisease, emptyUntil } from './disease.js';
 import { emptyYearRecord } from './history.js';
@@ -122,6 +125,8 @@ export function withDefaults(state) {
     pendingYearReview: Boolean(state.pendingYearReview),
     lastYearReview: state.lastYearReview ?? null,
     yearRecord: state.yearRecord ?? emptyYearRecord(state.year ?? 1, []),
+    playoutSpeed: PLAYOUT_SPEEDS.includes(state.playoutSpeed) ? state.playoutSpeed : PLAYOUT_SPEED_DEFAULT,
+    skipPlayout: Boolean(state.skipPlayout ?? PLAYOUT_SKIP_DEFAULT),
   };
 }
 

@@ -183,6 +183,7 @@ export default function CourseMap({
   view = defaultView(),
   onView,
   moistureState = null,
+  highlight = null,
 }) {
   const svgRef = useRef(null);
   const dragRef = useRef(null);
@@ -200,6 +201,7 @@ export default function CourseMap({
   viewRef.current = camera;
   const patternState = { day, surfaces };
   const patterned = ['greens', 'tees', 'fairways'].filter((surface) => hasPattern(surface));
+  const active = highlight ?? selected;
 
   function setView(next) {
     const clamped = clampView(next, bounds);
@@ -389,8 +391,8 @@ export default function CourseMap({
           key={`rough-${hole.id}`}
           d={holePath(hole.rough)}
           fill={fills.rough}
-          stroke={surfaceStroke('rough', selected, surfaces.greens.quality)}
-          strokeWidth={surfaceStrokeWidth('rough', selected)}
+          stroke={surfaceStroke('rough', active, surfaces.greens.quality)}
+          strokeWidth={surfaceStrokeWidth('rough', active)}
           className="course-surface cursor-pointer outline-none"
           tabIndex={0}
           role="button"
@@ -408,8 +410,8 @@ export default function CourseMap({
           <path
             d={holePath(hole.fairway)}
             fill={fills.fairways}
-            stroke={surfaceStroke('fairways', selected, surfaces.greens.quality)}
-            strokeWidth={surfaceStrokeWidth('fairways', selected)}
+            stroke={surfaceStroke('fairways', active, surfaces.greens.quality)}
+            strokeWidth={surfaceStrokeWidth('fairways', active)}
             className="course-surface cursor-pointer outline-none"
             tabIndex={0}
             role="button"
@@ -436,8 +438,8 @@ export default function CourseMap({
             key={`bunker-${hole.id}-${index}`}
             d={holePath(bunker)}
             fill={fills.bunkers}
-            stroke={surfaceStroke('bunkers', selected, surfaces.greens.quality)}
-            strokeWidth={surfaceStrokeWidth('bunkers', selected)}
+            stroke={surfaceStroke('bunkers', active, surfaces.greens.quality)}
+            strokeWidth={surfaceStrokeWidth('bunkers', active)}
             className="course-surface cursor-pointer outline-none"
             tabIndex={0}
             role="button"
@@ -459,8 +461,8 @@ export default function CourseMap({
             width={hole.tee.rx * 2}
             height={hole.tee.ry * 2}
             fill={fills.tees}
-            stroke={surfaceStroke('tees', selected, surfaces.greens.quality)}
-            strokeWidth={surfaceStrokeWidth('tees', selected)}
+            stroke={surfaceStroke('tees', active, surfaces.greens.quality)}
+            strokeWidth={surfaceStrokeWidth('tees', active)}
             className="course-surface cursor-pointer outline-none"
             tabIndex={0}
             role="button"
@@ -500,8 +502,8 @@ export default function CourseMap({
             rx={hole.green.rx}
             ry={hole.green.ry}
             fill={fills.greens}
-            stroke={surfaceStroke('greens', selected, surfaces.greens.quality)}
-            strokeWidth={surfaceStrokeWidth('greens', selected)}
+            stroke={surfaceStroke('greens', active, surfaces.greens.quality)}
+            strokeWidth={surfaceStrokeWidth('greens', active)}
             className="course-surface cursor-pointer outline-none"
             tabIndex={0}
             role="button"
@@ -595,7 +597,7 @@ export default function CourseMap({
           rx={POND_RX}
           ry={POND_RY}
           fill={pond.health < POND_HEALTH_STRESSED ? 'var(--pond-stressed)' : 'var(--pond-water)'}
-          className={selected === 'pond' ? 'stroke-[var(--paint)] stroke-[3]' : 'stroke-[var(--soil)] stroke-1'}
+          className={active === 'pond' ? 'stroke-[var(--paint)] stroke-[3]' : 'stroke-[var(--soil)] stroke-1'}
         />
         {hasAerator ? (
           <g fill="none" stroke="var(--paint)" strokeWidth="2">
@@ -631,6 +633,7 @@ export default function CourseMap({
       ) : null}
       {showMower && !prefersReducedMotion() ? (
         <circle
+          key={`mower-${highlight ?? 'run'}`}
           className="mower-dot"
           r="7"
           fill="var(--machine-orange)"

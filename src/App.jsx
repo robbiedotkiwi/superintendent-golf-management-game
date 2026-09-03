@@ -4,6 +4,7 @@ import DaySummary from './components/DaySummary.jsx';
 import Crew from './components/Crew.jsx';
 import GameOver from './components/GameOver.jsx';
 import Office from './components/Office.jsx';
+import PlayoutBar from './components/PlayoutBar.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Tutorial from './components/Tutorial.jsx';
 import YearReview from './components/YearReview.jsx';
@@ -29,8 +30,18 @@ import {
 } from './engine/gameState.js';
 import { courseCondition } from './engine/simulation.js';
 import { unreadCount } from './engine/mail.js';
-import { playBirds, playMower } from './engine/sound.js';
-import { getTask } from './data/tasks.js';
+import {
+  PLAYOUT_DONE,
+  PLAYOUT_PLAYING,
+  PLAYOUT_SKIPPED,
+  buildPlayout,
+  currentPlayoutEvent,
+  playoutSurfaces,
+  shouldSkipPlayout,
+  skipPlayout,
+  tickPlayout,
+} from './engine/playout.js';
+import { playBirds, playMower, prefersReducedMotion } from './engine/sound.js';
 import { clearSave, hasSave, loadGame, saveGame } from './engine/save.js';
 
 function paletteStyle() {
@@ -52,6 +63,7 @@ export default function App() {
   const [state, dispatch] = useReducer(reducer, null, () => loadGame() ?? createInitialState());
   const [selected, setSelected] = useState(null);
   const [summary, setSummary] = useState(null);
+  const [playout, setPlayout] = useState(null);
   const [view, setView] = useState('course');
   const seenLog = useRef(state.log.length);
 
@@ -62,11 +74,42 @@ export default function App() {
   }, [state, screen]);
 
   useEffect(() => {
-    if (state.log.length > seenLog.current) {
-      setSummary(state.log[state.log.length - 1]);
-      seenLog.current = state.log.length;
+    if (state.log.length <= seenLog.current) return;
+    const latest = state.log[state.log.length - 1];
+    seenLog.current = state.log.length;
+    if (shouldSkipPlayout(state.skipPlayout, prefersReducedMotion())) {
+      setPlayout(null);
+      setSummary(latest);
+      return;
     }
-  }, [state.log]);
+    setSummary(null);
+    setPlayout(buildPlayout(latest));
+  }, [state.log, state.skipPlayout]);
+
+  useEffect(() => {
+    if (!playout || playout.status !== PLAYOUT_PLAYING) return undefined;
+    let frame = 0;
+    let last = performance.now();
+    function loop(now) {
+      const dt = now - last;
+      last = now;
+      setPlayout((current) => {
+        if (!current || current.status !== PLAYOUT_PLAYING) return current;
+        return tickPlayout(current, dt, state.playoutSpeed);
+      });
+      frame = requestAnimationFrame(loop);
+    }
+    frame = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frame);
+  }, [playout?.status, state.playoutSpeed]);
+
+  useEffect(() => {
+    if (playout?.status === PLAYOUT_DONE || playout?.status === PLAYOUT_SKIPPED) {
+      const latest = state.log[state.log.length - 1] ?? null;
+      setSummary(latest);
+      setPlayout(null);
+    }
+  }, [playout, state.log]);
 
   const minutesRemaining = useMemo(() => combinedMinutesRemaining(state), [state]);
   const minutesUsed = useMemo(() => combinedMinutesUsed(state), [state]);
@@ -79,8 +122,9 @@ export default function App() {
     setSavePresent(false);
     setSelected(null);
     setSummary(null);
-    setView('course');
+    setPlayout(null);
     seenLog.current = 0;
+    setView('course');
     setScreen('game');
   }
 
@@ -91,6 +135,7 @@ export default function App() {
     dispatch({ type: 'LOAD_GAME', state: saved });
     setSelected(null);
     setSummary(null);
+    setPlayout(null);
     setView('course');
     setScreen('game');
   }
@@ -107,6 +152,7 @@ export default function App() {
           state={state}
           selected={selected}
           summary={summary}
+          playout={playout}
           view={view}
           minutesRemaining={minutesRemaining}
           minutesUsed={minutesUsed}
@@ -117,6 +163,9 @@ export default function App() {
           onRemove={(taskId) => dispatch({ type: 'REMOVE_TASK', taskId })}
           onEndDay={() => dispatch({ type: 'END_DAY' })}
           onDismissSummary={() => setSummary(null)}
+          onSkipPlayout={() => setPlayout((current) => skipPlayout(current))}
+          onSetPlayoutSpeed={(speed) => dispatch({ type: 'SET_PLAYOUT_SPEED', speed })}
+          onSetSkipPref={(value) => dispatch({ type: 'SET_SKIP_PLAYOUT', value })}
           onOpenShed={() => setView('shed')}
           onOpenCrew={() => setView('crew')}
           onOpenOffice={() => setView('office')}
@@ -193,6 +242,7 @@ function GameScreen({
   state,
   selected,
   summary,
+  playout,
   view,
   minutesRemaining,
   minutesUsed,
@@ -203,6 +253,9 @@ function GameScreen({
   onRemove,
   onEndDay,
   onDismissSummary,
+  onSkipPlayout,
+  onSetPlayoutSpeed,
+  onSetSkipPref,
   onOpenShed,
   onOpenCrew,
   onOpenOffice,
@@ -256,11 +309,18 @@ function GameScreen({
   }, [state.day, state.weather, state.soundEnabled]);
 
   useEffect(() => {
-    if (!summary?.done?.some((item) => getTask(item.taskId)?.mowing)) return;
-    playMower(state.soundEnabled);
-  }, [summary, state.soundEnabled]);
+    const event = currentPlayoutEvent(playout);
+    if (event?.mowing) playMower(state.soundEnabled);
+  }, [playout?.cursor, playout?.status, state.soundEnabled]);
 
-  const showMower = Boolean(summary?.done?.some((item) => getTask(item.taskId)?.mowing));
+  const event = currentPlayoutEvent(playout);
+  const latestSummary = state.log[state.log.length - 1];
+  const mapSurfaces =
+    playout?.status === PLAYOUT_PLAYING && latestSummary?.before
+      ? playoutSurfaces(latestSummary, playout)
+      : state.surfaces;
+  const showMower = Boolean(event?.mowing);
+  const watching = playout?.status === PLAYOUT_PLAYING;
 
   if (view === 'shed') {
     return (
@@ -311,14 +371,15 @@ function GameScreen({
 
   return (
     <div className="flex h-screen max-h-screen overflow-hidden bg-[var(--soil)] text-[var(--paint)]">
-      {state.dismissed ? <GameOver onNewGame={onNewGame} /> : null}
-      {!state.dismissed && state.pendingYearReview && !summary ? (
+      {state.dismissed && !watching ? <GameOver onNewGame={onNewGame} /> : null}
+      {!state.dismissed && state.pendingYearReview && !summary && !watching ? (
         <YearReview review={state.lastYearReview} onContinue={onDismissYearReview} />
       ) : null}
       {!state.dismissed &&
       !state.tutorialDone &&
       !state.pendingYearReview &&
-      !summary ? (
+      !summary &&
+      !watching ? (
         <Tutorial onDismiss={onDismissTutorial} />
       ) : null}
       <Sidebar
@@ -332,7 +393,10 @@ function GameScreen({
         onSelect={onSelect}
         onPlan={onPlan}
         onRemove={onRemove}
-        onEndDay={onEndDay}
+        onEndDay={watching ? () => {} : onEndDay}
+        playoutActive={watching}
+        skipPlayout={state.skipPlayout}
+        onSetSkipPref={onSetSkipPref}
         onMove={onMove}
         onOpenShed={onOpenShed}
         onOpenCrew={onOpenCrew}
@@ -353,19 +417,28 @@ function GameScreen({
       />
       <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
         <CourseMap
-          surfaces={state.surfaces}
+          surfaces={mapSurfaces}
           pond={state.pond}
           hasAerator={state.hasAerator}
           holes={state.holes}
           hasDrivingRange={state.hasDrivingRange}
           showMower={showMower}
           selected={selected}
+          highlight={event?.surface ?? selected}
           onSelect={onSelect}
           onOpenShed={onOpenShed}
-          day={state.day}
+          day={watching ? playout.day : state.day}
           view={state.view}
           onView={onSetView}
           moistureState={state}
+        />
+        <PlayoutBar
+          playout={watching ? playout : null}
+          speed={state.playoutSpeed}
+          skipPref={state.skipPlayout}
+          onSpeed={onSetPlayoutSpeed}
+          onSkip={onSkipPlayout}
+          onSkipPref={onSetSkipPref}
         />
       </div>
       <DaySummary summary={summary} onContinue={onDismissSummary} />

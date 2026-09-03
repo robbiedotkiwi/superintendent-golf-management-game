@@ -39,6 +39,9 @@ export default function Sidebar({
   onPlan,
   onRemove,
   onEndDay,
+  playoutActive = false,
+  skipPlayout = false,
+  onSetSkipPref,
   onMove,
   onOpenShed,
   onOpenCrew,
@@ -289,6 +292,14 @@ export default function Sidebar({
             ))}
           </div>
         ) : null}
+        <label className="mt-2 flex items-center gap-2 text-sm text-[var(--sand)]">
+          <input
+            type="checkbox"
+            checked={Boolean(skipPlayout)}
+            onChange={(event) => onSetSkipPref?.(event.target.checked)}
+          />
+          Skip the day film
+        </label>
         <div className="mt-2 flex items-center gap-2">
           <button
             type="button"
@@ -328,7 +339,8 @@ export default function Sidebar({
           <button
             type="button"
             onClick={onEndDay}
-            className="flex-1 bg-[var(--machine-orange)] px-4 py-3 text-lg font-semibold text-[var(--paint)]"
+            disabled={playoutActive}
+            className="flex-1 bg-[var(--machine-orange)] px-4 py-3 text-lg font-semibold text-[var(--paint)] disabled:opacity-40"
           >
             End day
           </button>
