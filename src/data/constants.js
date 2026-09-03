@@ -37,6 +37,9 @@ export const HAND_WATER_MINUTES = 60;
 export const SPRAY_MINUTES = 90;
 export const FERTILISER_MINUTES = 75;
 export const GM_MEETING_MINUTES = 60;
+export const DOUBLE_CUT_MINUTES = 160;
+export const EXTRA_ROLL_MINUTES = 90;
+export const EDGE_BUNKERS_MINUTES = 80;
 
 export const TASK_MINUTES = {
   cutGreens: 120,
@@ -55,6 +58,9 @@ export const TASK_MINUTES = {
   fertiliseTees: FERTILISER_MINUTES,
   fertiliseFairways: FERTILISER_MINUTES,
   gmMeeting: GM_MEETING_MINUTES,
+  doubleCutGreens: DOUBLE_CUT_MINUTES,
+  extraRoll: EXTRA_ROLL_MINUTES,
+  edgeBunkers: EDGE_BUNKERS_MINUTES,
 };
 
 export const LEVEL_QUICK_TIME_MULT = 0.7;
@@ -323,3 +329,10 @@ export const TOURNAMENT_EXCELLENT_SAT = 12;
 export const TOURNAMENT_GOOD_SAT = 6;
 export const TOURNAMENT_ACCEPTABLE_SAT = 0;
 export const TOURNAMENT_POOR_SAT = -15;
+export const TOURNAMENT_PREP_DAYS = 3;
+export const TOURNAMENT_SEASON_MAX = 3;
+export const TOURNAMENT_WINTER_MAX = 1;
+export const TOURNAMENT_PREP_DOUBLE_CUT_BONUS = 5;
+export const TOURNAMENT_PREP_ROLL_BONUS = 4;
+export const TOURNAMENT_PREP_EDGE_BONUS = 3;
+export const GM_TOURNAMENT_DECLINE_STANDING = 8;

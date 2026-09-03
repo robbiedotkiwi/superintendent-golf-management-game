@@ -15,7 +15,14 @@ import { emptyDisease, emptyUntil } from './disease.js';
 import { canBuyAerator, IRRIGATED_SURFACES, isIrrigationPolicy } from './irrigation.js';
 import { capitalGrant, leaseMachine, maintenanceGrant, stopLease, takeLoan } from './budget.js';
 import { emptyDaysSinceWorked, markMailRead, meetingDue } from './mail.js';
-import { applySnapTournament } from './tournament.js';
+import {
+  applySnapTournament,
+  inPrepWindow,
+  maxTournamentsForSeason,
+  scheduleTournamentDays,
+  seasonStartDay,
+} from './tournament.js';
+import { clampStanding } from './satisfaction.js';
 import { resolveDay } from './simulation.js';
 import {
   DAY_LENGTH_MINUTES,
@@ -52,6 +59,7 @@ import {
   STARTING_IRRIGATION,
   SATISFACTION_START,
   GM_STANDING_START,
+  GM_TOURNAMENT_DECLINE_STANDING,
   AERATOR_COST,
 } from '../data/constants.js';
 
@@ -140,10 +148,24 @@ export function createInitialState() {
     seasonRevenue: 0,
     insolventStreak: 0,
     dismissed: false,
-    inbox: [],
-    nextMailId: 1,
     daysSinceWorked: emptyDaysSinceWorked(),
     snappedToday: false,
+    pendingTournamentSetup: true,
+    gmTournamentRequestPending: true,
+    tournaments: [],
+    tournamentPrepScore: 0,
+    inbox: [
+      {
+        id: 1,
+        read: false,
+        day: STARTING_DAY,
+        from: 'gm',
+        kind: 'tournamentRequest',
+        subject: 'Put a tournament on the calendar',
+        body: 'The committee wants dates this season. Winter is optional and risky.',
+      },
+    ],
+    nextMailId: 2,
   };
 }
 
@@ -180,6 +202,10 @@ export function canPlanTask(state, taskId, level, workerId) {
 
   if (task.id === 'gmMeeting' && !meetingDue(state.day)) {
     return { ok: false, reason: 'No GM meeting today.' };
+  }
+
+  if (task.kind === 'prep' && !inPrepWindow(state)) {
+    return { ok: false, reason: 'Prep only in the three days before a tournament.' };
   }
 
   if (state.plannedTasks.some((planned) => planned.taskId === taskId)) {
@@ -278,6 +304,41 @@ export function reducer(state, action) {
       if (state.dismissed) return state;
       const { state: next, summary } = resolveDay(state);
       return { ...next, log: [...next.log, summary] };
+    }
+    case 'SET_TOURNAMENTS': {
+      if (!state.pendingTournamentSetup || state.dismissed) return state;
+      const max = maxTournamentsForSeason(state.season);
+      const count = Math.min(Math.max(Number(action.count) || 0, 0), max);
+      const days = scheduleTournamentDays(seasonStartDay(state.day), count, state.season);
+      const declined = count === 0 && state.gmTournamentRequestPending;
+      return {
+        ...state,
+        pendingTournamentSetup: false,
+        gmTournamentRequestPending: false,
+        gmStanding: declined
+          ? clampStanding(state.gmStanding - GM_TOURNAMENT_DECLINE_STANDING)
+          : state.gmStanding,
+        tournaments: days.map((day) => ({
+          day,
+          done: false,
+          season: state.season,
+          risky: state.season === 'winter',
+        })),
+        inbox: (state.inbox ?? []).map((item) =>
+          item.kind === 'tournamentRequest' ? { ...item, read: true } : item,
+        ),
+      };
+    }
+    case 'DECLINE_TOURNAMENT_REQUEST': {
+      if (!state.gmTournamentRequestPending) return state;
+      return {
+        ...state,
+        gmTournamentRequestPending: false,
+        gmStanding: clampStanding(state.gmStanding - GM_TOURNAMENT_DECLINE_STANDING),
+        inbox: (state.inbox ?? []).map((item) =>
+          item.kind === 'tournamentRequest' ? { ...item, read: true } : item,
+        ),
+      };
     }
     case 'BUY_MACHINE':
       return buyMachine(state, action.machineId);

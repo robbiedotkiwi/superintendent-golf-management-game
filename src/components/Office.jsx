@@ -1,6 +1,7 @@
 import {
   GM_MEETING_MINUTES,
   GM_MEETING_SKIP_STANDING,
+  GM_TOURNAMENT_DECLINE_STANDING,
   LOAN_INTEREST,
   LOAN_LIMIT_MULTIPLIER,
 } from '../data/constants.js';
@@ -16,6 +17,7 @@ export default function Office({
   onRead,
   onPlanMeeting,
   onRemoveMeeting,
+  onDeclineTournament,
 }) {
   const unread = unreadCount(state);
   const cap = maxLoan(state.lastSeasonRevenue);
@@ -103,6 +105,15 @@ export default function Office({
               {item.from} · day {item.day}
             </p>
             <p className="mt-2">{item.body}</p>
+            {item.kind === 'tournamentRequest' && state.gmTournamentRequestPending ? (
+              <button
+                type="button"
+                onClick={onDeclineTournament}
+                className="mt-3 mr-2 border border-[var(--sand)] px-3 py-1"
+              >
+                Decline (−{GM_TOURNAMENT_DECLINE_STANDING} standing)
+              </button>
+            ) : null}
             {item.read ? null : (
               <button type="button" onClick={() => onRead(item.id)} className="mt-3 border border-[var(--sand)] px-3 py-1">
                 Mark read

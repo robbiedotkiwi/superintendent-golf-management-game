@@ -41,6 +41,10 @@ function withDefaults(state) {
     nextMailId: state.nextMailId ?? 1,
     daysSinceWorked: state.daysSinceWorked ?? emptyDaysSinceWorked(),
     snappedToday: Boolean(state.snappedToday),
+    pendingTournamentSetup: Boolean(state.pendingTournamentSetup),
+    gmTournamentRequestPending: Boolean(state.gmTournamentRequestPending),
+    tournaments: state.tournaments ?? [],
+    tournamentPrepScore: state.tournamentPrepScore ?? 0,
   };
 }
 

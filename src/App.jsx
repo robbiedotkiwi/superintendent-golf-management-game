@@ -6,6 +6,7 @@ import Crew from './components/Crew.jsx';
 import GameOver from './components/GameOver.jsx';
 import IrrigationPanel from './components/IrrigationPanel.jsx';
 import Office from './components/Office.jsx';
+import SeasonStart from './components/SeasonStart.jsx';
 import Shed from './components/Shed.jsx';
 import TimeBar from './components/TimeBar.jsx';
 import WeatherStrip from './components/WeatherStrip.jsx';
@@ -139,6 +140,8 @@ export default function App() {
           onSnap={() => dispatch({ type: 'SNAP_TOURNAMENT' })}
           onLoan={(amount) => dispatch({ type: 'TAKE_LOAN', amount })}
           onReadMail={(id) => dispatch({ type: 'READ_MAIL', id })}
+          onSetTournaments={(count) => dispatch({ type: 'SET_TOURNAMENTS', count })}
+          onDeclineTournament={() => dispatch({ type: 'DECLINE_TOURNAMENT_REQUEST' })}
           onNewGame={handleNewGame}
         />
       )}
@@ -209,6 +212,8 @@ function GameScreen({
   onSnap,
   onLoan,
   onReadMail,
+  onSetTournaments,
+  onDeclineTournament,
   onNewGame,
 }) {
   if (view === 'shed') {
@@ -250,6 +255,7 @@ function GameScreen({
         onRead={onReadMail}
         onPlanMeeting={() => onPlan('gmMeeting')}
         onRemoveMeeting={() => onRemove('gmMeeting')}
+        onDeclineTournament={onDeclineTournament}
       />
     );
   }
@@ -257,6 +263,9 @@ function GameScreen({
   return (
     <div className="flex min-h-screen flex-col">
       {state.dismissed ? <GameOver onNewGame={onNewGame} /> : null}
+      {!state.dismissed && state.pendingTournamentSetup && !summary ? (
+        <SeasonStart state={state} onConfirm={onSetTournaments} />
+      ) : null}
       <TimeBar
         remaining={minutesRemaining}
         used={minutesUsed}

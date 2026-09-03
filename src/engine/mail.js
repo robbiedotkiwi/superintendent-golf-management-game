@@ -103,3 +103,15 @@ export function gmSeasonMail({ leftover, insolvent, yearChanged, maintenance, ca
 export function meetingDue(day) {
   return day % DAYS_PER_WEEK === 0;
 }
+
+export function gmTournamentRequestMail(season) {
+  const winter = season === 'winter';
+  return {
+    from: 'gm',
+    kind: 'tournamentRequest',
+    subject: winter ? 'Winter tournament? Risky.' : 'Put a tournament on the calendar',
+    body: winter
+      ? 'Winter golf is a gamble. Rain on the day caps the result at Acceptable. One date, optional.'
+      : 'The committee wants dates this season. Pick how many and we will publish them.',
+  };
+}

@@ -62,3 +62,11 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Snap tournaments use the Phase 8 score table so the raise-cash button has a real payout. Full season booking is still Phase 8.
 - Insolvent means cash below zero after unspent maintenance rolls in. Two consecutive season ends in that state dismiss the player.
 - GM meeting is due when `day % 7 === 0`. Skipping costs `GM_MEETING_SKIP_STANDING` (10).
+
+## Phase 8
+
+- Tournament pay is cash, same as snap tournaments. Prep bonuses add to the tournament score, not surface quality.
+- Choosing 0 on the season-start screen is a GM-request decline if the request is still pending. Inbox Decline drops standing once and does not double-drop if 0 is chosen afterwards.
+- Winter offers at most one date, labelled risky. Rain (including heavy rain and storm) caps Excellent/Good at Acceptable; that is the winter risk, not a separate frost rule.
+- Snap scoring ignores `tournamentPrepScore` and has no prep window.
+- Prep tasks only appear in the three days before a booked date (not on the day, not for snaps).

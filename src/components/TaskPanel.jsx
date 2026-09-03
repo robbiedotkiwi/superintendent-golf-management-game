@@ -2,7 +2,7 @@ import { LEVEL_KEYS } from '../data/constants.js';
 import { LEVEL_LABELS, SURFACE_LABELS, tasksForSurface } from '../data/tasks.js';
 import { durationForTask, assignWorker, certifiedPresent, workerById } from '../engine/assignment.js';
 import { ineligibleMachines, pickMachine, surfaceCeiling } from '../engine/equipment.js';
-import { canPlanTask } from '../engine/gameState.js';
+import { inPrepWindow } from '../engine/tournament.js';
 
 function formatQuality(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -48,6 +48,7 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
             ) : null}
             {tasks
               .filter((task) => !task.requiresSpray || certifiedPresent(state, surface))
+              .filter((task) => task.kind !== 'prep' || inPrepWindow(state))
               .map((task) => {
               const planned = state.plannedTasks.find((item) => item.taskId === task.id);
               const machine = pickMachine(state, task);

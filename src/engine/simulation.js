@@ -38,7 +38,8 @@ import { applyFertiliser, applySpray, emptyDisease, resolveDisease } from './dis
 import { resolveIrrigation, summerUnderwaterDecay } from './irrigation.js';
 import { rollMorningWithRng } from './weather.js';
 import { closeSeason } from './budget.js';
-import { golferMail, gmSeasonMail, meetingDue, pushMail, tickDaysSinceWorked } from './mail.js';
+import { golferMail, gmSeasonMail, gmTournamentRequestMail, meetingDue, pushMail, tickDaysSinceWorked } from './mail.js';
+import { applyScheduledTournament } from './tournament.js';
 import { clampStanding, tickSatisfaction } from './satisfaction.js';
 import { GM_MEETING_SKIP_STANDING } from '../data/constants.js';
 
@@ -104,6 +105,7 @@ export function resolveDay(state) {
   let fertiliserUntil = { ...(state.fertiliserUntil ?? {}) };
   let maintenanceBudget = state.maintenanceBudget ?? 0;
   let materialsSpent = 0;
+  let tournamentPrepScore = state.tournamentPrepScore ?? 0;
 
   let planned = [...state.plannedTasks];
   const extra = interruptionMinutesForDay(state);
@@ -132,6 +134,14 @@ export function resolveDay(state) {
       if (task.materialsCost) {
         maintenanceBudget -= task.materialsCost;
         materialsSpent += task.materialsCost;
+      }
+      if (task.kind === 'prep') {
+        tournamentPrepScore += task.prepBonus ?? 0;
+        if (task.surface) worked.add(task.surface);
+      }
+      if (task.mowing) {
+        const machine = pickMachine(state, task);
+        if (machine) markUsed(machine.id);
       }
       done.push({
         taskId: plannedTask.taskId,
@@ -285,16 +295,28 @@ export function resolveDay(state) {
   }
   const satisfaction = tickSatisfaction(mailed);
 
+  const tournament = applyScheduledTournament(
+    {
+      ...mailed,
+      cash: state.cash,
+      satisfaction,
+      tournamentPrepScore,
+      tournaments: state.tournaments ?? [],
+      weather: state.weather,
+    },
+    surfaces,
+  );
+
   const day = state.day + 1;
   const calendar = calendarFromDay(day);
   const seasonChanged = calendar.season !== state.season;
   const yearChanged = calendar.year !== state.year;
   let next = {
-    ...mailed,
+    ...tournament.state,
     day,
     season: calendar.season,
     year: calendar.year,
-    cash: state.cash,
+    cash: tournament.state.cash,
     surfaces,
     pond: irrigation.pond,
     maintenanceBudget,
@@ -305,10 +327,12 @@ export function resolveDay(state) {
     machineBroken,
     plannedTasks: [],
     workers,
-    satisfaction,
+    satisfaction: tournament.state.satisfaction,
     gmStanding,
     daysSinceWorked,
     snappedToday: false,
+    tournamentPrepScore: tournament.state.tournamentPrepScore,
+    tournaments: tournament.state.tournaments,
   };
   let seasonClose = null;
   if (seasonChanged) {
@@ -318,6 +342,10 @@ export function resolveDay(state) {
       candidatesSeason: calendar.season,
       volunteerDayChangedThisSeason: false,
       neighbourComplaintsThisSeason: 0,
+      pendingTournamentSetup: true,
+      gmTournamentRequestPending: true,
+      tournaments: [],
+      tournamentPrepScore: 0,
     };
     seasonClose = closeSeason(next, { yearChanged });
     next = seasonClose.state;
@@ -332,6 +360,7 @@ export function resolveDay(state) {
     )) {
       next = pushMail(next, mail);
     }
+    next = pushMail(next, gmTournamentRequestMail(calendar.season));
   }
   const scheduled = ensureAutoWeek(next, rng);
   next = scheduled.state;
@@ -363,6 +392,7 @@ export function resolveDay(state) {
     outbreaks: diseaseTick.outbreaks,
     diseaseOngoing: diseaseTick.ongoing,
     disease,
+    tournament: tournament.result,
     seasonClose: seasonClose
       ? { leftover: seasonClose.leftover, insolvent: seasonClose.insolvent, dismissed: next.dismissed }
       : null,

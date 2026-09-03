@@ -1,4 +1,4 @@
-import { FERTILISER_BRAND, FERTILISER_MATERIALS_COST, QUALITY_LEVELS, SPRAY_MATERIALS_COST, SURFACE_KEYS, TASK_MINUTES } from './constants.js';
+import { FERTILISER_BRAND, FERTILISER_MATERIALS_COST, QUALITY_LEVELS, SPRAY_MATERIALS_COST, SURFACE_KEYS, TASK_MINUTES, TOURNAMENT_PREP_DOUBLE_CUT_BONUS, TOURNAMENT_PREP_EDGE_BONUS, TOURNAMENT_PREP_ROLL_BONUS } from './constants.js';
 
 export const SURFACE_LABELS = {
   greens: 'Greens',
@@ -25,6 +25,9 @@ export const TASKS = [
   { id: 'fertiliseTees', surface: 'tees', name: FERTILISER_BRAND, mowing: false, usesQualityLevel: false, requiresSpray: true, kind: 'fertiliser', materialsCost: FERTILISER_MATERIALS_COST },
   { id: 'fertiliseFairways', surface: 'fairways', name: FERTILISER_BRAND, mowing: false, usesQualityLevel: false, requiresSpray: true, kind: 'fertiliser', materialsCost: FERTILISER_MATERIALS_COST },
   { id: 'gmMeeting', surface: null, name: 'GM meeting', mowing: false, usesQualityLevel: false, kind: 'meeting' },
+  { id: 'doubleCutGreens', surface: 'greens', name: 'Double-cut greens', mowing: true, usesQualityLevel: false, kind: 'prep', prepBonus: TOURNAMENT_PREP_DOUBLE_CUT_BONUS },
+  { id: 'extraRoll', surface: 'greens', name: 'Extra roll', mowing: false, usesQualityLevel: false, kind: 'prep', prepBonus: TOURNAMENT_PREP_ROLL_BONUS },
+  { id: 'edgeBunkers', surface: 'bunkers', name: 'Bunker edging', mowing: false, usesQualityLevel: false, kind: 'prep', prepBonus: TOURNAMENT_PREP_EDGE_BONUS },
 ];
 
 export const LEVEL_LABELS = {

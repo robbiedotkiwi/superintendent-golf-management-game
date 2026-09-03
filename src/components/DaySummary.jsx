@@ -93,6 +93,14 @@ export default function DaySummary({ summary, onContinue }) {
             {summary.seasonClose.dismissed ? ' Dismissed.' : ''}
           </p>
         ) : null}
+        {summary.tournament ? (
+          <p className="mt-2">
+            Tournament {summary.tournament.band}
+            {summary.tournament.rained ? ' (rained off the top bands)' : ''} · score{' '}
+            {Math.round(summary.tournament.score)} · paid {summary.tournament.pay} · sat{' '}
+            {summary.tournament.satisfaction}
+          </p>
+        ) : null}
 
         <button
           type="button"

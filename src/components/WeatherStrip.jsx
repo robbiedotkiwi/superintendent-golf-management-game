@@ -3,13 +3,16 @@ import { WEATHER_LABELS, weatherCopy } from '../data/events.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import { canPlanTask } from '../engine/gameState.js';
 import { DISEASE_SURFACES } from '../engine/disease.js';
-import { meetingDue } from '../engine/mail.js';
+import { daysUntilNextTournament, nextTournament } from '../engine/tournament.js';
 
 export default function WeatherStrip({ state, onPlan, onRemove }) {
   const debris = state.plannedTasks.find((item) => item.taskId === 'clearDebris');
   const debrisCheck = canPlanTask(state, 'clearDebris');
   const meeting = state.plannedTasks.find((item) => item.taskId === 'gmMeeting');
   const meetingCheck = canPlanTask(state, 'gmMeeting');
+
+  const until = daysUntilNextTournament(state);
+  const upcoming = nextTournament(state);
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--sand)]/30 px-4 py-2 text-[var(--sand)]">
@@ -21,6 +24,13 @@ export default function WeatherStrip({ state, onPlan, onRemove }) {
       <p>
         Tomorrow: <span className="text-[var(--paint)]">{WEATHER_LABELS[state.forecast]}</span>
         <span className="ml-2 text-sm">forecast</span>
+      </p>
+      <p className="text-[var(--paint)]">
+        {upcoming == null
+          ? 'No tournament booked'
+          : until === 0
+            ? 'Tournament today'
+            : `Tournament in ${until} day${until === 1 ? '' : 's'} (day ${upcoming.day})`}
       </p>
       <p className="text-sm">
         Disease{' '}
