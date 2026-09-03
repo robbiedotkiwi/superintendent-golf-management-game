@@ -76,45 +76,47 @@ export default function TimeBar({
           ) : null}
         </div>
       </div>
-      <button
-        type="button"
-        onClick={onOpenPond}
-        className="border border-[var(--sand)] px-4 text-lg text-[var(--paint)]"
-      >
-        Pond
-      </button>
-      <button
-        type="button"
-        onClick={onOpenOffice}
-        className="border border-[var(--sand)] px-4 text-lg text-[var(--paint)]"
-      >
-        Office{unread ? ` (${unread})` : ''}
-      </button>
-      <button
-        type="button"
-        onClick={onOpenCrew}
-        className="border border-[var(--sand)] px-4 text-lg text-[var(--paint)]"
-      >
-        Crew
-      </button>
-      <button
-        type="button"
-        onClick={onOpenShed}
-        className="border border-[var(--sand)] px-4 text-lg text-[var(--paint)]"
-      >
-        Shed
-      </button>
+      <nav aria-label="Locations" className="flex items-stretch overflow-hidden border border-[var(--sand)]">
+        <button type="button" onClick={onOpenPond} className="px-4 text-lg">
+          Pond
+        </button>
+        <button type="button" onClick={onOpenOffice} className="relative border-l border-[var(--sand)] px-4 pr-5 text-lg">
+          Office
+          {unread ? (
+            <span className="absolute right-1 top-1 min-w-5 rounded-full bg-[var(--machine-orange)] px-1 text-center text-xs font-bold leading-5 text-[var(--paint)]">
+              {unread}
+            </span>
+          ) : null}
+        </button>
+        <button type="button" onClick={onOpenCrew} className="border-l border-[var(--sand)] px-4 text-lg">
+          Crew
+        </button>
+        <button type="button" onClick={onOpenShed} className="border-l border-[var(--sand)] px-4 text-lg">
+          Shed
+        </button>
+      </nav>
       <button
         type="button"
         onClick={onToggleSound}
-        className="border border-[var(--sand)] px-4 text-lg text-[var(--paint)]"
+        title={soundOn ? 'Sound on' : 'Sound off'}
+        aria-label={soundOn ? 'Turn sound off' : 'Turn sound on'}
+        aria-pressed={soundOn}
+        className="flex h-10 w-10 shrink-0 items-center justify-center self-center text-[var(--sand)] hover:text-[var(--paint)]"
       >
-        Sound {soundOn ? 'on' : 'off'}
+        {soundOn ? (
+          <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" fill="currentColor">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.8-1-3.3-2.5-4v8c1.5-.7 2.5-2.2 2.5-4zM14 3.2v2.1c2.9.9 5 3.5 5 6.7s-2.1 5.8-5 6.7v2.1c4-.9 7-4.5 7-8.8S18 4.1 14 3.2z" />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" fill="currentColor">
+            <path d="M16.5 12c0-1.8-1-3.3-2.5-4v2.2l2.4 2.4c.1-.2.1-.4.1-.6zm2.5 0c0 .9-.2 1.8-.5 2.6l1.5 1.5c.7-1.3 1-2.7 1-4.1 0-4.3-3-7.9-7-8.8v2.1c2.9.9 5 3.5 5 6.7zM4.3 3 3 4.3 7.7 9H3v6h4l5 5v-6.7l4.3 4.3 1.3-1.3L4.3 3zM12 4 9.9 6.1 12 8.2V4z" />
+          </svg>
+        )}
       </button>
       <button
         type="button"
         onClick={onEndDay}
-        className="bg-[var(--machine-orange)] px-5 text-lg font-semibold text-[var(--paint)]"
+        className="ml-6 bg-[var(--machine-orange)] px-6 text-lg font-semibold text-[var(--paint)]"
       >
         End day
       </button>
