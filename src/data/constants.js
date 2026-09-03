@@ -267,7 +267,14 @@ export const WEATHER_FROST = 'frost';
 
 export const STARTING_WEATHER = WEATHER_FINE;
 export const STARTING_RNG_SEED = 1;
-export const FORECAST_ACCURACY = 0.7;
+export const FORECAST_DAYS = 7;
+export const FORECAST_ACCURACY = [0.9, 0.8, 0.65, 0.5, 0.4, 0.3, 0.25];
+export const FORECAST_OPACITY_MIN = 0.32;
+export const WIND_SPEED_MIN = 4;
+export const WIND_SPEED_MAX = 28;
+export const WIND_DIRECTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+export const STARTING_WIND_SPEED = 8;
+export const STARTING_WIND_DIR = 'SW';
 export const FROST_SHORT_MINUTES = 120;
 export const HEAVY_RAIN_BUNKER_LOSS = 10;
 export const MOWING_WEATHER = [WEATHER_RAIN, WEATHER_HEAVY_RAIN, WEATHER_STORM];

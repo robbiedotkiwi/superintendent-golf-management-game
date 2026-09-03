@@ -11,7 +11,11 @@ import {
   STARTING_IRRIGATION,
   STARTING_MACHINE_ID,
   STARTING_MAINTENANCE_BUDGET,
+  STARTING_RNG_SEED,
+  STARTING_WIND_DIR,
+  STARTING_WIND_SPEED,
   SURFACE_KEYS,
+  FORECAST_DAYS,
   VIEW_PAN_X_DEFAULT,
   VIEW_PAN_Y_DEFAULT,
   VIEW_ZOOM_DEFAULT,
@@ -20,6 +24,8 @@ import { emptyDisease, emptyUntil } from './disease.js';
 import { emptyYearRecord } from './history.js';
 import { emptyDaysSinceWorked } from './mail.js';
 import { mergeSurfaceFields } from './mowing.js';
+import { createRng } from './rng.js';
+import { buildForecast } from './weather.js';
 
 export function withDefaults(state) {
   const surfaces = state.surfaces?.greens
@@ -33,10 +39,37 @@ export function withDefaults(state) {
     delete rest.level;
     return rest;
   });
+  let rngSeed = state.rngSeed;
+  let forecast = state.forecast;
+  let weatherQueue = state.weatherQueue;
+  let forecastStrip = state.forecastStrip;
+  let windSpeed = state.windSpeed ?? STARTING_WIND_SPEED;
+  let windDir = state.windDir ?? STARTING_WIND_DIR;
+  if (
+    !Array.isArray(weatherQueue) ||
+    weatherQueue.length !== FORECAST_DAYS ||
+    !Array.isArray(forecastStrip) ||
+    forecastStrip.length !== FORECAST_DAYS
+  ) {
+    const rng = createRng(rngSeed ?? STARTING_RNG_SEED);
+    const built = buildForecast({ ...state, day: state.day ?? 1 }, rng);
+    weatherQueue = built.weatherQueue;
+    forecastStrip = built.forecastStrip;
+    forecast = built.forecast;
+    windSpeed = built.windSpeed;
+    windDir = built.windDir;
+    rngSeed = rng.seed;
+  }
   return {
     ...state,
     surfaces,
     plannedTasks,
+    forecast,
+    weatherQueue,
+    forecastStrip,
+    windSpeed,
+    windDir,
+    rngSeed,
     view: {
       zoom: state.view?.zoom ?? VIEW_ZOOM_DEFAULT,
       panX: state.view?.panX ?? VIEW_PAN_X_DEFAULT,

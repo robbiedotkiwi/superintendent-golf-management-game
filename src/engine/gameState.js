@@ -1,6 +1,6 @@
 import { getTask } from '../data/tasks.js';
 import { calendarFromDay } from './calendar.js';
-import { pickWeather } from './weather.js';
+import { buildForecast } from './weather.js';
 import { createRng } from './rng.js';
 import { buyFoley, buyMachine, grindInHouse, repairMachine, sendForGrind, pickMachine, recomputePlannedMinutes } from './equipment.js';
 import { assignWorker, certifiedPresent, durationForTask, workerById, workerAllows, isWorkerPresent } from './assignment.js';
@@ -55,7 +55,6 @@ import {
   VOLUNTEER_QUALITY_SKILL,
   VOLUNTEER_SPEED_SKILL,
   WEATHER_STORM,
-  WEATHER_WEIGHTS,
   POND_HEALTH_START,
   POND_START_VOLUME,
   STARTING_IRRIGATION,
@@ -78,7 +77,7 @@ import { clampView, defaultView } from './view.js';
 export function createInitialState() {
   const calendar = calendarFromDay(STARTING_DAY);
   const rng = createRng(STARTING_RNG_SEED);
-  const forecast = pickWeather(WEATHER_WEIGHTS[calendar.season], rng);
+  const forecast = buildForecast({ day: STARTING_DAY, weather: STARTING_WEATHER }, rng);
   return {
     day: STARTING_DAY,
     season: calendar.season,
@@ -86,7 +85,7 @@ export function createInitialState() {
     cash: STARTING_CASH,
     holes: HOLE_COUNT,
     weather: STARTING_WEATHER,
-    forecast,
+    ...forecast,
     rngSeed: rng.seed,
     workers: [
       {

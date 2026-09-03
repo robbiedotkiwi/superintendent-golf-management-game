@@ -15,6 +15,7 @@ import { meetingDue } from '../engine/mail.js';
 import { daysSinceLastWorked, isNeglected } from '../engine/neglect.js';
 import { daysUntilNextTournament, nextTournament } from '../engine/tournament.js';
 import { fitCourse } from '../engine/view.js';
+import ForecastStrip from './ForecastStrip.jsx';
 import IrrigationPanel from './IrrigationPanel.jsx';
 import TaskPanel from './TaskPanel.jsx';
 import TimeBar from './TimeBar.jsx';
@@ -78,7 +79,7 @@ export default function Sidebar({
           </p>
         </header>
 
-        <div id="forecast-strip" aria-label="7-day forecast" className="mt-3" />
+        <ForecastStrip state={state} />
 
         <div className="mt-4 flex items-end justify-between gap-3">
           <div>

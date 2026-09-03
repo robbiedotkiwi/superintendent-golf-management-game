@@ -117,4 +117,5 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Neglected bunkers lerp `sand` toward `BUNKER_DULL`, never toward `soil` or turf. Bunkers are irregular polygons (7 vertices), not ellipses.
 - Pattern fill is an SVG `<pattern>` rotated by the surface angle (diamond adds 45°). Opacity runs linearly from 1 on the cut day to 0 at that surface's neglect threshold. Rough has no pattern overlay.
 - Zoom is a viewBox scale 0.5–4, cursor-anchored on wheel. Pan is clamped so at least `VIEW_PAN_KEEP` of the course stays on screen. Drag uses a 5px threshold and swallows the following click. Fit (button and `0`) resets to zoom 1 / pan 0. Arrow pan is `VIEW_PAN_STEP / zoom` so it feels similar at every scale.
+- True upcoming weather is a 7-day queue. Actual morning weather is the previous tomorrow. The sidebar strip is re-corrupted from that queue every morning using `FORECAST_ACCURACY[i]`. `state.forecast` remains tomorrow's displayed type for older UI. Wind is stored per day as flavour.
 

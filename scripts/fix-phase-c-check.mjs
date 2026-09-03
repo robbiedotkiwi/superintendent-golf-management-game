@@ -23,7 +23,7 @@ assert.match(mapBlock, /<CourseMap/);
 
 const sidebar = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
 assert.match(sidebar, /SIDEBAR_WIDTH/);
-assert.match(sidebar, /id="forecast-strip"/);
+assert.match(sidebar, /forecast-strip|ForecastStrip/);
 assert.match(sidebar, /Condition/);
 assert.match(sidebar, /Satisfaction/);
 assert.match(sidebar, /Budgets/);

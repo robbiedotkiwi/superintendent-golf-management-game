@@ -430,6 +430,10 @@ export function resolveDay(state) {
     ...next,
     weather: morning.weather,
     forecast: morning.forecast,
+    weatherQueue: morning.weatherQueue,
+    forecastStrip: morning.forecastStrip,
+    windSpeed: morning.windSpeed,
+    windDir: morning.windDir,
     rngSeed: rng.seed,
     workers: prepareMorningWorkers({ ...next, weather: morning.weather }, morning.weather, rng),
   };
