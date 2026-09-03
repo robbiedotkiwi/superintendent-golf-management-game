@@ -4,7 +4,6 @@ import DaySummary from './components/DaySummary.jsx';
 import Crew from './components/Crew.jsx';
 import GameOver from './components/GameOver.jsx';
 import Office from './components/Office.jsx';
-import SeasonStart from './components/SeasonStart.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Tutorial from './components/Tutorial.jsx';
 import YearReview from './components/YearReview.jsx';
@@ -295,6 +294,7 @@ function GameScreen({
         onPlanMeeting={() => onPlan('gmMeeting')}
         onRemoveMeeting={() => onRemove('gmMeeting')}
         onDeclineTournament={onDeclineTournament}
+        onSetTournaments={onSetTournaments}
         onStartProject={onStartProject}
         onBuyPicker={onBuyPicker}
       />
@@ -308,14 +308,7 @@ function GameScreen({
         <YearReview review={state.lastYearReview} onContinue={onDismissYearReview} />
       ) : null}
       {!state.dismissed &&
-      state.pendingTournamentSetup &&
-      !state.pendingYearReview &&
-      !summary ? (
-        <SeasonStart state={state} onConfirm={onSetTournaments} />
-      ) : null}
-      {!state.dismissed &&
       !state.tutorialDone &&
-      !state.pendingTournamentSetup &&
       !state.pendingYearReview &&
       !summary ? (
         <Tutorial onDismiss={onDismissTutorial} />

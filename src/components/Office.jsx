@@ -9,6 +9,7 @@ import {
 import { canTakeLoan, maxLoan } from '../engine/budget.js';
 import { unreadCount } from '../engine/mail.js';
 import { canPlanTask } from '../engine/gameState.js';
+import SeasonStart from './SeasonStart.jsx';
 import {
   absorbNote,
   alreadyBuilt,
@@ -28,6 +29,7 @@ export default function Office({
   onPlanMeeting,
   onRemoveMeeting,
   onDeclineTournament,
+  onSetTournaments,
   onStartProject,
   onBuyPicker,
 }) {
@@ -171,6 +173,10 @@ export default function Office({
               {item.from} · day {item.day}
             </p>
             <p className="mt-2">{item.body}</p>
+            {item.deadlineDay ? <p className="mt-1 text-sm text-[var(--sand)]">Deadline: day {item.deadlineDay}</p> : null}
+            {item.kind === 'tournamentRequest' && state.pendingTournamentSetup ? (
+              <SeasonStart state={state} onConfirm={onSetTournaments} />
+            ) : null}
             {item.kind === 'tournamentRequest' && state.gmTournamentRequestPending ? (
               <button
                 type="button"

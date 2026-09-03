@@ -17,10 +17,11 @@ import { capitalGrant, leaseMachine, maintenanceGrant, stopLease, takeLoan } fro
 import { emptyDaysSinceWorked, markMailRead, meetingDue } from './mail.js';
 import {
   applySnapTournament,
+  comingSeason,
+  comingSeasonStartDay,
   inPrepWindow,
   maxTournamentsForSeason,
   scheduleTournamentDays,
-  seasonStartDay,
 } from './tournament.js';
 import { clampStanding } from './satisfaction.js';
 import { buyAutoPicker, startProject } from './projects.js';
@@ -166,8 +167,11 @@ export function createInitialState() {
     dismissed: false,
     daysSinceWorked: emptyDaysSinceWorked(),
     snappedToday: false,
-    pendingTournamentSetup: true,
-    gmTournamentRequestPending: true,
+    pendingTournamentSetup: false,
+    gmTournamentRequestPending: false,
+    tournamentSetupSeason: null,
+    tournamentSetupDeadline: null,
+    tournamentSetupStartDay: null,
     tournaments: [],
     tournamentPrepScore: 0,
     projects: [],
@@ -181,18 +185,8 @@ export function createInitialState() {
     pendingYearReview: false,
     lastYearReview: null,
     yearRecord: emptyYearRecord(calendar.year, [PLAYER_ID]),
-    inbox: [
-      {
-        id: 1,
-        read: false,
-        day: STARTING_DAY,
-        from: 'gm',
-        kind: 'tournamentRequest',
-        subject: 'Put a tournament on the calendar',
-        body: 'The committee wants dates this season. Winter is optional and risky.',
-      },
-    ],
-    nextMailId: 2,
+    inbox: [],
+    nextMailId: 1,
   };
 }
 
@@ -365,23 +359,27 @@ export function reducer(state, action) {
     }
     case 'SET_TOURNAMENTS': {
       if (!state.pendingTournamentSetup || state.dismissed) return state;
-      const max = maxTournamentsForSeason(state.season);
+      const season = state.tournamentSetupSeason ?? comingSeason(state.day);
+      const start = state.tournamentSetupStartDay ?? comingSeasonStartDay(state.day);
+      const max = maxTournamentsForSeason(season);
       const count = Math.min(Math.max(Number(action.count) || 0, 0), max);
-      const days = scheduleTournamentDays(seasonStartDay(state.day), count, state.season);
-      const declined = count === 0 && state.gmTournamentRequestPending;
+      const days = scheduleTournamentDays(start, count, season);
       return {
         ...state,
         pendingTournamentSetup: false,
         gmTournamentRequestPending: false,
-        gmStanding: declined
-          ? clampStanding(state.gmStanding - GM_TOURNAMENT_DECLINE_STANDING)
-          : state.gmStanding,
-        tournaments: days.map((day) => ({
-          day,
-          done: false,
-          season: state.season,
-          risky: state.season === 'winter',
-        })),
+        tournamentSetupSeason: null,
+        tournamentSetupDeadline: null,
+        tournamentSetupStartDay: null,
+        tournaments: [
+          ...(state.tournaments ?? []).filter((item) => item.season !== season && !item.done),
+          ...days.map((day) => ({
+            day,
+            done: false,
+            season,
+            risky: season === 'winter',
+          })),
+        ],
         inbox: (state.inbox ?? []).map((item) =>
           item.kind === 'tournamentRequest' ? { ...item, read: true } : item,
         ),
@@ -391,7 +389,11 @@ export function reducer(state, action) {
       if (!state.gmTournamentRequestPending) return state;
       return {
         ...state,
+        pendingTournamentSetup: false,
         gmTournamentRequestPending: false,
+        tournamentSetupSeason: null,
+        tournamentSetupDeadline: null,
+        tournamentSetupStartDay: null,
         gmStanding: clampStanding(state.gmStanding - GM_TOURNAMENT_DECLINE_STANDING),
         inbox: (state.inbox ?? []).map((item) =>
           item.kind === 'tournamentRequest' ? { ...item, read: true } : item,

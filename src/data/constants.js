@@ -481,6 +481,7 @@ export const TOURNAMENT_GOOD_SAT = 6;
 export const TOURNAMENT_ACCEPTABLE_SAT = 0;
 export const TOURNAMENT_POOR_SAT = -15;
 export const TOURNAMENT_PREP_DAYS = 3;
+export const TOURNAMENT_SETUP_LEAD_DAYS = 7;
 export const TOURNAMENT_SEASON_MAX = 3;
 export const TOURNAMENT_WINTER_MAX = 1;
 export const TOURNAMENT_PREP_DOUBLE_CUT_BONUS = 5;

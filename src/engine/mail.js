@@ -29,6 +29,7 @@ export function pushMail(state, mail) {
     kind: mail.kind,
     subject: mail.subject,
     body: mail.body,
+    ...(mail.deadlineDay != null ? { deadlineDay: mail.deadlineDay } : {}),
   };
   return {
     ...state,
@@ -85,14 +86,25 @@ export function meetingDue(day) {
   return day % DAYS_PER_WEEK === 0;
 }
 
-export function gmTournamentRequestMail(season) {
+export function gmTournamentRequestMail(season, deadlineDay) {
   const winter = season === 'winter';
+  const deadline = deadlineDay != null ? ` Answer by day ${deadlineDay}.` : '';
   return {
     from: 'gm',
     kind: 'tournamentRequest',
-    subject: winter ? 'Winter tournament? Risky.' : 'Put a tournament on the calendar',
+    subject: winter ? 'Winter tournament? Risky.' : `Dates for ${season}`,
     body: winter
-      ? 'Winter golf is a gamble. Rain on the day caps the result at Acceptable. One date, optional.'
-      : 'The committee wants dates this season. Pick how many and we will publish them.',
+      ? `Winter golf is a gamble. Rain on the day caps the result at Acceptable. One date, optional.${deadline}`
+      : `The committee wants dates for ${season}. Pick how many and we will publish them.${deadline}`,
+    deadlineDay,
+  };
+}
+
+export function gmMissedTournamentMail(season) {
+  return {
+    from: 'gm',
+    kind: 'tournamentMissed',
+    subject: `No ${season} dates`,
+    body: `You never answered. We published nothing for ${season}. The committee noticed the empty calendar.`,
   };
 }

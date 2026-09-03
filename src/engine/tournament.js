@@ -1,6 +1,7 @@
 import { clampRange } from './satisfaction.js';
 import { presentationScore } from './mowing.js';
 import { logTournament } from './history.js';
+import { calendarFromDay } from './calendar.js';
 import {
   DAYS_PER_SEASON,
   SATISFACTION_MAX,
@@ -17,6 +18,7 @@ import {
   TOURNAMENT_POOR_PAY,
   TOURNAMENT_POOR_SAT,
   TOURNAMENT_PREP_DAYS,
+  TOURNAMENT_SETUP_LEAD_DAYS,
   TOURNAMENT_SEASON_MAX,
   TOURNAMENT_WEIGHTS,
   TOURNAMENT_WINTER_MAX,
@@ -73,6 +75,26 @@ export function applySnapTournament(state) {
 
 export function seasonStartDay(day) {
   return Math.floor((day - 1) / DAYS_PER_SEASON) * DAYS_PER_SEASON + 1;
+}
+
+export function seasonEndDay(day) {
+  return seasonStartDay(day) + DAYS_PER_SEASON - 1;
+}
+
+export function comingSeasonStartDay(day) {
+  return seasonStartDay(day) + DAYS_PER_SEASON;
+}
+
+export function comingSeason(day) {
+  return calendarFromDay(comingSeasonStartDay(day)).season;
+}
+
+export function tournamentPromptDay(day) {
+  return seasonEndDay(day) - TOURNAMENT_SETUP_LEAD_DAYS;
+}
+
+export function isTournamentPromptDay(day) {
+  return day === tournamentPromptDay(day);
 }
 
 export function maxTournamentsForSeason(season) {

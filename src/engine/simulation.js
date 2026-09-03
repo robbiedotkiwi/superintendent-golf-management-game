@@ -47,9 +47,15 @@ import { applyFertiliser, applySpray, emptyDisease, resolveDisease } from './dis
 import { resolveIrrigation, summerUnderwaterDecay } from './irrigation.js';
 import { rollMorningWithRng } from './weather.js';
 import { closeSeason } from './budget.js';
-import { golferMail, gmSeasonMail, gmTournamentRequestMail, meetingDue, pushMail, tickDaysSinceWorked } from './mail.js';
+import { golferMail, gmMissedTournamentMail, gmSeasonMail, gmTournamentRequestMail, meetingDue, pushMail, tickDaysSinceWorked } from './mail.js';
 import { neglectMail, neglectSatisfactionDrain } from './neglect.js';
-import { applyScheduledTournament } from './tournament.js';
+import {
+  applyScheduledTournament,
+  comingSeason,
+  comingSeasonStartDay,
+  isTournamentPromptDay,
+  seasonEndDay,
+} from './tournament.js';
 import { tickProjects } from './projects.js';
 import { buildYearReview, emptyYearRecord, hiredIds, recordYearDay } from './history.js';
 import { clampRange, clampStanding, tickSatisfaction } from './satisfaction.js';
@@ -387,16 +393,22 @@ export function resolveDay(state) {
   };
   let seasonClose = null;
   if (seasonChanged) {
+    const ignored = next.pendingTournamentSetup;
     next = {
       ...next,
       candidates: generateCandidates(rng),
       candidatesSeason: calendar.season,
       volunteerDayChangedThisSeason: false,
       neighbourComplaintsThisSeason: 0,
-      pendingTournamentSetup: true,
-      gmTournamentRequestPending: true,
-      tournaments: [],
+      pendingTournamentSetup: false,
+      gmTournamentRequestPending: false,
+      tournamentSetupSeason: null,
+      tournamentSetupDeadline: null,
+      tournamentSetupStartDay: null,
       tournamentPrepScore: 0,
+      tournaments: ignored
+        ? []
+        : (next.tournaments ?? []).filter((item) => item.season === calendar.season || item.day >= next.day),
     };
     seasonClose = closeSeason(next, { yearChanged });
     next = seasonClose.state;
@@ -411,7 +423,9 @@ export function resolveDay(state) {
     )) {
       next = pushMail(next, mail);
     }
-    next = pushMail(next, gmTournamentRequestMail(calendar.season));
+    if (ignored) {
+      next = pushMail(next, gmMissedTournamentMail(calendar.season));
+    }
     if (yearChanged) {
       next = {
         ...next,
@@ -437,6 +451,20 @@ export function resolveDay(state) {
     rngSeed: rng.seed,
     workers: prepareMorningWorkers({ ...next, weather: morning.weather }, morning.weather, rng),
   };
+
+  if (isTournamentPromptDay(next.day) && !next.pendingTournamentSetup) {
+    const setupSeason = comingSeason(next.day);
+    const deadline = seasonEndDay(next.day);
+    next = {
+      ...next,
+      pendingTournamentSetup: true,
+      gmTournamentRequestPending: true,
+      tournamentSetupSeason: setupSeason,
+      tournamentSetupDeadline: deadline,
+      tournamentSetupStartDay: comingSeasonStartDay(next.day),
+    };
+    next = pushMail(next, gmTournamentRequestMail(setupSeason, deadline));
+  }
 
   const summary = {
     day: state.day,

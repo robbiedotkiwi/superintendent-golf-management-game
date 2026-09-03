@@ -489,7 +489,7 @@ Unspent maintenance budget rolls into cash at season end. Unspent capital budget
 
 **Build**
 
-At the start of spring, summer and autumn the player chooses how many tournaments to host: **0, 1, 2 or 3**. Winter offers one optional tournament, flagged as risky. Dates are announced at selection so the player can plan backwards.
+Seven days before a season ends, a GM inbox item asks how many tournaments to host in the **coming** season: **0, 1, 2 or 3**. Winter offers one optional tournament, flagged as risky. The first season of a new game has no events and no prompt. Dates are announced at selection so the player can plan backwards. Ignore the email and the coming season has none.
 
 On the day, the course is scored weighted heavily toward greens:
 
@@ -512,7 +512,7 @@ The GM may also **request** a tournament. Declining costs GM standing.
 
 **Gate — all must be true**
 
-1. The season-start screen offers the count choice and shows the chosen dates.
+1. The inbox picker offers the count choice and shows the chosen dates.
 2. A countdown to the next tournament is visible on the main screen.
 3. Tournament day scores on the tournament weights, not the normal ones.
 4. Each band pays and moves satisfaction exactly as tabled.
