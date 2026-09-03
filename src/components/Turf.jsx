@@ -42,6 +42,7 @@ import {
   machineMinutesRemaining,
   overrideCandidates,
 } from '../engine/equipment.js';
+import { machineTitle } from '../engine/machineDisplay.js';
 import { canPlanTask } from '../engine/gameState.js';
 import { formatMoney } from '../engine/format.js';
 import { canBuyAerator, irrigationDemand, IRRIGATED_SURFACES, pondPercent } from '../engine/irrigation.js';
@@ -358,7 +359,7 @@ function MachinePicker({ state, surface, onSetMachineOverride }) {
   return (
     <div className="mt-2">
       <p className="text-sm">
-        {assignment.machine ? assignment.machine.name : 'No machine available'}
+        {assignment.machine ? machineTitle(assignment.machine) : 'No machine available'}
       </p>
       {assignment.fallbackReason ? (
         <p className="text-sm text-[var(--machine-orange)]">{assignment.fallbackReason}</p>
@@ -376,7 +377,7 @@ function MachinePicker({ state, surface, onSetMachineOverride }) {
           <option value={MACHINE_OVERRIDE_AUTO}>Auto</option>
           {options.map((machine) => (
             <option key={machine.id} value={machine.id}>
-              {machine.name} · {machine.ceiling?.[surface] ?? '—'} · {machine.timeMult}× ·{' '}
+              {machineTitle(machine)} · {machine.ceiling?.[surface] ?? '—'} · {machine.timeMult}× ·{' '}
               {machineMinutesRemaining(state, machine.id)} min
             </option>
           ))}

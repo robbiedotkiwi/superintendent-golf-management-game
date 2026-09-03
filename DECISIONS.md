@@ -201,4 +201,10 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Phase 1 / Round 4 duration equalities now use `durationForTask` (base × catalogue `timeMult` × condition penalty). `BASE_MINUTES` retuned to 91 / 56 / 118 / 130 so the default full day is exactly 672 minutes = 140% of 480. Fairways/rough stay under one worker-day and remain plannable on day 1.
 - Claiming is unchanged. Round 4 booked-mower checks now fill the Reelmaster's daily pool explicitly, because two machines no longer share one 480-minute claim.
 
+### Phase D
+
+- Every catalogue unit now has `manufacturer`, `model` and `type`. Shop walk-behind / ride-on / fairway model names are invented Toro numbers (1600 / 5410 / 5510 / 5610) so they are not described only by function. The Foley card uses `MACHINE_BRAND_FOLEY` + `FOLEY_MODEL`.
+- One status line under the title: broken, then grinding, then leased, then `Used · N hours` if hours > 0, else `New`. Starters start at 340 / 480 hours. Hours are a stored field and do not tick with use. New shop buys stay instant (acquisition system is out of scope); used orders still queue on `pendingDeliveries` and are the Deliveries section on Yard.
+- Invented delivery sources are `new` / `ex-demo` / `used`. Used buys write `used`. Empty copy is `Nothing is on order.`
+
 

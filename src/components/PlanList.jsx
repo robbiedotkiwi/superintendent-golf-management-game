@@ -3,6 +3,7 @@ import { OVERRUN_DROP_COPY } from '../data/constants.js';
 import { getTask } from '../data/tasks.js';
 import { workerById } from '../engine/assignment.js';
 import { getMachine } from '../engine/equipment.js';
+import { machineTitle } from '../engine/machineDisplay.js';
 
 export default function PlanList({ state, compact = false, onReorder, onRemove }) {
   const [dragId, setDragId] = useState(null);
@@ -94,7 +95,7 @@ export default function PlanList({ state, compact = false, onReorder, onRemove }
                   </div>
                   <p className="text-sm text-[var(--sand)]">
                     {worker?.name ?? 'Unassigned'}
-                    {machine ? ` · ${machine.name}` : ''}
+                    {machine ? ` · ${machineTitle(machine)}` : ''}
                     {` · ${planned.minutes} min`}
                   </p>
                 </div>

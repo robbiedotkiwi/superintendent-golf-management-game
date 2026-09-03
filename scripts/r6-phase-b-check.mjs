@@ -24,7 +24,9 @@ import {
   TURF_TAB_SUMMARY,
   TURF_TABS,
 } from '../src/data/constants.js';
+import { getMachine } from '../src/data/equipment.js';
 import { getTask } from '../src/data/tasks.js';
+import { machineTitle } from '../src/engine/machineDisplay.js';
 import {
   machineAssignment,
   overrideCandidates,
@@ -64,7 +66,7 @@ assert.match(turfSrc, /TURF_TAB_POND/);
 assert.doesNotMatch(turfSrc, /tab === TURF_TAB_BUNKERS \?/);
 
 const planSrc = readFileSync(new URL('../src/components/PlanList.jsx', import.meta.url), 'utf8');
-assert.match(planSrc, /machine\.name/);
+assert.match(planSrc, /machineTitle/);
 
 const start = createInitialState();
 assert.equal(start.tabs[SECTION_TURF], TURF_TAB_SUMMARY);
@@ -144,7 +146,7 @@ fallback = {
 };
 const assignment = machineAssignment(fallback, 'greens');
 assert.equal(assignment.machine?.id, start.ownedMachines[0]);
-assert.equal(assignment.fallbackReason, MACHINE_OVERRIDE_FALLBACK('Walk-behind reel'));
+assert.equal(assignment.fallbackReason, MACHINE_OVERRIDE_FALLBACK(machineTitle(getMachine('walkBehindReel'))));
 assert.notEqual(pickMachine(fallback, getTask('cutGreens'))?.id, 'walkBehindReel');
 
 const migrated = migrateSave({

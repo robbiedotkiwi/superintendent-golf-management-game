@@ -12,6 +12,9 @@ import {
   USED_LISTING_COUNT,
   USED_PRICE_FRACTION,
   USED_RELATIONSHIP_DISCOUNT_PER_POINT,
+  DELIVERY_SOURCE_USED,
+  HOURS_USED_MAX,
+  HOURS_USED_MIN,
 } from '../data/constants.js';
 import { getMachine, MACHINES } from '../data/equipment.js';
 import { bumpCapitalSpent } from './history.js';
@@ -63,10 +66,13 @@ export function rollUsedListings(state, rng) {
     if (!machine) break;
     const span = USED_CONDITION_MAX - USED_CONDITION_MIN;
     const condition = USED_CONDITION_MIN + Math.floor(rng.next() * (span + 1));
+    const hourSpan = HOURS_USED_MAX - HOURS_USED_MIN;
+    const hours = HOURS_USED_MIN + Math.floor(rng.next() * (hourSpan + 1));
     listings.push({
       id: `used-${machine.id}`,
       machineId: machine.id,
       condition,
+      hours,
       price: usedPrice(state, machine, condition),
     });
   }
@@ -103,6 +109,8 @@ export function buyUsed(state, listingId) {
         id: listing.id,
         machineId: listing.machineId,
         condition: listing.condition,
+        hours: listing.hours,
+        source: DELIVERY_SOURCE_USED,
         price: listing.price,
         arrivesDay: state.day + USED_DELIVERY_DAYS,
       },
@@ -151,7 +159,7 @@ export function tickMarket(state) {
     if (next.day >= item.arrivesDay) {
       arrived = true;
       if (!next.ownedMachines.includes(item.machineId)) {
-        next = { ...next, ...stampOwnedMachine(next, item.machineId, item.condition) };
+        next = { ...next, ...stampOwnedMachine(next, item.machineId, item.condition, item.hours) };
         if (getMachine(item.machineId)?.autonomous) {
           const rng = createRng(next.rngSeed);
           const scheduled = ensureAutoWeek(next, rng, true);

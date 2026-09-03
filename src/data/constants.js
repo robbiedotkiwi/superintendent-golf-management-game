@@ -470,6 +470,58 @@ export const STARTING_MACHINE_CONDITIONS = {
   [REELMASTER_ID]: REELMASTER_START_CONDITION,
 };
 
+export const MACHINE_BRAND_TORO = 'Toro';
+export const MACHINE_BRAND_VENTRAC = 'Ventrac';
+export const MACHINE_BRAND_NEXMOW = 'Nexmow';
+export const MACHINE_BRAND_SALSCO = 'Salsco';
+export const MACHINE_BRAND_FOLEY = 'Foley';
+export const MODEL_PUSH_ROTARY = '21-inch rotary';
+export const TYPE_PUSH_ROTARY = 'walk-behind rotary';
+export const MODEL_GREENSMASTER = 'Greensmaster 1000';
+export const TYPE_WALK_BEHIND_REEL = 'walk-behind reel';
+export const MODEL_REELMASTER = 'Reelmaster 3100';
+export const TYPE_RIDE_ON_FAIRWAY = 'ride-on fairway';
+export const MODEL_WALK_BEHIND = 'Greensmaster 1600';
+export const MODEL_RIDE_ON = 'Reelmaster 5410';
+export const TYPE_RIDE_ON_REEL = 'ride-on reel';
+export const MODEL_PREMIUM_REEL = 'Reelmaster 5610';
+export const TYPE_PREMIUM_RIDE_ON = 'premium ride-on reel';
+export const MODEL_FAIRWAY_UNIT = 'Reelmaster 5510';
+export const MODEL_VENTRAC = '4500Z';
+export const TYPE_ROUGH_UTILITY = 'rough and utility mower';
+export const MODEL_GREENS_ROLLER = '0750';
+export const TYPE_GREENS_ROLLER = 'greens roller';
+export const MODEL_AUTONOMOUS = 'NX1';
+export const TYPE_AUTONOMOUS = 'autonomous mower';
+export const FOLEY_MODEL = 'Bedknife grinder';
+export const FOLEY_TYPE = 'bedknife grinder';
+export const HOURS_NEW = 0;
+export const HOURS_USED_MIN = 180;
+export const HOURS_USED_MAX = 620;
+export const HOURS_MIGRATED = 400;
+export const HOURS_STARTER_GREENSMASTER = 340;
+export const HOURS_STARTER_REELMASTER = 480;
+export const STARTING_MACHINE_HOURS = {
+  [GREENSMASTER_ID]: HOURS_STARTER_GREENSMASTER,
+  [REELMASTER_ID]: HOURS_STARTER_REELMASTER,
+};
+export const MACHINE_STATUS_NEW = 'New';
+export const MACHINE_STATUS_BROKEN = 'Broken · needs repair';
+export const MACHINE_STATUS_USED = (hours) => `Used · ${hours} hours`;
+export const MACHINE_STATUS_LEASED = (amountLabel) => `Leased · ${amountLabel} per season`;
+export const MACHINE_STATUS_ARRIVING = (day) => `Arriving day ${day}`;
+export const MACHINE_STATUS_GRINDING = (day) => `In for grinding · back day ${day}`;
+export const DELIVERIES_HEADING = 'Deliveries';
+export const DELIVERIES_EMPTY_COPY = 'Nothing is on order.';
+export const DELIVERY_SOURCE_NEW = 'new';
+export const DELIVERY_SOURCE_EX_DEMO = 'ex-demo';
+export const DELIVERY_SOURCE_USED = 'used';
+export const DELIVERY_SOURCE_LABELS = {
+  [DELIVERY_SOURCE_NEW]: 'New',
+  [DELIVERY_SOURCE_EX_DEMO]: 'Ex-demo',
+  [DELIVERY_SOURCE_USED]: 'Used',
+};
+
 export const CONDITION_MIN = 0;
 export const CONDITION_MAX = 100;
 export const STARTING_MACHINE_CONDITION = 100;

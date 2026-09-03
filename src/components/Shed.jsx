@@ -1,11 +1,18 @@
 import {
   CONDITION_MAX,
   CONDITION_SLOW_THRESHOLD,
+  DELIVERIES_EMPTY_COPY,
+  DELIVERIES_HEADING,
   FOLEY_GRINDER_COST,
   FOLEY_GRIND_MINUTES,
+  FOLEY_MODEL,
+  FOLEY_TYPE,
   GRIND_AWAY_COST,
   GRIND_AWAY_DAYS,
   LEASE_RATE,
+  MACHINE_BRAND_FOLEY,
+  MACHINE_STATUS_NEW,
+  MACHINE_STATUS_USED,
   REPAIR_MINUTES,
   SALESMAN_RELATIONSHIP_MAX,
   SHED_TAB_BUY,
@@ -20,6 +27,13 @@ import { MACHINES, getMachine } from '../data/equipment.js';
 import { canLeaseMachine, leaseCost } from '../engine/budget.js';
 import { formatMoney } from '../engine/format.js';
 import {
+  deliveryDaysRemaining,
+  deliverySourceLabel,
+  machineStatusLine,
+  machineTitle,
+  machineTypeLine,
+} from '../engine/machineDisplay.js';
+import {
   canBuyFoley,
   canBuyMachine,
   canGrindInHouse,
@@ -27,7 +41,6 @@ import {
   canSendGrind,
   claimedMinutesByMachine,
   conditionOf,
-  isMachineAvailable,
   machineDailyMinutesOf,
 } from '../engine/equipment.js';
 import { canBuyUsed, canSellMachine, salePrice } from '../engine/market.js';
@@ -75,7 +88,30 @@ export default function Shed({
 
       {tab === SHED_TAB_YARD ? (
         <>
-          <h2 className="font-condensed text-3xl">In the shed</h2>
+          <h2 className="font-condensed text-3xl">{DELIVERIES_HEADING}</h2>
+          <div className="mt-3 space-y-3">
+            {(state.pendingDeliveries ?? []).length === 0 ? (
+              <p className="text-[var(--sand)]">{DELIVERIES_EMPTY_COPY}</p>
+            ) : (
+              (state.pendingDeliveries ?? []).map((item) => {
+                const entry = getMachine(item.machineId);
+                return (
+                  <section key={item.id} className="border border-[var(--sand)] p-4">
+                    <h3 className="text-xl font-semibold">{machineTitle(entry) || item.machineId}</h3>
+                    {machineTypeLine(entry) ? (
+                      <p className="text-sm text-[var(--sand)]">{machineTypeLine(entry)}</p>
+                    ) : null}
+                    <p className="mt-1 text-sm">{deliverySourceLabel(item.source)}</p>
+                    <p className="mt-1 text-sm text-[var(--sand)]">
+                      Arrives day {item.arrivesDay} · {deliveryDaysRemaining(state, item)} days remaining · paid{' '}
+                      {formatMoney(item.price ?? 0)}
+                    </p>
+                  </section>
+                );
+              })
+            )}
+          </div>
+          <h2 className="mt-10 font-condensed text-3xl">In the shed</h2>
           <div className="mt-3 space-y-4">
             {state.ownedMachines.map((id) => {
               const machine = MACHINES.find((item) => item.id === id);
@@ -84,23 +120,17 @@ export default function Shed({
               const claimed = claimedMinutesByMachine(state)[id] ?? 0;
               const daily = machineDailyMinutesOf(state, id);
               const broken = Boolean(state.machineBroken[id]);
-              const awayUntil = state.machineAwayUntil[id];
-              const away = awayUntil && state.day < awayUntil;
               const grindAway = canSendGrind(state, id);
               const grindHere = canGrindInHouse(state, id);
               const repair = canRepair(state, id);
               const sell = canSellMachine(state, id);
               return (
                 <section key={id} className="border-2 border-[var(--sand)] bg-[var(--soil)] p-4">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <h3 className="text-2xl font-semibold">
-                      {machine.name}
-                      {machine.brand ? ` · ${machine.brand}` : ''}
-                    </h3>
-                    <p className="text-[var(--sand)]">
-                      {broken ? 'Broken' : away ? `Away until day ${awayUntil}` : isMachineAvailable(state, id) ? 'Ready' : 'Off'}
-                    </p>
-                  </div>
+                  <h3 className="text-2xl font-semibold">{machineTitle(machine)}</h3>
+                  {machineTypeLine(machine) ? (
+                    <p className="text-sm text-[var(--sand)]">{machineTypeLine(machine)}</p>
+                  ) : null}
+                  <p className="mt-1 text-sm">{machineStatusLine(state, id)}</p>
                   <p className="mt-2">
                     Condition {condition} / {CONDITION_MAX}
                     {condition < CONDITION_SLOW_THRESHOLD ? ' — slower cuts.' : ''}
@@ -196,9 +226,13 @@ export default function Shed({
               return (
                 <section key={listing.id} className="border border-[var(--sand)] p-4">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <h3 className="text-xl font-semibold">Used {entry?.name ?? listing.machineId}</h3>
+                    <h3 className="text-xl font-semibold">{machineTitle(entry) || listing.machineId}</h3>
                     <p>{formatMoney(listing.price)}</p>
                   </div>
+                  {machineTypeLine(entry) ? (
+                    <p className="text-sm text-[var(--sand)]">{machineTypeLine(entry)}</p>
+                  ) : null}
+                  <p className="mt-1 text-sm">{MACHINE_STATUS_USED(listing.hours ?? 0)}</p>
                   <p className="mt-1 text-sm text-[var(--sand)]">
                     Condition {listing.condition} / {CONDITION_MAX}
                   </p>
@@ -215,26 +249,15 @@ export default function Shed({
               );
             })}
           </div>
-          {(state.pendingDeliveries ?? []).length > 0 ? (
-            <>
-              <h3 className="mt-6 text-2xl font-semibold">Pending deliveries</h3>
-              <div className="mt-3 space-y-3">
-                {state.pendingDeliveries.map((item) => (
-                  <section key={item.id} className="border border-[var(--sand)] p-4">
-                    <h3 className="text-xl font-semibold">{getMachine(item.machineId)?.name ?? item.machineId}</h3>
-                    <p className="mt-1 text-sm text-[var(--sand)]">Arrives day {item.arrivesDay}</p>
-                  </section>
-                ))}
-              </div>
-            </>
-          ) : null}
           {(state.activeSales ?? []).length > 0 ? (
             <>
               <h3 className="mt-6 text-2xl font-semibold">Active sales</h3>
               <div className="mt-3 space-y-3">
                 {state.activeSales.map((item) => (
                   <section key={item.id} className="border border-[var(--sand)] p-4">
-                    <h3 className="text-xl font-semibold">{getMachine(item.machineId)?.name ?? item.machineId}</h3>
+                    <h3 className="text-xl font-semibold">
+                      {machineTitle(getMachine(item.machineId)) || item.machineId}
+                    </h3>
                     <p className="mt-1 text-sm text-[var(--sand)]">
                       Proceeds {formatMoney(item.price)} on day {item.dueDay}
                     </p>
@@ -251,12 +274,13 @@ export default function Shed({
               return (
                 <section key={machine.id} className="border border-[var(--sand)] p-4">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <h3 className="text-xl font-semibold">
-                      {machine.name}
-                      {machine.brand ? ` · ${machine.brand}` : ''}
-                    </h3>
+                    <h3 className="text-xl font-semibold">{machineTitle(machine)}</h3>
                     <p>{owned ? 'Owned' : formatMoney(machine.cost)}</p>
                   </div>
+                  {machineTypeLine(machine) ? (
+                    <p className="text-sm text-[var(--sand)]">{machineTypeLine(machine)}</p>
+                  ) : null}
+                  <p className="mt-1 text-sm">{owned ? machineStatusLine(state, machine.id) : MACHINE_STATUS_NEW}</p>
                   <p className="mt-1 text-sm text-[var(--sand)]">
                     {SURFACE_ORDER.map((surface) => `${surface}: ${capability(machine, surface)}`).join(' · ')}
                   </p>
@@ -286,7 +310,11 @@ export default function Shed({
               );
             })}
             <section className="border border-[var(--sand)] p-4">
-              <h3 className="text-xl font-semibold">Foley bedknife grinder</h3>
+              <h3 className="text-xl font-semibold">
+                {MACHINE_BRAND_FOLEY} {FOLEY_MODEL}
+              </h3>
+              <p className="text-sm text-[var(--sand)]">{FOLEY_TYPE}</p>
+              <p className="mt-1 text-sm">{state.hasFoleyGrinder ? 'Installed' : MACHINE_STATUS_NEW}</p>
               <p className="mt-1 text-sm text-[var(--sand)]">Grind reels in-house. {FOLEY_GRIND_MINUTES} minutes, no downtime.</p>
               {state.hasFoleyGrinder ? (
                 <p className="mt-2">Installed.</p>

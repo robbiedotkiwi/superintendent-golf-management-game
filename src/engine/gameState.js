@@ -53,6 +53,7 @@ import {
   STARTING_DAYS_WORKED_RUNNING,
   STARTING_MACHINE_CONDITION,
   STARTING_MACHINE_CONDITIONS,
+  STARTING_MACHINE_HOURS,
   STARTING_MACHINE_IDS,
   STARTING_MINUTES_USED,
   STARTING_QUALITY_BUNKERS,
@@ -183,6 +184,9 @@ export function createInitialState() {
       STARTING_MACHINE_IDS.map((id) => [id, STARTING_MACHINE_CONDITIONS[id] ?? STARTING_MACHINE_CONDITION]),
     ),
     machineDailyMinutes: Object.fromEntries(STARTING_MACHINE_IDS.map((id) => [id, MACHINE_DAILY_MINUTES])),
+    machineHours: Object.fromEntries(
+      STARTING_MACHINE_IDS.map((id) => [id, STARTING_MACHINE_HOURS[id] ?? 0]),
+    ),
     machineOverride: normalizeMachineOverride(null),
     salesmanRelationship: SALESMAN_RELATIONSHIP_START,
     usedListings,

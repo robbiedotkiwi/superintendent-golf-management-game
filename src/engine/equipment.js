@@ -32,8 +32,11 @@ import {
   PLAYER_ID,
   QUALITY_MAX,
   REPAIR_MINUTES,
+  HOURS_MIGRATED,
+  HOURS_NEW,
   STARTING_MACHINE_CONDITION,
   STARTING_MACHINE_CONDITIONS,
+  STARTING_MACHINE_HOURS,
   STARTING_MACHINE_IDS,
   WEAR_GAIN_PENALTY,
   WEAR_MAX,
@@ -86,6 +89,7 @@ export function migrateMachineMaps(state) {
   const ownedMachines = state.ownedMachines ?? [...STARTING_MACHINE_IDS];
   const machineCondition = { ...(state.machineCondition ?? {}) };
   const machineDailyMinutes = { ...(state.machineDailyMinutes ?? {}) };
+  const machineHours = { ...(state.machineHours ?? {}) };
   for (const id of ownedMachines) {
     if (machineCondition[id] == null) machineCondition[id] = MIGRATED_MACHINE_CONDITION;
     else machineCondition[id] = clampCondition(machineCondition[id]);
@@ -94,16 +98,30 @@ export function migrateMachineMaps(state) {
     } else {
       machineDailyMinutes[id] = Math.max(0, Math.round(Number(machineDailyMinutes[id])));
     }
+    if (machineHours[id] == null || !Number.isFinite(Number(machineHours[id]))) {
+      machineHours[id] = STARTING_MACHINE_HOURS[id] ?? HOURS_MIGRATED;
+    } else {
+      machineHours[id] = Math.max(0, Math.round(Number(machineHours[id])));
+    }
   }
-  return { ownedMachines, machineCondition, machineDailyMinutes };
+  return { ownedMachines, machineCondition, machineDailyMinutes, machineHours };
 }
 
-export function stampOwnedMachine(state, machineId, condition = NEW_PURCHASE_CONDITION) {
+export function machineHoursOf(state, machineId) {
+  const stored = state.machineHours?.[machineId];
+  if (stored == null || !Number.isFinite(Number(stored))) {
+    return STARTING_MACHINE_HOURS[machineId] ?? HOURS_NEW;
+  }
+  return Math.max(0, Math.round(Number(stored)));
+}
+
+export function stampOwnedMachine(state, machineId, condition = NEW_PURCHASE_CONDITION, hours = HOURS_NEW) {
   return {
     ownedMachines: [...state.ownedMachines, machineId],
     machineWear: { ...state.machineWear, [machineId]: 0 },
     machineCondition: { ...(state.machineCondition ?? {}), [machineId]: clampCondition(condition) },
     machineDailyMinutes: { ...(state.machineDailyMinutes ?? {}), [machineId]: MACHINE_DAILY_MINUTES },
+    machineHours: { ...(state.machineHours ?? {}), [machineId]: Math.max(0, Math.round(hours)) },
   };
 }
 
@@ -113,6 +131,7 @@ export function dropOwnedMachine(state, machineId) {
   const { [machineId]: _away, ...machineAwayUntil } = state.machineAwayUntil ?? {};
   const { [machineId]: _condition, ...machineCondition } = state.machineCondition ?? {};
   const { [machineId]: _daily, ...machineDailyMinutes } = state.machineDailyMinutes ?? {};
+  const { [machineId]: _hours, ...machineHours } = state.machineHours ?? {};
   const removed = (state.plannedTasks ?? []).filter((item) => item.machineId === machineId);
   const refund = {};
   for (const item of removed) {
@@ -126,6 +145,7 @@ export function dropOwnedMachine(state, machineId) {
     machineAwayUntil,
     machineCondition,
     machineDailyMinutes,
+    machineHours,
     plannedTasks: (state.plannedTasks ?? []).filter((item) => item.machineId !== machineId),
     workers: (state.workers ?? []).map((worker) => ({
       ...worker,
@@ -226,10 +246,12 @@ export function machineAssignment(state, surface, worker) {
   const machine = task ? pickMachineForTask(state, task, worker) : null;
   const overrideId = machineOverrideId(state, surface);
   const override = overrideId ? getMachine(overrideId) : null;
+  const overrideLabel =
+    override?.manufacturer && override?.model
+      ? `${override.manufacturer} ${override.model}`
+      : override?.name ?? overrideId;
   const fallbackReason =
-    overrideId && machine?.id !== overrideId
-      ? MACHINE_OVERRIDE_FALLBACK(override?.name ?? overrideId)
-      : null;
+    overrideId && machine?.id !== overrideId ? MACHINE_OVERRIDE_FALLBACK(overrideLabel) : null;
   return { machine, fallbackReason, overrideId };
 }
 

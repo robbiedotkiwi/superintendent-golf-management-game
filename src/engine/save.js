@@ -9,6 +9,8 @@ import {
   SOUND_DEFAULT_ON,
   STARTING_CAPITAL_BUDGET,
   STARTING_IRRIGATION,
+  DELIVERY_SOURCE_USED,
+  HOURS_MIGRATED,
   STARTING_MACHINE_IDS,
   STARTING_MAINTENANCE_BUDGET,
   STARTING_RNG_SEED,
@@ -94,15 +96,23 @@ export function withDefaults(state) {
     machineAwayUntil: state.machineAwayUntil ?? {},
     machineCondition: machines.machineCondition,
     machineDailyMinutes: machines.machineDailyMinutes,
+    machineHours: machines.machineHours,
     machineOverride: normalizeMachineOverride(state.machineOverride),
+    pendingDeliveries: (Array.isArray(state.pendingDeliveries) ? state.pendingDeliveries : []).map((item) => ({
+      ...item,
+      source: item.source ?? DELIVERY_SOURCE_USED,
+      hours: Number.isFinite(Number(item.hours)) ? Math.max(0, Math.round(Number(item.hours))) : HOURS_MIGRATED,
+    })),
     salesmanRelationship: Number.isFinite(Number(state.salesmanRelationship))
       ? Math.min(
           SALESMAN_RELATIONSHIP_MAX,
           Math.max(SALESMAN_RELATIONSHIP_MIN, Number(state.salesmanRelationship)),
         )
       : SALESMAN_RELATIONSHIP_START,
-    usedListings: Array.isArray(state.usedListings) ? state.usedListings : [],
-    pendingDeliveries: Array.isArray(state.pendingDeliveries) ? state.pendingDeliveries : [],
+    usedListings: (Array.isArray(state.usedListings) ? state.usedListings : []).map((item) => ({
+      ...item,
+      hours: Number.isFinite(Number(item.hours)) ? Math.max(0, Math.round(Number(item.hours))) : HOURS_MIGRATED,
+    })),
     activeSales: Array.isArray(state.activeSales) ? state.activeSales : [],
     eventInvitations: Array.isArray(state.eventInvitations) ? state.eventInvitations : [],
     hasFoleyGrinder: Boolean(state.hasFoleyGrinder),

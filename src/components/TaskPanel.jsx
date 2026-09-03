@@ -2,6 +2,7 @@ import { tasksForSurface, taskUsesMachine } from '../data/tasks.js';
 import { durationForTask, assignWorker, certifiedPresent, workerById, workerAllows } from '../engine/assignment.js';
 import { workerAbsenceReason } from '../engine/availability.js';
 import { getMachine, ineligibleMachines, pickMachineForTask } from '../engine/equipment.js';
+import { machineTitle } from '../engine/machineDisplay.js';
 import { inPrepWindow } from '../engine/tournament.js';
 import { canPlanTask } from '../engine/gameState.js';
 import { formatMoney } from '../engine/format.js';
@@ -33,10 +34,10 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
             <section key={task.id} className="border border-[var(--sand)] p-3">
               <h3 className="text-lg font-semibold">{task.name}</h3>
               {task.materialsCost ? <p className="text-sm text-[var(--sand)]">Materials {formatMoney(task.materialsCost)}</p> : null}
-              {machine ? <p className="text-sm text-[var(--sand)]">Using {machine.name}</p> : null}
+              {machine ? <p className="text-sm text-[var(--sand)]">Using {machineTitle(machine)}</p> : null}
               {blocked.map((item) => (
                 <p key={item.machine.id} className="text-sm text-[var(--sand)]">
-                  {item.machine.name} not offered — {item.reason}
+                  {machineTitle(item.machine)} not offered — {item.reason}
                 </p>
               ))}
               {planned ? (
