@@ -70,3 +70,9 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Winter offers at most one date, labelled risky. Rain (including heavy rain and storm) caps Excellent/Good at Acceptable; that is the winter risk, not a separate frost rule.
 - Snap scoring ignores `tournamentPrepScore` and has no prep window.
 - Prep tasks only appear in the three days before a booked date (not on the day, not for snaps).
+
+## Phase 9
+
+- Range, extra bunkers and new tees use invented build days and daily site minutes; 18 holes is the plan's 60 days and 180,000. Site work scales with `SEASON_GROWTH` so summer costs more of the day than winter.
+- Ball picking is a daily planned task (not a new decaying surface). The autonomous picker is an instant capital buy and does not double with 18 holes.
+- Extra bunkers and new tees raise that surface's ceiling and multiply rake/tee task times.

@@ -45,6 +45,11 @@ function withDefaults(state) {
     gmTournamentRequestPending: Boolean(state.gmTournamentRequestPending),
     tournaments: state.tournaments ?? [],
     tournamentPrepScore: state.tournamentPrepScore ?? 0,
+    projects: state.projects ?? [],
+    hasDrivingRange: Boolean(state.hasDrivingRange),
+    hasAutoPicker: Boolean(state.hasAutoPicker),
+    hasExtraBunkers: Boolean(state.hasExtraBunkers),
+    hasNewTees: Boolean(state.hasNewTees),
   };
 }
 

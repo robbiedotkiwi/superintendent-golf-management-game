@@ -40,6 +40,7 @@ import { rollMorningWithRng } from './weather.js';
 import { closeSeason } from './budget.js';
 import { golferMail, gmSeasonMail, gmTournamentRequestMail, meetingDue, pushMail, tickDaysSinceWorked } from './mail.js';
 import { applyScheduledTournament } from './tournament.js';
+import { tickProjects } from './projects.js';
 import { clampStanding, tickSatisfaction } from './satisfaction.js';
 import { GM_MEETING_SKIP_STANDING } from '../data/constants.js';
 
@@ -362,6 +363,8 @@ export function resolveDay(state) {
     }
     next = pushMail(next, gmTournamentRequestMail(calendar.season));
   }
+  const built = tickProjects(next);
+  next = built.state;
   const scheduled = ensureAutoWeek(next, rng);
   next = scheduled.state;
   const morning = rollMorningWithRng(next, calendar.season, rng);
@@ -393,6 +396,7 @@ export function resolveDay(state) {
     diseaseOngoing: diseaseTick.ongoing,
     disease,
     tournament: tournament.result,
+    projectsCompleted: built.completed,
     seasonClose: seasonClose
       ? { leftover: seasonClose.leftover, insolvent: seasonClose.insolvent, dismissed: next.dismissed }
       : null,

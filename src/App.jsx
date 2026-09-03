@@ -32,6 +32,7 @@ import {
 import { courseCondition } from './engine/simulation.js';
 import { pondPercent } from './engine/irrigation.js';
 import { unreadCount } from './engine/mail.js';
+import { constructionMinutes } from './engine/projects.js';
 import { clearSave, hasSave, loadGame, saveGame } from './engine/save.js';
 
 function paletteStyle() {
@@ -142,6 +143,8 @@ export default function App() {
           onReadMail={(id) => dispatch({ type: 'READ_MAIL', id })}
           onSetTournaments={(count) => dispatch({ type: 'SET_TOURNAMENTS', count })}
           onDeclineTournament={() => dispatch({ type: 'DECLINE_TOURNAMENT_REQUEST' })}
+          onStartProject={(projectId) => dispatch({ type: 'START_PROJECT', projectId })}
+          onBuyPicker={() => dispatch({ type: 'BUY_AUTO_PICKER' })}
           onNewGame={handleNewGame}
         />
       )}
@@ -214,6 +217,8 @@ function GameScreen({
   onReadMail,
   onSetTournaments,
   onDeclineTournament,
+  onStartProject,
+  onBuyPicker,
   onNewGame,
 }) {
   if (view === 'shed') {
@@ -256,6 +261,8 @@ function GameScreen({
         onPlanMeeting={() => onPlan('gmMeeting')}
         onRemoveMeeting={() => onRemove('gmMeeting')}
         onDeclineTournament={onDeclineTournament}
+        onStartProject={onStartProject}
+        onBuyPicker={onBuyPicker}
       />
     );
   }
@@ -288,18 +295,28 @@ function GameScreen({
         <Stat label="Maintenance" value={Math.round(state.maintenanceBudget)} />
         <Stat label="Capital" value={Math.round(state.capitalBudget)} />
         <Stat label="Condition" value={condition} />
+        <Stat label="Holes" value={state.holes} />
         <Stat label="Satisfaction" value={Math.round(state.satisfaction)} />
         <Stat
           label="Pond"
           value={`${Math.round(state.pond.volume)} m³`}
           hint={`${Math.round(pondPercent(state.pond.volume))}% of ${POND_CAPACITY} · health ${Math.round(state.pond.health)}`}
         />
+        {state.projects?.length ? (
+          <Stat
+            label="Site work"
+            value={`${constructionMinutes(state)} min`}
+            hint={state.projects.map((item) => `finishes day ${item.dueDay}`).join(' · ')}
+          />
+        ) : null}
       </div>
       <div className="min-h-0 flex-1 px-3 pb-3">
         <CourseMap
           surfaces={state.surfaces}
           pond={state.pond}
           hasAerator={state.hasAerator}
+          holes={state.holes}
+          hasDrivingRange={state.hasDrivingRange}
           selected={selected}
           onSelect={onSelect}
           onOpenShed={onOpenShed}

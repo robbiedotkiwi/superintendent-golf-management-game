@@ -23,6 +23,7 @@ import {
   seasonStartDay,
 } from './tournament.js';
 import { clampStanding } from './satisfaction.js';
+import { buyAutoPicker, startProject } from './projects.js';
 import { resolveDay } from './simulation.js';
 import {
   DAY_LENGTH_MINUTES,
@@ -154,6 +155,11 @@ export function createInitialState() {
     gmTournamentRequestPending: true,
     tournaments: [],
     tournamentPrepScore: 0,
+    projects: [],
+    hasDrivingRange: false,
+    hasAutoPicker: false,
+    hasExtraBunkers: false,
+    hasNewTees: false,
     inbox: [
       {
         id: 1,
@@ -202,6 +208,10 @@ export function canPlanTask(state, taskId, level, workerId) {
 
   if (task.id === 'gmMeeting' && !meetingDue(state.day)) {
     return { ok: false, reason: 'No GM meeting today.' };
+  }
+
+  if (task.id === 'pickBalls' && !state.hasDrivingRange) {
+    return { ok: false, reason: 'No driving range yet.' };
   }
 
   if (task.kind === 'prep' && !inPrepWindow(state)) {
@@ -340,6 +350,10 @@ export function reducer(state, action) {
         ),
       };
     }
+    case 'START_PROJECT':
+      return startProject(state, action.projectId);
+    case 'BUY_AUTO_PICKER':
+      return buyAutoPicker(state);
     case 'BUY_MACHINE':
       return buyMachine(state, action.machineId);
     case 'BUY_FOLEY':

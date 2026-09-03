@@ -28,6 +28,7 @@ export const TASKS = [
   { id: 'doubleCutGreens', surface: 'greens', name: 'Double-cut greens', mowing: true, usesQualityLevel: false, kind: 'prep', prepBonus: TOURNAMENT_PREP_DOUBLE_CUT_BONUS },
   { id: 'extraRoll', surface: 'greens', name: 'Extra roll', mowing: false, usesQualityLevel: false, kind: 'prep', prepBonus: TOURNAMENT_PREP_ROLL_BONUS },
   { id: 'edgeBunkers', surface: 'bunkers', name: 'Bunker edging', mowing: false, usesQualityLevel: false, kind: 'prep', prepBonus: TOURNAMENT_PREP_EDGE_BONUS },
+  { id: 'pickBalls', surface: null, name: 'Pick range balls', mowing: false, usesQualityLevel: false, kind: 'range' },
 ];
 
 export const LEVEL_LABELS = {

@@ -40,6 +40,8 @@ export const GM_MEETING_MINUTES = 60;
 export const DOUBLE_CUT_MINUTES = 160;
 export const EXTRA_ROLL_MINUTES = 90;
 export const EDGE_BUNKERS_MINUTES = 80;
+export const BALL_PICK_MINUTES = 45;
+export const AUTO_PICK_MINUTES = 10;
 
 export const TASK_MINUTES = {
   cutGreens: 120,
@@ -61,6 +63,7 @@ export const TASK_MINUTES = {
   doubleCutGreens: DOUBLE_CUT_MINUTES,
   extraRoll: EXTRA_ROLL_MINUTES,
   edgeBunkers: EDGE_BUNKERS_MINUTES,
+  pickBalls: BALL_PICK_MINUTES,
 };
 
 export const LEVEL_QUICK_TIME_MULT = 0.7;
@@ -336,3 +339,39 @@ export const TOURNAMENT_PREP_DOUBLE_CUT_BONUS = 5;
 export const TOURNAMENT_PREP_ROLL_BONUS = 4;
 export const TOURNAMENT_PREP_EDGE_BONUS = 3;
 export const GM_TOURNAMENT_DECLINE_STANDING = 8;
+
+export const EXPANDED_HOLE_COUNT = 18;
+export const TASK_TIME_MULT_18 = 2;
+export const EXPAND_18_COST = 180000;
+export const EXPAND_18_DAYS = 60;
+export const EXPAND_18_SATISFACTION_MIN = 70;
+export const EXPAND_18_DAILY_MINUTES = 90;
+export const DRIVING_RANGE_COST = 60000;
+export const DRIVING_RANGE_DAYS = 20;
+export const DRIVING_RANGE_DAILY_MINUTES = 40;
+export const AUTO_PICKER_COST = 25000;
+export const EXTRA_BUNKERS_COST = 18000;
+export const EXTRA_BUNKERS_DAYS = 10;
+export const EXTRA_BUNKERS_DAILY_MINUTES = 30;
+export const EXTRA_BUNKER_TIME_MULT = 1.3;
+export const EXTRA_BUNKER_CEILING_BONUS = 8;
+export const NEW_TEES_COST = 22000;
+export const NEW_TEES_DAYS = 14;
+export const NEW_TEES_DAILY_MINUTES = 30;
+export const NEW_TEES_TIME_MULT = 1.25;
+export const NEW_TEES_CEILING_BONUS = 8;
+export const PROJECT_EXPAND_18 = 'expand18';
+export const PROJECT_DRIVING_RANGE = 'drivingRange';
+export const PROJECT_EXTRA_BUNKERS = 'extraBunkers';
+export const PROJECT_NEW_TEES = 'newTees';
+export const PROJECT_DAILY_MINUTES = {
+  [PROJECT_EXPAND_18]: EXPAND_18_DAILY_MINUTES,
+  [PROJECT_DRIVING_RANGE]: DRIVING_RANGE_DAILY_MINUTES,
+  [PROJECT_EXTRA_BUNKERS]: EXTRA_BUNKERS_DAILY_MINUTES,
+  [PROJECT_NEW_TEES]: NEW_TEES_DAILY_MINUTES,
+};
+export const BACK_NINE_OFFSET_X = 980;
+export const RANGE_X = 470;
+export const RANGE_Y = 278;
+export const RANGE_WIDTH = 100;
+export const RANGE_HEIGHT = 48;

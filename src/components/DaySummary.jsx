@@ -101,6 +101,9 @@ export default function DaySummary({ summary, onContinue }) {
             {summary.tournament.satisfaction}
           </p>
         ) : null}
+        {summary.projectsCompleted?.length ? (
+          <p className="mt-2">Finished: {summary.projectsCompleted.join(', ')}</p>
+        ) : null}
 
         <button
           type="button"

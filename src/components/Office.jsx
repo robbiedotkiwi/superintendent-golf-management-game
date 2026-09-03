@@ -1,4 +1,5 @@
 import {
+  AUTO_PICKER_COST,
   GM_MEETING_MINUTES,
   GM_MEETING_SKIP_STANDING,
   GM_TOURNAMENT_DECLINE_STANDING,
@@ -8,6 +9,15 @@ import {
 import { canTakeLoan, maxLoan } from '../engine/budget.js';
 import { unreadCount } from '../engine/mail.js';
 import { canPlanTask } from '../engine/gameState.js';
+import {
+  absorbNote,
+  alreadyBuilt,
+  canBuyAutoPicker,
+  canStartProject,
+  constructionMinutes,
+  PROJECTS,
+  projectSpec,
+} from '../engine/projects.js';
 
 export default function Office({
   state,
@@ -18,6 +28,8 @@ export default function Office({
   onPlanMeeting,
   onRemoveMeeting,
   onDeclineTournament,
+  onStartProject,
+  onBuyPicker,
 }) {
   const unread = unreadCount(state);
   const cap = maxLoan(state.lastSeasonRevenue);
@@ -71,6 +83,60 @@ export default function Office({
           Last snap: {state.lastSnap.band} · score {Math.round(state.lastSnap.score)} · paid {state.lastSnap.pay}
         </p>
       ) : null}
+
+      <h2 className="mt-8 font-condensed text-3xl">Projects</h2>
+      <p className="mt-2 text-sm text-[var(--sand)]">{absorbNote(state.season)}</p>
+      {(state.projects ?? []).map((item) => {
+        const spec = projectSpec(item.id);
+        return (
+          <p key={item.id} className="mt-2">
+            {spec?.name ?? item.id} underway · finishes day {item.dueDay} · site work {constructionMinutes({ ...state, projects: [item] })} min today
+          </p>
+        );
+      })}
+      <div className="mt-3 space-y-3">
+        {Object.values(PROJECTS).map((spec) => {
+          const check = canStartProject(state, spec.id);
+          if (check.hidden) return null;
+          if (alreadyBuilt(state, spec.id) || (state.projects ?? []).some((item) => item.id === spec.id)) {
+            return alreadyBuilt(state, spec.id) ? (
+              <p key={spec.id} className="text-sm text-[var(--sand)]">
+                {spec.name} is done.
+              </p>
+            ) : null;
+          }
+          return (
+            <button
+              key={spec.id}
+              type="button"
+              disabled={!check.ok}
+              title={check.reason}
+              onClick={() => onStartProject(spec.id)}
+              className="block border border-[var(--sand)] px-4 py-2 text-left disabled:opacity-40"
+            >
+              <div className="font-semibold">
+                {spec.name} · {spec.cost} capital · {spec.days} days
+              </div>
+              <div className="text-sm text-[var(--sand)]">
+                Completes day {state.day + spec.days}. {absorbNote(state.season)}
+              </div>
+              {!check.ok ? <div className="text-sm">{check.reason}</div> : null}
+            </button>
+          );
+        })}
+      </div>
+      {state.hasDrivingRange && !state.hasAutoPicker ? (
+        <button
+          type="button"
+          disabled={!canBuyAutoPicker(state).ok}
+          title={canBuyAutoPicker(state).reason}
+          onClick={onBuyPicker}
+          className="mt-3 border border-[var(--sand)] px-4 py-2 disabled:opacity-40"
+        >
+          Autonomous picker · {AUTO_PICKER_COST} capital
+        </button>
+      ) : null}
+      {state.hasAutoPicker ? <p className="mt-2 text-sm">Autonomous picker on the range.</p> : null}
 
       <h2 className="mt-8 font-condensed text-3xl">GM meeting</h2>
       <p className="mt-2 text-sm text-[var(--sand)]">

@@ -1,5 +1,7 @@
 import {
   FERTILISER_CEILING_BONUS,
+  EXTRA_BUNKER_CEILING_BONUS,
+  NEW_TEES_CEILING_BONUS,
   AUTO_INTERRUPT_MAX_COUNT,
   AUTO_INTERRUPT_MAX_MINUTES,
   AUTO_INTERRUPT_MIN_COUNT,
@@ -23,6 +25,7 @@ import {
 } from '../data/constants.js';
 import { getMachine, MACHINES, machineAllows, TURF_DAMAGE_REASON } from '../data/equipment.js';
 import { getTask, taskDuration } from '../data/tasks.js';
+import { taskTimeMultiplier } from './projects.js';
 import { workerTimeMultiplier } from './skills.js';
 import { hasMechanic } from './staff.js';
 import { createRng } from './rng.js';
@@ -66,11 +69,17 @@ export function surfaceCeiling(state, surface) {
     const value = machine.ceiling[surface];
     if (value > best) best = value;
   }
-  return (best || QUALITY_MAX) + fertiliserBonus(state, surface);
+  return (best || QUALITY_MAX) + fertiliserBonus(state, surface) + projectCeilingBonus(state, surface);
 }
 
 function fertiliserBonus(state, surface) {
   if ((state.fertiliserUntil?.[surface] ?? 0) > state.day) return FERTILISER_CEILING_BONUS;
+  return 0;
+}
+
+function projectCeilingBonus(state, surface) {
+  if (surface === 'bunkers' && state.hasExtraBunkers) return EXTRA_BUNKER_CEILING_BONUS;
+  if (surface === 'tees' && state.hasNewTees) return NEW_TEES_CEILING_BONUS;
   return 0;
 }
 
@@ -86,7 +95,7 @@ export function ineligibleMachines(state, task) {
 
 export function machineDurationForTask(state, taskId, level) {
   const task = getTask(taskId);
-  return taskDuration(taskId, level, machineTimeMultiplier(state, task));
+  return Math.round(taskDuration(taskId, level, machineTimeMultiplier(state, task)) * taskTimeMultiplier(state, task));
 }
 
 export function wearMultiplier(state, machineId) {

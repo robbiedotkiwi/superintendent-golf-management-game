@@ -1,5 +1,7 @@
 import { getTask, taskDuration } from '../data/tasks.js';
+import { AUTO_PICK_MINUTES, BALL_PICK_MINUTES } from '../data/constants.js';
 import { machineTimeMultiplier } from './equipment.js';
+import { taskTimeMultiplier } from './projects.js';
 import { isWorkerPresent, workerAllows, workerTimeMultiplier } from './skills.js';
 
 export { workerAllows, isWorkerPresent, workerTimeMultiplier };
@@ -12,9 +14,15 @@ export function preferredStat(surface) {
 
 export function durationForTask(state, taskId, level, worker) {
   const task = getTask(taskId);
-  const base = taskDuration(taskId, level, machineTimeMultiplier(state, task));
-  if (!worker) return base;
-  return Math.round(base * workerTimeMultiplier(worker));
+  const base =
+    taskId === 'pickBalls'
+      ? state.hasAutoPicker
+        ? AUTO_PICK_MINUTES
+        : BALL_PICK_MINUTES
+      : taskDuration(taskId, level, machineTimeMultiplier(state, task));
+  const scaled = Math.round(base * taskTimeMultiplier(state, task));
+  if (!worker) return scaled;
+  return Math.round(scaled * workerTimeMultiplier(worker));
 }
 
 export function assignWorker(state, task, level) {

@@ -3,6 +3,7 @@ import {
   AERATOR_ARM,
   AERATOR_RX,
   AERATOR_RY,
+  EXPANDED_HOLE_COUNT,
   HOLE_COUNT,
   POND_CX,
   POND_CY,
@@ -10,8 +11,12 @@ import {
   POND_RX,
   POND_RY,
   POND_LABEL_OFFSET,
+  RANGE_HEIGHT,
+  RANGE_WIDTH,
+  RANGE_X,
+  RANGE_Y,
 } from '../data/constants.js';
-import { HOLES, MAP_HEIGHT, MAP_VIEWBOX, MAP_WIDTH, SHED_HEIGHT, SHED_WIDTH, SHED_X, SHED_Y } from '../data/course.js';
+import { holesForCount, mapViewBoxForHoles, mapWidthForHoles, MAP_HEIGHT, SHED_HEIGHT, SHED_WIDTH, SHED_X, SHED_Y } from '../data/course.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import { pondPercent } from '../engine/irrigation.js';
 
@@ -29,7 +34,16 @@ function surfaceClass(selected, surface) {
   ].join(' ');
 }
 
-export default function CourseMap({ surfaces, pond, hasAerator, selected, onSelect, onOpenShed }) {
+export default function CourseMap({
+  surfaces,
+  pond,
+  hasAerator,
+  holes = HOLE_COUNT,
+  hasDrivingRange = false,
+  selected,
+  onSelect,
+  onOpenShed,
+}) {
   const fills = {
     greens: qualityColor(surfaces.greens.quality),
     tees: qualityColor(surfaces.tees.quality),
@@ -37,15 +51,16 @@ export default function CourseMap({ surfaces, pond, hasAerator, selected, onSele
     rough: qualityColor(surfaces.rough.quality),
     bunkers: qualityColor(surfaces.bunkers.quality),
   };
+  const layout = holesForCount(holes);
 
   return (
     <svg
-      viewBox={MAP_VIEWBOX}
+      viewBox={mapViewBoxForHoles(holes)}
       className="h-full w-full"
       role="img"
-      aria-label={`${HOLE_COUNT}-hole course map`}
+      aria-label={`${holes}-hole course map`}
     >
-      <rect width={MAP_WIDTH} height={MAP_HEIGHT} fill="var(--soil)" onClick={() => onSelect(null)} />
+      <rect width={mapWidthForHoles(holes)} height={MAP_HEIGHT} fill="var(--soil)" onClick={() => onSelect(null)} />
       <g
         tabIndex={0}
         role="button"
@@ -67,7 +82,7 @@ export default function CourseMap({ surfaces, pond, hasAerator, selected, onSele
           Shed
         </text>
       </g>
-      {HOLES.map((hole) => (
+      {layout.map((hole) => (
         <g key={hole.id}>
           <path
             d={hole.rough}
@@ -162,8 +177,30 @@ export default function CourseMap({ surfaces, pond, hasAerator, selected, onSele
           Pond
         </text>
       </g>
+      {hasDrivingRange ? (
+        <g aria-label="Driving range">
+          <rect
+            x={RANGE_X}
+            y={RANGE_Y}
+            width={RANGE_WIDTH}
+            height={RANGE_HEIGHT}
+            fill="var(--sand)"
+            stroke="var(--paint)"
+          />
+          <text
+            x={RANGE_X + RANGE_WIDTH / 2}
+            y={RANGE_Y + RANGE_HEIGHT / 2 + 5}
+            textAnchor="middle"
+            fill="var(--soil)"
+            fontSize="14"
+          >
+            Range
+          </text>
+        </g>
+      ) : null}
       <text x="24" y="36" fill="var(--sand)" fontSize="18">
-        Click a surface — {SURFACE_LABELS.greens.toLowerCase()} work all nine.
+        Click a surface — {SURFACE_LABELS.greens.toLowerCase()} work all{' '}
+        {holes >= EXPANDED_HOLE_COUNT ? 'eighteen' : 'nine'}.
       </text>
     </svg>
   );

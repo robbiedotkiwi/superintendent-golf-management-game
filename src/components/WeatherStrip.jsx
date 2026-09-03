@@ -1,8 +1,15 @@
-import { GM_MEETING_MINUTES, STARTING_DISEASE_PRESSURE, TASK_MINUTES, WEATHER_STORM } from '../data/constants.js';
+import {
+  GM_MEETING_MINUTES,
+  STARTING_DISEASE_PRESSURE,
+  TASK_MINUTES,
+  WEATHER_STORM,
+} from '../data/constants.js';
 import { WEATHER_LABELS, weatherCopy } from '../data/events.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
+import { durationForTask } from '../engine/assignment.js';
 import { canPlanTask } from '../engine/gameState.js';
 import { DISEASE_SURFACES } from '../engine/disease.js';
+import { meetingDue } from '../engine/mail.js';
 import { daysUntilNextTournament, nextTournament } from '../engine/tournament.js';
 
 export default function WeatherStrip({ state, onPlan, onRemove }) {
@@ -10,7 +17,9 @@ export default function WeatherStrip({ state, onPlan, onRemove }) {
   const debrisCheck = canPlanTask(state, 'clearDebris');
   const meeting = state.plannedTasks.find((item) => item.taskId === 'gmMeeting');
   const meetingCheck = canPlanTask(state, 'gmMeeting');
-
+  const balls = state.plannedTasks.find((item) => item.taskId === 'pickBalls');
+  const ballsCheck = canPlanTask(state, 'pickBalls');
+  const ballMinutes = durationForTask(state, 'pickBalls');
   const until = daysUntilNextTournament(state);
   const upcoming = nextTournament(state);
 
@@ -57,6 +66,27 @@ export default function WeatherStrip({ state, onPlan, onRemove }) {
             title={meetingCheck.ok ? undefined : meetingCheck.reason}
           >
             GM meeting · {GM_MEETING_MINUTES} min
+          </button>
+        )
+      ) : null}
+      {state.hasDrivingRange ? (
+        balls ? (
+          <button
+            type="button"
+            onClick={() => onRemove('pickBalls')}
+            className="border border-[var(--sand)] px-3 py-1 text-[var(--paint)]"
+          >
+            Ball pick planned · {balls.minutes} min
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled={!ballsCheck.ok}
+            onClick={() => onPlan('pickBalls')}
+            className="bg-[var(--machine-orange)] px-3 py-1 font-semibold text-[var(--paint)] disabled:opacity-40"
+            title={ballsCheck.ok ? undefined : ballsCheck.reason}
+          >
+            Pick balls · {ballMinutes} min
           </button>
         )
       ) : null}

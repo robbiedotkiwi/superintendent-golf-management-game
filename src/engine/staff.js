@@ -21,6 +21,7 @@ import {
   VOLUNTEER_MINUTES,
 } from '../data/constants.js';
 import { minutesTodayForWeather } from './weather.js';
+import { constructionMinutes } from './projects.js';
 
 export function dayOfWeek(day) {
   return ((day - 1) % DAYS_PER_WEEK) + 1;
@@ -45,6 +46,9 @@ export function prepareMorningWorkers(state, weather, rng) {
     }
     if (minutesToday > 0 && worker.morale < MORALE_NOSHOW_BELOW && rng.next() < MORALE_NOSHOW_CHANCE) {
       minutesToday = 0;
+    }
+    if (worker.id === PLAYER_ID) {
+      minutesToday = Math.max(0, minutesToday - constructionMinutes(state));
     }
     return { ...worker, minutesToday, minutesUsed: 0 };
   });

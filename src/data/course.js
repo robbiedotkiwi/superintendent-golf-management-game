@@ -1,8 +1,10 @@
 import {
+  BACK_NINE_OFFSET_X,
   BUNKER_HOLE_COUNT,
   BUNKER_OFFSET,
   BUNKER_RX,
   BUNKER_RY,
+  EXPANDED_HOLE_COUNT,
   FAIRWAY_HALF_WIDTH,
   GREEN_RX,
   GREEN_RY,
@@ -107,3 +109,32 @@ export const SHED_X = 470;
 export const SHED_Y = 200;
 export const SHED_WIDTH = 100;
 export const SHED_HEIGHT = 64;
+
+function offsetPath(path, dx) {
+  return path.replace(/([ML])(-?[\d.]+),(-?[\d.]+)/g, (_, cmd, x, y) => `${cmd}${(Number(x) + dx).toFixed(1)},${y}`);
+}
+
+function offsetHole(hole, dx, id) {
+  return {
+    id,
+    rough: offsetPath(hole.rough, dx),
+    fairway: offsetPath(hole.fairway, dx),
+    tee: { ...hole.tee, cx: hole.tee.cx + dx },
+    green: { ...hole.green, cx: hole.green.cx + dx },
+    bunker: hole.bunker ? { ...hole.bunker, cx: hole.bunker.cx + dx } : null,
+  };
+}
+
+export const BACK_NINE = HOLES.map((hole) => offsetHole(hole, BACK_NINE_OFFSET_X, hole.id + HOLE_COUNT));
+
+export function holesForCount(count) {
+  return count >= EXPANDED_HOLE_COUNT ? HOLES.concat(BACK_NINE) : HOLES;
+}
+
+export function mapWidthForHoles(count) {
+  return count >= EXPANDED_HOLE_COUNT ? MAP_WIDTH + BACK_NINE_OFFSET_X : MAP_WIDTH;
+}
+
+export function mapViewBoxForHoles(count) {
+  return `0 0 ${mapWidthForHoles(count)} ${MAP_HEIGHT}`;
+}
