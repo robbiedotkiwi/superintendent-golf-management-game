@@ -7,6 +7,7 @@ import Office from './components/Office.jsx';
 import PlayoutBar from './components/PlayoutBar.jsx';
 import MapJobPopover from './components/MapJobPopover.jsx';
 import StartDayDialog from './components/StartDayDialog.jsx';
+import Sidebar from './components/Sidebar.jsx';
 import PlanList from './components/PlanList.jsx';
 import Tutorial from './components/Tutorial.jsx';
 import Turf from './components/Turf.jsx';
