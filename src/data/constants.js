@@ -273,29 +273,73 @@ export const CONDITION_WEIGHTS = {
 };
 
 export const BUNKER_HOLE_COUNT = 3;
-export const FAIRWAY_HALF_WIDTH = 15;
-export const FAIRWAY_TEE_EXTRA = 14;
-export const FAIRWAY_GREEN_EXTRA = 8;
+export const TEE_SIZE = { w: 34, h: 20 };
+export const FAIRWAY_WIDTH = 58;
+export const FAIRWAY_HALF_WIDTH = FAIRWAY_WIDTH / 2;
+export const FAIRWAY_TEE_EXTRA = 0;
+export const FAIRWAY_GREEN_EXTRA = 0;
 export const FAIRWAY_LANDING_T = 0.35;
 export const FAIRWAY_APPROACH_T = 0.8;
-export const ROUGH_HALF_WIDTH = 50;
-export const ROUGH_BEYOND_FAIRWAY = 22;
-export const ROUGH_WIDTH_VARIATION = 14;
-export const ROUGH_END_EXTRA = 6;
-export const ROUGH_GAP_MIN = 10;
-export const GREEN_RX = 24;
-export const GREEN_RY = 16;
-export const TEE_RX = 11;
-export const TEE_RY = 8;
+export const FAIRWAY_START_T = 0.14;
+export const FAIRWAY_END_T = 0.78;
+export const GREEN_SIZE_RANGE = [58, 82];
+export const GREEN_SIZE_MIN = GREEN_SIZE_RANGE[0];
+export const GREEN_SIZE_MAX = GREEN_SIZE_RANGE[1];
+export const BUNKER_SIZE_RANGE = [24, 42];
+export const BUNKER_SIZE_MIN = BUNKER_SIZE_RANGE[0];
+export const BUNKER_SIZE_MAX = BUNKER_SIZE_RANGE[1];
+export const BUNKERS_PER_HOLE = [2, 4];
+export const BUNKERS_PER_HOLE_MIN = BUNKERS_PER_HOLE[0];
+export const BUNKERS_PER_HOLE_MAX = BUNKERS_PER_HOLE[1];
+export const CENTRELINE_WIDTH = 2;
+export const HOLE_NUMBER_RADIUS = 20;
+export const SHED_CLEARANCE = 40;
+export const PERIMETER_HALF_WIDTH = 54;
+export const FLAG_FAR_FACTOR = 0.4;
+export const PROPERTY_MIN_X = 0;
+export const PROPERTY_MIN_Y = 0;
+export const PROPERTY_MAX_X = 1280;
+export const PROPERTY_MAX_Y = 1260;
+export const GREEN_SHAPE_CIRCLE = 'circle';
+export const GREEN_SHAPE_OVAL = 'oval';
+export const GREEN_SHAPE_KIDNEY_LEFT = 'kidneyLeft';
+export const GREEN_SHAPE_KIDNEY_RIGHT = 'kidneyRight';
+export const GREEN_SHAPE_PEAR = 'pear';
+export const GREEN_SHAPE_WIDE = 'wide';
+export const GREEN_SHAPE_BEAN = 'bean';
+export const GREEN_SHAPE_LONG = 'long';
+export const GREEN_SHAPE_TEARDROP = 'teardrop';
+export const GREEN_SHAPES = [
+  GREEN_SHAPE_CIRCLE,
+  GREEN_SHAPE_OVAL,
+  GREEN_SHAPE_KIDNEY_LEFT,
+  GREEN_SHAPE_KIDNEY_RIGHT,
+  GREEN_SHAPE_PEAR,
+  GREEN_SHAPE_WIDE,
+  GREEN_SHAPE_BEAN,
+  GREEN_SHAPE_LONG,
+  GREEN_SHAPE_TEARDROP,
+];
+export const BUNKER_SHAPE_SEMI = 'semi';
+export const BUNKER_SHAPE_BEAN = 'bean';
+export const ROUGH_HALF_WIDTH = PERIMETER_HALF_WIDTH;
+export const ROUGH_BEYOND_FAIRWAY = PERIMETER_HALF_WIDTH - FAIRWAY_HALF_WIDTH;
+export const ROUGH_WIDTH_VARIATION = 0;
+export const ROUGH_END_EXTRA = 0;
+export const ROUGH_GAP_MIN = 0;
+export const GREEN_RX = GREEN_SIZE_MIN / 2;
+export const GREEN_RY = 22;
+export const TEE_RX = TEE_SIZE.w / 2;
+export const TEE_RY = TEE_SIZE.h / 2;
 export const BUNKER_RX = 16;
 export const BUNKER_RY = 10;
 export const BUNKER_OFFSET = 32;
-export const BUNKER_BLOB_VERTICES = 7;
-export const BUNKER_BLOB_JIGGLE = 0.34;
+export const BUNKER_BLOB_VERTICES = 10;
+export const BUNKER_BLOB_JIGGLE = 0.22;
 export const BUNKER_LANDING_T = 0.4;
-export const BUNKER_GREENSIDE_T = 0.9;
+export const BUNKER_GREENSIDE_T = 0.88;
 export const HOLE_PATH_SAMPLES = 16;
-export const RIBBON_CAP_SAMPLES = 8;
+export const RIBBON_CAP_SAMPLES = 10;
 export const DOGLEG_MIN_HOLES = 3;
 export const DOGLEG_MIN_TURN = 35;
 export const HOLE_WALK_MAX = 160;
@@ -321,8 +365,8 @@ export const BOUNDARY_DARKEN = 0.35;
 export const FLAG_POLE = 34;
 export const FLAG_WIDTH = 16;
 export const FLAG_HEIGHT = 12;
-export const TEE_MARKER_OFFSET = 32;
-export const TEE_MARKER_RADIUS = 20;
+export const TEE_MARKER_OFFSET = 0;
+export const TEE_MARKER_RADIUS = HOLE_NUMBER_RADIUS;
 export const TEE_MARKER_FONT = 22;
 
 export const DAYS_PER_SEASON = 30;
@@ -629,9 +673,9 @@ export const PROJECT_DAILY_MINUTES = {
   [PROJECT_EXTRA_BUNKERS]: EXTRA_BUNKERS_DAILY_MINUTES,
   [PROJECT_NEW_TEES]: NEW_TEES_DAILY_MINUTES,
 };
-export const BACK_NINE_OFFSET_X = 1180;
-export const RANGE_X = 360;
-export const RANGE_Y = 940;
+export const BACK_NINE_OFFSET_X = 1320;
+export const RANGE_X = 40;
+export const RANGE_Y = 1080;
 export const RANGE_WIDTH = 100;
 export const RANGE_HEIGHT = 48;
 export const SAVE_VERSION = 1;

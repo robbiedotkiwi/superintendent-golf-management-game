@@ -19,7 +19,8 @@ import {
   TEE_MARKER_RADIUS,
 } from './constants.js';
 import { HOLE_SHAPES, SHED } from './courseLayout.js';
-import { assertNoRoughOverlap, offsetPoints, polygonPath } from '../engine/geometry.js';
+import { assertNoRoughOverlap, offsetPoints, polygonPath, polylinePath } from '../engine/geometry.js';
+import { assertHolePlacement } from '../engine/placement.js';
 
 if (HOLE_SHAPES.length !== HOLE_COUNT) {
   throw new Error('Hole layout must match HOLE_COUNT');
@@ -34,6 +35,7 @@ if (HOLE_SHAPES.filter((hole) => hole.dogleg).length < DOGLEG_MIN_HOLES) {
 }
 
 assertNoRoughOverlap(HOLE_SHAPES, ROUGH_GAP_MIN);
+assertHolePlacement(HOLE_SHAPES, SHED);
 
 export const HOLES = HOLE_SHAPES;
 export const SHED_X = SHED.x;
@@ -69,6 +71,7 @@ export function courseBounds(layout) {
     includeEllipse(box, hole.green);
     includePoint(box, hole.marker.cx - TEE_MARKER_RADIUS, hole.marker.cy - TEE_MARKER_RADIUS);
     includePoint(box, hole.marker.cx + TEE_MARKER_RADIUS, hole.marker.cy + TEE_MARKER_RADIUS);
+    if (hole.flag) includePoint(box, hole.flag.x, hole.flag.y);
     for (const bunker of hole.bunkers) includePoly(box, bunker);
   }
   includePoint(box, SHED_X, SHED_Y - SHED_ROOF);
@@ -157,9 +160,19 @@ function offsetHole(hole, dx, id) {
     rough: offsetPoints(hole.rough, dx),
     fairway: offsetPoints(hole.fairway, dx),
     bunkers: hole.bunkers.map((poly) => offsetPoints(poly, dx)),
-    tee: { ...hole.tee, cx: hole.tee.cx + dx },
-    green: { ...hole.green, cx: hole.green.cx + dx },
+    tee: {
+      ...hole.tee,
+      cx: hole.tee.cx + dx,
+      points: hole.tee.points ? offsetPoints(hole.tee.points, dx) : hole.tee.points,
+    },
+    green: {
+      ...hole.green,
+      cx: hole.green.cx + dx,
+      points: hole.green.points ? offsetPoints(hole.green.points, dx) : hole.green.points,
+    },
     marker: { ...hole.marker, cx: hole.marker.cx + dx },
+    flag: hole.flag ? { ...hole.flag, x: hole.flag.x + dx } : hole.flag,
+    centerlineDense: hole.centerlineDense ? offsetPoints(hole.centerlineDense, dx) : hole.centerlineDense,
   };
 }
 
@@ -179,6 +192,10 @@ export function mapViewBoxForHoles(count) {
 
 export function holePath(points) {
   return polygonPath(points);
+}
+
+export function centrelinePath(points) {
+  return polylinePath(points);
 }
 
 export function mowerPathFor(layout = HOLES) {

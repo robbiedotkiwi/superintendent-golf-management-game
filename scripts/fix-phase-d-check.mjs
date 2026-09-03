@@ -8,7 +8,7 @@ import {
   BUNKER_DULL,
   DOGLEG_MIN_HOLES,
   DOGLEG_MIN_TURN,
-  FAIRWAY_LANDING_T,
+  FAIRWAY_WIDTH,
   NEGLECT_THRESHOLD,
   PATTERN_CHECKERBOARD,
   PATTERN_DIAMOND,
@@ -41,9 +41,9 @@ for (const hole of doglegs) {
   assert.ok(maxTurnDegrees(hole.centerline) >= DOGLEG_MIN_TURN, `hole ${hole.id} turn`);
 }
 
-assert.equal(fairwayWidthVaries(), true);
-assert.ok(fairwayHalfWidth(0) > fairwayHalfWidth(FAIRWAY_LANDING_T));
-assert.ok(fairwayHalfWidth(1) > fairwayHalfWidth(FAIRWAY_LANDING_T));
+assert.equal(FAIRWAY_WIDTH, 58);
+assert.equal(fairwayHalfWidth(), FAIRWAY_WIDTH / 2);
+assert.equal(fairwayWidthVaries(), false);
 
 assert.ok(HOLES.some((hole) => hole.bunkers.length >= 2), 'landing and greenside bunkers');
 for (const hole of HOLES) {

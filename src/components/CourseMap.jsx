@@ -8,6 +8,8 @@ import {
   FLAG_POLE,
   FLAG_WIDTH,
   HOLE_COUNT,
+  HOLE_NUMBER_RADIUS,
+  CENTRELINE_WIDTH,
   MOWER_ANIM_MS,
   PATTERN_CHECK_SIZE,
   PATTERN_CHECKERBOARD,
@@ -27,7 +29,6 @@ import {
   RANGE_X,
   RANGE_Y,
   TEE_MARKER_FONT,
-  TEE_MARKER_RADIUS,
   VIEW_ZOOM_STEP,
   VIEW_ZOOM_WHEEL_FACTOR,
   MOISTURE_BAND_MARK_WIDTH,
@@ -40,6 +41,7 @@ import {
 import {
   courseBoundaryPath,
   courseBounds,
+  centrelinePath,
   holesForCount,
   holePath,
   mowerPathFor,
@@ -407,6 +409,31 @@ export default function CourseMap({
           onKeyDown={(event) => activate(event, 'rough', onSelect)}
         />
       ))}
+      {layout.map((hole) => {
+        const teeD = holePath(hole.tee.points ?? []);
+        return (
+          <g key={`tee-${hole.id}`}>
+            <path
+              d={teeD}
+              fill={fills.tees}
+              stroke={surfaceStroke('tees', active, surfaces.greens.quality)}
+              strokeWidth={surfaceStrokeWidth('tees', active)}
+              className="course-surface cursor-pointer outline-none"
+              tabIndex={0}
+              role="button"
+              aria-label={`Hole ${hole.id} tee`}
+              onClick={() => onSelect('tees')}
+              onDoubleClick={(event) => {
+                event.preventDefault();
+                fitHole(hole);
+              }}
+              onKeyDown={(event) => activate(event, 'tees', onSelect)}
+            />
+            <path d={teeD} fill="url(#mow-tees)" opacity={surfacePatternOpacity(patternState, 'tees')} pointerEvents="none" />
+            <MoistureOverlayShape kind="path" d={teeD} surface="tees" state={moistureState} />
+          </g>
+        );
+      })}
       {layout.map((hole) => (
         <g key={`fairway-${hole.id}`}>
           <path
@@ -436,6 +463,37 @@ export default function CourseMap({
           <MoistureOverlayShape kind="path" d={holePath(hole.fairway)} surface="fairways" state={moistureState} />
         </g>
       ))}
+      {layout.map((hole) => {
+        const greenD = holePath(hole.green.points ?? []);
+        return (
+          <g key={`green-${hole.id}`}>
+            <path
+              d={greenD}
+              fill={fills.greens}
+              stroke={surfaceStroke('greens', active, surfaces.greens.quality)}
+              strokeWidth={surfaceStrokeWidth('greens', active)}
+              className="course-surface cursor-pointer outline-none"
+              tabIndex={0}
+              role="button"
+              aria-label={`Hole ${hole.id} green`}
+              onClick={() => onSelect('greens')}
+              onDoubleClick={(event) => {
+                event.preventDefault();
+                fitHole(hole);
+              }}
+              onKeyDown={(event) => activate(event, 'greens', onSelect)}
+            />
+            <path d={greenD} fill="url(#mow-greens)" opacity={surfacePatternOpacity(patternState, 'greens')} pointerEvents="none" />
+            <MoistureOverlayShape
+              kind="path"
+              d={greenD}
+              surface="greens"
+              state={moistureState}
+              greenIndex={hole.id - 1}
+            />
+          </g>
+        );
+      })}
       {layout.map((hole) =>
         hole.bunkers.map((bunker, index) => (
           <path
@@ -458,91 +516,42 @@ export default function CourseMap({
         )),
       )}
       {layout.map((hole) => (
-        <g key={`tee-${hole.id}`}>
-          <rect
-            x={hole.tee.cx - hole.tee.rx}
-            y={hole.tee.cy - hole.tee.ry}
-            width={hole.tee.rx * 2}
-            height={hole.tee.ry * 2}
-            fill={fills.tees}
-            stroke={surfaceStroke('tees', active, surfaces.greens.quality)}
-            strokeWidth={surfaceStrokeWidth('tees', active)}
-            className="course-surface cursor-pointer outline-none"
-            tabIndex={0}
-            role="button"
-            aria-label={`Hole ${hole.id} tee`}
-            onClick={() => onSelect('tees')}
-            onDoubleClick={(event) => {
-              event.preventDefault();
-              fitHole(hole);
-            }}
-            onKeyDown={(event) => activate(event, 'tees', onSelect)}
-          />
-          <rect
-            x={hole.tee.cx - hole.tee.rx}
-            y={hole.tee.cy - hole.tee.ry}
-            width={hole.tee.rx * 2}
-            height={hole.tee.ry * 2}
-            fill="url(#mow-tees)"
-            opacity={surfacePatternOpacity(patternState, 'tees')}
-            pointerEvents="none"
-          />
-          <MoistureOverlayShape
-            kind="rect"
-            x={hole.tee.cx - hole.tee.rx}
-            y={hole.tee.cy - hole.tee.ry}
-            width={hole.tee.rx * 2}
-            height={hole.tee.ry * 2}
-            surface="tees"
-            state={moistureState}
-          />
-        </g>
+        <path
+          key={`centreline-${hole.id}`}
+          d={centrelinePath(hole.centerline)}
+          fill="none"
+          stroke="var(--paint)"
+          strokeWidth={CENTRELINE_WIDTH}
+          opacity="0.7"
+          pointerEvents="none"
+        />
       ))}
       {layout.map((hole) => (
-        <g key={`green-${hole.id}`}>
-          <ellipse
-            cx={hole.green.cx}
-            cy={hole.green.cy}
-            rx={hole.green.rx}
-            ry={hole.green.ry}
-            fill={fills.greens}
-            stroke={surfaceStroke('greens', active, surfaces.greens.quality)}
-            strokeWidth={surfaceStrokeWidth('greens', active)}
-            className="course-surface cursor-pointer outline-none"
-            tabIndex={0}
-            role="button"
-            aria-label={`Hole ${hole.id} green`}
-            onClick={() => onSelect('greens')}
-            onDoubleClick={(event) => {
-              event.preventDefault();
-              fitHole(hole);
-            }}
-            onKeyDown={(event) => activate(event, 'greens', onSelect)}
+        <g key={`marker-${hole.id}`} pointerEvents="none">
+          <circle
+            cx={hole.marker.cx}
+            cy={hole.marker.cy}
+            r={HOLE_NUMBER_RADIUS}
+            fill="var(--paint)"
+            stroke="var(--soil)"
+            strokeWidth="2"
           />
-          <ellipse
-            cx={hole.green.cx}
-            cy={hole.green.cy}
-            rx={hole.green.rx}
-            ry={hole.green.ry}
-            fill="url(#mow-greens)"
-            opacity={surfacePatternOpacity(patternState, 'greens')}
-            pointerEvents="none"
-          />
-          <MoistureOverlayShape
-            kind="ellipse"
-            cx={hole.green.cx}
-            cy={hole.green.cy}
-            rx={hole.green.rx}
-            ry={hole.green.ry}
-            surface="greens"
-            state={moistureState}
-            greenIndex={hole.id - 1}
-          />
+          <text
+            x={hole.marker.cx}
+            y={hole.marker.cy + 1}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill="var(--soil)"
+            fontSize={TEE_MARKER_FONT}
+            fontWeight="700"
+          >
+            {hole.id}
+          </text>
         </g>
       ))}
       {layout.map((hole) => {
-        const poleX = hole.green.cx;
-        const poleBase = hole.green.cy - hole.green.ry;
+        const poleX = hole.flag?.x ?? hole.green.cx;
+        const poleBase = hole.flag?.y ?? hole.green.cy - hole.green.ry;
         const poleTop = poleBase - FLAG_POLE;
         return (
           <g key={`flag-${hole.id}`} pointerEvents="none">
@@ -561,29 +570,6 @@ export default function CourseMap({
           </g>
         );
       })}
-      {layout.map((hole) => (
-        <g key={`marker-${hole.id}`} pointerEvents="none">
-          <circle
-            cx={hole.marker.cx}
-            cy={hole.marker.cy}
-            r={TEE_MARKER_RADIUS}
-            fill="var(--paint)"
-            stroke="var(--soil)"
-            strokeWidth="2"
-          />
-          <text
-            x={hole.marker.cx}
-            y={hole.marker.cy + 1}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill="var(--soil)"
-            fontSize={TEE_MARKER_FONT}
-            fontWeight="700"
-          >
-            {hole.id}
-          </text>
-        </g>
-      ))}
       <g
         tabIndex={0}
         role="button"

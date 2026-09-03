@@ -65,7 +65,7 @@ assert.match(map, /FLAG_POLE/);
 assert.match(map, /SHED_ROOF/);
 assert.match(map, /\{hole\.id\}/);
 assert.match(map, /hole\.marker/);
-assert.match(map, /TEE_MARKER_RADIUS/);
+assert.match(map, /HOLE_NUMBER_RADIUS|TEE_MARKER_RADIUS/);
 assert.match(map, /\{holes\}-hole course/);
 
 console.log('ui phase3 checks passed');
