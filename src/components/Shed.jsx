@@ -1,4 +1,6 @@
 import {
+  CONDITION_MAX,
+  CONDITION_SLOW_THRESHOLD,
   FOLEY_GRINDER_COST,
   FOLEY_GRIND_MINUTES,
   GRIND_AWAY_COST,
@@ -21,6 +23,7 @@ import {
   canGrindInHouse,
   canRepair,
   canSendGrind,
+  conditionOf,
   isMachineAvailable,
 } from '../engine/equipment.js';
 import SectionTabs from './SectionTabs.jsx';
@@ -70,6 +73,7 @@ export default function Shed({
         {state.ownedMachines.map((id) => {
           const machine = MACHINES.find((item) => item.id === id);
           const wear = state.machineWear[id] ?? 0;
+          const condition = conditionOf(state, id);
           const broken = Boolean(state.machineBroken[id]);
           const awayUntil = state.machineAwayUntil[id];
           const away = awayUntil && state.day < awayUntil;
@@ -87,13 +91,17 @@ export default function Shed({
                   {broken ? 'Broken' : away ? `Away until day ${awayUntil}` : isMachineAvailable(state, id) ? 'Ready' : 'Off'}
                 </p>
               </div>
+              <p className="mt-2">
+                Condition {condition} / {CONDITION_MAX}
+                {condition < CONDITION_SLOW_THRESHOLD ? ' — slower cuts.' : ''}
+              </p>
               {machine.reel ? (
-                <p className="mt-2">
+                <p className="mt-1">
                   Wear {wear} / {WEAR_MAX}
                   {wear > WEAR_THRESHOLD ? ' — dull. Gains are down.' : ''}
                 </p>
               ) : (
-                <p className="mt-2 text-[var(--sand)]">No reel to grind.</p>
+                <p className="mt-1 text-[var(--sand)]">No reel to grind.</p>
               )}
               <p className="mt-2 text-sm text-[var(--sand)]">
                 {SURFACE_ORDER.map((surface) => `${surface}: ${capability(machine, surface)}`).join(' · ')}

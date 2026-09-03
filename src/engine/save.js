@@ -22,8 +22,12 @@ import {
   PLAYOUT_SPEED_DEFAULT,
   PLAYOUT_SKIP_DEFAULT,
   PLAYOUT_SPEEDS,
+  SALESMAN_RELATIONSHIP_MAX,
+  SALESMAN_RELATIONSHIP_MIN,
+  SALESMAN_RELATIONSHIP_START,
 } from '../data/constants.js';
 import { emptyDisease, emptyUntil } from './disease.js';
+import { migrateMachineMaps } from './equipment.js';
 import { emptyYearRecord } from './history.js';
 import { emptyDaysSinceWorked } from './mail.js';
 import { mergeSurfaceFields } from './mowing.js';
@@ -65,6 +69,7 @@ export function withDefaults(state) {
     windDir = built.windDir;
     rngSeed = rng.seed;
   }
+  const machines = migrateMachineMaps(state);
   return {
     ...state,
     surfaces,
@@ -80,10 +85,22 @@ export function withDefaults(state) {
       panX: state.view?.panX ?? VIEW_PAN_X_DEFAULT,
       panY: state.view?.panY ?? VIEW_PAN_Y_DEFAULT,
     },
-    ownedMachines: state.ownedMachines ?? [STARTING_MACHINE_ID],
+    ownedMachines: machines.ownedMachines,
     machineWear: state.machineWear ?? { [STARTING_MACHINE_ID]: 0 },
     machineBroken: state.machineBroken ?? {},
     machineAwayUntil: state.machineAwayUntil ?? {},
+    machineCondition: machines.machineCondition,
+    machineDailyMinutes: machines.machineDailyMinutes,
+    salesmanRelationship: Number.isFinite(Number(state.salesmanRelationship))
+      ? Math.min(
+          SALESMAN_RELATIONSHIP_MAX,
+          Math.max(SALESMAN_RELATIONSHIP_MIN, Number(state.salesmanRelationship)),
+        )
+      : SALESMAN_RELATIONSHIP_START,
+    usedListings: Array.isArray(state.usedListings) ? state.usedListings : [],
+    pendingDeliveries: Array.isArray(state.pendingDeliveries) ? state.pendingDeliveries : [],
+    activeSales: Array.isArray(state.activeSales) ? state.activeSales : [],
+    eventInvitations: Array.isArray(state.eventInvitations) ? state.eventInvitations : [],
     hasFoleyGrinder: Boolean(state.hasFoleyGrinder),
     autoWeek: state.autoWeek ?? { weekStart: state.day ?? 1, hits: [] },
     pond: state.pond ?? { volume: POND_START_VOLUME, health: POND_HEALTH_START },

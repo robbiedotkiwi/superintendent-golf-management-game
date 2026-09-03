@@ -13,6 +13,7 @@ import {
   SEASON_ORDER,
 } from '../data/constants.js';
 import { getMachine } from '../data/equipment.js';
+import { stampOwnedMachine } from './equipment.js';
 
 export function gmStandingMultiplier(standing) {
   return GM_STANDING_MULT_MIN + (standing / GM_STANDING_MAX) * (GM_STANDING_MULT_MAX - GM_STANDING_MULT_MIN);
@@ -82,9 +83,8 @@ export function leaseMachine(state, machineId) {
   if (!check.ok) return state;
   return {
     ...state,
-    ownedMachines: [...state.ownedMachines, machineId],
+    ...stampOwnedMachine(state, machineId),
     leasedMachines: [...(state.leasedMachines ?? []), machineId],
-    machineWear: { ...state.machineWear, [machineId]: 0 },
   };
 }
 
@@ -97,6 +97,8 @@ function repossess(state, machineId) {
   const { [machineId]: _wear, ...machineWear } = state.machineWear;
   const { [machineId]: _broken, ...machineBroken } = state.machineBroken;
   const { [machineId]: _away, ...machineAwayUntil } = state.machineAwayUntil;
+  const { [machineId]: _condition, ...machineCondition } = state.machineCondition ?? {};
+  const { [machineId]: _daily, ...machineDailyMinutes } = state.machineDailyMinutes ?? {};
   return {
     ...state,
     ownedMachines: state.ownedMachines.filter((id) => id !== machineId),
@@ -104,6 +106,8 @@ function repossess(state, machineId) {
     machineWear,
     machineBroken,
     machineAwayUntil,
+    machineCondition,
+    machineDailyMinutes,
   };
 }
 

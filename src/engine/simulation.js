@@ -34,6 +34,7 @@ import { applyMowingAftermath, hocStressApplies, mowingGain } from './mowing.js'
 import { calendarFromDay } from './calendar.js';
 import {
   applyWear,
+  applyConditionLoss,
   autonomousReady,
   ensureAutoWeek,
   interruptionMinutesForDay,
@@ -324,7 +325,8 @@ export function resolveDay(state) {
   }
 
   const machineWear = applyWear(state, usedMachineIds);
-  const wornState = { ...state, machineWear };
+  const machineCondition = applyConditionLoss(state, usedMachineIds);
+  const wornState = { ...state, machineWear, machineCondition };
   const { machineBroken, breakdowns } = rollBreakdowns(wornState, usedMachineIds, rng);
 
   let workers = state.workers.map((worker) => ({ ...worker }));
@@ -404,6 +406,7 @@ export function resolveDay(state) {
     sprayedUntil,
     fertiliserUntil,
     machineWear,
+    machineCondition,
     machineBroken,
     plannedTasks: [],
     workers,

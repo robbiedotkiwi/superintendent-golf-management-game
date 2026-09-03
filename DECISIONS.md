@@ -135,3 +135,11 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Section and tab live on the save object (`state.section`, `state.tabs`). Continue restores them. Camera zoom stays in `state.view`. End day still jumps to the map via `SET_SECTION`, which is also saved.
 - `view` / `tabs` are read at the top of `GameScreen` so the Escape handler never closes over a later `const`. Environments with `prefers-reduced-motion` take the skip-film path, same as the skip checkbox.
 
+## Fixes Round 4
+
+- `FIXES_ROUND_4.md` was not in the repo or uploads. Phases follow the user brief: condition → claiming → BASE_MINUTES/block-cut retune → `formatMoney` → salesman/used market → event invitations. Invented numbers live as named exports in `constants.js`.
+- Machine condition is a 0–100 hull/engine stat, separate from reel wear. New games and shop buys start at `STARTING_MACHINE_CONDITION` / `NEW_PURCHASE_CONDITION` (100) so Phase 1/3 duration checks stay 1.0×. Old saves get `MIGRATED_MACHINE_CONDITION` (80). Runtime lookups that omit the map still treat the unit as 100 so ad-hoc test machines do not pick up the migrate value.
+- Time penalty is linear: `1 + (CONDITION_MAX - condition) * CONDITION_TIME_PENALTY_PER_POINT` (0.005). Condition 100 is 1.0×; 0 is 1.5×. It multiplies the catalogue `timeMult` inside `machineTimeMultiplier`, so `mowingMinutes` stays surface-only.
+- Each use (mow, roll, autonomous) drops condition by `CONDITION_LOSS_PER_USE` (1). Grinding still only resets reel wear. Repair still only clears `machineBroken`.
+- Save also grows empty Round 4 fields now so later phases do not break old files: `machineDailyMinutes` (default `MACHINE_DAILY_MINUTES` = 480), `salesmanRelationship` (`SALESMAN_RELATIONSHIP_START` 50), `usedListings`, `pendingDeliveries`, `activeSales`, `eventInvitations`. Claiming, the used market, and invitations wait for later phases.
+

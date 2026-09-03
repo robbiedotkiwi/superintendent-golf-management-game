@@ -395,6 +395,19 @@ export const AUTONOMOUS_COST = 35000;
 export const AUTONOMOUS_CEILING = 85;
 export const STARTING_MACHINE_ID = 'pushRotary';
 
+export const CONDITION_MIN = 0;
+export const CONDITION_MAX = 100;
+export const STARTING_MACHINE_CONDITION = 100;
+export const MIGRATED_MACHINE_CONDITION = 80;
+export const NEW_PURCHASE_CONDITION = 100;
+export const CONDITION_TIME_PENALTY_PER_POINT = 0.005;
+export const CONDITION_LOSS_PER_USE = 1;
+export const CONDITION_SLOW_THRESHOLD = 80;
+export const MACHINE_DAILY_MINUTES = DAY_LENGTH_MINUTES;
+export const SALESMAN_RELATIONSHIP_MIN = 0;
+export const SALESMAN_RELATIONSHIP_MAX = 100;
+export const SALESMAN_RELATIONSHIP_START = 50;
+
 export const SPEED_SKILL_BASE = 1.3;
 export const SPEED_SKILL_STEP = 0.1;
 export const QUALITY_SKILL_BASE = 0.7;

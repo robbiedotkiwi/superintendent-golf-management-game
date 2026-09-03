@@ -10,14 +10,22 @@ import {
   AUTO_INTERRUPT_MIN_MINUTES,
   BREAKDOWN_BASE,
   BREAKDOWN_PER_WEAR,
+  CONDITION_LOSS_PER_USE,
+  CONDITION_MAX,
+  CONDITION_MIN,
+  CONDITION_TIME_PENALTY_PER_POINT,
   DAYS_PER_WEEK,
   FOLEY_GRINDER_COST,
   FOLEY_GRIND_MINUTES,
   GRIND_AWAY_COST,
   GRIND_AWAY_DAYS,
+  MACHINE_DAILY_MINUTES,
+  MIGRATED_MACHINE_CONDITION,
+  NEW_PURCHASE_CONDITION,
   PLAYER_ID,
   QUALITY_MAX,
   REPAIR_MINUTES,
+  STARTING_MACHINE_CONDITION,
   STARTING_MACHINE_ID,
   WEAR_GAIN_PENALTY,
   WEAR_MAX,
@@ -37,6 +45,53 @@ import { createRng } from './rng.js';
 
 function remainingMinutes(state) {
   return state.workers.reduce((total, worker) => total + (worker.minutesToday - worker.minutesUsed), 0);
+}
+
+export function clampCondition(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return MIGRATED_MACHINE_CONDITION;
+  return Math.min(CONDITION_MAX, Math.max(CONDITION_MIN, n));
+}
+
+export function conditionTimeMultiplier(condition) {
+  return 1 + (CONDITION_MAX - clampCondition(condition)) * CONDITION_TIME_PENALTY_PER_POINT;
+}
+
+export function conditionOf(state, machineId) {
+  const stored = state.machineCondition?.[machineId];
+  if (stored == null) return STARTING_MACHINE_CONDITION;
+  return clampCondition(stored);
+}
+
+export function machineDailyMinutesOf(state, machineId) {
+  const stored = state.machineDailyMinutes?.[machineId];
+  if (stored == null || !Number.isFinite(Number(stored))) return MACHINE_DAILY_MINUTES;
+  return Math.max(0, Math.round(Number(stored)));
+}
+
+export function migrateMachineMaps(state) {
+  const ownedMachines = state.ownedMachines ?? [STARTING_MACHINE_ID];
+  const machineCondition = { ...(state.machineCondition ?? {}) };
+  const machineDailyMinutes = { ...(state.machineDailyMinutes ?? {}) };
+  for (const id of ownedMachines) {
+    if (machineCondition[id] == null) machineCondition[id] = MIGRATED_MACHINE_CONDITION;
+    else machineCondition[id] = clampCondition(machineCondition[id]);
+    if (machineDailyMinutes[id] == null || !Number.isFinite(Number(machineDailyMinutes[id]))) {
+      machineDailyMinutes[id] = MACHINE_DAILY_MINUTES;
+    } else {
+      machineDailyMinutes[id] = Math.max(0, Math.round(Number(machineDailyMinutes[id])));
+    }
+  }
+  return { ownedMachines, machineCondition, machineDailyMinutes };
+}
+
+export function stampOwnedMachine(state, machineId, condition = NEW_PURCHASE_CONDITION) {
+  return {
+    ownedMachines: [...state.ownedMachines, machineId],
+    machineWear: { ...state.machineWear, [machineId]: 0 },
+    machineCondition: { ...(state.machineCondition ?? {}), [machineId]: clampCondition(condition) },
+    machineDailyMinutes: { ...(state.machineDailyMinutes ?? {}), [machineId]: MACHINE_DAILY_MINUTES },
+  };
 }
 
 export function isMachineAvailable(state, machineId) {
@@ -60,10 +115,16 @@ export function pickMachine(state, task) {
   return candidates.sort((a, b) => a.timeMult - b.timeMult)[0];
 }
 
+export function machineMultiplierFor(state, machineId) {
+  const machine = getMachine(machineId);
+  if (!machine) return 1;
+  return machine.timeMult * conditionTimeMultiplier(conditionOf(state, machineId));
+}
+
 export function machineTimeMultiplier(state, task) {
   const machine = pickMachine(state, task);
   if (!machine) return 1;
-  return machine.timeMult;
+  return machineMultiplierFor(state, machine.id);
 }
 
 export function surfaceCeiling(state, surface) {
@@ -223,8 +284,7 @@ export function buyMachine(state, machineId) {
   let next = {
     ...state,
     capitalBudget: state.capitalBudget - machine.cost,
-    ownedMachines: [...state.ownedMachines, machineId],
-    machineWear: { ...state.machineWear, [machineId]: 0 },
+    ...stampOwnedMachine(state, machineId, NEW_PURCHASE_CONDITION),
   };
   if (machine.autonomous) {
     const rng = createRng(next.rngSeed);
@@ -304,6 +364,15 @@ export function applyWear(state, usedIds) {
     machineWear[id] = Math.min(WEAR_MAX, (machineWear[id] ?? 0) + step);
   }
   return machineWear;
+}
+
+export function applyConditionLoss(state, usedIds) {
+  const machineCondition = { ...(state.machineCondition ?? {}) };
+  for (const id of usedIds) {
+    const current = conditionOf(state, id);
+    machineCondition[id] = clampCondition(current - CONDITION_LOSS_PER_USE);
+  }
+  return machineCondition;
 }
 
 export function ensureAutoWeek(state, rng, force = false) {
