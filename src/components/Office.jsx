@@ -50,7 +50,7 @@ export default function Office({
         Maintenance {Math.round(state.maintenanceBudget)} · Capital {Math.round(state.capitalBudget)} · Cash {Math.round(state.cash)}
       </p>
       <p className="mt-1 text-[var(--sand)]">
-        Satisfaction {Math.round(state.satisfaction)} · GM standing {Math.round(state.gmStanding)}
+        {state.holes}-hole course · Satisfaction {Math.round(state.satisfaction)} · GM standing {Math.round(state.gmStanding)}
       </p>
 
       <h2 className="mt-8 font-condensed text-3xl">Raise cash</h2>

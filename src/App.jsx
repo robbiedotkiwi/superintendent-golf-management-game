@@ -11,10 +11,10 @@ import Tutorial from './components/Tutorial.jsx';
 import YearReview from './components/YearReview.jsx';
 import Shed from './components/Shed.jsx';
 import TimeBar from './components/TimeBar.jsx';
+import Hud from './components/Hud.jsx';
 import WeatherStrip from './components/WeatherStrip.jsx';
 import {
   HOLE_COUNT,
-  POND_CAPACITY,
   WEATHER_FINE,
   machineOrange,
   paint,
@@ -33,9 +33,7 @@ import {
   reducer,
 } from './engine/gameState.js';
 import { courseCondition } from './engine/simulation.js';
-import { pondPercent } from './engine/irrigation.js';
 import { unreadCount } from './engine/mail.js';
-import { constructionMinutes } from './engine/projects.js';
 import { playBirds, playMower } from './engine/sound.js';
 import { getTask } from './data/tasks.js';
 import { clearSave, hasSave, loadGame, saveGame } from './engine/save.js';
@@ -333,28 +331,7 @@ function GameScreen({
         onToggleSound={onToggleSound}
       />
       <WeatherStrip state={state} onPlan={onPlan} onRemove={onRemove} />
-      <div className="shrink-0 flex flex-wrap items-end gap-8 px-4 py-3">
-        <Stat label="Day" value={state.day} />
-        <Stat label="Season" value={`${state.season} · ${state.year}`} />
-        <Stat label="Cash" value={Math.round(state.cash)} />
-        <Stat label="Maintenance" value={Math.round(state.maintenanceBudget)} />
-        <Stat label="Capital" value={Math.round(state.capitalBudget)} />
-        <Stat label="Condition" value={condition} />
-        <Stat label="Holes" value={state.holes} />
-        <Stat label="Satisfaction" value={Math.round(state.satisfaction)} />
-        <Stat
-          label="Pond"
-          value={`${Math.round(state.pond.volume)} m³`}
-          hint={`${Math.round(pondPercent(state.pond.volume))}% of ${POND_CAPACITY} · health ${Math.round(state.pond.health)}`}
-        />
-        {state.projects?.length ? (
-          <Stat
-            label="Site work"
-            value={`${constructionMinutes(state)} min`}
-            hint={state.projects.map((item) => `finishes day ${item.dueDay}`).join(' · ')}
-          />
-        ) : null}
-      </div>
+      <Hud state={state} condition={condition} />
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <CourseMap
           surfaces={state.surfaces}
@@ -386,16 +363,6 @@ function GameScreen({
         />
       )}
       <DaySummary summary={summary} onContinue={onDismissSummary} />
-    </div>
-  );
-}
-
-function Stat({ label, value, hint }) {
-  return (
-    <div>
-      <dt className="text-[var(--sand)]">{label}</dt>
-      <dd className="font-condensed text-5xl font-bold leading-none">{value}</dd>
-      {hint ? <p className="mt-1 text-sm text-[var(--sand)]">{hint}</p> : null}
     </div>
   );
 }

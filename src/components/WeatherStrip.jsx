@@ -12,6 +12,28 @@ import { DISEASE_SURFACES } from '../engine/disease.js';
 import { meetingDue } from '../engine/mail.js';
 import { daysUntilNextTournament, nextTournament } from '../engine/tournament.js';
 
+function DiseaseReadout({ state }) {
+  const hot = DISEASE_SURFACES.map((surface) => {
+    const entry = state.disease?.[surface];
+    return {
+      surface,
+      pressure: Math.round(entry?.pressure ?? STARTING_DISEASE_PRESSURE),
+      outbreak: Boolean(entry?.outbreak),
+    };
+  }).filter((item) => item.pressure > 0 || item.outbreak);
+  if (!hot.length) {
+    return <p className="text-sm">Disease</p>;
+  }
+  return (
+    <p className="text-sm">
+      Disease{' '}
+      {hot
+        .map((item) => `${SURFACE_LABELS[item.surface]} ${item.pressure}${item.outbreak ? '!' : ''}`)
+        .join(' · ')}
+    </p>
+  );
+}
+
 export default function WeatherStrip({ state, onPlan, onRemove }) {
   const debris = state.plannedTasks.find((item) => item.taskId === 'clearDebris');
   const debrisCheck = canPlanTask(state, 'clearDebris');
@@ -41,13 +63,7 @@ export default function WeatherStrip({ state, onPlan, onRemove }) {
             ? 'Tournament today'
             : `Tournament in ${until} day${until === 1 ? '' : 's'} (day ${upcoming.day})`}
       </p>
-      <p className="text-sm">
-        Disease{' '}
-        {DISEASE_SURFACES.map((surface) => {
-          const entry = state.disease?.[surface];
-          return `${SURFACE_LABELS[surface]} ${Math.round(entry?.pressure ?? STARTING_DISEASE_PRESSURE)}${entry?.outbreak ? '!' : ''}`;
-        }).join(' · ')}
-      </p>
+      <DiseaseReadout state={state} />
       {meetingDue(state.day) ? (
         meeting ? (
           <button
