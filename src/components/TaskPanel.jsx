@@ -3,6 +3,7 @@ import { LEVEL_LABELS, SURFACE_LABELS, tasksForSurface } from '../data/tasks.js'
 import { durationForTask, assignWorker, certifiedPresent, workerById } from '../engine/assignment.js';
 import { ineligibleMachines, pickMachine, surfaceCeiling } from '../engine/equipment.js';
 import { inPrepWindow } from '../engine/tournament.js';
+import { canPlanTask } from '../engine/gameState.js';
 
 function formatQuality(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
