@@ -1,4 +1,4 @@
-import { QUALITY_LEVELS, SURFACE_KEYS, TASK_MINUTES } from './constants.js';
+import { FERTILISER_BRAND, FERTILISER_MATERIALS_COST, QUALITY_LEVELS, SPRAY_MATERIALS_COST, SURFACE_KEYS, TASK_MINUTES } from './constants.js';
 
 export const SURFACE_LABELS = {
   greens: 'Greens',
@@ -18,6 +18,12 @@ export const TASKS = [
   { id: 'rakeBunkers', surface: 'bunkers', name: 'Rake', mowing: false, usesQualityLevel: true },
   { id: 'clearDebris', surface: null, name: 'Clear debris', mowing: false, usesQualityLevel: false },
   { id: 'handWater', surface: 'greens', name: 'Hand water', mowing: false, usesQualityLevel: false },
+  { id: 'sprayGreens', surface: 'greens', name: 'Spray fungicide', mowing: false, usesQualityLevel: false, requiresSpray: true, kind: 'spray', materialsCost: SPRAY_MATERIALS_COST },
+  { id: 'sprayTees', surface: 'tees', name: 'Spray fungicide', mowing: false, usesQualityLevel: false, requiresSpray: true, kind: 'spray', materialsCost: SPRAY_MATERIALS_COST },
+  { id: 'sprayFairways', surface: 'fairways', name: 'Spray fungicide', mowing: false, usesQualityLevel: false, requiresSpray: true, kind: 'spray', materialsCost: SPRAY_MATERIALS_COST },
+  { id: 'fertiliseGreens', surface: 'greens', name: FERTILISER_BRAND, mowing: false, usesQualityLevel: false, requiresSpray: true, kind: 'fertiliser', materialsCost: FERTILISER_MATERIALS_COST },
+  { id: 'fertiliseTees', surface: 'tees', name: FERTILISER_BRAND, mowing: false, usesQualityLevel: false, requiresSpray: true, kind: 'fertiliser', materialsCost: FERTILISER_MATERIALS_COST },
+  { id: 'fertiliseFairways', surface: 'fairways', name: FERTILISER_BRAND, mowing: false, usesQualityLevel: false, requiresSpray: true, kind: 'fertiliser', materialsCost: FERTILISER_MATERIALS_COST },
 ];
 
 export const LEVEL_LABELS = {

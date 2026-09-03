@@ -4,7 +4,28 @@ import {
   SAVE_KEY,
   STARTING_IRRIGATION,
   STARTING_MACHINE_ID,
+  STARTING_MAINTENANCE_BUDGET,
 } from '../data/constants.js';
+import { emptyDisease, emptyUntil } from './disease.js';
+
+function withDefaults(state) {
+  return {
+    ...state,
+    ownedMachines: state.ownedMachines ?? [STARTING_MACHINE_ID],
+    machineWear: state.machineWear ?? { [STARTING_MACHINE_ID]: 0 },
+    machineBroken: state.machineBroken ?? {},
+    machineAwayUntil: state.machineAwayUntil ?? {},
+    hasFoleyGrinder: Boolean(state.hasFoleyGrinder),
+    autoWeek: state.autoWeek ?? { weekStart: state.day ?? 1, hits: [] },
+    pond: state.pond ?? { volume: POND_START_VOLUME, health: POND_HEALTH_START },
+    irrigation: state.irrigation ?? { ...STARTING_IRRIGATION },
+    hasAerator: Boolean(state.hasAerator),
+    maintenanceBudget: state.maintenanceBudget ?? STARTING_MAINTENANCE_BUDGET,
+    disease: state.disease ?? emptyDisease(),
+    sprayedUntil: state.sprayedUntil ?? emptyUntil(),
+    fertiliserUntil: state.fertiliserUntil ?? emptyUntil(),
+  };
+}
 
 function withDefaults(state) {
   return {

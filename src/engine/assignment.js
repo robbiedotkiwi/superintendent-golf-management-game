@@ -21,12 +21,19 @@ export function assignWorker(state, task, level) {
   const stat = preferredStat(task.surface);
   const ranked = [...state.workers]
     .filter((worker) => isWorkerPresent(worker) && workerAllows(worker, task.surface))
+    .filter((worker) => (task.requiresSpray ? worker.sprayCertified : true))
     .sort((a, b) => b[stat] - a[stat] || b.speedSkill - a.speedSkill);
   for (const worker of ranked) {
     const minutes = durationForTask(state, task.id, level, worker);
     if (worker.minutesToday - worker.minutesUsed >= minutes) return worker;
   }
   return null;
+}
+
+export function certifiedPresent(state, surface) {
+  return state.workers.some(
+    (worker) => worker.sprayCertified && isWorkerPresent(worker) && workerAllows(worker, surface),
+  );
 }
 
 export function workerById(state, id) {

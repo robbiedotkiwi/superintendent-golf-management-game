@@ -34,6 +34,8 @@ export const SAVE_KEY = 'greenkeeper.save.v1';
 export const SURFACE_KEYS = ['greens', 'tees', 'fairways', 'rough', 'bunkers'];
 
 export const HAND_WATER_MINUTES = 60;
+export const SPRAY_MINUTES = 90;
+export const FERTILISER_MINUTES = 75;
 
 export const TASK_MINUTES = {
   cutGreens: 120,
@@ -45,6 +47,12 @@ export const TASK_MINUTES = {
   rakeBunkers: 50,
   clearDebris: 90,
   handWater: HAND_WATER_MINUTES,
+  sprayGreens: SPRAY_MINUTES,
+  sprayTees: SPRAY_MINUTES,
+  sprayFairways: SPRAY_MINUTES,
+  fertiliseGreens: FERTILISER_MINUTES,
+  fertiliseTees: FERTILISER_MINUTES,
+  fertiliseFairways: FERTILISER_MINUTES,
 };
 
 export const LEVEL_QUICK_TIME_MULT = 0.7;
@@ -244,3 +252,32 @@ export const STARTING_IRRIGATION = {
   fairways: 'off',
 };
 export const IRRIGATION_POLICIES = ['off', 'light', 'full'];
+
+export const STARTING_MAINTENANCE_BUDGET = 8000;
+export const SPRAY_MATERIALS_COST = 600;
+export const SPRAY_SUPPRESS_DAYS = 14;
+export const FERTILISER_MATERIALS_COST = 450;
+export const FERTILISER_CEILING_BONUS = 5;
+export const FERTILISER_DAYS = 21;
+export const FERTILISER_BRAND = 'Plant Fitness';
+export const DISEASE_PRESSURE_MAX = 100;
+export const DISEASE_PRESSURE_MIN = 0;
+export const DISEASE_PRESSURE_BASE = 6;
+export const DISEASE_OUTBREAK_THRESHOLD = 60;
+export const DISEASE_OUTBREAK_DROP = 25;
+export const DISEASE_OUTBREAK_DAILY = 5;
+export const DISEASE_WET_MULT = 1.8;
+export const DISEASE_UNDERWATER_MULT = 1.5;
+export const DISEASE_SUSCEPTIBILITY = {
+  greens: 1.0,
+  tees: 0.35,
+  fairways: 0.35,
+  rough: 0,
+};
+export const DISEASE_SEASON = {
+  spring: 0.8,
+  summer: 1.4,
+  autumn: 0.6,
+  winter: 0.2,
+};
+export const STARTING_DISEASE_PRESSURE = 0;

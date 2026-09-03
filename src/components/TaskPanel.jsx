@@ -1,6 +1,6 @@
 import { LEVEL_KEYS } from '../data/constants.js';
 import { LEVEL_LABELS, SURFACE_LABELS, tasksForSurface } from '../data/tasks.js';
-import { durationForTask, assignWorker, workerById } from '../engine/assignment.js';
+import { durationForTask, assignWorker, certifiedPresent, workerById } from '../engine/assignment.js';
 import { ineligibleMachines, pickMachine, surfaceCeiling } from '../engine/equipment.js';
 import { canPlanTask } from '../engine/gameState.js';
 
@@ -35,15 +35,30 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
             <div className="text-sm">Quality</div>
             <div className="font-condensed text-6xl font-bold leading-none">{formatQuality(quality)}</div>
             <p className="mt-1 text-sm">Ceiling {surfaceCeiling(state, surface)}</p>
+            {state.disease?.[surface] ? (
+              <p className="mt-2 text-sm">
+                Disease pressure {Math.round(state.disease[surface].pressure)}
+                {state.disease[surface].outbreak ? ' · outbreak' : ''}
+              </p>
+            ) : null}
           </div>
           <div className="flex-1 space-y-5 overflow-auto px-5 pb-6">
-            {tasks.map((task) => {
+            {tasks.some((task) => task.requiresSpray) && !certifiedPresent(state, surface) ? (
+              <p className="text-sm">Spray and fertiliser do not appear — no spray-certified worker available.</p>
+            ) : null}
+            {tasks
+              .filter((task) => !task.requiresSpray || certifiedPresent(state, surface))
+              .map((task) => {
               const planned = state.plannedTasks.find((item) => item.taskId === task.id);
               const machine = pickMachine(state, task);
               const blocked = ineligibleMachines(state, task);
+              const workers = task.requiresSpray
+                ? state.workers.filter((worker) => worker.sprayCertified)
+                : state.workers;
               return (
                 <section key={task.id} className="border border-[var(--soil)] p-3">
                   <h3 className="text-lg font-semibold">{task.name}</h3>
+                  {task.materialsCost ? <p className="text-sm">Materials {task.materialsCost}</p> : null}
                   {machine ? <p className="text-sm">Using {machine.name}</p> : null}
                   {blocked.map((item) => (
                     <p key={item.machine.id} className="text-sm">
@@ -64,7 +79,7 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
                           value={planned.workerId}
                           onChange={(event) => onSetWorker(task.id, event.target.value)}
                         >
-                          {state.workers.map((worker) => (
+                          {workers.map((worker) => (
                             <option key={worker.id} value={worker.id}>
                               {worker.name}
                             </option>

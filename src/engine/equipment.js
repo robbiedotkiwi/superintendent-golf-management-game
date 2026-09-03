@@ -1,4 +1,5 @@
 import {
+  FERTILISER_CEILING_BONUS,
   AUTO_INTERRUPT_MAX_COUNT,
   AUTO_INTERRUPT_MAX_MINUTES,
   AUTO_INTERRUPT_MIN_COUNT,
@@ -65,7 +66,12 @@ export function surfaceCeiling(state, surface) {
     const value = machine.ceiling[surface];
     if (value > best) best = value;
   }
-  return best || QUALITY_MAX;
+  return (best || QUALITY_MAX) + fertiliserBonus(state, surface);
+}
+
+function fertiliserBonus(state, surface) {
+  if ((state.fertiliserUntil?.[surface] ?? 0) > state.day) return FERTILISER_CEILING_BONUS;
+  return 0;
 }
 
 export function ineligibleMachines(state, task) {

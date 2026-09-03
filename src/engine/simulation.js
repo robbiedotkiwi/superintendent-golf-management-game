@@ -34,6 +34,7 @@ import {
 import { qualityRandomFactor, workerQualityMultiplier } from './skills.js';
 import { applyEarlyStartComplaints, applyMorale, prepareMorningWorkers, wageBill } from './staff.js';
 import { createRng } from './rng.js';
+import { applyFertiliser, applySpray, emptyDisease, resolveDisease } from './disease.js';
 import { resolveIrrigation, summerUnderwaterDecay } from './irrigation.js';
 import { rollMorningWithRng } from './weather.js';
 
@@ -91,6 +92,15 @@ export function resolveDay(state) {
   const usedMachineIds = [];
   const dropped = [];
 
+  let disease = emptyDisease();
+  for (const surface of Object.keys(disease)) {
+    if (state.disease?.[surface]) disease[surface] = { ...state.disease[surface] };
+  }
+  let sprayedUntil = { ...(state.sprayedUntil ?? {}) };
+  let fertiliserUntil = { ...(state.fertiliserUntil ?? {}) };
+  let maintenanceBudget = state.maintenanceBudget ?? 0;
+  let materialsSpent = 0;
+
   let planned = [...state.plannedTasks];
   const extra = interruptionMinutesForDay(state);
   let plannedMinutes = planned.reduce((sum, item) => sum + item.minutes, 0);
@@ -107,6 +117,18 @@ export function resolveDay(state) {
   for (const plannedTask of planned) {
     const task = getTask(plannedTask.taskId);
     if (!task.usesQualityLevel) {
+      if (task.kind === 'spray' && task.surface) {
+        const sprayed = applySpray({ ...state, disease, sprayedUntil }, task.surface);
+        disease = sprayed.disease;
+        sprayedUntil = sprayed.sprayedUntil;
+      }
+      if (task.kind === 'fertiliser' && task.surface) {
+        fertiliserUntil = applyFertiliser({ ...state, fertiliserUntil }, task.surface).fertiliserUntil;
+      }
+      if (task.materialsCost) {
+        maintenanceBudget -= task.materialsCost;
+        materialsSpent += task.materialsCost;
+      }
       done.push({
         taskId: plannedTask.taskId,
         name: task.name,
@@ -150,7 +172,7 @@ export function resolveDay(state) {
     gain *= qualityRandomFactor(worker, rng);
 
     const qualityBefore = surfaces[task.surface].quality;
-    const qualityAfter = applyGain(qualityBefore, gain, surfaceCeiling(state, task.surface));
+    const qualityAfter = applyGain(qualityBefore, gain, surfaceCeiling({ ...state, fertiliserUntil }, task.surface));
     surfaces[task.surface].quality = qualityAfter;
     worked.add(task.surface);
     done.push({
@@ -169,7 +191,11 @@ export function resolveDay(state) {
     for (const surface of ['fairways', 'rough']) {
       if (worked.has(surface)) continue;
       const qualityBefore = surfaces[surface].quality;
-      const qualityAfter = applyGain(qualityBefore, LEVEL_STANDARD_GAIN, surfaceCeiling(state, surface));
+      const qualityAfter = applyGain(
+        qualityBefore,
+        LEVEL_STANDARD_GAIN,
+        surfaceCeiling({ ...state, fertiliserUntil }, surface),
+      );
       surfaces[surface].quality = qualityAfter;
       worked.add(surface);
       done.push({
@@ -204,6 +230,15 @@ export function resolveDay(state) {
     if (skip) skip.after = surfaces[surface].quality;
   }
 
+  const diseaseTick = resolveDisease({ ...state, disease, sprayedUntil }, irrigation.watered);
+  disease = diseaseTick.disease;
+  for (const item of diseaseTick.ongoing) {
+    surfaces[item.surface].quality = clampQuality(surfaces[item.surface].quality - item.drop);
+  }
+  for (const item of diseaseTick.outbreaks) {
+    surfaces[item.surface].quality = clampQuality(surfaces[item.surface].quality - item.drop);
+  }
+
   const machineWear = applyWear(state, usedMachineIds);
   const wornState = { ...state, machineWear };
   const { machineBroken, breakdowns } = rollBreakdowns(wornState, usedMachineIds, rng);
@@ -235,6 +270,10 @@ export function resolveDay(state) {
     cash,
     surfaces,
     pond: irrigation.pond,
+    maintenanceBudget,
+    disease,
+    sprayedUntil,
+    fertiliserUntil,
     machineWear,
     machineBroken,
     plannedTasks: [],
@@ -274,6 +313,11 @@ export function resolveDay(state) {
     mainsCost: irrigation.mainsCost,
     mainsM3: irrigation.shortfall,
     pond: irrigation.pond,
+    materialsSpent,
+    maintenanceBudget,
+    outbreaks: diseaseTick.outbreaks,
+    diseaseOngoing: diseaseTick.ongoing,
+    disease,
     before,
     after: cloneSurfaces(surfaces),
     conditionBefore,

@@ -108,6 +108,8 @@ export function trainWorker(state, workerId, axis) {
   if (state.cash < TRAINING_COST) return state;
   const worker = state.workers.find((item) => item.id === workerId);
   if (!worker || worker.isVolunteer) return state;
+  if (worker.trainingUntilDay && state.day < worker.trainingUntilDay) return state;
+  if (axis === 'spray' && worker.sprayCertified) return state;
   return {
     ...state,
     cash: state.cash - TRAINING_COST,

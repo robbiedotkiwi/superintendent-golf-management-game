@@ -3,7 +3,7 @@ import { calendarFromDay } from './calendar.js';
 import { pickWeather } from './weather.js';
 import { createRng } from './rng.js';
 import { buyFoley, buyMachine, grindInHouse, repairMachine, sendForGrind, pickMachine } from './equipment.js';
-import { assignWorker, durationForTask, workerById, workerAllows, isWorkerPresent } from './assignment.js';
+import { assignWorker, certifiedPresent, durationForTask, workerById, workerAllows, isWorkerPresent } from './assignment.js';
 import {
   applyEarlyStartComplaints,
   hireWorker,
@@ -11,6 +11,7 @@ import {
   trainWorker,
 } from './staff.js';
 import { generateCandidates } from '../data/staff.js';
+import { emptyDisease, emptyUntil } from './disease.js';
 import { canBuyAerator, IRRIGATED_SURFACES, isIrrigationPolicy } from './irrigation.js';
 import { resolveDay } from './simulation.js';
 import {
@@ -46,6 +47,7 @@ import {
   POND_HEALTH_START,
   POND_START_VOLUME,
   STARTING_IRRIGATION,
+  STARTING_MAINTENANCE_BUDGET,
   AERATOR_COST,
 } from '../data/constants.js';
 
@@ -121,6 +123,10 @@ export function createInitialState() {
     pond: { volume: POND_START_VOLUME, health: POND_HEALTH_START },
     irrigation: { ...STARTING_IRRIGATION },
     hasAerator: false,
+    maintenanceBudget: STARTING_MAINTENANCE_BUDGET,
+    disease: emptyDisease(),
+    sprayedUntil: emptyUntil(),
+    fertiliserUntil: emptyUntil(),
   };
 }
 
@@ -167,9 +173,31 @@ export function canPlanTask(state, taskId, level, workerId) {
     return { ok: false, reason: 'No machine available. Check the shed.' };
   }
 
+  if (task.requiresSpray && !certifiedPresent(state, task.surface)) {
+    return { ok: false, reason: 'No spray-certified worker available.' };
+  }
+
+  if (task.materialsCost) {
+    const already = state.plannedTasks.reduce((sum, item) => {
+      const planned = getTask(item.taskId);
+      return sum + (planned?.materialsCost ?? 0);
+    }, 0);
+    if (already + task.materialsCost > (state.maintenanceBudget ?? 0)) {
+      return { ok: false, reason: `Needs ${task.materialsCost} from the maintenance budget.` };
+    }
+  }
+
   const worker = workerId ? workerById(state, workerId) : assignWorker(state, task, level);
+  if (task.requiresSpray && worker && !worker.sprayCertified) {
+    return { ok: false, reason: 'No spray-certified worker available.' };
+  }
   if (!worker) {
-    const fallback = state.workers.find((item) => isWorkerPresent(item) && workerAllows(item, task.surface));
+    const fallback = state.workers.find(
+      (item) =>
+        isWorkerPresent(item) &&
+        workerAllows(item, task.surface) &&
+        (!task.requiresSpray || item.sprayCertified),
+    );
     if (!fallback) {
       return { ok: false, reason: 'No one available for that job.' };
     }
@@ -266,6 +294,7 @@ export function reducer(state, action) {
       const task = planned ? getTask(planned.taskId) : null;
       if (!planned || !worker || !task) return state;
       if (!workerAllows(worker, task.surface) || !isWorkerPresent(worker)) return state;
+      if (task.requiresSpray && !worker.sprayCertified) return state;
       const minutes = durationForTask(state, planned.taskId, planned.level, worker);
       if (worker.minutesToday - worker.minutesUsed + (planned.workerId === worker.id ? planned.minutes : 0) < minutes) {
         return state;

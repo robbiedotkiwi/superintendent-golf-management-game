@@ -240,6 +240,7 @@ function GameScreen({
         <Stat label="Day" value={state.day} />
         <Stat label="Season" value={`${state.season} · ${state.year}`} />
         <Stat label="Cash" value={state.cash} />
+        <Stat label="Maintenance" value={state.maintenanceBudget} />
         <Stat label="Condition" value={condition} />
         <Stat
           label="Pond"

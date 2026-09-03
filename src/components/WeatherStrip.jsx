@@ -1,6 +1,8 @@
-import { TASK_MINUTES, WEATHER_STORM } from '../data/constants.js';
+import { STARTING_DISEASE_PRESSURE, TASK_MINUTES, WEATHER_STORM } from '../data/constants.js';
 import { WEATHER_LABELS, weatherCopy } from '../data/events.js';
+import { SURFACE_LABELS } from '../data/tasks.js';
 import { canPlanTask } from '../engine/gameState.js';
+import { DISEASE_SURFACES } from '../engine/disease.js';
 
 export default function WeatherStrip({ state, onPlan, onRemove }) {
   const debris = state.plannedTasks.find((item) => item.taskId === 'clearDebris');
@@ -16,6 +18,13 @@ export default function WeatherStrip({ state, onPlan, onRemove }) {
       <p>
         Tomorrow: <span className="text-[var(--paint)]">{WEATHER_LABELS[state.forecast]}</span>
         <span className="ml-2 text-sm">forecast</span>
+      </p>
+      <p className="text-sm">
+        Disease{' '}
+        {DISEASE_SURFACES.map((surface) => {
+          const entry = state.disease?.[surface];
+          return `${SURFACE_LABELS[surface]} ${Math.round(entry?.pressure ?? STARTING_DISEASE_PRESSURE)}${entry?.outbreak ? '!' : ''}`;
+        }).join(' · ')}
       </p>
       {state.weather === WEATHER_STORM ? (
         debris ? (

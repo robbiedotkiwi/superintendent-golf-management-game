@@ -59,10 +59,12 @@ export default function Crew({
                 <button type="button" onClick={() => onTrain(worker.id, 'qualitySkill')} className="border border-[var(--sand)] px-3 py-1">
                   Train quality ({TRAINING_COST}, {TRAINING_DAYS} days)
                 </button>
-                <button type="button" onClick={() => onTrain(worker.id, 'spray')} className="border border-[var(--sand)] px-3 py-1">
-                  Spray ticket ({TRAINING_COST}, {TRAINING_DAYS} days)
-                </button>
               </div>
+            ) : null}
+            {!worker.sprayCertified ? (
+              <button type="button" onClick={() => onTrain(worker.id, 'spray')} className="mt-2 border border-[var(--sand)] px-3 py-1">
+                Spray ticket ({TRAINING_COST}, {TRAINING_DAYS} days)
+              </button>
             ) : null}
           </section>
         ))}

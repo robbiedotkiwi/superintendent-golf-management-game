@@ -75,6 +75,17 @@ export default function DaySummary({ summary, onContinue }) {
             Pond {Math.round(summary.pond.volume)} m³ · health {Math.round(summary.pond.health)}
           </p>
         ) : null}
+        {summary.materialsSpent ? <p className="mt-2">Materials {summary.materialsSpent} from maintenance</p> : null}
+        {summary.outbreaks?.length ? (
+          <p className="mt-2">
+            Outbreak: {summary.outbreaks.map((item) => `${SURFACE_LABELS[item.surface]} −${item.drop}`).join(', ')}
+          </p>
+        ) : null}
+        {summary.diseaseOngoing?.length ? (
+          <p className="mt-2">
+            Disease still eating: {summary.diseaseOngoing.map((item) => SURFACE_LABELS[item.surface]).join(', ')}
+          </p>
+        ) : null}
 
         <button
           type="button"
