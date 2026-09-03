@@ -19,6 +19,8 @@ import {
 import { holesForCount, mapViewBoxForHoles, mapWidthForHoles, MAP_HEIGHT, SHED_HEIGHT, SHED_WIDTH, SHED_X, SHED_Y } from '../data/course.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import { pondPercent } from '../engine/irrigation.js';
+import { prefersReducedMotion } from '../engine/sound.js';
+import { MOWER_ANIM_MS } from '../data/constants.js';
 
 function activate(event, surface, onSelect) {
   if (event.key === 'Enter' || event.key === ' ') {
@@ -40,6 +42,7 @@ export default function CourseMap({
   hasAerator,
   holes = HOLE_COUNT,
   hasDrivingRange = false,
+  showMower = false,
   selected,
   onSelect,
   onOpenShed,
@@ -197,6 +200,14 @@ export default function CourseMap({
             Range
           </text>
         </g>
+      ) : null}
+      {showMower && !prefersReducedMotion() ? (
+        <circle
+          className="mower-dot"
+          r="7"
+          fill="var(--machine-orange)"
+          style={{ ['--mower-ms']: `${MOWER_ANIM_MS}ms` }}
+        />
       ) : null}
       <text x="24" y="36" fill="var(--sand)" fontSize="18">
         Click a surface — {SURFACE_LABELS.greens.toLowerCase()} work all{' '}

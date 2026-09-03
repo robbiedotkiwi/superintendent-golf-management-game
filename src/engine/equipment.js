@@ -26,6 +26,7 @@ import {
 import { getMachine, MACHINES, machineAllows, TURF_DAMAGE_REASON } from '../data/equipment.js';
 import { getTask, taskDuration } from '../data/tasks.js';
 import { taskTimeMultiplier } from './projects.js';
+import { bumpCapitalSpent } from './history.js';
 import { workerTimeMultiplier } from './skills.js';
 import { hasMechanic } from './staff.js';
 import { createRng } from './rng.js';
@@ -215,13 +216,17 @@ export function buyMachine(state, machineId) {
     const scheduled = ensureAutoWeek(next, rng, true);
     next = { ...scheduled.state, rngSeed: rng.seed };
   }
+  next = bumpCapitalSpent(next, machine.cost);
   return recomputePlannedMinutes(next);
 }
 
 export function buyFoley(state) {
   const check = canBuyFoley(state);
   if (!check.ok) return state;
-  return { ...state, capitalBudget: state.capitalBudget - FOLEY_GRINDER_COST, hasFoleyGrinder: true };
+  return bumpCapitalSpent(
+    { ...state, capitalBudget: state.capitalBudget - FOLEY_GRINDER_COST, hasFoleyGrinder: true },
+    FOLEY_GRINDER_COST,
+  );
 }
 
 export function sendForGrind(state, machineId) {

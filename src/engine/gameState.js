@@ -24,6 +24,7 @@ import {
 } from './tournament.js';
 import { clampStanding } from './satisfaction.js';
 import { buyAutoPicker, startProject } from './projects.js';
+import { bumpCapitalSpent, emptyYearRecord } from './history.js';
 import { resolveDay } from './simulation.js';
 import {
   DAY_LENGTH_MINUTES,
@@ -62,6 +63,8 @@ import {
   GM_STANDING_START,
   GM_TOURNAMENT_DECLINE_STANDING,
   AERATOR_COST,
+  SAVE_VERSION,
+  SOUND_DEFAULT_ON,
 } from '../data/constants.js';
 
 export function createInitialState() {
@@ -160,6 +163,12 @@ export function createInitialState() {
     hasAutoPicker: false,
     hasExtraBunkers: false,
     hasNewTees: false,
+    saveVersion: SAVE_VERSION,
+    soundEnabled: SOUND_DEFAULT_ON,
+    tutorialDone: false,
+    pendingYearReview: false,
+    lastYearReview: null,
+    yearRecord: emptyYearRecord(calendar.year, [PLAYER_ID]),
     inbox: [
       {
         id: 1,
@@ -424,8 +433,17 @@ export function reducer(state, action) {
     case 'BUY_AERATOR': {
       const check = canBuyAerator(state);
       if (!check.ok) return state;
-      return { ...state, capitalBudget: state.capitalBudget - AERATOR_COST, hasAerator: true };
+      return bumpCapitalSpent(
+        { ...state, capitalBudget: state.capitalBudget - AERATOR_COST, hasAerator: true },
+        AERATOR_COST,
+      );
     }
+    case 'TOGGLE_SOUND':
+      return { ...state, soundEnabled: !state.soundEnabled };
+    case 'DISMISS_TUTORIAL':
+      return { ...state, tutorialDone: true };
+    case 'DISMISS_YEAR_REVIEW':
+      return { ...state, pendingYearReview: false };
     case 'LEASE_MACHINE':
       return leaseMachine(state, action.machineId);
     case 'STOP_LEASE':

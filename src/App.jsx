@@ -7,12 +7,15 @@ import GameOver from './components/GameOver.jsx';
 import IrrigationPanel from './components/IrrigationPanel.jsx';
 import Office from './components/Office.jsx';
 import SeasonStart from './components/SeasonStart.jsx';
+import Tutorial from './components/Tutorial.jsx';
+import YearReview from './components/YearReview.jsx';
 import Shed from './components/Shed.jsx';
 import TimeBar from './components/TimeBar.jsx';
 import WeatherStrip from './components/WeatherStrip.jsx';
 import {
   HOLE_COUNT,
   POND_CAPACITY,
+  WEATHER_FINE,
   machineOrange,
   paint,
   pondStressed,
@@ -33,6 +36,8 @@ import { courseCondition } from './engine/simulation.js';
 import { pondPercent } from './engine/irrigation.js';
 import { unreadCount } from './engine/mail.js';
 import { constructionMinutes } from './engine/projects.js';
+import { playBirds, playMower } from './engine/sound.js';
+import { getTask } from './data/tasks.js';
 import { clearSave, hasSave, loadGame, saveGame } from './engine/save.js';
 
 function paletteStyle() {
@@ -145,6 +150,9 @@ export default function App() {
           onDeclineTournament={() => dispatch({ type: 'DECLINE_TOURNAMENT_REQUEST' })}
           onStartProject={(projectId) => dispatch({ type: 'START_PROJECT', projectId })}
           onBuyPicker={() => dispatch({ type: 'BUY_AUTO_PICKER' })}
+          onToggleSound={() => dispatch({ type: 'TOGGLE_SOUND' })}
+          onDismissTutorial={() => dispatch({ type: 'DISMISS_TUTORIAL' })}
+          onDismissYearReview={() => dispatch({ type: 'DISMISS_YEAR_REVIEW' })}
           onNewGame={handleNewGame}
         />
       )}
@@ -219,8 +227,30 @@ function GameScreen({
   onDeclineTournament,
   onStartProject,
   onBuyPicker,
+  onToggleSound,
+  onDismissTutorial,
+  onDismissYearReview,
   onNewGame,
 }) {
+  useEffect(() => {
+    function onKey(event) {
+      if (event.key === 'Escape') onSelect(null);
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onSelect]);
+
+  useEffect(() => {
+    if (state.weather === WEATHER_FINE) playBirds(state.soundEnabled);
+  }, [state.day, state.weather, state.soundEnabled]);
+
+  useEffect(() => {
+    if (!summary?.done?.some((item) => getTask(item.taskId)?.mowing)) return;
+    playMower(state.soundEnabled);
+  }, [summary, state.soundEnabled]);
+
+  const showMower = Boolean(summary?.done?.some((item) => getTask(item.taskId)?.mowing));
+
   if (view === 'shed') {
     return (
       <Shed
@@ -270,8 +300,21 @@ function GameScreen({
   return (
     <div className="flex min-h-screen flex-col">
       {state.dismissed ? <GameOver onNewGame={onNewGame} /> : null}
-      {!state.dismissed && state.pendingTournamentSetup && !summary ? (
+      {!state.dismissed && state.pendingYearReview && !summary ? (
+        <YearReview review={state.lastYearReview} onContinue={onDismissYearReview} />
+      ) : null}
+      {!state.dismissed &&
+      state.pendingTournamentSetup &&
+      !state.pendingYearReview &&
+      !summary ? (
         <SeasonStart state={state} onConfirm={onSetTournaments} />
+      ) : null}
+      {!state.dismissed &&
+      !state.tutorialDone &&
+      !state.pendingTournamentSetup &&
+      !state.pendingYearReview &&
+      !summary ? (
+        <Tutorial onDismiss={onDismissTutorial} />
       ) : null}
       <TimeBar
         remaining={minutesRemaining}
@@ -286,6 +329,8 @@ function GameScreen({
         onOpenOffice={onOpenOffice}
         onOpenPond={() => onSelect('pond')}
         unread={unreadCount(state)}
+        soundOn={state.soundEnabled}
+        onToggleSound={onToggleSound}
       />
       <WeatherStrip state={state} onPlan={onPlan} onRemove={onRemove} />
       <div className="flex flex-wrap items-end gap-8 px-4 py-3">
@@ -317,6 +362,7 @@ function GameScreen({
           hasAerator={state.hasAerator}
           holes={state.holes}
           hasDrivingRange={state.hasDrivingRange}
+          showMower={showMower}
           selected={selected}
           onSelect={onSelect}
           onOpenShed={onOpenShed}

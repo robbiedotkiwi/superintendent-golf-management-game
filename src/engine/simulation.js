@@ -41,6 +41,7 @@ import { closeSeason } from './budget.js';
 import { golferMail, gmSeasonMail, gmTournamentRequestMail, meetingDue, pushMail, tickDaysSinceWorked } from './mail.js';
 import { applyScheduledTournament } from './tournament.js';
 import { tickProjects } from './projects.js';
+import { buildYearReview, emptyYearRecord, hiredIds, recordYearDay } from './history.js';
 import { clampStanding, tickSatisfaction } from './satisfaction.js';
 import { GM_MEETING_SKIP_STANDING } from '../data/constants.js';
 
@@ -334,6 +335,14 @@ export function resolveDay(state) {
     snappedToday: false,
     tournamentPrepScore: tournament.state.tournamentPrepScore,
     tournaments: tournament.state.tournaments,
+    yearRecord: recordYearDay(
+      { ...tournament.state, day: state.day, year: state.year },
+      {
+        condition: courseCondition(surfaces),
+        maintenanceSpent:
+          wageBill(state.workers) + irrigation.mainsCost + materialsSpent + (complaint.fine ?? 0),
+      },
+    ),
   };
   let seasonClose = null;
   if (seasonChanged) {
@@ -362,6 +371,14 @@ export function resolveDay(state) {
       next = pushMail(next, mail);
     }
     next = pushMail(next, gmTournamentRequestMail(calendar.season));
+    if (yearChanged) {
+      next = {
+        ...next,
+        lastYearReview: buildYearReview({ ...next, yearRecord: next.yearRecord, workers: next.workers }),
+        pendingYearReview: true,
+        yearRecord: emptyYearRecord(calendar.year, hiredIds(next)),
+      };
+    }
   }
   const built = tickProjects(next);
   next = built.state;

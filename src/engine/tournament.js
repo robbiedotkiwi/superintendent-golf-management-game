@@ -1,4 +1,5 @@
 import { clampRange } from './satisfaction.js';
+import { logTournament } from './history.js';
 import {
   DAYS_PER_SEASON,
   SATISFACTION_MAX,
@@ -64,6 +65,7 @@ export function applySnapTournament(state) {
     seasonRevenue: (state.seasonRevenue ?? 0) + result.pay,
     satisfaction: clampRange(state.satisfaction + result.satisfaction, SATISFACTION_MIN, SATISFACTION_MAX),
     lastSnap: result,
+    yearRecord: logTournament(state, result),
   };
 }
 
@@ -112,6 +114,7 @@ export function applyScheduledTournament(state, surfaces) {
       tournamentPrepScore: 0,
       lastTournament: result,
       tournaments: state.tournaments.map((item) => (item.day === state.day ? { ...item, done: true } : item)),
+      yearRecord: logTournament(state, result),
     },
     result,
   };

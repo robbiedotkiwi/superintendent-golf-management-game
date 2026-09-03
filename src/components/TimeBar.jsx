@@ -13,6 +13,8 @@ export default function TimeBar({
   onOpenPond,
   onOpenOffice,
   unread,
+  soundOn,
+  onToggleSound,
 }) {
   const usedPercent = capacity <= 0 ? 0 : (used / capacity) * 100;
 
@@ -84,6 +86,13 @@ export default function TimeBar({
         className="border border-[var(--sand)] px-4 text-lg text-[var(--paint)]"
       >
         Shed
+      </button>
+      <button
+        type="button"
+        onClick={onToggleSound}
+        className="border border-[var(--sand)] px-4 text-lg text-[var(--paint)]"
+      >
+        Sound {soundOn ? 'on' : 'off'}
       </button>
       <button
         type="button"

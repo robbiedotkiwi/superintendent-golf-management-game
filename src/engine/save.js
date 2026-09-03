@@ -1,18 +1,22 @@
 import {
   GM_STANDING_START,
+  HOLE_COUNT,
   POND_HEALTH_START,
   POND_START_VOLUME,
   SATISFACTION_START,
   SAVE_KEY,
+  SAVE_VERSION,
+  SOUND_DEFAULT_ON,
   STARTING_CAPITAL_BUDGET,
   STARTING_IRRIGATION,
   STARTING_MACHINE_ID,
   STARTING_MAINTENANCE_BUDGET,
 } from '../data/constants.js';
 import { emptyDisease, emptyUntil } from './disease.js';
+import { emptyYearRecord } from './history.js';
 import { emptyDaysSinceWorked } from './mail.js';
 
-function withDefaults(state) {
+export function withDefaults(state) {
   return {
     ...state,
     ownedMachines: state.ownedMachines ?? [STARTING_MACHINE_ID],
@@ -50,7 +54,24 @@ function withDefaults(state) {
     hasAutoPicker: Boolean(state.hasAutoPicker),
     hasExtraBunkers: Boolean(state.hasExtraBunkers),
     hasNewTees: Boolean(state.hasNewTees),
+    holes: state.holes ?? HOLE_COUNT,
+    saveVersion: state.saveVersion ?? SAVE_VERSION,
+    soundEnabled: state.soundEnabled ?? SOUND_DEFAULT_ON,
+    tutorialDone: Boolean(state.tutorialDone),
+    pendingYearReview: Boolean(state.pendingYearReview),
+    lastYearReview: state.lastYearReview ?? null,
+    yearRecord: state.yearRecord ?? emptyYearRecord(state.year ?? 1, []),
   };
+}
+
+function isUsable(state) {
+  return Boolean(state && typeof state.day === 'number' && state.surfaces?.greens);
+}
+
+export function migrateSave(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const migrated = withDefaults(raw);
+  return isUsable(migrated) ? migrated : null;
 }
 
 export function saveGame(state) {
@@ -61,7 +82,7 @@ export function loadGame() {
   const raw = localStorage.getItem(SAVE_KEY);
   if (raw === null) return null;
   try {
-    return withDefaults(JSON.parse(raw));
+    return migrateSave(JSON.parse(raw));
   } catch {
     return null;
   }

@@ -22,6 +22,7 @@ import {
   SEASON_GROWTH,
   TASK_TIME_MULT_18,
 } from '../data/constants.js';
+import { bumpCapitalSpent } from './history.js';
 
 export const PROJECTS = {
   [PROJECT_EXPAND_18]: {
@@ -120,15 +121,18 @@ export function startProject(state, id) {
   if (!check.ok) return state;
   const spec = projectSpec(id);
   const extra = Math.round((PROJECT_DAILY_MINUTES[id] ?? 0) * (SEASON_GROWTH[state.season] ?? 1));
-  return {
-    ...state,
-    capitalBudget: state.capitalBudget - spec.cost,
-    workers: applySiteMinutes(state, extra),
-    projects: [
-      ...(state.projects ?? []),
-      { id, dueDay: state.day + spec.days, startedSeason: state.season },
-    ],
-  };
+  return bumpCapitalSpent(
+    {
+      ...state,
+      capitalBudget: state.capitalBudget - spec.cost,
+      workers: applySiteMinutes(state, extra),
+      projects: [
+        ...(state.projects ?? []),
+        { id, dueDay: state.day + spec.days, startedSeason: state.season },
+      ],
+    },
+    spec.cost,
+  );
 }
 
 export function canBuyAutoPicker(state) {
@@ -143,7 +147,10 @@ export function canBuyAutoPicker(state) {
 export function buyAutoPicker(state) {
   const check = canBuyAutoPicker(state);
   if (!check.ok) return state;
-  return { ...state, capitalBudget: state.capitalBudget - AUTO_PICKER_COST, hasAutoPicker: true };
+  return bumpCapitalSpent(
+    { ...state, capitalBudget: state.capitalBudget - AUTO_PICKER_COST, hasAutoPicker: true },
+    AUTO_PICKER_COST,
+  );
 }
 
 function completeProject(state, id) {
