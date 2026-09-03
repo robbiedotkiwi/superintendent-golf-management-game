@@ -1,5 +1,16 @@
 import { getTask, LEVEL_LABELS } from '../data/tasks.js';
 
+export function timeFillPercent(minutes, capacity) {
+  if (capacity <= 0) return 0;
+  return (minutes / capacity) * 100;
+}
+
+function plannedLabel(planned) {
+  const task = getTask(planned.taskId);
+  const level = planned.level ? LEVEL_LABELS[planned.level] : null;
+  return `${task.name}${level ? ` · ${level}` : ''} · ${planned.minutes} min`;
+}
+
 export default function TimeBar({
   remaining,
   used,
@@ -16,47 +27,53 @@ export default function TimeBar({
   soundOn,
   onToggleSound,
 }) {
-  const usedPercent = capacity <= 0 ? 0 : (used / capacity) * 100;
-
   return (
     <header className="flex shrink-0 flex-wrap items-stretch gap-3 bg-[var(--soil)] p-3">
-      <div className="relative min-h-16 min-w-0 flex-1 overflow-hidden border border-[var(--sand)]">
+      <div className="flex min-w-0 flex-1 items-stretch gap-3">
         <div
-          className="absolute inset-y-0 left-0 bg-[var(--machine-orange)]"
-          style={{ width: `${usedPercent}%` }}
-        />
-        <div className="relative flex h-full items-center justify-between px-4 py-2">
-          <div>
-            <div className="text-[var(--sand)]">Time left</div>
-            <div className="font-condensed text-5xl font-bold leading-none">
-              {remaining}
-              <span className="ml-2 text-2xl font-semibold text-[var(--sand)]">/ {capacity} min</span>
-            </div>
-          </div>
-          <ul className="hidden max-w-xl flex-wrap justify-end gap-2 md:flex">
-            {plannedTasks.map((planned) => {
-              const task = getTask(planned.taskId);
-              const level = planned.level ? LEVEL_LABELS[planned.level] : null;
+          className="relative min-h-16 min-w-0 flex-1 overflow-hidden border border-[var(--sand)] bg-[var(--soil)]"
+          role="img"
+          aria-label={`${used} of ${capacity} minutes planned`}
+        >
+          <div className="absolute inset-0 flex">
+            {plannedTasks.map((planned, index) => {
+              const label = plannedLabel(planned);
               return (
-                <li key={planned.taskId} className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => onRemove(planned.taskId)}
-                    className="border border-[var(--soil)] bg-[var(--sand)] px-2 py-1 text-sm text-[var(--soil)]"
-                  >
-                    {task.name}
-                    {level ? ` · ${level}` : ''} · {planned.minutes} min
-                  </button>
-                  <button type="button" onClick={() => onMove(planned.taskId, -1)} className="text-sm text-[var(--paint)]">
-                    Up
-                  </button>
-                  <button type="button" onClick={() => onMove(planned.taskId, 1)} className="text-sm text-[var(--paint)]">
-                    Down
-                  </button>
-                </li>
+                <button
+                  key={planned.taskId}
+                  type="button"
+                  title={label}
+                  aria-label={`Remove ${label}`}
+                  onClick={() => onRemove(planned.taskId)}
+                  className={`h-full bg-[var(--machine-orange)] hover:brightness-110 ${
+                    index > 0 ? 'border-l border-[var(--paint)]' : ''
+                  }`}
+                  style={{ width: `${timeFillPercent(planned.minutes, capacity)}%` }}
+                />
               );
             })}
-          </ul>
+          </div>
+        </div>
+        <div className="flex shrink-0 flex-col justify-center">
+          <div className="text-[var(--sand)]">Time left</div>
+          <div className="font-condensed text-5xl font-bold leading-none">
+            {remaining}
+            <span className="ml-2 text-2xl font-semibold text-[var(--sand)]">/ {capacity}</span>
+          </div>
+          {plannedTasks.length > 1 ? (
+            <div className="mt-1 flex flex-wrap gap-1 text-xs text-[var(--sand)]">
+              {plannedTasks.map((planned) => (
+                <span key={planned.taskId} className="flex gap-1">
+                  <button type="button" onClick={() => onMove(planned.taskId, -1)} aria-label={`Move ${plannedLabel(planned)} earlier`}>
+                    ↑
+                  </button>
+                  <button type="button" onClick={() => onMove(planned.taskId, 1)} aria-label={`Move ${plannedLabel(planned)} later`}>
+                    ↓
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
       </div>
       <button
