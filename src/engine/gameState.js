@@ -84,10 +84,12 @@ import {
   PLAYOUT_SPEEDS,
   PRESET_MAX,
   PRESET_NAME_MAX,
+  SECTION_MAP,
 } from '../data/constants.js';
 import { clampAngle, clampHoc, hasHoc, hasPattern, mergeSurfaceFields, angleDelta } from './mowing.js';
 import { courseBounds, holesForCount } from '../data/course.js';
 import { clampView, defaultView } from './view.js';
+import { defaultSectionTabs, normalizeSection, normalizeTabs, tabListForSection } from './section.js';
 
 export function createInitialState() {
   const calendar = calendarFromDay(STARTING_DAY);
@@ -211,6 +213,8 @@ export function createInitialState() {
     skipPlayout: PLAYOUT_SKIP_DEFAULT,
     customPresets: [],
     nextPresetId: 1,
+    section: SECTION_MAP,
+    tabs: defaultSectionTabs(),
   };
 }
 
@@ -642,6 +646,14 @@ export function reducer(state, action) {
         ...state,
         customPresets: (state.customPresets ?? []).filter((item) => item.id !== action.id),
       };
+    case 'SET_SECTION':
+      return { ...state, section: normalizeSection(action.section) };
+    case 'SET_TAB': {
+      const section = normalizeSection(action.section);
+      const allowed = tabListForSection(section);
+      if (!allowed.includes(action.tab)) return state;
+      return { ...state, tabs: { ...normalizeTabs(state.tabs), [section]: action.tab } };
+    }
     default:
       return state;
   }

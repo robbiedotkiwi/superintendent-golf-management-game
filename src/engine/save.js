@@ -30,6 +30,7 @@ import { mergeSurfaceFields } from './mowing.js';
 import { migrateMoisture } from './moisture.js';
 import { createRng } from './rng.js';
 import { buildForecast } from './weather.js';
+import { normalizeSection, normalizeTabs } from './section.js';
 
 export function withDefaults(state) {
   const surfaces = state.surfaces?.greens
@@ -129,6 +130,8 @@ export function withDefaults(state) {
     skipPlayout: Boolean(state.skipPlayout ?? PLAYOUT_SKIP_DEFAULT),
     customPresets: Array.isArray(state.customPresets) ? state.customPresets : [],
     nextPresetId: Number.isInteger(state.nextPresetId) && state.nextPresetId > 0 ? state.nextPresetId : 1,
+    section: normalizeSection(state.section),
+    tabs: normalizeTabs(state.tabs),
   };
 }
 

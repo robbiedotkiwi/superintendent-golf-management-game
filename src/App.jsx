@@ -11,13 +11,10 @@ import YearReview from './components/YearReview.jsx';
 import Shed from './components/Shed.jsx';
 import {
   HOLE_COUNT,
-  CREW_TAB_DEFAULT,
-  OFFICE_TAB_DEFAULT,
   SECTION_CREW,
   SECTION_MAP,
   SECTION_OFFICE,
   SECTION_SHED,
-  SHED_TAB_DEFAULT,
   WEATHER_FINE,
   machineOrange,
   paint,
@@ -64,14 +61,6 @@ function paletteStyle() {
   };
 }
 
-function defaultTabs() {
-  return {
-    [SECTION_OFFICE]: OFFICE_TAB_DEFAULT,
-    [SECTION_CREW]: CREW_TAB_DEFAULT,
-    [SECTION_SHED]: SHED_TAB_DEFAULT,
-  };
-}
-
 export default function App() {
   const [screen, setScreen] = useState('entry');
   const [savePresent, setSavePresent] = useState(() => hasSave());
@@ -79,8 +68,6 @@ export default function App() {
   const [selected, setSelected] = useState(null);
   const [summary, setSummary] = useState(null);
   const [playout, setPlayout] = useState(null);
-  const [view, setView] = useState(SECTION_MAP);
-  const [tabs, setTabs] = useState(defaultTabs);
   const seenLog = useRef(state.log.length);
 
   useEffect(() => {
@@ -139,9 +126,7 @@ export default function App() {
     setSelected(null);
     setSummary(null);
     setPlayout(null);
-    setTabs(defaultTabs());
     seenLog.current = 0;
-    setView(SECTION_MAP);
     setScreen('game');
   }
 
@@ -153,8 +138,6 @@ export default function App() {
     setSelected(null);
     setSummary(null);
     setPlayout(null);
-    setTabs(defaultTabs());
-    setView(SECTION_MAP);
     setScreen('game');
   }
 
@@ -171,9 +154,6 @@ export default function App() {
           selected={selected}
           summary={summary}
           playout={playout}
-          view={view}
-          tabs={tabs}
-          onTab={(section, tab) => setTabs((current) => ({ ...current, [section]: tab }))}
           minutesRemaining={minutesRemaining}
           minutesUsed={minutesUsed}
           minutesCapacity={minutesCapacity}
@@ -186,10 +166,10 @@ export default function App() {
           onSkipPlayout={() => setPlayout((current) => skipPlayout(current))}
           onSetPlayoutSpeed={(speed) => dispatch({ type: 'SET_PLAYOUT_SPEED', speed })}
           onSetSkipPref={(value) => dispatch({ type: 'SET_SKIP_PLAYOUT', value })}
-          onOpenShed={() => setView(SECTION_SHED)}
-          onOpenCrew={() => setView(SECTION_CREW)}
-          onOpenOffice={() => setView(SECTION_OFFICE)}
-          onCloseShed={() => setView(SECTION_MAP)}
+          onOpenShed={() => dispatch({ type: 'SET_SECTION', section: SECTION_SHED })}
+          onOpenCrew={() => dispatch({ type: 'SET_SECTION', section: SECTION_CREW })}
+          onOpenOffice={() => dispatch({ type: 'SET_SECTION', section: SECTION_OFFICE })}
+          onCloseShed={() => dispatch({ type: 'SET_SECTION', section: SECTION_MAP })}
           onBuy={(machineId) => dispatch({ type: 'BUY_MACHINE', machineId })}
           onBuyFoley={() => dispatch({ type: 'BUY_FOLEY' })}
           onSendGrind={(machineId) => dispatch({ type: 'SEND_GRIND', machineId })}
@@ -215,6 +195,7 @@ export default function App() {
           onSavePreset={(surface, name) => dispatch({ type: 'SAVE_PRESET', surface, name })}
           onApplyPreset={(id) => dispatch({ type: 'APPLY_PRESET', id })}
           onDeletePreset={(id) => dispatch({ type: 'DELETE_PRESET', id })}
+          onTab={(section, tab) => dispatch({ type: 'SET_TAB', section, tab })}
           onLease={(machineId) => dispatch({ type: 'LEASE_MACHINE', machineId })}
           onStopLease={(machineId) => dispatch({ type: 'STOP_LEASE', machineId })}
           onSnap={() => dispatch({ type: 'SNAP_TOURNAMENT' })}
@@ -266,8 +247,6 @@ function GameScreen({
   selected,
   summary,
   playout,
-  view,
-  tabs,
   onTab,
   minutesRemaining,
   minutesUsed,
@@ -354,6 +333,8 @@ function GameScreen({
       : state.surfaces;
   const showMower = Boolean(event?.mowing);
   const watching = playout?.status === PLAYOUT_PLAYING;
+  const view = state.section ?? SECTION_MAP;
+  const tabs = state.tabs ?? {};
 
   return (
     <div className="flex h-screen max-h-screen overflow-hidden bg-[var(--soil)] text-[var(--paint)]">

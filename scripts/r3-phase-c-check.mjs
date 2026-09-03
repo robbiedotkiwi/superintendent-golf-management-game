@@ -39,7 +39,7 @@ assert.match(crew, /tab === CREW_TAB_ROSTER/);
 assert.match(crew, /tab === CREW_TAB_HIRE/);
 assert.match(shed, /tab === SHED_TAB_YARD/);
 assert.match(shed, /tab === SHED_TAB_BUY/);
-assert.match(app, /tabs=\{tabs\}/);
+assert.match(app, /state\.tabs/);
 assert.match(app, /<Sidebar/);
 
 console.log('round 3 phase C checks passed');
