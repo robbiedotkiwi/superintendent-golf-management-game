@@ -83,6 +83,9 @@ assert.notEqual(dryingFactorForGreen(0), dryingFactorForGreen(2));
 
 const wetState = {
   ...createInitialState(),
+  day: 31,
+  season: 'summer',
+  year: 1,
   moisture: {
     greens: Array.from({ length: 9 }, () => MOISTURE_BAND.greens.max + 8),
     tees: MOISTURE_BAND.tees.max + 8,
@@ -90,7 +93,7 @@ const wetState = {
   },
 };
 assert.equal(isAboveBand(wetState.moisture, 'greens'), true);
-const dryState = createInitialState();
+const dryState = { ...createInitialState(), day: 31, season: 'summer', year: 1 };
 assert.ok(pressureGain(wetState, 'greens') > pressureGain(dryState, 'greens'));
 assert.equal(pressureGain(wetState, 'greens') / pressureGain(dryState, 'greens'), WET_DISEASE_MULT);
 assert.equal(WET_GAIN_MULT, 0.85);

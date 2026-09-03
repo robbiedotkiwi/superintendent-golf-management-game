@@ -12,6 +12,7 @@ import {
   BALL_PICK_MINUTES,
   BREAKDOWN_BASE,
   BREAKDOWN_PER_WEAR,
+  GRACE_NO_BREAKDOWN_DAYS,
   CONDITION_LOSS_PER_USE,
   CONDITION_MAX,
   CONDITION_MIN,
@@ -456,6 +457,9 @@ export function breakdownChance(wear) {
 export function rollBreakdowns(state, usedIds, rng) {
   const machineBroken = { ...state.machineBroken };
   const breakdowns = [];
+  if ((state.day ?? 1) <= GRACE_NO_BREAKDOWN_DAYS) {
+    return { machineBroken, breakdowns };
+  }
   for (const id of usedIds) {
     const wear = state.machineWear[id] ?? 0;
     if (rng.next() < breakdownChance(wear)) {

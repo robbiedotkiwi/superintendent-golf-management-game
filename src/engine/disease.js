@@ -16,6 +16,7 @@ import {
   WEATHER_RAIN,
   WEATHER_STORM,
 } from '../data/constants.js';
+import { inDiseaseGrace } from './calendar.js';
 import { hocFactor } from './mowing.js';
 import { isAboveBand } from './moisture.js';
 
@@ -39,6 +40,7 @@ export function isSuppressed(state, surface) {
 }
 
 export function pressureGain(state, surface) {
+  if (inDiseaseGrace(state.day)) return 0;
   const susceptibility = DISEASE_SUSCEPTIBILITY[surface] ?? 0;
   if (susceptibility === 0) return 0;
   if (isSuppressed(state, surface)) return 0;
@@ -76,7 +78,12 @@ export function resolveDisease(state) {
     const prev = state.disease?.[surface] ?? { pressure: STARTING_DISEASE_PRESSURE, outbreak: false };
     let pressure = prev.pressure;
     let outbreak = prev.outbreak;
-    pressure = Math.min(DISEASE_PRESSURE_MAX, Math.max(DISEASE_PRESSURE_MIN, pressure + pressureGain(state, surface)));
+    if (inDiseaseGrace(state.day)) {
+      pressure = STARTING_DISEASE_PRESSURE;
+      outbreak = false;
+    } else {
+      pressure = Math.min(DISEASE_PRESSURE_MAX, Math.max(DISEASE_PRESSURE_MIN, pressure + pressureGain(state, surface)));
+    }
     if (DISEASE_SUSCEPTIBILITY[surface] === 0) {
       pressure = STARTING_DISEASE_PRESSURE;
       outbreak = false;

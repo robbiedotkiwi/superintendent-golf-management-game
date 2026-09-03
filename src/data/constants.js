@@ -372,6 +372,10 @@ export const TEE_MARKER_FONT = 22;
 export const DAYS_PER_SEASON = 30;
 export const SEASON_ORDER = ['spring', 'summer', 'autumn', 'winter'];
 export const DAYS_PER_YEAR = DAYS_PER_SEASON * SEASON_ORDER.length;
+export const GRACE_FINE_DAYS = 5;
+export const GRACE_NO_STORM_DAYS = 10;
+export const GRACE_NO_BREAKDOWN_DAYS = 10;
+export const GRACE_NO_DISEASE_SEASON = 1;
 export const SEASON_GROWTH = {
   spring: 1.2,
   summer: 1.4,

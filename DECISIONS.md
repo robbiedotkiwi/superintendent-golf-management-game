@@ -174,3 +174,7 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Unavailable = `minutesToday === 0` after morning prep. Reasons, in order: volunteer off-day (`VOLUNTEER_OFF_REASON`), training (`NAME — training, back day N` where N is `trainingUntilDay`, the first day they work again), `sickUntilDay` if set (`NAME — off sick`), morale below `MORALE_NOSHOW_BELOW` (`NAME — staying home (morale)`), otherwise `Not in today`. There is no sick roll in the sim; the reason exists so a set `sickUntilDay` cannot be assigned. `assignWorker`, `canPlanTask` and `SET_TASK_WORKER` already reject `!isWorkerPresent`.
 - The numbered drag list is `PlanList`: map overlay during planning, and again in Start day. Not in the sidebar (Phase B). `REORDER_TASKS` replaces the arrows; `MOVE_TASK` remains. `OVERRUN_DROP_COPY` matches `planned.pop()` of the last task when autonomous interruptions overrun.
 
+### Phase E
+
+- Grace uses the spec numbers: days 1–5 always `fine`; days 1–10 never `storm` or `heavyRain` (those types remap to `overcast` if a roll or old save would show them); no breakdowns while resolving days 1–10; disease pressure is forced to 0 through season 1 (`seasonNumberFromDay(day) <= GRACE_NO_DISEASE_SEASON`) and starts accruing on day 31. Forecast generation and `corruptDay` both run through `applyWeatherGrace`, so the strip cannot advertise weather the grace period will prevent. After those windows the old weights, breakdown chance and pressure gain run unchanged.
+
