@@ -11,6 +11,10 @@ import YearReview from './components/YearReview.jsx';
 import Shed from './components/Shed.jsx';
 import {
   HOLE_COUNT,
+  SECTION_CREW,
+  SECTION_MAP,
+  SECTION_OFFICE,
+  SECTION_SHED,
   WEATHER_FINE,
   machineOrange,
   paint,
@@ -64,7 +68,7 @@ export default function App() {
   const [selected, setSelected] = useState(null);
   const [summary, setSummary] = useState(null);
   const [playout, setPlayout] = useState(null);
-  const [view, setView] = useState('course');
+  const [view, setView] = useState(SECTION_MAP);
   const seenLog = useRef(state.log.length);
 
   useEffect(() => {
@@ -124,7 +128,7 @@ export default function App() {
     setSummary(null);
     setPlayout(null);
     seenLog.current = 0;
-    setView('course');
+    setView(SECTION_MAP);
     setScreen('game');
   }
 
@@ -136,7 +140,7 @@ export default function App() {
     setSelected(null);
     setSummary(null);
     setPlayout(null);
-    setView('course');
+    setView(SECTION_MAP);
     setScreen('game');
   }
 
@@ -166,10 +170,10 @@ export default function App() {
           onSkipPlayout={() => setPlayout((current) => skipPlayout(current))}
           onSetPlayoutSpeed={(speed) => dispatch({ type: 'SET_PLAYOUT_SPEED', speed })}
           onSetSkipPref={(value) => dispatch({ type: 'SET_SKIP_PLAYOUT', value })}
-          onOpenShed={() => setView('shed')}
-          onOpenCrew={() => setView('crew')}
-          onOpenOffice={() => setView('office')}
-          onCloseShed={() => setView('course')}
+          onOpenShed={() => setView(SECTION_SHED)}
+          onOpenCrew={() => setView(SECTION_CREW)}
+          onOpenOffice={() => setView(SECTION_OFFICE)}
+          onCloseShed={() => setView(SECTION_MAP)}
           onBuy={(machineId) => dispatch({ type: 'BUY_MACHINE', machineId })}
           onBuyFoley={() => dispatch({ type: 'BUY_FOLEY' })}
           onSendGrind={(machineId) => dispatch({ type: 'SEND_GRIND', machineId })}
@@ -322,53 +326,6 @@ function GameScreen({
   const showMower = Boolean(event?.mowing);
   const watching = playout?.status === PLAYOUT_PLAYING;
 
-  if (view === 'shed') {
-    return (
-      <Shed
-        state={state}
-        onBack={onCloseShed}
-        onBuy={onBuy}
-        onBuyFoley={onBuyFoley}
-        onSendGrind={onSendGrind}
-        onGrindInHouse={onGrindInHouse}
-        onRepair={onRepair}
-        onLease={onLease}
-        onStopLease={onStopLease}
-      />
-    );
-  }
-
-  if (view === 'crew') {
-    return (
-      <Crew
-        state={state}
-        onBack={onCloseShed}
-        onHire={onHire}
-        onTrain={onTrain}
-        onVolunteerDay={onVolunteerDay}
-        onEarlyStart={onEarlyStart}
-      />
-    );
-  }
-
-  if (view === 'office') {
-    return (
-      <Office
-        state={state}
-        onBack={onCloseShed}
-        onSnap={onSnap}
-        onLoan={onLoan}
-        onRead={onReadMail}
-        onPlanMeeting={() => onPlan('gmMeeting')}
-        onRemoveMeeting={() => onRemove('gmMeeting')}
-        onDeclineTournament={onDeclineTournament}
-        onSetTournaments={onSetTournaments}
-        onStartProject={onStartProject}
-        onBuyPicker={onBuyPicker}
-      />
-    );
-  }
-
   return (
     <div className="flex h-screen max-h-screen overflow-hidden bg-[var(--soil)] text-[var(--paint)]">
       {state.dismissed && !watching ? <GameOver onNewGame={onNewGame} /> : null}
@@ -393,10 +350,18 @@ function GameScreen({
         onSelect={onSelect}
         onPlan={onPlan}
         onRemove={onRemove}
-        onEndDay={watching ? () => {} : onEndDay}
+        onEndDay={
+          watching
+            ? () => {}
+            : () => {
+                onCloseShed();
+                onEndDay();
+              }
+        }
         playoutActive={watching}
         skipPlayout={state.skipPlayout}
         onSetSkipPref={onSetSkipPref}
+        section={view}
         onMove={onMove}
         onOpenShed={onOpenShed}
         onOpenCrew={onOpenCrew}
@@ -416,30 +381,69 @@ function GameScreen({
         onToggleSound={onToggleSound}
       />
       <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
-        <CourseMap
-          surfaces={mapSurfaces}
-          pond={state.pond}
-          hasAerator={state.hasAerator}
-          holes={state.holes}
-          hasDrivingRange={state.hasDrivingRange}
-          showMower={showMower}
-          selected={selected}
-          highlight={event?.surface ?? selected}
-          onSelect={onSelect}
-          onOpenShed={onOpenShed}
-          day={watching ? playout.day : state.day}
-          view={state.view}
-          onView={onSetView}
-          moistureState={state}
-        />
-        <PlayoutBar
-          playout={watching ? playout : null}
-          speed={state.playoutSpeed}
-          skipPref={state.skipPlayout}
-          onSpeed={onSetPlayoutSpeed}
-          onSkip={onSkipPlayout}
-          onSkipPref={onSetSkipPref}
-        />
+        {view === SECTION_SHED ? (
+          <Shed
+            state={state}
+            onBack={onCloseShed}
+            onBuy={onBuy}
+            onBuyFoley={onBuyFoley}
+            onSendGrind={onSendGrind}
+            onGrindInHouse={onGrindInHouse}
+            onRepair={onRepair}
+            onLease={onLease}
+            onStopLease={onStopLease}
+          />
+        ) : view === SECTION_CREW ? (
+          <Crew
+            state={state}
+            onBack={onCloseShed}
+            onHire={onHire}
+            onTrain={onTrain}
+            onVolunteerDay={onVolunteerDay}
+            onEarlyStart={onEarlyStart}
+          />
+        ) : view === SECTION_OFFICE ? (
+          <Office
+            state={state}
+            onBack={onCloseShed}
+            onSnap={onSnap}
+            onLoan={onLoan}
+            onRead={onReadMail}
+            onPlanMeeting={() => onPlan('gmMeeting')}
+            onRemoveMeeting={() => onRemove('gmMeeting')}
+            onDeclineTournament={onDeclineTournament}
+            onSetTournaments={onSetTournaments}
+            onStartProject={onStartProject}
+            onBuyPicker={onBuyPicker}
+          />
+        ) : (
+          <>
+            <CourseMap
+              surfaces={mapSurfaces}
+              pond={state.pond}
+              hasAerator={state.hasAerator}
+              holes={state.holes}
+              hasDrivingRange={state.hasDrivingRange}
+              showMower={showMower}
+              selected={selected}
+              highlight={event?.surface ?? selected}
+              onSelect={onSelect}
+              onOpenShed={onOpenShed}
+              day={watching ? playout.day : state.day}
+              view={state.view}
+              onView={onSetView}
+              moistureState={state}
+            />
+            <PlayoutBar
+              playout={watching ? playout : null}
+              speed={state.playoutSpeed}
+              skipPref={state.skipPlayout}
+              onSpeed={onSetPlayoutSpeed}
+              onSkip={onSkipPlayout}
+              onSkipPref={onSetSkipPref}
+            />
+          </>
+        )}
       </div>
       <DaySummary summary={summary} onContinue={onDismissSummary} />
     </div>

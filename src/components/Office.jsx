@@ -40,7 +40,7 @@ export default function Office({
   const meetingCheck = canPlanTask(state, 'gmMeeting');
 
   return (
-    <div className="min-h-screen bg-[var(--soil)] px-6 py-5 text-[var(--paint)]">
+    <div className="h-full overflow-y-auto bg-[var(--soil)] px-6 py-5 text-[var(--paint)]">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="font-condensed text-5xl font-bold">Office</h1>
         <button type="button" onClick={onBack} className="border border-[var(--sand)] px-4 py-2">

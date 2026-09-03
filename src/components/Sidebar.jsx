@@ -1,6 +1,10 @@
 import {
   GM_MEETING_MINUTES,
   MOISTURE_SURFACES,
+  SECTION_CREW,
+  SECTION_MAP,
+  SECTION_OFFICE,
+  SECTION_SHED,
   SIDEBAR_WIDTH,
   SURFACE_KEYS,
   TASK_MINUTES,
@@ -46,6 +50,7 @@ export default function Sidebar({
   onOpenShed,
   onOpenCrew,
   onOpenOffice,
+  section = SECTION_MAP,
   onSetWorker,
   onSetHoc,
   onSetPattern,
@@ -244,7 +249,14 @@ export default function Sidebar({
           >
             Pond
           </button>
-          <button type="button" onClick={onOpenOffice} className="relative flex-1 border-l border-[var(--sand)] px-2 py-2 text-sm">
+          <button
+            type="button"
+            onClick={onOpenOffice}
+            aria-pressed={section === SECTION_OFFICE}
+            className={`relative flex-1 border-l border-[var(--sand)] px-2 py-2 text-sm ${
+              section === SECTION_OFFICE ? 'bg-[var(--machine-orange)]' : ''
+            }`}
+          >
             Office
             {unread ? (
               <span className="absolute right-1 top-1 min-w-5 rounded-full bg-[var(--machine-orange)] px-1 text-center text-xs font-bold leading-5 text-[var(--paint)]">
@@ -252,10 +264,24 @@ export default function Sidebar({
               </span>
             ) : null}
           </button>
-          <button type="button" onClick={onOpenCrew} className="flex-1 border-l border-[var(--sand)] px-2 py-2 text-sm">
+          <button
+            type="button"
+            onClick={onOpenCrew}
+            aria-pressed={section === SECTION_CREW}
+            className={`flex-1 border-l border-[var(--sand)] px-2 py-2 text-sm ${
+              section === SECTION_CREW ? 'bg-[var(--machine-orange)]' : ''
+            }`}
+          >
             Crew
           </button>
-          <button type="button" onClick={onOpenShed} className="flex-1 border-l border-[var(--sand)] px-2 py-2 text-sm">
+          <button
+            type="button"
+            onClick={onOpenShed}
+            aria-pressed={section === SECTION_SHED}
+            className={`flex-1 border-l border-[var(--sand)] px-2 py-2 text-sm ${
+              section === SECTION_SHED ? 'bg-[var(--machine-orange)]' : ''
+            }`}
+          >
             Shed
           </button>
         </nav>
