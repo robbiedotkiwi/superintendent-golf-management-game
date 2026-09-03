@@ -212,6 +212,9 @@ export default function App() {
           onBuyTurfRad={() => dispatch({ type: 'BUY_TURFRAD' })}
           onToggleMoistureOverlay={() => dispatch({ type: 'TOGGLE_MOISTURE_OVERLAY' })}
           onSetHandWaterTargets={(targets) => dispatch({ type: 'SET_HAND_WATER_TARGETS', targets })}
+          onSavePreset={(surface, name) => dispatch({ type: 'SAVE_PRESET', surface, name })}
+          onApplyPreset={(id) => dispatch({ type: 'APPLY_PRESET', id })}
+          onDeletePreset={(id) => dispatch({ type: 'DELETE_PRESET', id })}
           onLease={(machineId) => dispatch({ type: 'LEASE_MACHINE', machineId })}
           onStopLease={(machineId) => dispatch({ type: 'STOP_LEASE', machineId })}
           onSnap={() => dispatch({ type: 'SNAP_TOURNAMENT' })}
@@ -304,6 +307,9 @@ function GameScreen({
   onBuyTurfRad,
   onToggleMoistureOverlay,
   onSetHandWaterTargets,
+  onSavePreset,
+  onApplyPreset,
+  onDeletePreset,
   onLease,
   onStopLease,
   onSnap,
@@ -401,6 +407,9 @@ function GameScreen({
         onBuyTurfRad={onBuyTurfRad}
         onToggleMoistureOverlay={onToggleMoistureOverlay}
         onSetHandWaterTargets={onSetHandWaterTargets}
+        onSavePreset={onSavePreset}
+        onApplyPreset={onApplyPreset}
+        onDeletePreset={onDeletePreset}
         onToggleSound={onToggleSound}
       />
       <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">

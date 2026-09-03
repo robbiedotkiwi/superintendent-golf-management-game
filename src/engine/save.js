@@ -127,6 +127,8 @@ export function withDefaults(state) {
     yearRecord: state.yearRecord ?? emptyYearRecord(state.year ?? 1, []),
     playoutSpeed: PLAYOUT_SPEEDS.includes(state.playoutSpeed) ? state.playoutSpeed : PLAYOUT_SPEED_DEFAULT,
     skipPlayout: Boolean(state.skipPlayout ?? PLAYOUT_SKIP_DEFAULT),
+    customPresets: Array.isArray(state.customPresets) ? state.customPresets : [],
+    nextPresetId: Number.isInteger(state.nextPresetId) && state.nextPresetId > 0 ? state.nextPresetId : 1,
   };
 }
 

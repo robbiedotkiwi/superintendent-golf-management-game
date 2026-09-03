@@ -63,6 +63,9 @@ export default function Sidebar({
   onBuyTurfRad,
   onToggleMoistureOverlay,
   onSetHandWaterTargets,
+  onSavePreset,
+  onApplyPreset,
+  onDeletePreset,
   onToggleSound,
 }) {
   const debris = state.plannedTasks.find((item) => item.taskId === 'clearDebris');
@@ -232,6 +235,9 @@ export default function Sidebar({
                       onSetAngle={onSetAngle}
                       onSetAutoRotate={onSetAutoRotate}
                       onSetHandWaterTargets={onSetHandWaterTargets}
+                      onSavePreset={onSavePreset}
+                      onApplyPreset={onApplyPreset}
+                      onDeletePreset={onDeletePreset}
                     />
                   </div>
                 ) : null}

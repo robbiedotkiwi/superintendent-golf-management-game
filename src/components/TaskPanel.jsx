@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   HOC_RANGE,
   HOC_STEP,
@@ -6,6 +7,8 @@ import {
   PATTERN_ANGLE_MIN,
   PATTERN_KEYS,
   PATTERN_LABELS,
+  PRESET_MAX,
+  PRESET_NAME_MAX,
 } from '../data/constants.js';
 import { tasksForSurface, taskUsesMachine } from '../data/tasks.js';
 import { durationForTask, assignWorker, certifiedPresent, workerById } from '../engine/assignment.js';
@@ -14,6 +17,7 @@ import { hasHoc, hasPattern, inHocStressBand } from '../engine/mowing.js';
 import { allGreenIds } from '../engine/moisture.js';
 import { inPrepWindow } from '../engine/tournament.js';
 import { canPlanTask } from '../engine/gameState.js';
+import { presetsForSurface } from '../engine/presets.js';
 import { GreensMoistureList } from './MoistureReadout.jsx';
 
 function formatQuality(value) {
@@ -31,12 +35,18 @@ export default function TaskPanel({
   onSetAngle,
   onSetAutoRotate,
   onSetHandWaterTargets,
+  onSavePreset,
+  onApplyPreset,
+  onDeletePreset,
 }) {
+  const [presetName, setPresetName] = useState('');
   const record = state.surfaces[surface];
   const tasks = tasksForSurface(surface);
   const showHoc = hasHoc(surface);
   const showPattern = hasPattern(surface);
   const stress = showHoc && inHocStressBand(surface, record.hoc);
+  const presets = presetsForSurface(state, surface);
+  const presetFull = (state.customPresets ?? []).length >= PRESET_MAX;
 
   return (
     <div className="space-y-3 border-t border-[var(--sand)] pt-3 text-[var(--paint)]">
@@ -108,6 +118,47 @@ export default function TaskPanel({
             />
             Auto-rotate each cut
           </label>
+        </section>
+      ) : null}
+      {showHoc || showPattern ? (
+        <section className="border border-[var(--sand)] p-3">
+          <div className="text-sm text-[var(--sand)]">Presets</div>
+          {presets.length === 0 ? <p className="mt-2 text-sm text-[var(--sand)]">None saved for this surface.</p> : null}
+          <ul className="mt-2 space-y-2">
+            {presets.map((preset) => (
+              <li key={preset.id} className="flex flex-wrap items-center gap-2">
+                <span className="flex-1">{preset.name}</span>
+                <button type="button" onClick={() => onApplyPreset(preset.id)} className="border border-[var(--sand)] px-2 py-1 text-sm">
+                  Apply
+                </button>
+                <button type="button" onClick={() => onDeletePreset(preset.id)} className="border border-[var(--sand)] px-2 py-1 text-sm">
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 flex gap-2">
+            <input
+              type="text"
+              maxLength={PRESET_NAME_MAX}
+              value={presetName}
+              onChange={(event) => setPresetName(event.target.value)}
+              placeholder="Name"
+              className="min-w-0 flex-1 border border-[var(--sand)] bg-[var(--soil)] px-2 py-1 text-[var(--paint)]"
+            />
+            <button
+              type="button"
+              disabled={presetFull}
+              title={presetFull ? `Max ${PRESET_MAX} presets` : undefined}
+              onClick={() => {
+                onSavePreset(surface, presetName);
+                setPresetName('');
+              }}
+              className="border border-[var(--sand)] px-2 py-1 text-sm disabled:opacity-40"
+            >
+              Save
+            </button>
+          </div>
         </section>
       ) : null}
       {surface === 'greens' ? <GreensMoistureList state={state} /> : null}

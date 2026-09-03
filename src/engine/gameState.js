@@ -82,6 +82,8 @@ import {
   PLAYOUT_SPEED_DEFAULT,
   PLAYOUT_SKIP_DEFAULT,
   PLAYOUT_SPEEDS,
+  PRESET_MAX,
+  PRESET_NAME_MAX,
 } from '../data/constants.js';
 import { clampAngle, clampHoc, hasHoc, hasPattern, mergeSurfaceFields, angleDelta } from './mowing.js';
 import { courseBounds, holesForCount } from '../data/course.js';
@@ -207,6 +209,8 @@ export function createInitialState() {
     nextMailId: 1,
     playoutSpeed: PLAYOUT_SPEED_DEFAULT,
     skipPlayout: PLAYOUT_SKIP_DEFAULT,
+    customPresets: [],
+    nextPresetId: 1,
   };
 }
 
@@ -590,6 +594,54 @@ export function reducer(state, action) {
       return PLAYOUT_SPEEDS.includes(action.speed) ? { ...state, playoutSpeed: action.speed } : state;
     case 'SET_SKIP_PLAYOUT':
       return { ...state, skipPlayout: Boolean(action.value) };
+    case 'SAVE_PRESET': {
+      const surface = action.surface;
+      const record = state.surfaces?.[surface];
+      if (!record || (!hasHoc(surface) && !hasPattern(surface))) return state;
+      const list = state.customPresets ?? [];
+      if (list.length >= PRESET_MAX) return state;
+      const trimmed = String(action.name ?? '')
+        .trim()
+        .slice(0, PRESET_NAME_MAX);
+      const id = state.nextPresetId ?? 1;
+      return {
+        ...state,
+        nextPresetId: id + 1,
+        customPresets: [
+          ...list,
+          {
+            id,
+            name: trimmed || `Preset ${id}`,
+            surface,
+            hoc: record.hoc,
+            pattern: record.pattern,
+            angle: record.angle,
+            autoRotate: Boolean(record.autoRotate),
+          },
+        ],
+      };
+    }
+    case 'APPLY_PRESET': {
+      const preset = (state.customPresets ?? []).find((item) => item.id === action.id);
+      if (!preset || !state.surfaces?.[preset.surface]) return state;
+      let next = state;
+      if (hasHoc(preset.surface) && preset.hoc != null) {
+        next = applySurfacePatch(next, preset.surface, { hoc: clampHoc(preset.surface, preset.hoc) });
+      }
+      if (hasPattern(preset.surface)) {
+        next = applySurfacePatch(next, preset.surface, {
+          ...(PATTERN_KEYS.includes(preset.pattern) ? { pattern: preset.pattern } : {}),
+          angle: clampAngle(preset.angle ?? 0),
+          autoRotate: Boolean(preset.autoRotate),
+        });
+      }
+      return next;
+    }
+    case 'DELETE_PRESET':
+      return {
+        ...state,
+        customPresets: (state.customPresets ?? []).filter((item) => item.id !== action.id),
+      };
     default:
       return state;
   }

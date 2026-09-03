@@ -637,3 +637,5 @@ export const SHED_TAB_LABELS = {
   [SHED_TAB_YARD]: 'Yard',
   [SHED_TAB_BUY]: 'Buy',
 };
+export const PRESET_MAX = 8;
+export const PRESET_NAME_MAX = 24;

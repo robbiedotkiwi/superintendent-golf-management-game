@@ -131,4 +131,5 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Office, Crew and Shed replace the map pane only. The sidebar stays mounted. End day returns to the map so the day film has a course to play on. Location ids stay `course` / `office` / `crew` / `shed` so existing view strings keep working.
 - Office tabs are Inbox (mail + GM meeting), Money, Projects. Crew is Roster / Hire. Shed is Yard / Buy. Tab state lives in App for now and is not saved until the persist phase.
 - Escape from Office, Crew or Shed (any sub-tab) returns to the map in one step. It does not walk back through tabs. On the map it still clears the selected surface.
+- Custom presets store height, pattern, angle and auto-rotate for one surface. Cap is `PRESET_MAX` (8). Apply uses the existing HOC/pattern actions, so the mowing model is unchanged.
 
