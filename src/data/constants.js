@@ -136,26 +136,36 @@ export const PATTERN_STRIPES = 'stripes';
 export const PATTERN_RINGS = 'rings';
 export const PATTERN_CHECKERBOARD = 'checkerboard';
 export const PATTERN_DIAMOND = 'diamond';
-export const PATTERN_KEYS = [PATTERN_STRIPES, PATTERN_RINGS, PATTERN_CHECKERBOARD, PATTERN_DIAMOND];
+export const PATTERN_BLOCK = 'block';
+export const PATTERN_KEYS = [PATTERN_STRIPES, PATTERN_RINGS, PATTERN_CHECKERBOARD, PATTERN_DIAMOND, PATTERN_BLOCK];
 export const PATTERN_DEFAULT = PATTERN_STRIPES;
-export const PATTERNED_SURFACES = ['greens', 'tees', 'fairways'];
+export const PATTERNED_SURFACES = ['greens', 'tees', 'fairways', 'rough'];
+export const PATTERN_SURFACE_DEFAULT = {
+  greens: PATTERN_STRIPES,
+  tees: PATTERN_STRIPES,
+  fairways: PATTERN_BLOCK,
+  rough: PATTERN_BLOCK,
+};
 export const PATTERN_TIME_MULT = {
   [PATTERN_STRIPES]: 1.0,
   [PATTERN_RINGS]: 1.25,
   [PATTERN_CHECKERBOARD]: 1.35,
   [PATTERN_DIAMOND]: 1.5,
+  [PATTERN_BLOCK]: 1.0,
 };
 export const PATTERN_PRESENTATION = {
   [PATTERN_STRIPES]: 4,
   [PATTERN_RINGS]: 7,
   [PATTERN_CHECKERBOARD]: 8,
   [PATTERN_DIAMOND]: 10,
+  [PATTERN_BLOCK]: 0,
 };
 export const PATTERN_LABELS = {
   [PATTERN_STRIPES]: 'Stripes',
   [PATTERN_RINGS]: 'Rings',
   [PATTERN_CHECKERBOARD]: 'Checkerboard',
   [PATTERN_DIAMOND]: 'Diamond',
+  [PATTERN_BLOCK]: 'Block',
 };
 export const PATTERN_UNAVAILABLE_TIME_MULT = 1;
 export const PATTERN_ANGLE_MIN = 0;
@@ -394,6 +404,7 @@ export const GREENS_ROLLER_TIME_MULT = 0.7;
 export const AUTONOMOUS_COST = 35000;
 export const AUTONOMOUS_CEILING = 85;
 export const STARTING_MACHINE_ID = 'pushRotary';
+export const STARTING_MACHINE_IDS = [STARTING_MACHINE_ID];
 
 export const CONDITION_MIN = 0;
 export const CONDITION_MAX = 100;

@@ -16,6 +16,7 @@ import {
   PATTERN_AUTO_ROTATE_STEP,
   PATTERN_DEFAULT,
   PATTERN_PRESENTATION,
+  PATTERN_SURFACE_DEFAULT,
   PATTERN_TIME_MULT,
   PATTERN_UNAVAILABLE_TIME_MULT,
   PATTERN_WEAR_DEFAULT,
@@ -61,7 +62,7 @@ export function inHocStressBand(surface, height) {
 export function hocStressApplies(state, surface, dry) {
   if (!inHocStressBand(surface, state.surfaces[surface]?.hoc)) return false;
   if (state.season === 'summer') return true;
-  if (PATTERNED_SURFACES.includes(surface) && dry) return true;
+  if (MOISTURE_SURFACES.includes(surface) && dry) return true;
   return false;
 }
 
@@ -121,7 +122,7 @@ export function defaultSurfaceFields(kind) {
     fields.lastRakedDay = STARTING_DAY;
   }
   if (hasPattern(kind)) {
-    fields.pattern = PATTERN_DEFAULT;
+    fields.pattern = PATTERN_SURFACE_DEFAULT[kind] ?? PATTERN_DEFAULT;
     fields.angle = PATTERN_ANGLE_DEFAULT;
     fields.autoRotate = PATTERN_AUTO_ROTATE_DEFAULT;
     fields.patternWear = PATTERN_WEAR_DEFAULT;

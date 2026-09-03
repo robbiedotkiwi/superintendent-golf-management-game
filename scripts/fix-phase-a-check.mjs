@@ -12,6 +12,7 @@ import {
   DEFAULT_DAY_OVERLOAD_MINUTES,
   HOC_RANGE,
   HOC_STRESS_DAMAGE,
+  PATTERN_BLOCK,
   PATTERN_DIAMOND,
   PATTERN_STRIPES,
   PATTERN_TIME_MULT,
@@ -66,7 +67,8 @@ assert.equal(start.surfaces.tees.hoc, HOC_RANGE.tees.default);
 assert.equal(start.surfaces.fairways.hoc, HOC_RANGE.fairways.default);
 assert.equal(start.surfaces.rough.hoc, HOC_RANGE.rough.default);
 assert.equal(start.surfaces.greens.pattern, PATTERN_STRIPES);
-assert.equal(start.surfaces.rough.pattern, undefined);
+assert.equal(start.surfaces.fairways.pattern, PATTERN_BLOCK);
+assert.equal(start.surfaces.rough.pattern, PATTERN_BLOCK);
 
 let lowered = reducer(start, { type: 'SET_HOC', surface: 'greens', hoc: HOC_RANGE.greens.min });
 assert.equal(lowered.surfaces.greens.hoc, HOC_RANGE.greens.min);

@@ -52,9 +52,8 @@ import {
   SHED_Y,
 } from '../data/course.js';
 import { pondPercent } from '../engine/irrigation.js';
-import { hasPattern } from '../engine/mowing.js';
 import { moistureOverlayColor, moistureStatus, outOfBand } from '../engine/moisture.js';
-import { patternRotate, patternStripeColor, surfacePatternOpacity } from '../engine/pattern.js';
+import { patternRotate, patternStripeColor, showsMowOverlay, surfacePatternOpacity } from '../engine/pattern.js';
 import { prefersReducedMotion } from '../engine/sound.js';
 import {
   clientToWorld,
@@ -126,6 +125,7 @@ function surfaceStrokeWidth(surface, selected) {
 }
 
 function MowPattern({ id, pattern, angle, color }) {
+  if (!showsMowOverlay(pattern)) return null;
   const rotate = patternRotate(pattern, angle);
   if (pattern === PATTERN_RINGS) {
     return (
@@ -200,7 +200,9 @@ export default function CourseMap({
   const camera = clampView(view, bounds);
   viewRef.current = camera;
   const patternState = { day, surfaces };
-  const patterned = ['greens', 'tees', 'fairways'].filter((surface) => hasPattern(surface));
+  const patterned = ['greens', 'tees', 'fairways'].filter((surface) =>
+    showsMowOverlay(surfaces[surface]?.pattern),
+  );
   const active = highlight ?? selected;
 
   function setView(next) {
@@ -423,12 +425,14 @@ export default function CourseMap({
             }}
             onKeyDown={(event) => activate(event, 'fairways', onSelect)}
           />
+          {showsMowOverlay(surfaces.fairways.pattern) ? (
           <path
             d={holePath(hole.fairway)}
             fill="url(#mow-fairways)"
             opacity={surfacePatternOpacity(patternState, 'fairways')}
             pointerEvents="none"
           />
+          ) : null}
           <MoistureOverlayShape kind="path" d={holePath(hole.fairway)} surface="fairways" state={moistureState} />
         </g>
       ))}

@@ -1,5 +1,6 @@
 import {
   NEGLECT_THRESHOLD,
+  PATTERN_BLOCK,
   PATTERN_CHECK_SIZE,
   PATTERN_OPACITY_FRESH,
   PATTERN_OPACITY_OVERDUE,
@@ -14,6 +15,10 @@ import {
 } from '../data/constants.js';
 import { lerpHex } from './color.js';
 import { daysSinceLastWorked } from './neglect.js';
+
+export function showsMowOverlay(pattern) {
+  return Boolean(pattern) && pattern !== PATTERN_BLOCK;
+}
 
 export function patternOpacity(daysSince, threshold) {
   if (threshold <= 0 || daysSince >= threshold) return PATTERN_OPACITY_OVERDUE;

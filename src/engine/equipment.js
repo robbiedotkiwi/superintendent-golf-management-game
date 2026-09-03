@@ -28,7 +28,7 @@ import {
   QUALITY_MAX,
   REPAIR_MINUTES,
   STARTING_MACHINE_CONDITION,
-  STARTING_MACHINE_ID,
+  STARTING_MACHINE_IDS,
   WEAR_GAIN_PENALTY,
   WEAR_MAX,
   WEAR_MECHANIC_FACTOR,
@@ -72,7 +72,7 @@ export function machineDailyMinutesOf(state, machineId) {
 }
 
 export function migrateMachineMaps(state) {
-  const ownedMachines = state.ownedMachines ?? [STARTING_MACHINE_ID];
+  const ownedMachines = state.ownedMachines ?? [...STARTING_MACHINE_IDS];
   const machineCondition = { ...(state.machineCondition ?? {}) };
   const machineDailyMinutes = { ...(state.machineDailyMinutes ?? {}) };
   for (const id of ownedMachines) {

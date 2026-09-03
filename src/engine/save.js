@@ -9,7 +9,7 @@ import {
   SOUND_DEFAULT_ON,
   STARTING_CAPITAL_BUDGET,
   STARTING_IRRIGATION,
-  STARTING_MACHINE_ID,
+  STARTING_MACHINE_IDS,
   STARTING_MAINTENANCE_BUDGET,
   STARTING_RNG_SEED,
   STARTING_WIND_DIR,
@@ -69,7 +69,10 @@ export function withDefaults(state) {
     windDir = built.windDir;
     rngSeed = rng.seed;
   }
-  const machines = migrateMachineMaps(state);
+  const machines = migrateMachineMaps({
+    ...state,
+    ownedMachines: state.ownedMachines ?? [...STARTING_MACHINE_IDS],
+  });
   return {
     ...state,
     surfaces,
@@ -86,7 +89,7 @@ export function withDefaults(state) {
       panY: state.view?.panY ?? VIEW_PAN_Y_DEFAULT,
     },
     ownedMachines: machines.ownedMachines,
-    machineWear: state.machineWear ?? { [STARTING_MACHINE_ID]: 0 },
+    machineWear: state.machineWear ?? Object.fromEntries(STARTING_MACHINE_IDS.map((id) => [id, 0])),
     machineBroken: state.machineBroken ?? {},
     machineAwayUntil: state.machineAwayUntil ?? {},
     machineCondition: machines.machineCondition,
