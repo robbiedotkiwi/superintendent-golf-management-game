@@ -44,6 +44,7 @@ import { bumpCapitalSpent } from './history.js';
 import { workerTimeMultiplier } from './skills.js';
 import { hasMechanic } from './staff.js';
 import { createRng } from './rng.js';
+import { formatMoney } from './format.js';
 
 function remainingMinutes(state) {
   return state.workers.reduce((total, worker) => total + (worker.minutesToday - worker.minutesUsed), 0);
@@ -264,7 +265,7 @@ export function canBuyMachine(state, machineId) {
   if (!machine || machine.ownedAtStart) return { ok: false, reason: 'Already in the shed.' };
   if (state.ownedMachines.includes(machineId)) return { ok: false, reason: 'Already owned.' };
   if ((state.capitalBudget ?? 0) < machine.cost) {
-    return { ok: false, reason: `Needs ${machine.cost} capital, only ${state.capitalBudget ?? 0} posted.` };
+    return { ok: false, reason: `Needs ${formatMoney(machine.cost)} capital, only ${formatMoney(state.capitalBudget ?? 0)} posted.` };
   }
   return { ok: true };
 }
@@ -272,7 +273,7 @@ export function canBuyMachine(state, machineId) {
 export function canBuyFoley(state) {
   if (state.hasFoleyGrinder) return { ok: false, reason: 'Already installed.' };
   if ((state.capitalBudget ?? 0) < FOLEY_GRINDER_COST) {
-    return { ok: false, reason: `Needs ${FOLEY_GRINDER_COST} capital, only ${state.capitalBudget ?? 0} posted.` };
+    return { ok: false, reason: `Needs ${formatMoney(FOLEY_GRINDER_COST)} capital, only ${formatMoney(state.capitalBudget ?? 0)} posted.` };
   }
   return { ok: true };
 }
@@ -284,7 +285,7 @@ export function canSendGrind(state, machineId) {
     return { ok: false, reason: 'That unit is not here.' };
   }
   if ((state.maintenanceBudget ?? 0) < GRIND_AWAY_COST) {
-    return { ok: false, reason: `Needs ${GRIND_AWAY_COST} from maintenance.` };
+    return { ok: false, reason: `Needs ${formatMoney(GRIND_AWAY_COST)} from maintenance.` };
   }
   return { ok: true };
 }

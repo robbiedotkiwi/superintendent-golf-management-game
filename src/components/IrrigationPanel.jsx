@@ -2,6 +2,7 @@ import { AERATOR_COST, GREENS_SENSORS_COST, IRRIGATION_POLICIES, POND_CAPACITY, 
 import { SURFACE_LABELS } from '../data/tasks.js';
 import { canBuyAerator, IRRIGATED_SURFACES, pondPercent } from '../engine/irrigation.js';
 import { canBuyGreensSensors, canBuyTurfRad } from '../engine/moisture.js';
+import { formatMoney } from '../engine/format.js';
 
 const POLICY_LABELS = {
   off: 'Off',
@@ -56,7 +57,7 @@ export default function IrrigationPanel({
           <p className="mt-2">In the pond. Holds health up.</p>
         ) : (
           <>
-            <p className="mt-2 text-sm text-[var(--sand)]">Keeps pond health from falling. {AERATOR_COST} from capital.</p>
+            <p className="mt-2 text-sm text-[var(--sand)]">Keeps pond health from falling. {formatMoney(AERATOR_COST)} from capital.</p>
             <button
               type="button"
               disabled={!aerator.ok}
@@ -64,7 +65,7 @@ export default function IrrigationPanel({
               className="mt-2 border border-[var(--sand)] px-3 py-2 disabled:opacity-40"
               title={aerator.ok ? undefined : aerator.reason}
             >
-              Buy aerator · {AERATOR_COST}
+              Buy aerator · {formatMoney(AERATOR_COST)}
             </button>
             {!aerator.ok ? <p className="mt-1 text-xs text-[var(--sand)]">{aerator.reason}</p> : null}
           </>
@@ -76,7 +77,7 @@ export default function IrrigationPanel({
           <p className="mt-2">Live greens moisture. Never stale.</p>
         ) : (
           <>
-            <p className="mt-2 text-sm text-[var(--sand)]">Continuous greens readings. {GREENS_SENSORS_COST} from capital.</p>
+            <p className="mt-2 text-sm text-[var(--sand)]">Continuous greens readings. {formatMoney(GREENS_SENSORS_COST)} from capital.</p>
             <button
               type="button"
               disabled={!sensors.ok}
@@ -84,7 +85,7 @@ export default function IrrigationPanel({
               className="mt-2 border border-[var(--sand)] px-3 py-2 disabled:opacity-40"
               title={sensors.ok ? undefined : sensors.reason}
             >
-              Buy sensors · {GREENS_SENSORS_COST}
+              Buy sensors · {formatMoney(GREENS_SENSORS_COST)}
             </button>
             {!sensors.ok ? <p className="mt-1 text-xs text-[var(--sand)]">{sensors.reason}</p> : null}
           </>
@@ -96,7 +97,7 @@ export default function IrrigationPanel({
           <p className="mt-2">Mowers report moisture on anything cut today.</p>
         ) : (
           <>
-            <p className="mt-2 text-sm text-[var(--sand)]">Readings when you mow. {TURFRAD_COST} from capital.</p>
+            <p className="mt-2 text-sm text-[var(--sand)]">Readings when you mow. {formatMoney(TURFRAD_COST)} from capital.</p>
             <button
               type="button"
               disabled={!turfrad.ok}
@@ -104,7 +105,7 @@ export default function IrrigationPanel({
               className="mt-2 border border-[var(--sand)] px-3 py-2 disabled:opacity-40"
               title={turfrad.ok ? undefined : turfrad.reason}
             >
-              Buy TurfRad · {TURFRAD_COST}
+              Buy TurfRad · {formatMoney(TURFRAD_COST)}
             </button>
             {!turfrad.ok ? <p className="mt-1 text-xs text-[var(--sand)]">{turfrad.reason}</p> : null}
           </>

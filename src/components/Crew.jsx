@@ -6,12 +6,14 @@ import {
   CREW_TABS,
   DAYS_PER_WEEK,
   PLAYER_ID,
+  PLAYER_WAGE,
   TRAINING_COST,
   TRAINING_DAYS,
   VOLUNTEER_DEFAULT_WEEKDAY,
   VOLUNTEER_MINUTES,
 } from '../data/constants.js';
 import { dayOfWeek } from '../engine/staff.js';
+import { formatMoney } from '../engine/format.js';
 import SectionTabs from './SectionTabs.jsx';
 
 export default function Crew({
@@ -53,7 +55,7 @@ export default function Crew({
           <section key={worker.id} className="border-2 border-[var(--sand)] p-4">
             <h3 className="text-2xl font-semibold">{worker.name}</h3>
             <p>
-              Speed {worker.speedSkill} · Quality {worker.qualitySkill} · Morale {Math.round(worker.morale)} · Wage {worker.wage}/day
+              Speed {worker.speedSkill} · Quality {worker.qualitySkill} · Morale {Math.round(worker.morale)} · Wage {formatMoney(worker.wage)}/day
               {worker.isMechanic ? ' · Mechanic' : ''}
               {worker.sprayCertified ? ' · Spray ticket' : ''}
             </p>
@@ -65,16 +67,16 @@ export default function Crew({
             {worker.id !== PLAYER_ID ? (
               <div className="mt-2 flex flex-wrap gap-2">
                 <button type="button" onClick={() => onTrain(worker.id, 'speedSkill')} className="border border-[var(--sand)] px-3 py-1">
-                  Train speed ({TRAINING_COST}, {TRAINING_DAYS} days)
+                  Train speed ({formatMoney(TRAINING_COST)}, {TRAINING_DAYS} days)
                 </button>
                 <button type="button" onClick={() => onTrain(worker.id, 'qualitySkill')} className="border border-[var(--sand)] px-3 py-1">
-                  Train quality ({TRAINING_COST}, {TRAINING_DAYS} days)
+                  Train quality ({formatMoney(TRAINING_COST)}, {TRAINING_DAYS} days)
                 </button>
               </div>
             ) : null}
             {!worker.sprayCertified ? (
               <button type="button" onClick={() => onTrain(worker.id, 'spray')} className="mt-2 border border-[var(--sand)] px-3 py-1">
-                Spray ticket ({TRAINING_COST}, {TRAINING_DAYS} days)
+                Spray ticket ({formatMoney(TRAINING_COST)}, {TRAINING_DAYS} days)
               </button>
             ) : null}
           </section>
@@ -83,7 +85,7 @@ export default function Crew({
 
       <h2 className="mt-10 font-condensed text-3xl">Volunteer</h2>
       <p className="mt-2">
-        Comes on day {state.volunteerWeekday ?? VOLUNTEER_DEFAULT_WEEKDAY} of each {DAYS_PER_WEEK}-day week with {VOLUNTEER_MINUTES} min. Fairways and rough only. Wage 0.
+        Comes on day {state.volunteerWeekday ?? VOLUNTEER_DEFAULT_WEEKDAY} of each {DAYS_PER_WEEK}-day week with {VOLUNTEER_MINUTES} min. Fairways and rough only. Wage {formatMoney(PLAYER_WAGE)}.
       </p>
       <p className="text-sm text-[var(--sand)]">Today is weekday {dayOfWeek(state.day)}.</p>
       <div className="mt-2 flex flex-wrap gap-2">
@@ -111,7 +113,7 @@ export default function Crew({
           <section key={candidate.id} className="border border-[var(--sand)] p-4">
             <h3 className="text-xl font-semibold">{candidate.name}</h3>
             <p>
-              Speed {candidate.speedSkill} · Quality {candidate.qualitySkill} · {candidate.wage}/day
+              Speed {candidate.speedSkill} · Quality {candidate.qualitySkill} · {formatMoney(candidate.wage)}/day
               {candidate.isMechanic ? ' · Mechanic' : ''}
             </p>
             <button

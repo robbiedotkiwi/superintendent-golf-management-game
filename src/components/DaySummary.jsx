@@ -1,4 +1,5 @@
 import { SURFACE_LABELS } from '../data/tasks.js';
+import { formatMoney } from '../engine/format.js';
 
 function formatQuality(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -59,15 +60,15 @@ export default function DaySummary({ summary, onContinue }) {
         ) : (
           <p>Nothing dropped.</p>
         )}
-        {summary.wages ? <p className="mt-3">Wages {summary.wages}</p> : null}
+        {summary.wages ? <p className="mt-3">Wages {formatMoney(summary.wages)}</p> : null}
         {summary.gmWarning ? <p className="mt-2">GM warning: neighbours are complaining about the early start.</p> : null}
-        {summary.neighbourFine ? <p className="mt-2">Fine {summary.neighbourFine} for the early starts.</p> : null}
+        {summary.neighbourFine ? <p className="mt-2">Fine {formatMoney(summary.neighbourFine)} for the early starts.</p> : null}
         {summary.breakdowns?.length ? (
           <p className="mt-2">Broke down: {summary.breakdowns.join(', ')}</p>
         ) : null}
         {summary.mainsCost ? (
           <p className="mt-2">
-            Mains water {summary.mainsM3} m³ · {summary.mainsCost}
+            Mains water {summary.mainsM3} m³ · {formatMoney(summary.mainsCost)}
           </p>
         ) : null}
         {summary.pond ? (
@@ -75,7 +76,7 @@ export default function DaySummary({ summary, onContinue }) {
             Pond {Math.round(summary.pond.volume)} m³ · health {Math.round(summary.pond.health)}
           </p>
         ) : null}
-        {summary.materialsSpent ? <p className="mt-2">Materials {summary.materialsSpent} from maintenance</p> : null}
+        {summary.materialsSpent ? <p className="mt-2">Materials {formatMoney(summary.materialsSpent)} from maintenance</p> : null}
         {summary.outbreaks?.length ? (
           <p className="mt-2">
             Outbreak: {summary.outbreaks.map((item) => `${SURFACE_LABELS[item.surface]} −${item.drop}`).join(', ')}
@@ -88,7 +89,7 @@ export default function DaySummary({ summary, onContinue }) {
         ) : null}
         {summary.seasonClose ? (
           <p className="mt-2">
-            Season closed. Maintenance leftover {Math.round(summary.seasonClose.leftover)} rolled to cash.
+            Season closed. Maintenance leftover {formatMoney(summary.seasonClose.leftover)} rolled to cash.
             {summary.seasonClose.insolvent ? ' In the red.' : ''}
             {summary.seasonClose.dismissed ? ' Dismissed.' : ''}
           </p>
@@ -97,7 +98,7 @@ export default function DaySummary({ summary, onContinue }) {
           <p className="mt-2">
             Tournament {summary.tournament.band}
             {summary.tournament.rained ? ' (rained off the top bands)' : ''} · score{' '}
-            {Math.round(summary.tournament.score)} · paid {summary.tournament.pay} · sat{' '}
+            {Math.round(summary.tournament.score)} · paid {formatMoney(summary.tournament.pay)} · sat{' '}
             {summary.tournament.satisfaction}
           </p>
         ) : null}

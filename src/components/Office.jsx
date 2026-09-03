@@ -13,6 +13,7 @@ import {
 } from '../data/constants.js';
 import { canTakeLoan, maxLoan } from '../engine/budget.js';
 import { unreadCount } from '../engine/mail.js';
+import { formatMoney } from '../engine/format.js';
 import { canPlanTask } from '../engine/gameState.js';
 import SeasonStart from './SeasonStart.jsx';
 import SectionTabs from './SectionTabs.jsx';
@@ -62,7 +63,7 @@ export default function Office({
       <SectionTabs tabs={OFFICE_TABS} labels={labels} value={tab} onChange={onTab} />
 
       <p>
-        Maintenance {Math.round(state.maintenanceBudget)} · Capital {Math.round(state.capitalBudget)} · Cash {Math.round(state.cash)}
+        Maintenance {formatMoney(state.maintenanceBudget)} · Capital {formatMoney(state.capitalBudget)} · Cash {formatMoney(state.cash)}
       </p>
       <p className="mt-1 text-[var(--sand)]">
         {state.holes}-hole course · Satisfaction {Math.round(state.satisfaction)} · GM standing {Math.round(state.gmStanding)}
@@ -87,19 +88,19 @@ export default function Office({
               onClick={() => onLoan(cap)}
               className="border border-[var(--sand)] px-4 py-2 disabled:opacity-40"
             >
-              Loan {cap} at {LOAN_INTEREST * 100}% (max {LOAN_LIMIT_MULTIPLIER}× last season)
+              Loan {formatMoney(cap)} at {LOAN_INTEREST * 100}% (max {LOAN_LIMIT_MULTIPLIER}× last season)
             </button>
           </div>
           {state.loan ? (
             <p className="mt-2 text-sm">
-              Loan on the books. Repay {state.loan.repay} from {state.loan.dueSeason} year {state.loan.dueYear} maintenance.
+              Loan on the books. Repay {formatMoney(state.loan.repay)} from {state.loan.dueSeason} year {state.loan.dueYear} maintenance.
             </p>
           ) : (
-            <p className="mt-2 text-sm text-[var(--sand)]">Last season revenue {state.lastSeasonRevenue ?? 0}.</p>
+            <p className="mt-2 text-sm text-[var(--sand)]">Last season revenue {formatMoney(state.lastSeasonRevenue ?? 0)}.</p>
           )}
           {state.lastSnap ? (
             <p className="mt-2 text-sm">
-              Last snap: {state.lastSnap.band} · score {Math.round(state.lastSnap.score)} · paid {state.lastSnap.pay}
+              Last snap: {state.lastSnap.band} · score {Math.round(state.lastSnap.score)} · paid {formatMoney(state.lastSnap.pay)}
             </p>
           ) : null}
         </>
@@ -139,7 +140,7 @@ export default function Office({
                   className="block border border-[var(--sand)] px-4 py-2 text-left disabled:opacity-40"
                 >
                   <div className="font-semibold">
-                    {spec.name} · {spec.cost} capital · {spec.days} days
+                    {spec.name} · {formatMoney(spec.cost)} capital · {spec.days} days
                   </div>
                   <div className="text-sm text-[var(--sand)]">
                     Completes day {state.day + spec.days}. {absorbNote(state.season)}
@@ -157,7 +158,7 @@ export default function Office({
               onClick={onBuyPicker}
               className="mt-3 border border-[var(--sand)] px-4 py-2 disabled:opacity-40"
             >
-              Autonomous picker · {AUTO_PICKER_COST} capital
+              Autonomous picker · {formatMoney(AUTO_PICKER_COST)} capital
             </button>
           ) : null}
           {state.hasAutoPicker ? <p className="mt-2 text-sm">Autonomous picker on the range.</p> : null}

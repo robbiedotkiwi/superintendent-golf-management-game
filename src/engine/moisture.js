@@ -35,6 +35,7 @@ import {
 import { HOLES } from '../data/course.js';
 import { lerpHex } from './color.js';
 import { hocFactor } from './mowing.js';
+import { formatMoney } from './format.js';
 
 const WINDY_WEATHER = [WEATHER_FINE, WEATHER_OVERCAST];
 
@@ -249,7 +250,7 @@ export function handWaterMinutes(state) {
 export function canBuyGreensSensors(state) {
   if (state.hasGreensSensors) return { ok: false, reason: 'Greens already have sensors.' };
   if ((state.capitalBudget ?? 0) < GREENS_SENSORS_COST) {
-    return { ok: false, reason: `Needs ${GREENS_SENSORS_COST} capital, only ${state.capitalBudget} posted.` };
+    return { ok: false, reason: `Needs ${formatMoney(GREENS_SENSORS_COST)} capital, only ${formatMoney(state.capitalBudget)} posted.` };
   }
   return { ok: true };
 }
@@ -257,7 +258,7 @@ export function canBuyGreensSensors(state) {
 export function canBuyTurfRad(state) {
   if (state.hasTurfRad) return { ok: false, reason: 'TurfRad is already on the mowers.' };
   if ((state.capitalBudget ?? 0) < TURFRAD_COST) {
-    return { ok: false, reason: `Needs ${TURFRAD_COST} capital, only ${state.capitalBudget} posted.` };
+    return { ok: false, reason: `Needs ${formatMoney(TURFRAD_COST)} capital, only ${formatMoney(state.capitalBudget)} posted.` };
   }
   return { ok: true };
 }

@@ -3,6 +3,7 @@ import {
   COMPLAINT_GREENS_QUALITY,
   SURFACE_KEYS,
 } from '../data/constants.js';
+import { formatMoney } from './format.js';
 
 export function emptyDaysSinceWorked() {
   return SURFACE_KEYS.reduce((next, key) => {
@@ -68,7 +69,7 @@ export function gmSeasonMail({ leftover, insolvent, yearChanged, maintenance, ca
       from: 'gm',
       kind: 'budget',
       subject: yearChanged ? 'Year budgets posted' : 'Season maintenance posted',
-      body: `Maintenance grant ${Math.round(maintenance)}.${yearChanged ? ` Capital grant ${Math.round(capital)}.` : ' Unspent capital is gone.'} Unspent maintenance ${Math.round(leftover)} rolled to cash.`,
+      body: `Maintenance grant ${formatMoney(maintenance)}.${yearChanged ? ` Capital grant ${formatMoney(capital)}.` : ' Unspent capital is gone.'} Unspent maintenance ${formatMoney(leftover)} rolled to cash.`,
     },
   ];
   if (insolvent) {

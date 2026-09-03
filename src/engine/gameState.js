@@ -93,6 +93,7 @@ import { clampAngle, clampHoc, hasHoc, hasPattern, mergeSurfaceFields, angleDelt
 import { courseBounds, holesForCount } from '../data/course.js';
 import { clampView, defaultView } from './view.js';
 import { defaultSectionTabs, normalizeSection, normalizeTabs, tabListForSection } from './section.js';
+import { formatMoney } from './format.js';
 
 export function createInitialState() {
   const calendar = calendarFromDay(STARTING_DAY);
@@ -304,7 +305,7 @@ export function canPlanTask(state, taskId, workerId) {
       return sum + (planned?.materialsCost ?? 0);
     }, 0);
     if (already + task.materialsCost > (state.maintenanceBudget ?? 0)) {
-      return { ok: false, reason: `Needs ${task.materialsCost} from the maintenance budget.` };
+      return { ok: false, reason: `Needs ${formatMoney(task.materialsCost)} from the maintenance budget.` };
     }
   }
 

@@ -1,3 +1,5 @@
+import { formatMoney } from '../engine/format.js';
+
 export default function YearReview({ review, onContinue }) {
   if (!review) return null;
   const points = review.conditions ?? [];
@@ -34,14 +36,14 @@ export default function YearReview({ review, onContinue }) {
           <ul className="mt-2 space-y-1">
             {review.tournaments.map((item) => (
               <li key={`${item.day}-${item.band}`}>
-                Day {item.day}: {item.band} · {Math.round(item.score)} · paid {item.pay}
+                Day {item.day}: {item.band} · {Math.round(item.score)} · paid {formatMoney(item.pay)}
               </li>
             ))}
           </ul>
         )}
 
         <h3 className="mt-6 text-lg font-semibold">Money spent</h3>
-        <p>Maintenance {Math.round(review.maintenanceSpent)} · Capital {Math.round(review.capitalSpent)}</p>
+        <p>Maintenance {formatMoney(review.maintenanceSpent)} · Capital {formatMoney(review.capitalSpent)}</p>
 
         <h3 className="mt-6 text-lg font-semibold">Staff retained</h3>
         {(review.staffRetained ?? []).length === 0 ? (

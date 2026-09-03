@@ -23,6 +23,7 @@ import {
   TASK_TIME_MULT_18,
 } from '../data/constants.js';
 import { bumpCapitalSpent } from './history.js';
+import { formatMoney } from './format.js';
 
 export const PROJECTS = {
   [PROJECT_EXPAND_18]: {
@@ -100,7 +101,7 @@ export function canStartProject(state, id) {
     return { ok: false, hidden: true, reason: `Offered above satisfaction ${spec.minSatisfaction}.` };
   }
   if ((state.capitalBudget ?? 0) < spec.cost) {
-    return { ok: false, reason: `Needs ${spec.cost} capital, only ${Math.round(state.capitalBudget ?? 0)} posted.` };
+    return { ok: false, reason: `Needs ${formatMoney(spec.cost)} capital, only ${formatMoney(state.capitalBudget ?? 0)} posted.` };
   }
   return { ok: true };
 }
@@ -139,7 +140,7 @@ export function canBuyAutoPicker(state) {
   if (!state.hasDrivingRange) return { ok: false, reason: 'Build the range first.' };
   if (state.hasAutoPicker) return { ok: false, reason: 'Already picking.' };
   if ((state.capitalBudget ?? 0) < AUTO_PICKER_COST) {
-    return { ok: false, reason: `Needs ${AUTO_PICKER_COST} capital.` };
+    return { ok: false, reason: `Needs ${formatMoney(AUTO_PICKER_COST)} capital.` };
   }
   return { ok: true };
 }

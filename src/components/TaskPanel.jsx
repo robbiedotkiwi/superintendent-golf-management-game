@@ -17,6 +17,7 @@ import { hasHoc, hasPattern, inHocStressBand } from '../engine/mowing.js';
 import { allGreenIds } from '../engine/moisture.js';
 import { inPrepWindow } from '../engine/tournament.js';
 import { canPlanTask } from '../engine/gameState.js';
+import { formatMoney } from '../engine/format.js';
 import { presetsForSurface } from '../engine/presets.js';
 import { GreensMoistureList } from './MoistureReadout.jsx';
 
@@ -206,7 +207,7 @@ export default function TaskPanel({
           return (
             <section key={task.id} className="border border-[var(--sand)] p-3">
               <h3 className="text-lg font-semibold">{task.name}</h3>
-              {task.materialsCost ? <p className="text-sm text-[var(--sand)]">Materials {task.materialsCost}</p> : null}
+              {task.materialsCost ? <p className="text-sm text-[var(--sand)]">Materials {formatMoney(task.materialsCost)}</p> : null}
               {machine ? <p className="text-sm text-[var(--sand)]">Using {machine.name}</p> : null}
               {blocked.map((item) => (
                 <p key={item.machine.id} className="text-sm text-[var(--sand)]">

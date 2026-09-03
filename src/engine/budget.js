@@ -14,6 +14,7 @@ import {
 } from '../data/constants.js';
 import { getMachine } from '../data/equipment.js';
 import { stampOwnedMachine } from './equipment.js';
+import { formatMoney } from './format.js';
 
 export function gmStandingMultiplier(standing) {
   return GM_STANDING_MULT_MIN + (standing / GM_STANDING_MAX) * (GM_STANDING_MULT_MAX - GM_STANDING_MULT_MIN);
@@ -56,7 +57,7 @@ export function canTakeLoan(state, amount) {
   if (state.loan) return { ok: false, reason: 'Already carrying a loan.' };
   const cap = maxLoan(state.lastSeasonRevenue);
   if (cap <= 0) return { ok: false, reason: 'No last-season revenue to borrow against.' };
-  if (amount <= 0 || amount > cap) return { ok: false, reason: `Capped at ${cap}.` };
+  if (amount <= 0 || amount > cap) return { ok: false, reason: `Capped at ${formatMoney(cap)}.` };
   return { ok: true, cap };
 }
 

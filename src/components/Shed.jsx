@@ -28,7 +28,7 @@ import {
   isMachineAvailable,
   machineDailyMinutesOf,
 } from '../engine/equipment.js';
-import SectionTabs from './SectionTabs.jsx';
+import { formatMoney } from '../engine/format.js';
 
 const SURFACE_ORDER = ['greens', 'tees', 'fairways', 'rough'];
 
@@ -65,7 +65,7 @@ export default function Shed({
       </div>
       <SectionTabs tabs={SHED_TABS} labels={SHED_TAB_LABELS} value={tab} onChange={onTab} />
       <p className="mb-6 text-[var(--sand)]">
-        Cash {Math.round(state.cash)} · Capital {Math.round(state.capitalBudget)} · Maintenance {Math.round(state.maintenanceBudget)}
+        Cash {formatMoney(state.cash)} · Capital {formatMoney(state.capitalBudget)} · Maintenance {formatMoney(state.maintenanceBudget)}
       </p>
 
       {tab === SHED_TAB_YARD ? (
@@ -122,7 +122,7 @@ export default function Shed({
                     onClick={() => onSendGrind(id)}
                     className="border border-[var(--sand)] px-3 py-2 disabled:opacity-40"
                   >
-                    Send away ({GRIND_AWAY_COST}, {GRIND_AWAY_DAYS} days)
+                    Send away ({formatMoney(GRIND_AWAY_COST)}, {GRIND_AWAY_DAYS} days)
                   </button>
                 ) : null}
                 {machine.reel && state.hasFoleyGrinder ? (
@@ -178,7 +178,7 @@ export default function Shed({
                   {machine.name}
                   {machine.brand ? ` · ${machine.brand}` : ''}
                 </h3>
-                <p>{owned ? 'Owned' : machine.cost}</p>
+                <p>{owned ? 'Owned' : formatMoney(machine.cost)}</p>
               </div>
               <p className="mt-1 text-sm text-[var(--sand)]">
                 {SURFACE_ORDER.map((surface) => `${surface}: ${capability(machine, surface)}`).join(' · ')}
@@ -201,7 +201,7 @@ export default function Shed({
                     onClick={() => onLease(machine.id)}
                     className="border border-[var(--sand)] px-3 py-2 disabled:opacity-40"
                   >
-                    Lease · {leaseCost(machine.id)} / season ({LEASE_RATE * 100}%)
+                    Lease · {formatMoney(leaseCost(machine.id))} / season ({LEASE_RATE * 100}%)
                   </button>
                 </div>
               )}
@@ -221,7 +221,7 @@ export default function Shed({
               onClick={onBuyFoley}
               className="mt-3 bg-[var(--machine-orange)] px-3 py-2 font-semibold disabled:opacity-40"
             >
-              {foleyBuy.ok ? `Buy · ${FOLEY_GRINDER_COST}` : foleyBuy.reason}
+              {foleyBuy.ok ? `Buy · ${formatMoney(FOLEY_GRINDER_COST)}` : foleyBuy.reason}
             </button>
           )}
         </section>
