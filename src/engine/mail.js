@@ -1,11 +1,8 @@
 import {
   DAYS_PER_WEEK,
-  BUNKER_NEGLECT_DAYS,
   COMPLAINT_GREENS_QUALITY,
-  COMPLAINT_ROUGH_DAYS,
   SURFACE_KEYS,
 } from '../data/constants.js';
-import { SURFACE_LABELS } from '../data/tasks.js';
 
 export function emptyDaysSinceWorked() {
   return SURFACE_KEYS.reduce((next, key) => {
@@ -51,28 +48,12 @@ export function markMailRead(state, id) {
   };
 }
 
-export function golferMail(state, daysSinceWorked) {
+export function golferMail(state) {
   const mail = [];
-  if ((daysSinceWorked.bunkers ?? 0) > 0 && (daysSinceWorked.bunkers ?? 0) % BUNKER_NEGLECT_DAYS === 0) {
-    mail.push({
-      from: 'golfer',
-      kind: 'bunkers',
-      subject: 'Bunkers are a disgrace',
-      body: `The ${SURFACE_LABELS.bunkers.toLowerCase()} have not been raked in ${daysSinceWorked.bunkers} days.`,
-    });
-  }
-  if ((daysSinceWorked.rough ?? 0) > 0 && (daysSinceWorked.rough ?? 0) % COMPLAINT_ROUGH_DAYS === 0) {
-    mail.push({
-      from: 'golfer',
-      kind: 'rough',
-      subject: 'Rough is eating balls',
-      body: 'The rough has not been cut. People are losing golf balls and patience.',
-    });
-  }
   if (state.surfaces.greens.quality < COMPLAINT_GREENS_QUALITY && meetingDue(state.day)) {
     mail.push({
       from: 'golfer',
-      kind: 'greens',
+      kind: 'greensQuality',
       subject: 'Greens are slow',
       body: 'The greens are slow and bumpy. Something needs to happen.',
     });

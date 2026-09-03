@@ -413,6 +413,16 @@ export const INSOLVENT_DISMISS_STREAK = 2;
 export const BUNKER_NEGLECT_DAYS = 7;
 export const COMPLAINT_GREENS_QUALITY = 45;
 export const COMPLAINT_ROUGH_DAYS = 7;
+export const NEGLECT_THRESHOLD = {
+  greens: 2,
+  tees: 4,
+  fairways: 4,
+  rough: 10,
+  bunkers: 3,
+};
+export const NEGLECT_GM_MULTIPLIER = 2;
+export const NEGLECT_SATISFACTION_PENALTY = 2;
+export const NEGLECT_GOLFER_AFTER = 1;
 export const TOURNAMENT_WEIGHTS = {
   greens: 0.55,
   tees: 0.15,

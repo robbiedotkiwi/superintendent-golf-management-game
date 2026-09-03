@@ -11,6 +11,7 @@ import { SURFACE_LABELS, tasksForSurface, taskUsesMachine } from '../data/tasks.
 import { durationForTask, assignWorker, certifiedPresent, workerById } from '../engine/assignment.js';
 import { ineligibleMachines, pickMachine, surfaceCeiling } from '../engine/equipment.js';
 import { hasHoc, hasPattern, inHocStressBand } from '../engine/mowing.js';
+import { daysSinceLastWorked } from '../engine/neglect.js';
 import { inPrepWindow } from '../engine/tournament.js';
 import { canPlanTask } from '../engine/gameState.js';
 
@@ -54,6 +55,9 @@ export default function TaskPanel({
             <div className="text-sm text-[var(--sand)]">Quality</div>
             <div className="font-condensed text-6xl font-bold leading-none">{formatQuality(quality)}</div>
             <p className="mt-1 text-sm text-[var(--sand)]">Ceiling {formatQuality(surfaceCeiling(state, surface))}</p>
+            <p className="mt-1 text-sm text-[var(--sand)]">
+              {daysSinceLastWorked(state, surface)} days since last {surface === 'bunkers' ? 'rake' : 'cut'}
+            </p>
             {state.disease?.[surface] ? (
               <p className="mt-2 text-sm">
                 Disease pressure {Math.round(state.disease[surface].pressure)}

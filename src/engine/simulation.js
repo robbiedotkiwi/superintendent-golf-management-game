@@ -20,6 +20,8 @@ import {
   ROLLER_GAIN_BONUS,
   SEASON_GROWTH,
   SURFACE_KEYS,
+  SATISFACTION_MAX,
+  SATISFACTION_MIN,
   WEATHER_HEAVY_RAIN,
 } from '../data/constants.js';
 import { PLAYER_ID } from '../data/constants.js';
@@ -46,10 +48,11 @@ import { resolveIrrigation, summerUnderwaterDecay } from './irrigation.js';
 import { rollMorningWithRng } from './weather.js';
 import { closeSeason } from './budget.js';
 import { golferMail, gmSeasonMail, gmTournamentRequestMail, meetingDue, pushMail, tickDaysSinceWorked } from './mail.js';
+import { neglectMail, neglectSatisfactionDrain } from './neglect.js';
 import { applyScheduledTournament } from './tournament.js';
 import { tickProjects } from './projects.js';
 import { buildYearReview, emptyYearRecord, hiredIds, recordYearDay } from './history.js';
-import { clampStanding, tickSatisfaction } from './satisfaction.js';
+import { clampRange, clampStanding, tickSatisfaction } from './satisfaction.js';
 import { GM_MEETING_SKIP_STANDING } from '../data/constants.js';
 
 export function clampQuality(value) {
@@ -322,10 +325,18 @@ export function resolveDay(state) {
     nextMailId: state.nextMailId ?? 1,
     pond: irrigation.pond,
   };
-  for (const mail of golferMail(mailed, daysSinceWorked)) {
+  for (const mail of golferMail(mailed)) {
     mailed = pushMail(mailed, mail);
   }
-  const satisfaction = tickSatisfaction(mailed);
+  const neglectMorning = { ...mailed, day: state.day + 1 };
+  for (const mail of neglectMail(neglectMorning)) {
+    mailed = pushMail(mailed, mail);
+  }
+  const satisfaction = clampRange(
+    tickSatisfaction(mailed) - neglectSatisfactionDrain(neglectMorning),
+    SATISFACTION_MIN,
+    SATISFACTION_MAX,
+  );
 
   const tournament = applyScheduledTournament(
     {

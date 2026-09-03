@@ -105,4 +105,6 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Double-cut greens is mowing, so it uses `TASK_MINUTES.doubleCutGreens` × height × pattern, and it applies mowing gain as well as the prep bonus.
 - Slider steps: 0.1 mm on greens, 1 mm on tees, fairways and rough. Old saves get default height, stripes at 0°, `lastMownDay` / `lastRakedDay` of day 1, `moisture: null`, and `view: { zoom: 1, panX: 0, panY: 0 }`.
 - Planned-task `level` is stripped on migrate. Changing height or pattern recomputes planned mowing minutes and drops that cut if it no longer fits the worker.
+- Days since last worked is `day - lastMownDay` (or `lastRakedDay` for bunkers) on the current morning. Neglect mail and the satisfaction drain are evaluated against tomorrow morning during end-of-day resolve so the inbox matches the number the player sees after End day.
+- A golfer email fires on the first morning past the threshold (`daysSince === threshold + 1`). Greens therefore complain after three skipped days; rough does not complain after ten. A GM email and −2 satisfaction per neglected surface per day start when `daysSince` reaches double the threshold.
 
