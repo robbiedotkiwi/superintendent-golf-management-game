@@ -11,10 +11,13 @@ import YearReview from './components/YearReview.jsx';
 import Shed from './components/Shed.jsx';
 import {
   HOLE_COUNT,
+  CREW_TAB_DEFAULT,
+  OFFICE_TAB_DEFAULT,
   SECTION_CREW,
   SECTION_MAP,
   SECTION_OFFICE,
   SECTION_SHED,
+  SHED_TAB_DEFAULT,
   WEATHER_FINE,
   machineOrange,
   paint,
@@ -61,6 +64,14 @@ function paletteStyle() {
   };
 }
 
+function defaultTabs() {
+  return {
+    [SECTION_OFFICE]: OFFICE_TAB_DEFAULT,
+    [SECTION_CREW]: CREW_TAB_DEFAULT,
+    [SECTION_SHED]: SHED_TAB_DEFAULT,
+  };
+}
+
 export default function App() {
   const [screen, setScreen] = useState('entry');
   const [savePresent, setSavePresent] = useState(() => hasSave());
@@ -69,6 +80,7 @@ export default function App() {
   const [summary, setSummary] = useState(null);
   const [playout, setPlayout] = useState(null);
   const [view, setView] = useState(SECTION_MAP);
+  const [tabs, setTabs] = useState(defaultTabs);
   const seenLog = useRef(state.log.length);
 
   useEffect(() => {
@@ -127,6 +139,7 @@ export default function App() {
     setSelected(null);
     setSummary(null);
     setPlayout(null);
+    setTabs(defaultTabs());
     seenLog.current = 0;
     setView(SECTION_MAP);
     setScreen('game');
@@ -140,6 +153,7 @@ export default function App() {
     setSelected(null);
     setSummary(null);
     setPlayout(null);
+    setTabs(defaultTabs());
     setView(SECTION_MAP);
     setScreen('game');
   }
@@ -158,6 +172,8 @@ export default function App() {
           summary={summary}
           playout={playout}
           view={view}
+          tabs={tabs}
+          onTab={(section, tab) => setTabs((current) => ({ ...current, [section]: tab }))}
           minutesRemaining={minutesRemaining}
           minutesUsed={minutesUsed}
           minutesCapacity={minutesCapacity}
@@ -248,6 +264,8 @@ function GameScreen({
   summary,
   playout,
   view,
+  tabs,
+  onTab,
   minutesRemaining,
   minutesUsed,
   minutesCapacity,
@@ -384,6 +402,8 @@ function GameScreen({
         {view === SECTION_SHED ? (
           <Shed
             state={state}
+            tab={tabs[SECTION_SHED]}
+            onTab={(tab) => onTab(SECTION_SHED, tab)}
             onBack={onCloseShed}
             onBuy={onBuy}
             onBuyFoley={onBuyFoley}
@@ -396,6 +416,8 @@ function GameScreen({
         ) : view === SECTION_CREW ? (
           <Crew
             state={state}
+            tab={tabs[SECTION_CREW]}
+            onTab={(tab) => onTab(SECTION_CREW, tab)}
             onBack={onCloseShed}
             onHire={onHire}
             onTrain={onTrain}
@@ -405,6 +427,8 @@ function GameScreen({
         ) : view === SECTION_OFFICE ? (
           <Office
             state={state}
+            tab={tabs[SECTION_OFFICE]}
+            onTab={(tab) => onTab(SECTION_OFFICE, tab)}
             onBack={onCloseShed}
             onSnap={onSnap}
             onLoan={onLoan}

@@ -611,3 +611,29 @@ export const SECTION_OFFICE = 'office';
 export const SECTION_CREW = 'crew';
 export const SECTION_SHED = 'shed';
 export const SECTIONS = [SECTION_MAP, SECTION_OFFICE, SECTION_CREW, SECTION_SHED];
+export const OFFICE_TAB_INBOX = 'inbox';
+export const OFFICE_TAB_MONEY = 'money';
+export const OFFICE_TAB_PROJECTS = 'projects';
+export const OFFICE_TABS = [OFFICE_TAB_INBOX, OFFICE_TAB_MONEY, OFFICE_TAB_PROJECTS];
+export const OFFICE_TAB_DEFAULT = OFFICE_TAB_INBOX;
+export const OFFICE_TAB_LABELS = {
+  [OFFICE_TAB_INBOX]: 'Inbox',
+  [OFFICE_TAB_MONEY]: 'Money',
+  [OFFICE_TAB_PROJECTS]: 'Projects',
+};
+export const CREW_TAB_ROSTER = 'roster';
+export const CREW_TAB_HIRE = 'hire';
+export const CREW_TABS = [CREW_TAB_ROSTER, CREW_TAB_HIRE];
+export const CREW_TAB_DEFAULT = CREW_TAB_ROSTER;
+export const CREW_TAB_LABELS = {
+  [CREW_TAB_ROSTER]: 'Roster',
+  [CREW_TAB_HIRE]: 'Hire',
+};
+export const SHED_TAB_YARD = 'yard';
+export const SHED_TAB_BUY = 'buy';
+export const SHED_TABS = [SHED_TAB_YARD, SHED_TAB_BUY];
+export const SHED_TAB_DEFAULT = SHED_TAB_YARD;
+export const SHED_TAB_LABELS = {
+  [SHED_TAB_YARD]: 'Yard',
+  [SHED_TAB_BUY]: 'Buy',
+};

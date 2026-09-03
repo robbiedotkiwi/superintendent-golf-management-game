@@ -5,6 +5,11 @@ import {
   GRIND_AWAY_DAYS,
   LEASE_RATE,
   REPAIR_MINUTES,
+  SHED_TAB_BUY,
+  SHED_TAB_DEFAULT,
+  SHED_TAB_LABELS,
+  SHED_TAB_YARD,
+  SHED_TABS,
   WEAR_MAX,
   WEAR_THRESHOLD,
 } from '../data/constants.js';
@@ -18,6 +23,7 @@ import {
   canSendGrind,
   isMachineAvailable,
 } from '../engine/equipment.js';
+import SectionTabs from './SectionTabs.jsx';
 
 const SURFACE_ORDER = ['greens', 'tees', 'fairways', 'rough'];
 
@@ -30,6 +36,8 @@ function capability(machine, surface) {
 
 export default function Shed({
   state,
+  tab = SHED_TAB_DEFAULT,
+  onTab,
   onBack,
   onBuy,
   onBuyFoley,
@@ -50,10 +58,13 @@ export default function Shed({
           Back to the course
         </button>
       </div>
+      <SectionTabs tabs={SHED_TABS} labels={SHED_TAB_LABELS} value={tab} onChange={onTab} />
       <p className="mb-6 text-[var(--sand)]">
         Cash {Math.round(state.cash)} · Capital {Math.round(state.capitalBudget)} · Maintenance {Math.round(state.maintenanceBudget)}
       </p>
 
+      {tab === SHED_TAB_YARD ? (
+        <>
       <h2 className="font-condensed text-3xl">In the shed</h2>
       <div className="mt-3 space-y-4">
         {state.ownedMachines.map((id) => {
@@ -135,7 +146,11 @@ export default function Shed({
           );
         })}
       </div>
+        </>
+      ) : null}
 
+      {tab === SHED_TAB_BUY ? (
+        <>
       <h2 className="mt-10 font-condensed text-3xl">Buy</h2>
       <div className="mt-3 space-y-3">
         {shop.map((machine) => {
@@ -196,6 +211,8 @@ export default function Shed({
           )}
         </section>
       </div>
+        </>
+      ) : null}
     </div>
   );
 }

@@ -129,4 +129,5 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - `prefers-reduced-motion` takes the skip path. In-progress film is local React state and is not saved; reload shows the already-resolved morning.
 - Speed/skip live on the save object so old saves pick up defaults. Custom presets and section/tab wait for later phases.
 - Office, Crew and Shed replace the map pane only. The sidebar stays mounted. End day returns to the map so the day film has a course to play on. Location ids stay `course` / `office` / `crew` / `shed` so existing view strings keep working.
+- Office tabs are Inbox (mail + GM meeting), Money, Projects. Crew is Roster / Hire. Shed is Yard / Buy. Tab state lives in App for now and is not saved until the persist phase.
 

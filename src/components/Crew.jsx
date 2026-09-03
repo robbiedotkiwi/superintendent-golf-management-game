@@ -1,4 +1,9 @@
 import {
+  CREW_TAB_DEFAULT,
+  CREW_TAB_HIRE,
+  CREW_TAB_LABELS,
+  CREW_TAB_ROSTER,
+  CREW_TABS,
   DAYS_PER_WEEK,
   PLAYER_ID,
   TRAINING_COST,
@@ -7,9 +12,12 @@ import {
   VOLUNTEER_MINUTES,
 } from '../data/constants.js';
 import { dayOfWeek } from '../engine/staff.js';
+import SectionTabs from './SectionTabs.jsx';
 
 export default function Crew({
   state,
+  tab = CREW_TAB_DEFAULT,
+  onTab,
   onBack,
   onHire,
   onTrain,
@@ -26,7 +34,10 @@ export default function Crew({
           Back to the course
         </button>
       </div>
+      <SectionTabs tabs={CREW_TABS} labels={CREW_TAB_LABELS} value={tab} onChange={onTab} />
 
+      {tab === CREW_TAB_ROSTER ? (
+        <>
       <label className="mb-6 flex items-center gap-3">
         <input
           type="checkbox"
@@ -88,7 +99,11 @@ export default function Crew({
           </button>
         ))}
       </div>
+        </>
+      ) : null}
 
+      {tab === CREW_TAB_HIRE ? (
+        <>
       <h2 className="mt-10 font-condensed text-3xl">Hire</h2>
       <p className="text-sm text-[var(--sand)]">List refreshes each season.</p>
       <div className="mt-3 space-y-3">
@@ -109,6 +124,8 @@ export default function Crew({
           </section>
         ))}
       </div>
+        </>
+      ) : null}
     </div>
   );
 }
