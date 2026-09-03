@@ -4,7 +4,7 @@
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { HOLE_COUNT } from '../src/data/constants.js';
+import { HOLE_COUNT, POND_CX, POND_CY, TEE_MARKER_FONT, TEE_MARKER_RADIUS } from '../src/data/constants.js';
 import { HOLES, SHED_HEIGHT, SHED_WIDTH, SHED_X, SHED_Y, courseBoundaryPath } from '../src/data/course.js';
 import { boundaryFill, healthyFill, luminance } from '../src/engine/color.js';
 
@@ -45,6 +45,12 @@ const centroid = HOLES.reduce(
   { x: 0, y: 0 },
 );
 assert.ok(SHED_Y > centroid.y, 'shed sits on the south edge, not in a ring centre');
+assert.ok(
+  dist(POND_CX, POND_CY, centroid.x, centroid.y) > 80,
+  'pond is a side hazard, not the hub of a ring',
+);
+assert.ok(TEE_MARKER_RADIUS >= 18, 'tee markers large enough to read when scaled');
+assert.ok(TEE_MARKER_FONT >= 20, 'tee numbers large enough to read when scaled');
 
 const boundary = courseBoundaryPath(HOLES);
 assert.match(boundary, /^M/);
@@ -58,6 +64,8 @@ assert.match(map, /courseBoundaryPath/);
 assert.match(map, /FLAG_POLE/);
 assert.match(map, /SHED_ROOF/);
 assert.match(map, /\{hole\.id\}/);
+assert.match(map, /hole\.marker/);
+assert.match(map, /TEE_MARKER_RADIUS/);
 assert.match(map, /\{holes\}-hole course/);
 
 console.log('ui phase3 checks passed');

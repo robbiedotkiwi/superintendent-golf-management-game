@@ -17,7 +17,8 @@ import {
   RANGE_WIDTH,
   RANGE_X,
   RANGE_Y,
-  TEE_MARKER_OFFSET,
+  TEE_MARKER_FONT,
+  TEE_MARKER_RADIUS,
 } from '../data/constants.js';
 import {
   courseBoundaryPath,
@@ -122,7 +123,14 @@ export default function CourseMap({
           height={SHED_DOOR_HEIGHT}
           fill="var(--soil)"
         />
-        <text x={SHED_X + SHED_WIDTH / 2} y={SHED_Y + 18} textAnchor="middle" fill="var(--soil)" fontSize="12">
+        <text
+          x={SHED_X + SHED_WIDTH / 2}
+          y={SHED_Y + 22}
+          textAnchor="middle"
+          fill="var(--soil)"
+          fontSize="18"
+          fontWeight="700"
+        >
           Shed
         </text>
       </g>
@@ -236,18 +244,20 @@ export default function CourseMap({
       {layout.map((hole) => (
         <g key={`marker-${hole.id}`} pointerEvents="none">
           <circle
-            cx={hole.tee.cx - TEE_MARKER_OFFSET}
-            cy={hole.tee.cy - TEE_MARKER_OFFSET}
-            r="9"
-            fill="var(--soil)"
-            stroke="var(--paint)"
+            cx={hole.marker.cx}
+            cy={hole.marker.cy}
+            r={TEE_MARKER_RADIUS}
+            fill="var(--paint)"
+            stroke="var(--soil)"
+            strokeWidth="2"
           />
           <text
-            x={hole.tee.cx - TEE_MARKER_OFFSET}
-            y={hole.tee.cy - TEE_MARKER_OFFSET + 4}
+            x={hole.marker.cx}
+            y={hole.marker.cy + 1}
             textAnchor="middle"
-            fill="var(--paint)"
-            fontSize="11"
+            dominantBaseline="middle"
+            fill="var(--soil)"
+            fontSize={TEE_MARKER_FONT}
             fontWeight="700"
           >
             {hole.id}
@@ -280,7 +290,7 @@ export default function CourseMap({
             <line x1={POND_CX} y1={POND_CY - AERATOR_ARM} x2={POND_CX} y2={POND_CY + AERATOR_ARM} />
           </g>
         ) : null}
-        <text x={POND_CX} y={POND_CY + POND_RY + POND_LABEL_OFFSET} textAnchor="middle" fill="var(--sand)" fontSize="14">
+        <text x={POND_CX} y={POND_CY + POND_RY + POND_LABEL_OFFSET} textAnchor="middle" fill="var(--sand)" fontSize="18">
           Pond
         </text>
       </g>
@@ -318,7 +328,8 @@ export default function CourseMap({
         y={bounds.minY + 28}
         textAnchor="middle"
         fill="var(--sand)"
-        fontSize="16"
+        fontSize="22"
+        fontWeight="700"
         pointerEvents="none"
       >
         {holes}-hole course

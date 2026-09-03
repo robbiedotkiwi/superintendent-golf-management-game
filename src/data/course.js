@@ -22,20 +22,21 @@ import {
   RANGE_X,
   RANGE_Y,
   ROUGH_HALF_WIDTH,
+  TEE_MARKER_OFFSET,
   TEE_RX,
   TEE_RY,
 } from './constants.js';
 
 const HOLE_LAYOUT = [
-  { id: 1, tee: [440, 580], green: [700, 460], curve: 48, bunker: false },
-  { id: 2, tee: [730, 440], green: [800, 220], curve: -52, bunker: true },
-  { id: 3, tee: [780, 190], green: [530, 70], curve: 55, bunker: false },
-  { id: 4, tee: [500, 70], green: [240, 130], curve: -42, bunker: false },
-  { id: 5, tee: [210, 160], green: [130, 360], curve: 68, bunker: true },
-  { id: 6, tee: [150, 390], green: [260, 520], curve: -48, bunker: false },
-  { id: 7, tee: [300, 540], green: [520, 500], curve: 36, bunker: true },
-  { id: 8, tee: [550, 480], green: [640, 300], curve: -62, bunker: false },
-  { id: 9, tee: [620, 280], green: [490, 555], curve: 70, bunker: false },
+  { id: 1, tee: [400, 570], green: [540, 410], curve: 42, bunker: false },
+  { id: 2, tee: [570, 380], green: [740, 220], curve: -48, bunker: true },
+  { id: 3, tee: [720, 190], green: [530, 65], curve: 52, bunker: false },
+  { id: 4, tee: [500, 50], green: [220, 90], curve: -28, bunker: false },
+  { id: 5, tee: [190, 120], green: [110, 330], curve: 58, bunker: true },
+  { id: 6, tee: [140, 370], green: [290, 500], curve: -44, bunker: false },
+  { id: 7, tee: [320, 520], green: [500, 495], curve: 22, bunker: true },
+  { id: 8, tee: [530, 480], green: [730, 545], curve: -40, bunker: false },
+  { id: 9, tee: [700, 565], green: [460, 595], curve: 36, bunker: false },
 ];
 
 function quadPoint(x1, y1, cx, cy, x2, y2, t) {
@@ -87,12 +88,17 @@ function buildHole(layout) {
   const [cx, cy] = controlPoint(layout.tee, layout.green, layout.curve);
   const [tx, ty] = quadTan(x1, y1, cx, cy, x2, y2, 1);
   const [nx, ny] = normalize(-ty, tx);
+  const [bx, by] = normalize(x1 - x2, y1 - y2);
   return {
     id: layout.id,
     rough: sausagePath(layout.tee, layout.green, layout.curve, ROUGH_HALF_WIDTH),
     fairway: sausagePath(layout.tee, layout.green, layout.curve, FAIRWAY_HALF_WIDTH),
     tee: { cx: x1, cy: y1, rx: TEE_RX, ry: TEE_RY },
     green: { cx: x2, cy: y2, rx: GREEN_RX, ry: GREEN_RY },
+    marker: {
+      cx: x1 + bx * TEE_MARKER_OFFSET,
+      cy: y1 + by * TEE_MARKER_OFFSET,
+    },
     bunker: layout.bunker
       ? {
           cx: x2 + nx * BUNKER_OFFSET,
@@ -113,13 +119,13 @@ if (HOLE_LAYOUT.filter((hole) => hole.bunker).length !== BUNKER_HOLE_COUNT) {
 }
 
 export const HOLES = HOLE_LAYOUT.map(buildHole);
-export const SHED_X = 400;
-export const SHED_Y = 600;
-export const SHED_WIDTH = 88;
-export const SHED_HEIGHT = 42;
-export const SHED_ROOF = 20;
-export const SHED_DOOR_WIDTH = 16;
-export const SHED_DOOR_HEIGHT = 20;
+export const SHED_X = 360;
+export const SHED_Y = 595;
+export const SHED_WIDTH = 120;
+export const SHED_HEIGHT = 56;
+export const SHED_ROOF = 28;
+export const SHED_DOOR_WIDTH = 22;
+export const SHED_DOOR_HEIGHT = 28;
 
 function pathPoints(d) {
   const points = [];
@@ -150,6 +156,8 @@ export function courseBounds(layout) {
     for (const [x, y] of pathPoints(hole.fairway)) includePoint(box, x, y);
     includeEllipse(box, hole.tee);
     includeEllipse(box, hole.green);
+    includePoint(box, hole.marker.cx - 20, hole.marker.cy - 20);
+    includePoint(box, hole.marker.cx + 20, hole.marker.cy + 20);
     if (hole.bunker) includeEllipse(box, hole.bunker);
   }
   includePoint(box, SHED_X, SHED_Y - SHED_ROOF);
@@ -222,6 +230,7 @@ export function courseBoundaryPath(layout) {
     for (const point of pathPoints(hole.rough)) points.push(point);
   }
   points.push([SHED_X, SHED_Y - SHED_ROOF], [SHED_X + SHED_WIDTH, SHED_Y + SHED_HEIGHT]);
+  points.push([POND_CX - POND_RX, POND_CY], [POND_CX + POND_RX, POND_CY], [POND_CX, POND_CY - POND_RY], [POND_CX, POND_CY + POND_RY]);
   const hull = expandPolygon(convexHull(points), BOUNDARY_EXPAND);
   return hull.map((point, index) => `${index === 0 ? 'M' : 'L'}${point[0].toFixed(1)},${point[1].toFixed(1)}`).join(' ') + ' Z';
 }
@@ -237,6 +246,7 @@ function offsetHole(hole, dx, id) {
     fairway: offsetPath(hole.fairway, dx),
     tee: { ...hole.tee, cx: hole.tee.cx + dx },
     green: { ...hole.green, cx: hole.green.cx + dx },
+    marker: { ...hole.marker, cx: hole.marker.cx + dx },
     bunker: hole.bunker ? { ...hole.bunker, cx: hole.bunker.cx + dx } : null,
   };
 }
