@@ -1,12 +1,11 @@
-import { getTask } from '../data/tasks.js';
+import { getTask, taskUsesMachine } from '../data/tasks.js';
 import { AUTO_PICK_MINUTES, BALL_PICK_MINUTES, TASK_MINUTES } from '../data/constants.js';
-import { machineTimeMultiplier } from './equipment.js';
+import { durationOnMachine, pickMachineForTask } from './equipment.js';
 import { mowingMinutes } from './mowing.js';
 import { handWaterMinutes } from './moisture.js';
-import { taskTimeMultiplier } from './projects.js';
-import { isWorkerPresent, workerAllows, workerTimeMultiplier } from './skills.js';
+import { isWorkerPresent, workerAllows } from './skills.js';
 
-export { workerAllows, isWorkerPresent, workerTimeMultiplier };
+export { workerAllows, isWorkerPresent, workerTimeMultiplier } from './skills.js';
 export { workerQualityMultiplier, qualityRandomFactor } from './skills.js';
 
 export function preferredStat(surface) {
@@ -22,14 +21,12 @@ export function baseTaskMinutes(state, taskId) {
   return TASK_MINUTES[taskId];
 }
 
-export function durationForTask(state, taskId, worker) {
+export function durationForTask(state, taskId, worker, machineId) {
   const task = getTask(taskId);
-  const base =
-    taskId === 'pickBalls'
-      ? baseTaskMinutes(state, taskId)
-      : Math.round(baseTaskMinutes(state, taskId) * machineTimeMultiplier(state, task) * taskTimeMultiplier(state, task));
-  if (!worker) return base;
-  return Math.round(base * workerTimeMultiplier(worker));
+  const id =
+    machineId ??
+    (taskUsesMachine(task) ? pickMachineForTask(state, task, worker)?.id : null);
+  return durationOnMachine(state, taskId, worker, id);
 }
 
 export function assignWorker(state, task) {
@@ -39,7 +36,9 @@ export function assignWorker(state, task) {
     .filter((worker) => (task.requiresSpray ? worker.sprayCertified : true))
     .sort((a, b) => b[stat] - a[stat] || b.speedSkill - a.speedSkill);
   for (const worker of ranked) {
-    const minutes = durationForTask(state, task.id, worker);
+    if (task.mowing && !pickMachineForTask(state, task, worker)) continue;
+    const machine = pickMachineForTask(state, task, worker);
+    const minutes = durationForTask(state, task.id, worker, machine?.id);
     if (worker.minutesToday - worker.minutesUsed >= minutes) return worker;
   }
   return null;

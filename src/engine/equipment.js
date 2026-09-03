@@ -8,6 +8,8 @@ import {
   AUTO_INTERRUPT_MAX_MINUTES,
   AUTO_INTERRUPT_MIN_COUNT,
   AUTO_INTERRUPT_MIN_MINUTES,
+  AUTO_PICK_MINUTES,
+  BALL_PICK_MINUTES,
   BREAKDOWN_BASE,
   BREAKDOWN_PER_WEAR,
   CONDITION_LOSS_PER_USE,
@@ -34,7 +36,7 @@ import {
   WEAR_THRESHOLD,
 } from '../data/constants.js';
 import { getMachine, MACHINES, machineAllows, TURF_DAMAGE_REASON } from '../data/equipment.js';
-import { getTask } from '../data/tasks.js';
+import { getTask, taskUsesMachine } from '../data/tasks.js';
 import { hocFactor, mowingMinutes } from './mowing.js';
 import { handWaterMinutes } from './moisture.js';
 import { taskTimeMultiplier } from './projects.js';
@@ -106,13 +108,85 @@ export function ownedMachineList(state) {
   return state.ownedMachines.map(getMachine).filter(Boolean);
 }
 
-export function pickMachine(state, task) {
-  if (!task?.surface) return null;
-  const candidates = ownedMachineList(state).filter(
+export const NO_MACHINE_REASON = 'No machine available. Check the shed.';
+export const MACHINE_BOOKED_REASON = 'That mower is booked for the day.';
+
+export function claimedMinutesByMachine(state, ignoreTaskId) {
+  const claimed = {};
+  for (const planned of state.plannedTasks ?? []) {
+    if (ignoreTaskId && planned.taskId === ignoreTaskId) continue;
+    if (!planned.machineId) continue;
+    claimed[planned.machineId] = (claimed[planned.machineId] ?? 0) + planned.minutes;
+  }
+  return claimed;
+}
+
+export function machineMinutesRemaining(state, machineId, ignoreTaskId) {
+  const cap = machineDailyMinutesOf(state, machineId);
+  const claimed = claimedMinutesByMachine(state, ignoreTaskId)[machineId] ?? 0;
+  return cap - claimed;
+}
+
+export function allowingMachines(state, task) {
+  if (!task?.surface) return [];
+  return ownedMachineList(state).filter(
     (machine) => isMachineAvailable(state, machine.id) && machineAllows(machine, task.surface, task),
   );
+}
+
+export function durationOnMachine(state, taskId, worker, machineId) {
+  const task = getTask(taskId);
+  const base =
+    taskId === 'pickBalls'
+      ? state.hasAutoPicker
+        ? AUTO_PICK_MINUTES
+        : BALL_PICK_MINUTES
+      : taskId === 'handWater'
+        ? handWaterMinutes(state)
+        : task?.mowing
+          ? mowingMinutes(state, taskId)
+          : TASK_MINUTES[taskId];
+  const withMachine =
+    taskId === 'pickBalls'
+      ? base
+      : Math.round(base * (machineId ? machineMultiplierFor(state, machineId) : 1) * taskTimeMultiplier(state, task));
+  if (!worker) return withMachine;
+  return Math.round(withMachine * workerTimeMultiplier(worker));
+}
+
+export function pickMachine(state, task, options = {}) {
+  const { ignoreTaskId, minutesNeeded } = options;
+  const candidates = allowingMachines(state, task);
   if (!candidates.length) return null;
-  return candidates.sort((a, b) => a.timeMult - b.timeMult)[0];
+  const ranked = [...candidates].sort(
+    (a, b) => machineMultiplierFor(state, a.id) - machineMultiplierFor(state, b.id),
+  );
+  if (!minutesNeeded) return ranked[0];
+  for (const machine of ranked) {
+    const need = minutesNeeded(machine.id);
+    if (machineMinutesRemaining(state, machine.id, ignoreTaskId) >= need) return machine;
+  }
+  return null;
+}
+
+export function pickMachineForTask(state, task, worker, ignoreTaskId) {
+  if (!taskUsesMachine(task)) return pickMachine(state, task, { ignoreTaskId });
+  return pickMachine(state, task, {
+    ignoreTaskId,
+    minutesNeeded: (machineId) => durationOnMachine(state, task.id, worker, machineId),
+  });
+}
+
+export function machinePlanCheck(state, task, worker) {
+  if (!task?.mowing) {
+    return { ok: true, machine: taskUsesMachine(task) ? pickMachineForTask(state, task, worker) : null };
+  }
+  if (!allowingMachines(state, task).length) {
+    return { ok: false, reason: NO_MACHINE_REASON, machine: null };
+  }
+  const machine = pickMachineForTask(state, task, worker);
+  if (!machine) return { ok: false, reason: MACHINE_BOOKED_REASON, machine: null };
+  return { ok: true, machine };
 }
 
 export function machineMultiplierFor(state, machineId) {
@@ -165,14 +239,10 @@ export function ineligibleMachines(state, task) {
     }));
 }
 
-export function machineDurationForTask(state, taskId) {
+export function machineDurationForTask(state, taskId, machineId) {
   const task = getTask(taskId);
-  const base = taskId === 'handWater'
-    ? handWaterMinutes(state)
-    : task?.mowing
-      ? mowingMinutes(state, taskId)
-      : TASK_MINUTES[taskId];
-  return Math.round(base * machineTimeMultiplier(state, task) * taskTimeMultiplier(state, task));
+  const id = machineId ?? (taskUsesMachine(task) ? pickMachineForTask(state, task)?.id : null);
+  return durationOnMachine(state, taskId, null, id);
 }
 
 export function wearMultiplier(state, machineId) {
@@ -257,12 +327,22 @@ export function recomputePlannedMinutes(state) {
   for (const planned of state.plannedTasks) {
     oldByWorker[planned.workerId] = (oldByWorker[planned.workerId] ?? 0) + planned.minutes;
   }
-  const plannedTasks = state.plannedTasks.map((planned) => {
+  const plannedTasks = [];
+  for (const planned of state.plannedTasks) {
+    const task = getTask(planned.taskId);
     const worker = state.workers.find((item) => item.id === planned.workerId);
-    const base = machineDurationForTask(state, planned.taskId);
-    const minutes = worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
-    return { ...planned, minutes };
-  });
+    const probe = { ...state, plannedTasks };
+    let machineId = null;
+    if (task?.mowing) {
+      const machine = pickMachineForTask(probe, task, worker);
+      if (!machine) continue;
+      machineId = machine.id;
+    } else if (taskUsesMachine(task)) {
+      machineId = pickMachineForTask(probe, task, worker)?.id ?? null;
+    }
+    const minutes = durationOnMachine(probe, planned.taskId, worker, machineId);
+    plannedTasks.push({ ...planned, minutes, machineId });
+  }
   const newByWorker = {};
   for (const planned of plannedTasks) {
     newByWorker[planned.workerId] = (newByWorker[planned.workerId] ?? 0) + planned.minutes;

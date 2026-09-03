@@ -121,7 +121,6 @@ assert.match(shedSrc, /CONDITION_SLOW_THRESHOLD/);
 
 const equipmentSrc = readFileSync(new URL('../src/engine/equipment.js', import.meta.url), 'utf8');
 assert.match(equipmentSrc, /conditionTimeMultiplier/);
-assert.doesNotMatch(equipmentSrc, /claimedMinutes|machineMinutesRemaining|claimMachine/);
 
 console.log('GATE A1 PASS named condition constants exported');
 console.log('GATE A2 PASS new game starter condition is 100');
@@ -130,5 +129,4 @@ console.log('GATE A4 PASS condition 50 applies 1.25× time penalty in the engine
 console.log('GATE A5 PASS old saves migrate missing condition to 80');
 console.log('GATE A6 PASS mowing drops condition by CONDITION_LOSS_PER_USE');
 console.log('GATE A7 PASS shed shows condition');
-console.log('GATE A8 PASS claiming is not in the planner yet');
 console.log('round 4 phase A checks passed');

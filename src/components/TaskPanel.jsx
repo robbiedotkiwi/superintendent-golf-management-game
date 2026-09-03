@@ -12,7 +12,7 @@ import {
 } from '../data/constants.js';
 import { tasksForSurface, taskUsesMachine } from '../data/tasks.js';
 import { durationForTask, assignWorker, certifiedPresent, workerById } from '../engine/assignment.js';
-import { ineligibleMachines, pickMachine, surfaceCeiling } from '../engine/equipment.js';
+import { getMachine, ineligibleMachines, pickMachineForTask, surfaceCeiling } from '../engine/equipment.js';
 import { hasHoc, hasPattern, inHocStressBand } from '../engine/mowing.js';
 import { allGreenIds } from '../engine/moisture.js';
 import { inPrepWindow } from '../engine/tournament.js';
@@ -193,7 +193,12 @@ export default function TaskPanel({
         .filter((task) => task.kind !== 'prep' || inPrepWindow(state))
         .map((task) => {
           const planned = state.plannedTasks.find((item) => item.taskId === task.id);
-          const machine = taskUsesMachine(task) ? pickMachine(state, task) : null;
+          const assigned = planned ? workerById(state, planned.workerId) : assignWorker(state, task);
+          const machine = planned?.machineId
+            ? getMachine(planned.machineId)
+            : taskUsesMachine(task)
+              ? pickMachineForTask(state, task, assigned)
+              : null;
           const blocked = taskUsesMachine(task) ? ineligibleMachines(state, task) : [];
           const workers = task.requiresSpray
             ? state.workers.filter((worker) => worker.sprayCertified)

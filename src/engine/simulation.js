@@ -39,7 +39,8 @@ import {
   ensureAutoWeek,
   interruptionMinutesForDay,
   isMachineAvailable,
-  pickMachine,
+  getMachine,
+  pickMachineForTask,
   rollBreakdowns,
   surfaceCeiling,
   wearMultiplier,
@@ -184,7 +185,9 @@ export function resolveDay(state) {
       moistureReadDay = revealMoisture(moistureReadDay, task.surface, state.day, holes);
     }
 
-    const machine = pickMachine(state, task);
+    const machine = plannedTask.machineId
+      ? getMachine(plannedTask.machineId)
+      : pickMachineForTask(state, task, workerById(state, plannedTask.workerId));
     if (machine && (task.mowing || task.id === 'rollGreens')) markUsed(machine.id);
     if (task.id === 'rollGreens' && isMachineAvailable(state, 'greensRoller')) {
       markUsed('greensRoller');

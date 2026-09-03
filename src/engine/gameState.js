@@ -2,8 +2,8 @@ import { getTask } from '../data/tasks.js';
 import { calendarFromDay } from './calendar.js';
 import { buildForecast } from './weather.js';
 import { createRng } from './rng.js';
-import { buyFoley, buyMachine, grindInHouse, repairMachine, sendForGrind, pickMachine, recomputePlannedMinutes } from './equipment.js';
-import { assignWorker, certifiedPresent, durationForTask, workerById, workerAllows, isWorkerPresent } from './assignment.js';
+import { buyFoley, buyMachine, grindInHouse, repairMachine, sendForGrind, machinePlanCheck, durationOnMachine, recomputePlannedMinutes, allowingMachines, pickMachineForTask, MACHINE_BOOKED_REASON, NO_MACHINE_REASON } from './equipment.js';
+import { assignWorker, certifiedPresent, workerById, workerAllows, isWorkerPresent } from './assignment.js';
 import {
   applyEarlyStartComplaints,
   hireWorker,
@@ -283,9 +283,16 @@ export function canPlanTask(state, taskId, workerId) {
     return { ok: false, reason: 'Mowing is off today.' };
   }
 
-  if (task.mowing && !pickMachine(state, task)) {
-    return { ok: false, reason: 'No machine available. Check the shed.' };
+  if (task.mowing && !allowingMachines(state, task).length) {
+    return { ok: false, reason: NO_MACHINE_REASON };
   }
+
+  const requested = workerId ? workerById(state, workerId) : null;
+  if (requested && (!isWorkerPresent(requested) || !workerAllows(requested, task.surface))) {
+    return { ok: false, reason: 'No one available for that job.' };
+  }
+
+  const worker = requested ?? assignWorker(state, task);
 
   if (task.requiresSpray && !certifiedPresent(state, task.surface)) {
     return { ok: false, reason: 'No spray-certified worker available.' };
@@ -301,8 +308,6 @@ export function canPlanTask(state, taskId, workerId) {
     }
   }
 
-  const requested = workerId ? workerById(state, workerId) : null;
-  const worker = requested ?? assignWorker(state, task);
   if (task.requiresSpray && worker && !worker.sprayCertified) {
     return { ok: false, reason: 'No spray-certified worker available.' };
   }
@@ -316,16 +321,31 @@ export function canPlanTask(state, taskId, workerId) {
     if (!fallback) {
       return { ok: false, reason: 'No one available for that job.' };
     }
-    const minutes = durationForTask(state, taskId, fallback);
+    if (task.mowing) {
+      const catalogId = allowingMachines(state, task)[0]?.id;
+      const someoneHasTime = state.workers.some(
+        (item) =>
+          isWorkerPresent(item) &&
+          workerAllows(item, task.surface) &&
+          (!task.requiresSpray || item.sprayCertified) &&
+          item.minutesToday - item.minutesUsed >= durationOnMachine(state, taskId, item, catalogId),
+      );
+      if (someoneHasTime && !pickMachineForTask(state, task, fallback)) {
+        return { ok: false, reason: MACHINE_BOOKED_REASON };
+      }
+    }
+    const minutes = durationOnMachine(state, taskId, fallback, allowingMachines(state, task)[0]?.id);
     const remaining = fallback.minutesToday - fallback.minutesUsed;
     return { ok: false, reason: `Needs ${minutes} min, only ${remaining} left.` };
   }
-  const minutes = durationForTask(state, taskId, worker);
+  const machineCheck = machinePlanCheck(state, task, worker);
+  if (!machineCheck.ok) return machineCheck;
+  const minutes = durationOnMachine(state, taskId, worker, machineCheck.machine?.id);
   const remaining = worker.minutesToday - worker.minutesUsed;
   if (minutes > remaining) {
     return { ok: false, reason: `Needs ${minutes} min on ${worker.name}, only ${remaining} left.` };
   }
-  return { ok: true, minutes, workerId: worker.id };
+  return { ok: true, minutes, workerId: worker.id, machineId: machineCheck.machine?.id ?? null };
 }
 
 function removePlannedTask(state, taskId) {
@@ -385,6 +405,7 @@ export function reducer(state, action) {
             surface: task.surface,
             workerId: check.workerId,
             minutes: check.minutes,
+            machineId: check.machineId ?? null,
             ...(action.taskId === 'handWater' ? { greens: [...(state.handWaterTargets ?? [])] } : {}),
           },
         ],
@@ -485,7 +506,13 @@ export function reducer(state, action) {
       if (!planned || !worker || !task) return state;
       if (!workerAllows(worker, task.surface) || !isWorkerPresent(worker)) return state;
       if (task.requiresSpray && !worker.sprayCertified) return state;
-      const minutes = durationForTask(state, planned.taskId, worker);
+      const probe = {
+        ...state,
+        plannedTasks: state.plannedTasks.filter((item) => item.taskId !== planned.taskId),
+      };
+      const machineCheck = machinePlanCheck(probe, task, worker);
+      if (!machineCheck.ok) return state;
+      const minutes = durationOnMachine(probe, planned.taskId, worker, machineCheck.machine?.id);
       if (worker.minutesToday - worker.minutesUsed + (planned.workerId === worker.id ? planned.minutes : 0) < minutes) {
         return state;
       }
@@ -499,7 +526,9 @@ export function reducer(state, action) {
       next = {
         ...next,
         plannedTasks: next.plannedTasks.map((item) =>
-          item.taskId === action.taskId ? { ...item, workerId: worker.id, minutes } : item,
+          item.taskId === action.taskId
+            ? { ...item, workerId: worker.id, minutes, machineId: machineCheck.machine?.id ?? null }
+            : item,
         ),
         workers: next.workers.map((item) =>
           item.id === worker.id ? { ...item, minutesUsed: item.minutesUsed + minutes } : item,

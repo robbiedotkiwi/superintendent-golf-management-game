@@ -23,8 +23,10 @@ import {
   canGrindInHouse,
   canRepair,
   canSendGrind,
+  claimedMinutesByMachine,
   conditionOf,
   isMachineAvailable,
+  machineDailyMinutesOf,
 } from '../engine/equipment.js';
 import SectionTabs from './SectionTabs.jsx';
 
@@ -74,6 +76,8 @@ export default function Shed({
           const machine = MACHINES.find((item) => item.id === id);
           const wear = state.machineWear[id] ?? 0;
           const condition = conditionOf(state, id);
+          const claimed = claimedMinutesByMachine(state)[id] ?? 0;
+          const daily = machineDailyMinutesOf(state, id);
           const broken = Boolean(state.machineBroken[id]);
           const awayUntil = state.machineAwayUntil[id];
           const away = awayUntil && state.day < awayUntil;
@@ -94,6 +98,9 @@ export default function Shed({
               <p className="mt-2">
                 Condition {condition} / {CONDITION_MAX}
                 {condition < CONDITION_SLOW_THRESHOLD ? ' — slower cuts.' : ''}
+              </p>
+              <p className="mt-1 text-sm text-[var(--sand)]">
+                Today {claimed} / {daily} min
               </p>
               {machine.reel ? (
                 <p className="mt-1">
