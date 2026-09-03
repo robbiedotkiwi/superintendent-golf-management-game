@@ -1,8 +1,13 @@
 import {
   SECTION_CREW,
+  SECTION_CREW_DESCRIPTION,
   SECTION_OFFICE,
+  SECTION_OFFICE_DESCRIPTION,
   SECTION_SHED,
+  SECTION_SHED_DESCRIPTION,
   SECTION_TURF,
+  SECTION_TURF_DESCRIPTION,
+  SIDEBAR_NAV_GAP,
   SIDEBAR_WIDTH,
   START_DAY_LABEL,
 } from '../data/constants.js';
@@ -12,15 +17,18 @@ import { sectionBadge } from '../engine/badges.js';
 import { fitCourse } from '../engine/view.js';
 import TimeBar from './TimeBar.jsx';
 
-function NavButton({ label, active, badge, dot, onClick }) {
+function NavButton({ label, description, active, badge, dot, onClick }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`relative flex-1 px-2 py-2 text-sm ${active ? 'bg-[var(--machine-orange)]' : ''}`}
+      className={`relative w-full border border-[var(--sand)] px-3 py-2 text-left ${
+        active ? 'bg-[var(--machine-orange)]' : ''
+      }`}
     >
-      {label}
+      <div className="font-condensed text-xl font-bold leading-tight">{label}</div>
+      <div className="text-xs leading-tight text-[var(--sand)]">{description}</div>
       {badge ? (
         <span className="absolute right-1 top-1 min-w-5 rounded-full bg-[var(--machine-orange)] px-1 text-center text-xs font-bold leading-5 text-[var(--paint)]">
           {badge}
@@ -65,25 +73,34 @@ export default function Sidebar({
       <div className="flex-1 px-3 py-3">
         <header>
           <div className="font-condensed text-4xl font-bold leading-none">Day {state.day}</div>
-          <p className="mt-1 text-lg">
+          <p className="mt-1 text-sm leading-tight">
             {state.season} · {state.year}
-          </p>
-          <p className="mt-2 text-sm">
-            Today {WEATHER_LABELS[state.weather]} · Tomorrow {tomorrow}
+            <span className="text-xs">
+              {' '}
+              · Today {WEATHER_LABELS[state.weather]} · Tomorrow {tomorrow}
+            </span>
           </p>
         </header>
 
-        <div className="mt-4">
-          <div className="text-sm text-[var(--sand)]">Condition</div>
+        <div className="mt-3">
+          <div className="text-xs text-[var(--sand)]">Condition</div>
           <div className="font-condensed text-6xl font-bold leading-none" style={{ color: qualityColor(condition) }}>
             {condition}
           </div>
         </div>
 
-        <nav aria-label="Sections" className="mt-4 grid grid-cols-2 overflow-hidden border border-[var(--sand)]">
-          <NavButton label="Turf" active={section === SECTION_TURF} badge={turf.count} dot={turf.dot} onClick={onOpenTurf} />
+        <nav aria-label="Sections" className="mt-3 flex flex-col" style={{ gap: SIDEBAR_NAV_GAP }}>
+          <NavButton
+            label="Turf"
+            description={SECTION_TURF_DESCRIPTION}
+            active={section === SECTION_TURF}
+            badge={turf.count}
+            dot={turf.dot}
+            onClick={onOpenTurf}
+          />
           <NavButton
             label="Office"
+            description={SECTION_OFFICE_DESCRIPTION}
             active={section === SECTION_OFFICE}
             badge={office.count}
             dot={office.dot}
@@ -91,12 +108,20 @@ export default function Sidebar({
           />
           <NavButton
             label="Crew"
+            description={SECTION_CREW_DESCRIPTION}
             active={section === SECTION_CREW}
             badge={crew.count}
             dot={crew.dot}
             onClick={onOpenCrew}
           />
-          <NavButton label="Shed" active={section === SECTION_SHED} badge={shed.count} dot={shed.dot} onClick={onOpenShed} />
+          <NavButton
+            label="Shed"
+            description={SECTION_SHED_DESCRIPTION}
+            active={section === SECTION_SHED}
+            badge={shed.count}
+            dot={shed.dot}
+            onClick={onOpenShed}
+          />
         </nav>
       </div>
 

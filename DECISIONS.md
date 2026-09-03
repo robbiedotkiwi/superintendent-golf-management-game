@@ -178,3 +178,12 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 
 - Grace uses the spec numbers: days 1–5 always `fine`; days 1–10 never `storm` or `heavyRain` (those types remap to `overcast` if a roll or old save would show them); no breakdowns while resolving days 1–10; disease pressure is forced to 0 through season 1 (`seasonNumberFromDay(day) <= GRACE_NO_DISEASE_SEASON`) and starts accruing on day 31. Forecast generation and `corruptDay` both run through `applyWeatherGrace`, so the strip cannot advertise weather the grace period will prevent. After those windows the old weights, breakdown chance and pressure gain run unchanged. Phase 6's disease checks now start on day 31 so they still cover accrual, outbreak and spray suppression after the grace window.
 
+## Fixes Round 6
+
+- `FIXES_ROUND_6.md` is in the repo root and is the source of truth for this round.
+
+### Phase A
+
+- Section buttons are four full-width stacked blocks (`SIDEBAR_NAV_GAP` 8) with the spec one-liners. Weather sits on the season line at `text-xs` so the descriptions fit at `SIDEBAR_FIT_HEIGHT` 720. Badges and dots stay on the block. The sidebar still does not scroll.
+
+

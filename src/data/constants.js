@@ -739,6 +739,11 @@ export const WORKER_ABSENT_REASON = 'Not in today';
 export const OVERRUN_DROP_COPY =
   'Top runs first. The last task is the one dropped if the day overruns.';
 export const SIDEBAR_FIT_HEIGHT = 720;
+export const SIDEBAR_NAV_GAP = 8;
+export const SECTION_TURF_DESCRIPTION = 'Surfaces, mowing, irrigation';
+export const SECTION_OFFICE_DESCRIPTION = 'Mail, money, tournaments';
+export const SECTION_CREW_DESCRIPTION = 'Roster, hiring, training';
+export const SECTION_SHED_DESCRIPTION = 'Fleet, service, buying';
 export const SHIPPED_PRESET_DAILY = 'daily';
 export const SHIPPED_PRESET_TOURNAMENT = 'tournament';
 export const SHIPPED_PRESET_RECOVERY = 'recovery';
