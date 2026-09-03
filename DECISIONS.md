@@ -133,4 +133,5 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Escape from Office, Crew or Shed (any sub-tab) returns to the map in one step. It does not walk back through tabs. On the map it still clears the selected surface.
 - Custom presets store height, pattern, angle and auto-rotate for one surface. Cap is `PRESET_MAX` (8). Apply uses the existing HOC/pattern actions, so the mowing model is unchanged.
 - Section and tab live on the save object (`state.section`, `state.tabs`). Continue restores them. Camera zoom stays in `state.view`. End day still jumps to the map via `SET_SECTION`, which is also saved.
+- `view` / `tabs` are read at the top of `GameScreen` so the Escape handler never closes over a later `const`. Environments with `prefers-reduced-motion` take the skip-film path, same as the skip checkbox.
 

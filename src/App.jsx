@@ -303,6 +303,9 @@ function GameScreen({
   onDismissYearReview,
   onNewGame,
 }) {
+  const view = state.section ?? SECTION_MAP;
+  const tabs = state.tabs ?? {};
+
   useEffect(() => {
     function onKey(event) {
       if (event.key !== 'Escape') return;
@@ -333,8 +336,6 @@ function GameScreen({
       : state.surfaces;
   const showMower = Boolean(event?.mowing);
   const watching = playout?.status === PLAYOUT_PLAYING;
-  const view = state.section ?? SECTION_MAP;
-  const tabs = state.tabs ?? {};
 
   return (
     <div className="flex h-screen max-h-screen overflow-hidden bg-[var(--soil)] text-[var(--paint)]">
