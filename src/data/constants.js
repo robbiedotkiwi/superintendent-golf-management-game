@@ -6,6 +6,12 @@ export const paint = '#E8E4DA';
 export const machineOrange = '#D9541E';
 export const pondWater = '#2F6A72';
 export const pondStressed = '#6B6A3A';
+export const SURFACE_LIGHTEN_GREENS = 0.28;
+export const SURFACE_LIGHTEN_TEES = 0.14;
+export const SURFACE_DARKEN_ROUGH = 0.4;
+export const SURFACE_STRESS_MIX = 0.82;
+export const BUNKER_STRESS_MIX = 0.4;
+export const GREEN_OUTLINE_MIX = 0.45;
 
 export const DAY_LENGTH_MINUTES = 480;
 export const STARTING_DAY = 1;

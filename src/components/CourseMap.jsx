@@ -1,4 +1,4 @@
-import { qualityColor } from '../engine/color.js';
+import { greenOutline, surfaceFill } from '../engine/color.js';
 import {
   AERATOR_ARM,
   AERATOR_RX,
@@ -29,11 +29,16 @@ function activate(event, surface, onSelect) {
   }
 }
 
-function surfaceClass(selected, surface) {
-  return [
-    'course-surface cursor-pointer outline-none',
-    selected === surface ? 'stroke-[var(--paint)] stroke-[3]' : 'stroke-[var(--soil)] stroke-1',
-  ].join(' ');
+function surfaceStroke(surface, selected, greensQuality) {
+  if (selected === surface) return 'var(--paint)';
+  if (surface === 'greens') return greenOutline(greensQuality);
+  return 'var(--soil)';
+}
+
+function surfaceStrokeWidth(surface, selected) {
+  if (selected === surface) return 3;
+  if (surface === 'greens') return 2;
+  return 1;
 }
 
 export default function CourseMap({
@@ -48,11 +53,11 @@ export default function CourseMap({
   onOpenShed,
 }) {
   const fills = {
-    greens: qualityColor(surfaces.greens.quality),
-    tees: qualityColor(surfaces.tees.quality),
-    fairways: qualityColor(surfaces.fairways.quality),
-    rough: qualityColor(surfaces.rough.quality),
-    bunkers: qualityColor(surfaces.bunkers.quality),
+    greens: surfaceFill('greens', surfaces.greens.quality),
+    tees: surfaceFill('tees', surfaces.tees.quality),
+    fairways: surfaceFill('fairways', surfaces.fairways.quality),
+    rough: surfaceFill('rough', surfaces.rough.quality),
+    bunkers: surfaceFill('bunkers', surfaces.bunkers.quality),
   };
   const layout = holesForCount(holes);
   const bounds = courseBounds(layout);
@@ -95,69 +100,90 @@ export default function CourseMap({
         </text>
       </g>
       {layout.map((hole) => (
-        <g key={hole.id}>
-          <path
-            d={hole.rough}
-            fill={fills.rough}
-            className={surfaceClass(selected, 'rough')}
-            tabIndex={0}
-            role="button"
-            aria-label={`Hole ${hole.id} rough`}
-            onClick={() => onSelect('rough')}
-            onKeyDown={(event) => activate(event, 'rough', onSelect)}
-          />
-          <path
-            d={hole.fairway}
-            fill={fills.fairway}
-            className={surfaceClass(selected, 'fairways')}
-            tabIndex={0}
-            role="button"
-            aria-label={`Hole ${hole.id} fairway`}
-            onClick={() => onSelect('fairways')}
-            onKeyDown={(event) => activate(event, 'fairways', onSelect)}
-          />
-          {hole.bunker ? (
-            <ellipse
-              cx={hole.bunker.cx}
-              cy={hole.bunker.cy}
-              rx={hole.bunker.rx}
-              ry={hole.bunker.ry}
-              fill={fills.bunkers}
-              className={surfaceClass(selected, 'bunkers')}
-              tabIndex={0}
-              role="button"
-              aria-label={`Hole ${hole.id} bunker`}
-              onClick={() => onSelect('bunkers')}
-              onKeyDown={(event) => activate(event, 'bunkers', onSelect)}
-            />
-          ) : null}
+        <path
+          key={`rough-${hole.id}`}
+          d={hole.rough}
+          fill={fills.rough}
+          stroke={surfaceStroke('rough', selected, surfaces.greens.quality)}
+          strokeWidth={surfaceStrokeWidth('rough', selected)}
+          className="course-surface cursor-pointer outline-none"
+          tabIndex={0}
+          role="button"
+          aria-label={`Hole ${hole.id} rough`}
+          onClick={() => onSelect('rough')}
+          onKeyDown={(event) => activate(event, 'rough', onSelect)}
+        />
+      ))}
+      {layout.map((hole) => (
+        <path
+          key={`fairway-${hole.id}`}
+          d={hole.fairway}
+          fill={fills.fairways}
+          stroke={surfaceStroke('fairways', selected, surfaces.greens.quality)}
+          strokeWidth={surfaceStrokeWidth('fairways', selected)}
+          className="course-surface cursor-pointer outline-none"
+          tabIndex={0}
+          role="button"
+          aria-label={`Hole ${hole.id} fairway`}
+          onClick={() => onSelect('fairways')}
+          onKeyDown={(event) => activate(event, 'fairways', onSelect)}
+        />
+      ))}
+      {layout.map((hole) =>
+        hole.bunker ? (
           <ellipse
-            cx={hole.tee.cx}
-            cy={hole.tee.cy}
-            rx={hole.tee.rx}
-            ry={hole.tee.ry}
-            fill={fills.tees}
-            className={surfaceClass(selected, 'tees')}
+            key={`bunker-${hole.id}`}
+            cx={hole.bunker.cx}
+            cy={hole.bunker.cy}
+            rx={hole.bunker.rx}
+            ry={hole.bunker.ry}
+            fill={fills.bunkers}
+            stroke={surfaceStroke('bunkers', selected, surfaces.greens.quality)}
+            strokeWidth={surfaceStrokeWidth('bunkers', selected)}
+            className="course-surface cursor-pointer outline-none"
             tabIndex={0}
             role="button"
-            aria-label={`Hole ${hole.id} tee`}
-            onClick={() => onSelect('tees')}
-            onKeyDown={(event) => activate(event, 'tees', onSelect)}
+            aria-label={`Hole ${hole.id} bunker`}
+            onClick={() => onSelect('bunkers')}
+            onKeyDown={(event) => activate(event, 'bunkers', onSelect)}
           />
-          <ellipse
-            cx={hole.green.cx}
-            cy={hole.green.cy}
-            rx={hole.green.rx}
-            ry={hole.green.ry}
-            fill={fills.greens}
-            className={surfaceClass(selected, 'greens')}
-            tabIndex={0}
-            role="button"
-            aria-label={`Hole ${hole.id} green`}
-            onClick={() => onSelect('greens')}
-            onKeyDown={(event) => activate(event, 'greens', onSelect)}
-          />
-        </g>
+        ) : null,
+      )}
+      {layout.map((hole) => (
+        <rect
+          key={`tee-${hole.id}`}
+          x={hole.tee.cx - hole.tee.rx}
+          y={hole.tee.cy - hole.tee.ry}
+          width={hole.tee.rx * 2}
+          height={hole.tee.ry * 2}
+          fill={fills.tees}
+          stroke={surfaceStroke('tees', selected, surfaces.greens.quality)}
+          strokeWidth={surfaceStrokeWidth('tees', selected)}
+          className="course-surface cursor-pointer outline-none"
+          tabIndex={0}
+          role="button"
+          aria-label={`Hole ${hole.id} tee`}
+          onClick={() => onSelect('tees')}
+          onKeyDown={(event) => activate(event, 'tees', onSelect)}
+        />
+      ))}
+      {layout.map((hole) => (
+        <ellipse
+          key={`green-${hole.id}`}
+          cx={hole.green.cx}
+          cy={hole.green.cy}
+          rx={hole.green.rx}
+          ry={hole.green.ry}
+          fill={fills.greens}
+          stroke={surfaceStroke('greens', selected, surfaces.greens.quality)}
+          strokeWidth={surfaceStrokeWidth('greens', selected)}
+          className="course-surface cursor-pointer outline-none"
+          tabIndex={0}
+          role="button"
+          aria-label={`Hole ${hole.id} green`}
+          onClick={() => onSelect('greens')}
+          onKeyDown={(event) => activate(event, 'greens', onSelect)}
+        />
       ))}
       <g
         tabIndex={0}

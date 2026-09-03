@@ -85,3 +85,4 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 ## UI Round 1
 
 - Map `viewBox` is the bounding box of holes, shed, pond and range plus `MAP_VIEW_PADDING`. The range is included even before it is built so the camera does not jump. The SVG is absolutely positioned in the leftover HUD space with `xMidYMid meet`.
+- Fairway "black" was overlapping hole roughs drawn on top of earlier fairways, plus bunkers using the turf lerp. Surfaces now share one green family (greens lightest, rough darkest); bunkers lerp `sand` toward `soil`. All roughs are painted before all fairways.
