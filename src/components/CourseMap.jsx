@@ -16,7 +16,7 @@ import {
   RANGE_X,
   RANGE_Y,
 } from '../data/constants.js';
-import { holesForCount, mapViewBoxForHoles, mapWidthForHoles, MAP_HEIGHT, SHED_HEIGHT, SHED_WIDTH, SHED_X, SHED_Y } from '../data/course.js';
+import { holesForCount, mapViewBoxForHoles, courseBounds, SHED_HEIGHT, SHED_WIDTH, SHED_X, SHED_Y } from '../data/course.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import { pondPercent } from '../engine/irrigation.js';
 import { prefersReducedMotion } from '../engine/sound.js';
@@ -55,15 +55,24 @@ export default function CourseMap({
     bunkers: qualityColor(surfaces.bunkers.quality),
   };
   const layout = holesForCount(holes);
+  const bounds = courseBounds(layout);
 
   return (
     <svg
       viewBox={mapViewBoxForHoles(holes)}
-      className="h-full w-full"
+      preserveAspectRatio="xMidYMid meet"
+      className="absolute inset-0 h-full w-full"
       role="img"
       aria-label={`${holes}-hole course map`}
     >
-      <rect width={mapWidthForHoles(holes)} height={MAP_HEIGHT} fill="var(--soil)" onClick={() => onSelect(null)} />
+      <rect
+        x={bounds.minX}
+        y={bounds.minY}
+        width={bounds.width}
+        height={bounds.height}
+        fill="var(--soil)"
+        onClick={() => onSelect(null)}
+      />
       <g
         tabIndex={0}
         role="button"

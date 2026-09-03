@@ -10,6 +10,16 @@ import {
   GREEN_RY,
   HOLE_COUNT,
   HOLE_PATH_SAMPLES,
+  MAP_VIEW_PADDING,
+  POND_CX,
+  POND_CY,
+  POND_LABEL_OFFSET,
+  POND_RX,
+  POND_RY,
+  RANGE_HEIGHT,
+  RANGE_WIDTH,
+  RANGE_X,
+  RANGE_Y,
   ROUGH_HALF_WIDTH,
   TEE_RX,
   TEE_RY,
@@ -102,13 +112,64 @@ if (HOLE_LAYOUT.filter((hole) => hole.bunker).length !== BUNKER_HOLE_COUNT) {
 }
 
 export const HOLES = HOLE_LAYOUT.map(buildHole);
-export const MAP_WIDTH = 1040;
-export const MAP_HEIGHT = 760;
-export const MAP_VIEWBOX = `0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`;
 export const SHED_X = 470;
 export const SHED_Y = 200;
 export const SHED_WIDTH = 100;
 export const SHED_HEIGHT = 64;
+
+function pathPoints(d) {
+  const points = [];
+  const re = /(-?[\d.]+),(-?[\d.]+)/g;
+  let match;
+  while ((match = re.exec(d))) {
+    points.push([Number(match[1]), Number(match[2])]);
+  }
+  return points;
+}
+
+function includePoint(box, x, y) {
+  box.minX = Math.min(box.minX, x);
+  box.minY = Math.min(box.minY, y);
+  box.maxX = Math.max(box.maxX, x);
+  box.maxY = Math.max(box.maxY, y);
+}
+
+function includeEllipse(box, shape) {
+  includePoint(box, shape.cx - shape.rx, shape.cy - shape.ry);
+  includePoint(box, shape.cx + shape.rx, shape.cy + shape.ry);
+}
+
+export function courseBounds(layout) {
+  const box = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+  for (const hole of layout) {
+    for (const [x, y] of pathPoints(hole.rough)) includePoint(box, x, y);
+    for (const [x, y] of pathPoints(hole.fairway)) includePoint(box, x, y);
+    includeEllipse(box, hole.tee);
+    includeEllipse(box, hole.green);
+    if (hole.bunker) includeEllipse(box, hole.bunker);
+  }
+  includePoint(box, SHED_X, SHED_Y);
+  includePoint(box, SHED_X + SHED_WIDTH, SHED_Y + SHED_HEIGHT);
+  includePoint(box, POND_CX - POND_RX, POND_CY - POND_RY);
+  includePoint(box, POND_CX + POND_RX, POND_CY + POND_RY + POND_LABEL_OFFSET);
+  includePoint(box, RANGE_X, RANGE_Y);
+  includePoint(box, RANGE_X + RANGE_WIDTH, RANGE_Y + RANGE_HEIGHT);
+  const pad = MAP_VIEW_PADDING;
+  return {
+    minX: box.minX - pad,
+    minY: box.minY - pad,
+    width: box.maxX - box.minX + pad * 2,
+    height: box.maxY - box.minY + pad * 2,
+  };
+}
+
+export function mapViewBoxFromBounds(bounds) {
+  return `${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`;
+}
+
+export const MAP_WIDTH = 1040;
+export const MAP_HEIGHT = 760;
+export const MAP_VIEWBOX = mapViewBoxFromBounds(courseBounds(HOLES));
 
 function offsetPath(path, dx) {
   return path.replace(/([ML])(-?[\d.]+),(-?[\d.]+)/g, (_, cmd, x, y) => `${cmd}${(Number(x) + dx).toFixed(1)},${y}`);
@@ -132,9 +193,9 @@ export function holesForCount(count) {
 }
 
 export function mapWidthForHoles(count) {
-  return count >= EXPANDED_HOLE_COUNT ? MAP_WIDTH + BACK_NINE_OFFSET_X : MAP_WIDTH;
+  return courseBounds(holesForCount(count)).width;
 }
 
 export function mapViewBoxForHoles(count) {
-  return `0 0 ${mapWidthForHoles(count)} ${MAP_HEIGHT}`;
+  return mapViewBoxFromBounds(courseBounds(holesForCount(count)));
 }

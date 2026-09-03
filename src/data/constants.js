@@ -117,6 +117,7 @@ export const AERATOR_RX = 8;
 export const AERATOR_RY = 8;
 export const AERATOR_ARM = 18;
 export const POND_LABEL_OFFSET = 18;
+export const MAP_VIEW_PADDING = 36;
 
 export const DAYS_PER_SEASON = 30;
 export const SEASON_ORDER = ['spring', 'summer', 'autumn', 'winter'];

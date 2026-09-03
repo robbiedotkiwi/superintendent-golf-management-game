@@ -24,7 +24,7 @@ export default function WeatherStrip({ state, onPlan, onRemove }) {
   const upcoming = nextTournament(state);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--sand)]/30 px-4 py-2 text-[var(--sand)]">
+    <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[var(--sand)]/30 px-4 py-2 text-[var(--sand)]">
       <p>
         Today: <span className="text-[var(--paint)]">{WEATHER_LABELS[state.weather]}</span>
         {' — '}

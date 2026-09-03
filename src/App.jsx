@@ -298,7 +298,7 @@ function GameScreen({
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex h-screen max-h-screen flex-col overflow-hidden bg-[var(--soil)] text-[var(--paint)]">
       {state.dismissed ? <GameOver onNewGame={onNewGame} /> : null}
       {!state.dismissed && state.pendingYearReview && !summary ? (
         <YearReview review={state.lastYearReview} onContinue={onDismissYearReview} />
@@ -333,7 +333,7 @@ function GameScreen({
         onToggleSound={onToggleSound}
       />
       <WeatherStrip state={state} onPlan={onPlan} onRemove={onRemove} />
-      <div className="flex flex-wrap items-end gap-8 px-4 py-3">
+      <div className="shrink-0 flex flex-wrap items-end gap-8 px-4 py-3">
         <Stat label="Day" value={state.day} />
         <Stat label="Season" value={`${state.season} · ${state.year}`} />
         <Stat label="Cash" value={Math.round(state.cash)} />
@@ -355,7 +355,7 @@ function GameScreen({
           />
         ) : null}
       </div>
-      <div className="min-h-0 flex-1 px-3 pb-3">
+      <div className="relative min-h-0 flex-1 overflow-hidden">
         <CourseMap
           surfaces={state.surfaces}
           pond={state.pond}

@@ -81,3 +81,7 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 
 - Tutorial is a single in-game card after the season-start dates. Sound uses Web Audio beeps (mower sawtooth, bird sine), off by default.
 - Year review records one condition point per resolved day, tournament logs, maintenance spend (wages/mains/materials/fines) and capital purchases. `saveVersion` 1; unusable saves (no surfaces) refuse to load instead of filling fake turf.
+
+## UI Round 1
+
+- Map `viewBox` is the bounding box of holes, shed, pond and range plus `MAP_VIEW_PADDING`. The range is included even before it is built so the camera does not jump. The SVG is absolutely positioned in the leftover HUD space with `xMidYMid meet`.

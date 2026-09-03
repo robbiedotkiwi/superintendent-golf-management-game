@@ -19,8 +19,8 @@ export default function TimeBar({
   const usedPercent = capacity <= 0 ? 0 : (used / capacity) * 100;
 
   return (
-    <header className="flex items-stretch gap-3 bg-[var(--soil)] p-3">
-      <div className="relative min-h-16 flex-1 overflow-hidden border border-[var(--sand)]">
+    <header className="flex shrink-0 flex-wrap items-stretch gap-3 bg-[var(--soil)] p-3">
+      <div className="relative min-h-16 min-w-0 flex-1 overflow-hidden border border-[var(--sand)]">
         <div
           className="absolute inset-y-0 left-0 bg-[var(--machine-orange)]"
           style={{ width: `${usedPercent}%` }}
