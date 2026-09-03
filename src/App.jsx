@@ -5,8 +5,10 @@ import Crew from './components/Crew.jsx';
 import GameOver from './components/GameOver.jsx';
 import Office from './components/Office.jsx';
 import PlayoutBar from './components/PlayoutBar.jsx';
+import MapJobPopover from './components/MapJobPopover.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import Tutorial from './components/Tutorial.jsx';
+import Turf from './components/Turf.jsx';
 import YearReview from './components/YearReview.jsx';
 import Shed from './components/Shed.jsx';
 import {
@@ -15,6 +17,9 @@ import {
   SECTION_MAP,
   SECTION_OFFICE,
   SECTION_SHED,
+  SECTION_TURF,
+  SURFACE_KEYS,
+  TURF_TAB_POND,
   WEATHER_FINE,
   machineOrange,
   paint,
@@ -33,7 +38,6 @@ import {
   reducer,
 } from './engine/gameState.js';
 import { courseCondition } from './engine/simulation.js';
-import { unreadCount } from './engine/mail.js';
 import {
   PLAYOUT_DONE,
   PLAYOUT_PLAYING,
@@ -169,6 +173,7 @@ export default function App() {
           onOpenShed={() => dispatch({ type: 'SET_SECTION', section: SECTION_SHED })}
           onOpenCrew={() => dispatch({ type: 'SET_SECTION', section: SECTION_CREW })}
           onOpenOffice={() => dispatch({ type: 'SET_SECTION', section: SECTION_OFFICE })}
+          onOpenTurf={() => dispatch({ type: 'SET_SECTION', section: SECTION_TURF })}
           onCloseShed={() => dispatch({ type: 'SET_SECTION', section: SECTION_MAP })}
           onBuy={(machineId) => dispatch({ type: 'BUY_MACHINE', machineId })}
           onBuyFoley={() => dispatch({ type: 'BUY_FOLEY' })}
@@ -194,6 +199,7 @@ export default function App() {
           onSetHandWaterTargets={(targets) => dispatch({ type: 'SET_HAND_WATER_TARGETS', targets })}
           onSavePreset={(surface, name) => dispatch({ type: 'SAVE_PRESET', surface, name })}
           onApplyPreset={(id) => dispatch({ type: 'APPLY_PRESET', id })}
+          onApplyShippedPreset={(id) => dispatch({ type: 'APPLY_SHIPPED_PRESET', id })}
           onDeletePreset={(id) => dispatch({ type: 'DELETE_PRESET', id })}
           onTab={(section, tab) => dispatch({ type: 'SET_TAB', section, tab })}
           onLease={(machineId) => dispatch({ type: 'LEASE_MACHINE', machineId })}
@@ -267,6 +273,7 @@ function GameScreen({
   onOpenShed,
   onOpenCrew,
   onOpenOffice,
+  onOpenTurf,
   onCloseShed,
   onBuy,
   onBuyFoley,
@@ -292,6 +299,7 @@ function GameScreen({
   onSetHandWaterTargets,
   onSavePreset,
   onApplyPreset,
+  onApplyShippedPreset,
   onDeletePreset,
   onLease,
   onStopLease,
@@ -345,6 +353,16 @@ function GameScreen({
   const showMower = Boolean(event?.mowing);
   const watching = playout?.status === PLAYOUT_PLAYING;
 
+  function handleSelect(id) {
+    if (id === 'pond') {
+      onTab(SECTION_TURF, TURF_TAB_POND);
+      onOpenTurf();
+      onSelect(null);
+      return;
+    }
+    onSelect(id);
+  }
+
   return (
     <div className="flex h-screen max-h-screen overflow-hidden bg-[var(--soil)] text-[var(--paint)]">
       {state.dismissed && !watching ? <GameOver onNewGame={onNewGame} /> : null}
@@ -360,14 +378,10 @@ function GameScreen({
       ) : null}
       <Sidebar
         state={state}
-        selected={selected}
         condition={condition}
         minutesRemaining={minutesRemaining}
         minutesUsed={minutesUsed}
         minutesCapacity={minutesCapacity}
-        unread={unreadCount(state)}
-        onSelect={onSelect}
-        onPlan={onPlan}
         onRemove={onRemove}
         onEndDay={
           watching
@@ -378,28 +392,13 @@ function GameScreen({
               }
         }
         playoutActive={watching}
-        skipPlayout={state.skipPlayout}
-        onSetSkipPref={onSetSkipPref}
         section={view}
-        onMove={onMove}
+        onOpenTurf={onOpenTurf}
         onOpenShed={onOpenShed}
         onOpenCrew={onOpenCrew}
         onOpenOffice={onOpenOffice}
-        onSetWorker={onSetWorker}
-        onSetHoc={onSetHoc}
-        onSetPattern={onSetPattern}
-        onSetAngle={onSetAngle}
-        onSetAutoRotate={onSetAutoRotate}
-        onSetIrrigation={onSetIrrigation}
         onSetView={onSetView}
-        onBuyAerator={onBuyAerator}
-        onBuyGreensSensors={onBuyGreensSensors}
-        onBuyTurfRad={onBuyTurfRad}
         onToggleMoistureOverlay={onToggleMoistureOverlay}
-        onSetHandWaterTargets={onSetHandWaterTargets}
-        onSavePreset={onSavePreset}
-        onApplyPreset={onApplyPreset}
-        onDeletePreset={onDeletePreset}
         onToggleSound={onToggleSound}
       />
       <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
@@ -441,12 +440,36 @@ function GameScreen({
             onRead={onReadMail}
             onPlanMeeting={() => onPlan('gmMeeting')}
             onRemoveMeeting={() => onRemove('gmMeeting')}
+            onPlanBalls={() => onPlan('pickBalls')}
+            onRemoveBalls={() => onRemove('pickBalls')}
             onDeclineTournament={onDeclineTournament}
             onAcceptEvent={onAcceptEvent}
             onDeclineEvent={onDeclineEvent}
             onSetTournaments={onSetTournaments}
             onStartProject={onStartProject}
             onBuyPicker={onBuyPicker}
+          />
+        ) : view === SECTION_TURF ? (
+          <Turf
+            state={state}
+            tab={tabs[SECTION_TURF]}
+            onTab={(tab) => onTab(SECTION_TURF, tab)}
+            onBack={onCloseShed}
+            onPlan={onPlan}
+            onRemove={onRemove}
+            onSetHoc={onSetHoc}
+            onSetPattern={onSetPattern}
+            onSetAngle={onSetAngle}
+            onSetAutoRotate={onSetAutoRotate}
+            onSetIrrigation={onSetIrrigation}
+            onBuyAerator={onBuyAerator}
+            onBuyGreensSensors={onBuyGreensSensors}
+            onBuyTurfRad={onBuyTurfRad}
+            onSetHandWaterTargets={onSetHandWaterTargets}
+            onSavePreset={onSavePreset}
+            onApplyPreset={onApplyPreset}
+            onApplyShippedPreset={onApplyShippedPreset}
+            onDeletePreset={onDeletePreset}
           />
         ) : (
           <>
@@ -459,13 +482,23 @@ function GameScreen({
               showMower={showMower}
               selected={selected}
               highlight={event?.surface ?? selected}
-              onSelect={onSelect}
+              onSelect={handleSelect}
               onOpenShed={onOpenShed}
               day={watching ? playout.day : state.day}
               view={state.view}
               onView={onSetView}
               moistureState={state}
             />
+            {SURFACE_KEYS.includes(selected) && !watching ? (
+              <MapJobPopover
+                surface={selected}
+                state={state}
+                onPlan={onPlan}
+                onRemove={onRemove}
+                onSetWorker={onSetWorker}
+                onClose={() => onSelect(null)}
+              />
+            ) : null}
             <PlayoutBar
               playout={watching ? playout : null}
               speed={state.playoutSpeed}

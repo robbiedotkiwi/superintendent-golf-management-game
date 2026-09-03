@@ -150,6 +150,8 @@ export function withDefaults(state) {
     skipPlayout: Boolean(state.skipPlayout ?? PLAYOUT_SKIP_DEFAULT),
     customPresets: Array.isArray(state.customPresets) ? state.customPresets : [],
     nextPresetId: Number.isInteger(state.nextPresetId) && state.nextPresetId > 0 ? state.nextPresetId : 1,
+    lastMainsCost: Number.isFinite(Number(state.lastMainsCost)) ? Number(state.lastMainsCost) : 0,
+    lastDeliveryDay: Number.isInteger(state.lastDeliveryDay) ? state.lastDeliveryDay : null,
     section: normalizeSection(state.section),
     tabs: normalizeTabs(state.tabs),
   };

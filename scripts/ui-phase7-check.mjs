@@ -6,10 +6,11 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const src = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
-assert.match(src, /aria-label="Locations"/);
+assert.match(src, /aria-label="Sections"/);
 assert.match(src, /onOpenOffice/);
 assert.match(src, /onOpenCrew/);
 assert.match(src, /onOpenShed/);
+assert.match(src, /onOpenTurf/);
 assert.match(src, /End day/);
 assert.match(src, /rounded-full bg-\[var\(--machine-orange\)\]/);
 assert.doesNotMatch(src, /Sound \{soundOn \? 'on' : 'off'\}/);

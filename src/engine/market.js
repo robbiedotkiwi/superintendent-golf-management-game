@@ -146,8 +146,10 @@ export function sellMachine(state, machineId) {
 export function tickMarket(state) {
   let next = { ...state };
   const pendingDeliveries = [];
+  let arrived = false;
   for (const item of state.pendingDeliveries ?? []) {
     if (next.day >= item.arrivesDay) {
+      arrived = true;
       if (!next.ownedMachines.includes(item.machineId)) {
         next = { ...next, ...stampOwnedMachine(next, item.machineId, item.condition) };
         if (getMachine(item.machineId)?.autonomous) {
@@ -170,5 +172,10 @@ export function tickMarket(state) {
       activeSales.push(item);
     }
   }
-  return { ...next, activeSales, capitalBudget };
+  return {
+    ...next,
+    activeSales,
+    capitalBudget,
+    lastDeliveryDay: arrived ? next.day : (next.lastDeliveryDay ?? null),
+  };
 }

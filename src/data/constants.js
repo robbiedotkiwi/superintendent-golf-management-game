@@ -693,10 +693,72 @@ export const PLAYOUT_MIN_EVENT_MS = 480;
 export const PLAYOUT_EMPTY_MS = 600;
 export const PLAYOUT_END_HOLD_MS = 240;
 export const SECTION_MAP = 'course';
+export const SECTION_TURF = 'turf';
 export const SECTION_OFFICE = 'office';
 export const SECTION_CREW = 'crew';
 export const SECTION_SHED = 'shed';
-export const SECTIONS = [SECTION_MAP, SECTION_OFFICE, SECTION_CREW, SECTION_SHED];
+export const SECTIONS = [SECTION_MAP, SECTION_TURF, SECTION_OFFICE, SECTION_CREW, SECTION_SHED];
+export const TURF_TAB_SUMMARY = 'summary';
+export const TURF_TAB_MOWING = 'mowing';
+export const TURF_TAB_IRRIGATION = 'irrigation';
+export const TURF_TAB_BUNKERS = 'bunkers';
+export const TURF_TAB_POND = 'pond';
+export const TURF_TAB_PRESETS = 'presets';
+export const TURF_TABS = [
+  TURF_TAB_SUMMARY,
+  TURF_TAB_MOWING,
+  TURF_TAB_IRRIGATION,
+  TURF_TAB_BUNKERS,
+  TURF_TAB_POND,
+  TURF_TAB_PRESETS,
+];
+export const TURF_TAB_DEFAULT = TURF_TAB_SUMMARY;
+export const TURF_TAB_LABELS = {
+  [TURF_TAB_SUMMARY]: 'Summary',
+  [TURF_TAB_MOWING]: 'Mowing',
+  [TURF_TAB_IRRIGATION]: 'Irrigation',
+  [TURF_TAB_BUNKERS]: 'Bunkers',
+  [TURF_TAB_POND]: 'Pond',
+  [TURF_TAB_PRESETS]: 'Presets',
+};
+export const GM_MEETING_LEAD_DAYS = 2;
+export const MORALE_BADGE_BELOW = MORALE_SLOW_BELOW;
+export const SIDEBAR_FIT_HEIGHT = 720;
+export const SHIPPED_PRESET_DAILY = 'daily';
+export const SHIPPED_PRESET_TOURNAMENT = 'tournament';
+export const SHIPPED_PRESET_RECOVERY = 'recovery';
+export const SHIPPED_PRESETS = [
+  {
+    id: SHIPPED_PRESET_DAILY,
+    name: 'Daily',
+    surfaces: {
+      greens: { hoc: 3.5, pattern: PATTERN_STRIPES, angle: 0, autoRotate: false },
+      tees: { hoc: 9, pattern: PATTERN_STRIPES, angle: 0, autoRotate: false },
+      fairways: { hoc: 14, pattern: PATTERN_BLOCK, angle: 0, autoRotate: false },
+      rough: { hoc: 45, pattern: PATTERN_BLOCK, angle: 0, autoRotate: false },
+    },
+  },
+  {
+    id: SHIPPED_PRESET_TOURNAMENT,
+    name: 'Tournament',
+    surfaces: {
+      greens: { hoc: 2.8, pattern: PATTERN_STRIPES, angle: 45, autoRotate: false },
+      tees: { hoc: 7, pattern: PATTERN_STRIPES, angle: 45, autoRotate: false },
+      fairways: { hoc: 11, pattern: PATTERN_STRIPES, angle: 45, autoRotate: false },
+      rough: { hoc: 40, pattern: PATTERN_STRIPES, angle: 0, autoRotate: false },
+    },
+  },
+  {
+    id: SHIPPED_PRESET_RECOVERY,
+    name: 'Recovery',
+    surfaces: {
+      greens: { hoc: 4.5, pattern: PATTERN_BLOCK, angle: 0, autoRotate: true },
+      tees: { hoc: 11, pattern: PATTERN_BLOCK, angle: 0, autoRotate: true },
+      fairways: { hoc: 16, pattern: PATTERN_BLOCK, angle: 0, autoRotate: true },
+      rough: { hoc: 55, pattern: PATTERN_BLOCK, angle: 0, autoRotate: true },
+    },
+  },
+];
 export const OFFICE_TAB_INBOX = 'inbox';
 export const OFFICE_TAB_MONEY = 'money';
 export const OFFICE_TAB_PROJECTS = 'projects';

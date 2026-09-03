@@ -49,8 +49,8 @@ rolling = reducer(rolling, { type: 'END_DAY' });
 assert.notEqual(JSON.stringify(rolling.forecastStrip), firstStrip);
 assert.equal(rolling.forecastStrip.length, 7);
 
-const sidebar = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
-assert.match(sidebar, /<ForecastStrip/);
+const turf = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+assert.match(turf, /<ForecastStrip/);
 const stripSrc = readFileSync(new URL('../src/components/ForecastStrip.jsx', import.meta.url), 'utf8');
 assert.match(stripSrc, /id="forecast-strip"/);
 assert.match(stripSrc, /forecastOpacity/);

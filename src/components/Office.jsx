@@ -21,6 +21,7 @@ import { unreadCount } from '../engine/mail.js';
 import { formatMoney } from '../engine/format.js';
 import { invitationById } from '../engine/events.js';
 import { canPlanTask } from '../engine/gameState.js';
+import { daysUntilNextTournament, nextTournament } from '../engine/tournament.js';
 import SeasonStart from './SeasonStart.jsx';
 import SectionTabs from './SectionTabs.jsx';
 import {
@@ -43,6 +44,8 @@ export default function Office({
   onRead,
   onPlanMeeting,
   onRemoveMeeting,
+  onPlanBalls,
+  onRemoveBalls,
   onDeclineTournament,
   onAcceptEvent,
   onDeclineEvent,
@@ -55,6 +58,10 @@ export default function Office({
   const loanCheck = canTakeLoan(state, cap);
   const meeting = state.plannedTasks.find((item) => item.taskId === 'gmMeeting');
   const meetingCheck = canPlanTask(state, 'gmMeeting');
+  const balls = state.plannedTasks.find((item) => item.taskId === 'pickBalls');
+  const ballsCheck = canPlanTask(state, 'pickBalls');
+  const until = daysUntilNextTournament(state);
+  const upcoming = nextTournament(state);
   const labels = {
     ...OFFICE_TAB_LABELS,
     [OFFICE_TAB_INBOX]: unread ? `Inbox (${unread})` : OFFICE_TAB_LABELS[OFFICE_TAB_INBOX],
@@ -75,6 +82,13 @@ export default function Office({
       </p>
       <p className="mt-1 text-[var(--sand)]">
         {state.holes}-hole course · Satisfaction {Math.round(state.satisfaction)} · GM standing {Math.round(state.gmStanding)}
+      </p>
+      <p className="mt-1 text-sm text-[var(--sand)]">
+        {upcoming == null
+          ? 'No tournament booked'
+          : until === 0
+            ? 'Tournament today'
+            : `Tournament in ${until} day${until === 1 ? '' : 's'} (day ${upcoming.day})`}
       </p>
 
       {tab === OFFICE_TAB_MONEY ? (
@@ -170,6 +184,23 @@ export default function Office({
             </button>
           ) : null}
           {state.hasAutoPicker ? <p className="mt-2 text-sm">Autonomous picker on the range.</p> : null}
+          {state.hasDrivingRange ? (
+            balls ? (
+              <button type="button" onClick={onRemoveBalls} className="mt-3 border border-[var(--sand)] px-3 py-2">
+                Ball pick planned · {balls.minutes} min
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={!ballsCheck.ok}
+                title={ballsCheck.ok ? undefined : ballsCheck.reason}
+                onClick={onPlanBalls}
+                className="mt-3 border border-[var(--sand)] px-3 py-2 disabled:opacity-40"
+              >
+                {ballsCheck.ok ? 'Pick range balls' : ballsCheck.reason}
+              </button>
+            )
+          ) : null}
         </>
       ) : null}
 

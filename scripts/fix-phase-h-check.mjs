@@ -127,8 +127,9 @@ assert.equal(moistureStatus(old, 'greens').kind, 'hidden');
 assert.equal(old.hasGreensSensors, false);
 assert.equal(old.hasTurfRad, false);
 
+const turf = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+assert.match(turf, /MoistureLine/);
 const sidebar = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
-assert.match(sidebar, /MoistureLine/);
 assert.match(sidebar, /onToggleMoistureOverlay/);
 const map = readFileSync(new URL('../src/components/CourseMap.jsx', import.meta.url), 'utf8');
 assert.match(map, /moisture-hatch/);

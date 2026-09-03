@@ -406,6 +406,7 @@ export function resolveDay(state) {
     moisture,
     moistureReadDay,
     pond: irrigation.pond,
+    lastMainsCost: irrigation.mainsCost,
     maintenanceBudget,
     disease,
     sprayedUntil,

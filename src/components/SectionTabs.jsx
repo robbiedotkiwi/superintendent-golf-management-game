@@ -1,6 +1,6 @@
 export default function SectionTabs({ tabs, labels, value, onChange }) {
   return (
-    <nav aria-label="Section tabs" className="mb-6 flex overflow-hidden border border-[var(--sand)]">
+    <nav aria-label="Section tabs" className="mb-6 flex flex-wrap overflow-hidden border border-[var(--sand)]">
       {tabs.map((id, index) => (
         <button
           key={id}

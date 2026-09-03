@@ -112,7 +112,7 @@ high = endKeep(high, { season: 'summer' });
 low = endKeep(low, { season: 'summer' });
 assert.equal(high.surfaces.greens.quality - low.surfaces.greens.quality, HOC_STRESS_DAMAGE);
 
-const panel = readFileSync(new URL('../src/components/TaskPanel.jsx', import.meta.url), 'utf8');
+const panel = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
 assert.match(panel, /inHocStressBand/);
 assert.match(panel, /HOC_STRESS_DAMAGE/);
 assert.doesNotMatch(panel, /LEVEL_KEYS|LEVEL_LABELS|usesQualityLevel/);

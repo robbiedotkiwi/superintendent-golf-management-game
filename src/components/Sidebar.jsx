@@ -1,305 +1,102 @@
 import {
-  GM_MEETING_MINUTES,
-  MOISTURE_SURFACES,
   SECTION_CREW,
-  SECTION_MAP,
   SECTION_OFFICE,
   SECTION_SHED,
+  SECTION_TURF,
   SIDEBAR_WIDTH,
-  SURFACE_KEYS,
-  TASK_MINUTES,
-  WEATHER_STORM,
 } from '../data/constants.js';
-import { WEATHER_LABELS, weatherCopy } from '../data/events.js';
-import { SURFACE_LABELS } from '../data/tasks.js';
-import { durationForTask } from '../engine/assignment.js';
+import { WEATHER_LABELS } from '../data/events.js';
 import { qualityColor } from '../engine/color.js';
-import { formatMoney } from '../engine/format.js';
-import { canPlanTask } from '../engine/gameState.js';
-import { meetingDue } from '../engine/mail.js';
-import { daysSinceLastWorked, isNeglected } from '../engine/neglect.js';
-import { daysUntilNextTournament, nextTournament } from '../engine/tournament.js';
+import { sectionBadge } from '../engine/badges.js';
 import { fitCourse } from '../engine/view.js';
-import ForecastStrip from './ForecastStrip.jsx';
-import IrrigationPanel from './IrrigationPanel.jsx';
-import { MoistureLine } from './MoistureReadout.jsx';
-import TaskPanel from './TaskPanel.jsx';
 import TimeBar from './TimeBar.jsx';
-import { DiseaseReadout } from './WeatherStrip.jsx';
 
-function formatQuality(value) {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1);
+function NavButton({ label, active, badge, dot, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`relative flex-1 px-2 py-2 text-sm ${active ? 'bg-[var(--machine-orange)]' : ''}`}
+    >
+      {label}
+      {badge ? (
+        <span className="absolute right-1 top-1 min-w-5 rounded-full bg-[var(--machine-orange)] px-1 text-center text-xs font-bold leading-5 text-[var(--paint)]">
+          {badge}
+        </span>
+      ) : null}
+      {dot ? (
+        <span className="absolute bottom-1 right-1 h-2 w-2 rounded-full bg-[var(--machine-orange)]" aria-hidden="true" />
+      ) : null}
+    </button>
+  );
 }
 
 export default function Sidebar({
   state,
-  selected,
   condition,
   minutesRemaining,
   minutesUsed,
   minutesCapacity,
-  unread,
-  onSelect,
-  onPlan,
   onRemove,
   onEndDay,
   playoutActive = false,
-  skipPlayout = false,
-  onSetSkipPref,
-  onMove,
+  section,
+  onOpenTurf,
   onOpenShed,
   onOpenCrew,
   onOpenOffice,
-  section = SECTION_MAP,
-  onSetWorker,
-  onSetHoc,
-  onSetPattern,
-  onSetAngle,
-  onSetAutoRotate,
-  onSetIrrigation,
   onSetView,
-  onBuyAerator,
-  onBuyGreensSensors,
-  onBuyTurfRad,
   onToggleMoistureOverlay,
-  onSetHandWaterTargets,
-  onSavePreset,
-  onApplyPreset,
-  onDeletePreset,
   onToggleSound,
 }) {
-  const debris = state.plannedTasks.find((item) => item.taskId === 'clearDebris');
-  const debrisCheck = canPlanTask(state, 'clearDebris');
-  const meeting = state.plannedTasks.find((item) => item.taskId === 'gmMeeting');
-  const meetingCheck = canPlanTask(state, 'gmMeeting');
-  const balls = state.plannedTasks.find((item) => item.taskId === 'pickBalls');
-  const ballsCheck = canPlanTask(state, 'pickBalls');
-  const ballMinutes = durationForTask(state, 'pickBalls');
-  const until = daysUntilNextTournament(state);
-  const upcoming = nextTournament(state);
+  const turf = sectionBadge(state, 'turf');
+  const office = sectionBadge(state, 'office');
+  const crew = sectionBadge(state, 'crew');
+  const shed = sectionBadge(state, 'shed');
+  const tomorrow = WEATHER_LABELS[state.forecast] ?? state.forecast;
 
   return (
     <aside
-      className="flex h-full shrink-0 flex-col bg-[var(--soil)] text-[var(--paint)]"
-      style={{ width: SIDEBAR_WIDTH }}
+      className="flex h-full shrink-0 flex-col overflow-hidden bg-[var(--soil)] text-[var(--paint)]"
+      style={{ width: SIDEBAR_WIDTH, maxHeight: '100%' }}
     >
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
+      <div className="flex-1 px-3 py-3">
         <header>
           <div className="font-condensed text-4xl font-bold leading-none">Day {state.day}</div>
           <p className="mt-1 text-lg">
             {state.season} · {state.year}
           </p>
-          <p className="mt-2 text-sm text-[var(--sand)]">
-            Today: <span className="text-[var(--paint)]">{WEATHER_LABELS[state.weather]}</span>
-            {' — '}
-            {weatherCopy(state.weather)}
+          <p className="mt-2 text-sm">
+            Today {WEATHER_LABELS[state.weather]} · Tomorrow {tomorrow}
           </p>
         </header>
 
-        <ForecastStrip state={state} />
-
-        <div className="mt-4 flex items-end justify-between gap-3">
-          <div>
-            <div className="text-sm text-[var(--sand)]">Condition</div>
-            <div className="font-condensed text-6xl font-bold leading-none" style={{ color: qualityColor(condition) }}>
-              {condition}
-            </div>
-          </div>
-          <div>
-            <div className="text-sm text-[var(--sand)]">Satisfaction</div>
-            <div className="font-condensed text-2xl font-bold leading-none">{Math.round(state.satisfaction)}</div>
-          </div>
-        </div>
-
         <div className="mt-4">
-          <div className="text-sm text-[var(--sand)]">Cash</div>
-          <div className="font-condensed text-2xl font-bold leading-none">{formatMoney(state.cash)}</div>
-          <div className="mt-2 text-xs uppercase tracking-widest text-[var(--sand)]">Budgets</div>
-          <div className="mt-1 flex gap-4">
-            <div>
-              <div className="text-sm text-[var(--sand)]">Maintenance</div>
-              <div className="text-lg font-semibold">{formatMoney(state.maintenanceBudget)}</div>
-            </div>
-            <div>
-              <div className="text-sm text-[var(--sand)]">Capital</div>
-              <div className="text-lg font-semibold">{formatMoney(state.capitalBudget)}</div>
-            </div>
+          <div className="text-sm text-[var(--sand)]">Condition</div>
+          <div className="font-condensed text-6xl font-bold leading-none" style={{ color: qualityColor(condition) }}>
+            {condition}
           </div>
         </div>
 
-        <p className="mt-3 text-sm text-[var(--sand)]">
-          {upcoming == null
-            ? 'No tournament booked'
-            : until === 0
-              ? 'Tournament today'
-              : `Tournament in ${until} day${until === 1 ? '' : 's'} (day ${upcoming.day})`}
-        </p>
-        <div className="mt-1">
-          <DiseaseReadout state={state} />
-        </div>
-
-        {meetingDue(state.day) ? (
-          meeting ? (
-            <button type="button" onClick={() => onRemove('gmMeeting')} className="mt-2 border border-[var(--sand)] px-3 py-1">
-              GM meeting planned · {meeting.minutes} min
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={!meetingCheck.ok}
-              onClick={() => onPlan('gmMeeting')}
-              className="mt-2 bg-[var(--machine-orange)] px-3 py-1 font-semibold disabled:opacity-40"
-              title={meetingCheck.ok ? undefined : meetingCheck.reason}
-            >
-              GM meeting · {GM_MEETING_MINUTES} min
-            </button>
-          )
-        ) : null}
-        {state.hasDrivingRange ? (
-          balls ? (
-            <button type="button" onClick={() => onRemove('pickBalls')} className="mt-2 border border-[var(--sand)] px-3 py-1">
-              Ball pick planned · {balls.minutes} min
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={!ballsCheck.ok}
-              onClick={() => onPlan('pickBalls')}
-              className="mt-2 bg-[var(--machine-orange)] px-3 py-1 font-semibold disabled:opacity-40"
-              title={ballsCheck.ok ? undefined : ballsCheck.reason}
-            >
-              Pick balls · {ballMinutes} min
-            </button>
-          )
-        ) : null}
-        {state.weather === WEATHER_STORM ? (
-          debris ? (
-            <button type="button" onClick={() => onRemove('clearDebris')} className="mt-2 border border-[var(--sand)] px-3 py-1">
-              Debris planned · {debris.minutes} min
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={!debrisCheck.ok}
-              onClick={() => onPlan('clearDebris')}
-              className="mt-2 bg-[var(--machine-orange)] px-3 py-1 font-semibold disabled:opacity-40"
-              title={debrisCheck.ok ? undefined : debrisCheck.reason}
-            >
-              Clear debris · {TASK_MINUTES.clearDebris} min
-            </button>
-          )
-        ) : null}
-
-        <h2 className="mt-5 text-sm uppercase tracking-widest text-[var(--sand)]">Surfaces</h2>
-        <div className="mt-2 space-y-1">
-          {SURFACE_KEYS.map((surface) => {
-            const days = daysSinceLastWorked(state, surface);
-            const neglected = isNeglected(state, surface);
-            const open = selected === surface;
-            return (
-              <div
-                key={surface}
-                className={`border ${
-                  open ? 'border-[var(--paint)]' : neglected ? 'border-[var(--machine-orange)]' : 'border-[var(--sand)]'
-                }`}
-              >
-                <button
-                  type="button"
-                  onClick={() => onSelect(open ? null : surface)}
-                  className="flex w-full items-baseline justify-between gap-2 px-2 py-2 text-left"
-                >
-                  <span className="font-semibold">{SURFACE_LABELS[surface]}</span>
-                  <span className="text-sm text-[var(--sand)]">
-                    {formatQuality(state.surfaces[surface].quality)}
-                    {' · '}
-                    {days}d
-                    {neglected ? ' · overdue' : ''}
-                    {MOISTURE_SURFACES.includes(surface) ? (
-                      <>
-                        {' · '}
-                        <MoistureLine state={state} surface={surface} />
-                      </>
-                    ) : null}
-                  </span>
-                </button>
-                {open ? (
-                  <div className="px-2 pb-2">
-                    <TaskPanel
-                      surface={surface}
-                      state={state}
-                      onPlan={onPlan}
-                      onRemove={onRemove}
-                      onSetWorker={onSetWorker}
-                      onSetHoc={onSetHoc}
-                      onSetPattern={onSetPattern}
-                      onSetAngle={onSetAngle}
-                      onSetAutoRotate={onSetAutoRotate}
-                      onSetHandWaterTargets={onSetHandWaterTargets}
-                      onSavePreset={onSavePreset}
-                      onApplyPreset={onApplyPreset}
-                      onDeletePreset={onDeletePreset}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-
-        <h2 className="mt-5 text-sm uppercase tracking-widest text-[var(--sand)]">Locations</h2>
-        <nav aria-label="Locations" className="mt-2 flex overflow-hidden border border-[var(--sand)]">
-          <button
-            type="button"
-            onClick={() => onSelect(selected === 'pond' ? null : 'pond')}
-            className={`flex-1 px-2 py-2 text-sm ${selected === 'pond' ? 'bg-[var(--machine-orange)]' : ''}`}
-          >
-            Pond
-          </button>
-          <button
-            type="button"
+        <nav aria-label="Sections" className="mt-4 grid grid-cols-2 overflow-hidden border border-[var(--sand)]">
+          <NavButton label="Turf" active={section === SECTION_TURF} badge={turf.count} dot={turf.dot} onClick={onOpenTurf} />
+          <NavButton
+            label="Office"
+            active={section === SECTION_OFFICE}
+            badge={office.count}
+            dot={office.dot}
             onClick={onOpenOffice}
-            aria-pressed={section === SECTION_OFFICE}
-            className={`relative flex-1 border-l border-[var(--sand)] px-2 py-2 text-sm ${
-              section === SECTION_OFFICE ? 'bg-[var(--machine-orange)]' : ''
-            }`}
-          >
-            Office
-            {unread ? (
-              <span className="absolute right-1 top-1 min-w-5 rounded-full bg-[var(--machine-orange)] px-1 text-center text-xs font-bold leading-5 text-[var(--paint)]">
-                {unread}
-              </span>
-            ) : null}
-          </button>
-          <button
-            type="button"
-            onClick={onOpenCrew}
-            aria-pressed={section === SECTION_CREW}
-            className={`flex-1 border-l border-[var(--sand)] px-2 py-2 text-sm ${
-              section === SECTION_CREW ? 'bg-[var(--machine-orange)]' : ''
-            }`}
-          >
-            Crew
-          </button>
-          <button
-            type="button"
-            onClick={onOpenShed}
-            aria-pressed={section === SECTION_SHED}
-            className={`flex-1 border-l border-[var(--sand)] px-2 py-2 text-sm ${
-              section === SECTION_SHED ? 'bg-[var(--machine-orange)]' : ''
-            }`}
-          >
-            Shed
-          </button>
-        </nav>
-        {selected === 'pond' ? (
-          <IrrigationPanel
-            state={state}
-            onSetPolicy={onSetIrrigation}
-            onBuyAerator={onBuyAerator}
-            onBuyGreensSensors={onBuyGreensSensors}
-            onBuyTurfRad={onBuyTurfRad}
           />
-        ) : null}
+          <NavButton
+            label="Crew"
+            active={section === SECTION_CREW}
+            badge={crew.count}
+            dot={crew.dot}
+            onClick={onOpenCrew}
+          />
+          <NavButton label="Shed" active={section === SECTION_SHED} badge={shed.count} dot={shed.dot} onClick={onOpenShed} />
+        </nav>
       </div>
 
       <div className="shrink-0 border-t border-[var(--sand)] p-3">
@@ -310,45 +107,35 @@ export default function Sidebar({
           plannedTasks={state.plannedTasks}
           onRemove={onRemove}
         />
-        {state.plannedTasks.length > 1 ? (
-          <div className="mt-1 flex flex-wrap gap-1 text-xs text-[var(--sand)]">
-            {state.plannedTasks.map((planned) => (
-              <span key={planned.taskId} className="flex gap-1">
-                <button type="button" onClick={() => onMove(planned.taskId, -1)} aria-label="Move earlier">
-                  ↑
-                </button>
-                <button type="button" onClick={() => onMove(planned.taskId, 1)} aria-label="Move later">
-                  ↓
-                </button>
-              </span>
-            ))}
-          </div>
-        ) : null}
-        <label className="mt-2 flex items-center gap-2 text-sm text-[var(--sand)]">
-          <input
-            type="checkbox"
-            checked={Boolean(skipPlayout)}
-            onChange={(event) => onSetSkipPref?.(event.target.checked)}
-          />
-          Skip the day film
-        </label>
+        <button
+          type="button"
+          onClick={onEndDay}
+          disabled={playoutActive}
+          className="mt-2 w-full bg-[var(--machine-orange)] px-4 py-3 text-lg font-semibold text-[var(--paint)] disabled:opacity-40"
+        >
+          End day
+        </button>
         <div className="mt-2 flex items-center gap-2">
           <button
             type="button"
             onClick={() => onSetView(fitCourse())}
-            className="border border-[var(--sand)] px-3 py-2 text-sm"
+            title="Fit"
+            aria-label="Fit course"
+            className="flex h-10 w-10 items-center justify-center border border-[var(--sand)] text-xs"
           >
             Fit
           </button>
           <button
             type="button"
             onClick={onToggleMoistureOverlay}
+            title="Moisture"
+            aria-label="Toggle moisture overlay"
             aria-pressed={Boolean(state.moistureOverlay)}
-            className={`border px-3 py-2 text-sm ${
+            className={`flex h-10 w-10 items-center justify-center border text-xs ${
               state.moistureOverlay ? 'border-[var(--machine-orange)] bg-[var(--machine-orange)]' : 'border-[var(--sand)]'
             }`}
           >
-            Moisture
+            Moist
           </button>
           <button
             type="button"
@@ -364,17 +151,9 @@ export default function Sidebar({
               </svg>
             ) : (
               <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true" fill="currentColor">
-                <path d="M16.5 12c0-1.8-1-3.3-2.5-4v2.2l2.4 2.4c.1-.2.1-.4.1-.6zm2.5 0c0 .9-.2 1.8-.5 2.6l1.5 1.5c.7-1.3 1-2.7 1-4.1 0-4.3-3-7.9-7-8.8v2.1c2.9.9 5 3.5 5 6.7zM4.3 3 3 4.3 7.7 9H3v6h4l5 5v-6.7l4.3 4.3 1.3-1.3L4.3 3zM12 4 9.9 6.1 12 8.2V4z" />
+                <path d="M16.5 12c0 .9-.2 1.8-.5 2.6l1.5 1.5c.7-1.3 1-2.7 1-4.1 0-4.3-3-7.9-7-8.8v2.1c2.9.9 5 3.5 5 6.7zM4.3 3 3 4.3 7.7 9H3v6h4l5 5v-6.7l4.3 4.3 1.3-1.3L4.3 3zM12 4 9.9 6.1 12 8.2V4z" />
               </svg>
             )}
-          </button>
-          <button
-            type="button"
-            onClick={onEndDay}
-            disabled={playoutActive}
-            className="flex-1 bg-[var(--machine-orange)] px-4 py-3 text-lg font-semibold text-[var(--paint)] disabled:opacity-40"
-          >
-            End day
           </button>
         </div>
       </div>

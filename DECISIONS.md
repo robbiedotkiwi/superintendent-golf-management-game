@@ -157,3 +157,10 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Invented layout helpers: `FLAG_FAR_FACTOR` 0.4 (flag offset along the last centreline tangent), `RANGE_X/Y` 40/1080 so the range bbox misses the new holes, `BACK_NINE_OFFSET_X` 1320, `ROUGH_GAP_MIN` 0 (capsules may sit close; intersection is still forbidden). Routing loops around the shed and pond; hole 7 no longer overlaps the shed. Holes 2, 4 and 9 bend.
 - `SHED_CLEARANCE` 40 inflates the shed footprint (including roof) before the intersection test.
 
+### Phase B
+
+- Sidebar is day / season·year, one-line today+tomorrow weather, the condition number, Turf/Office/Crew/Shed, then a pinned footer (time bar, day button, Fit / moisture / sound). The footer still says End day until Phase C. Skip-film lives only on the playout bar. Reorder arrows are gone until Phase D drag.
+- Surfaces, mowing, irrigation, pond, disease and the 7-day strip live in Turf (Summary · Mowing · Irrigation · Bunkers · Pond · Presets). Cash, budgets, satisfaction and tournaments stay in Office. Map surface clicks open `MapJobPopover` (one-click jobs at current settings). Pond clicks open the Turf Pond tab.
+- Invented shipped presets `Daily`, `Tournament` and `Recovery` are course-wide packs applied through the existing HOC/pattern patches. Badge numbers: overdue surface count, unread mail, low-morale workers + unread golfer/neglect mail, machines broken or away. Dots: outbreak or out-of-band moisture; GM meeting in `GM_MEETING_LEAD_DAYS` (2) or an open tournament decision; someone whose `trainingUntilDay` is tomorrow; used listings, an active sale, or `lastDeliveryDay` today. `MORALE_BADGE_BELOW` is `MORALE_SLOW_BELOW`. `lastMainsCost` is stored from the night's irrigation for the Pond tab.
+- Round 2/UI checks that required money, surfaces and the forecast in the sidebar now look at Office/Turf. `SIDEBAR_FIT_HEIGHT` is 720; the sidebar itself does not scroll.
+

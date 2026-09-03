@@ -93,6 +93,7 @@ import { clampAngle, clampHoc, hasHoc, hasPattern, mergeSurfaceFields, angleDelt
 import { courseBounds, holesForCount } from '../data/course.js';
 import { clampView, defaultView } from './view.js';
 import { defaultSectionTabs, normalizeSection, normalizeTabs, tabListForSection } from './section.js';
+import { shippedPresetById } from './presets.js';
 import { formatMoney } from './format.js';
 import { buyUsed, rollUsedListings, sellMachine } from './market.js';
 import { acceptEvent, declineEvent } from './events.js';
@@ -237,6 +238,8 @@ export function createInitialState() {
     skipPlayout: PLAYOUT_SKIP_DEFAULT,
     customPresets: [],
     nextPresetId: 1,
+    lastMainsCost: 0,
+    lastDeliveryDay: null,
     section: SECTION_MAP,
     tabs: defaultSectionTabs(),
   };
@@ -699,6 +702,25 @@ export function reducer(state, action) {
           angle: clampAngle(preset.angle ?? 0),
           autoRotate: Boolean(preset.autoRotate),
         });
+      }
+      return next;
+    }
+    case 'APPLY_SHIPPED_PRESET': {
+      const preset = shippedPresetById(action.id);
+      if (!preset) return state;
+      let next = state;
+      for (const [surface, settings] of Object.entries(preset.surfaces)) {
+        if (!next.surfaces?.[surface]) continue;
+        if (hasHoc(surface) && settings.hoc != null) {
+          next = applySurfacePatch(next, surface, { hoc: clampHoc(surface, settings.hoc) });
+        }
+        if (hasPattern(surface)) {
+          next = applySurfacePatch(next, surface, {
+            ...(PATTERN_KEYS.includes(settings.pattern) ? { pattern: settings.pattern } : {}),
+            angle: clampAngle(settings.angle ?? 0),
+            autoRotate: Boolean(settings.autoRotate),
+          });
+        }
       }
       return next;
     }

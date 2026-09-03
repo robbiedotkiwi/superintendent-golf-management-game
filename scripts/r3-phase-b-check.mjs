@@ -9,14 +9,16 @@ import {
   SECTION_MAP,
   SECTION_OFFICE,
   SECTION_SHED,
+  SECTION_TURF,
   SECTIONS,
 } from '../src/data/constants.js';
 
 assert.equal(SECTION_MAP, 'course');
+assert.equal(SECTION_TURF, 'turf');
 assert.equal(SECTION_OFFICE, 'office');
 assert.equal(SECTION_CREW, 'crew');
 assert.equal(SECTION_SHED, 'shed');
-assert.deepEqual(SECTIONS, [SECTION_MAP, SECTION_OFFICE, SECTION_CREW, SECTION_SHED]);
+assert.deepEqual(SECTIONS, [SECTION_MAP, SECTION_TURF, SECTION_OFFICE, SECTION_CREW, SECTION_SHED]);
 
 const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
 assert.match(app, /<Sidebar/);
@@ -27,8 +29,9 @@ const pane = app.slice(app.indexOf('relative min-h-0 min-w-0 flex-1'));
 assert.match(pane, /<Shed/);
 assert.match(pane, /<Crew/);
 assert.match(pane, /<Office/);
+assert.match(pane, /<Turf/);
 assert.match(pane, /<CourseMap/);
-assert.doesNotMatch(pane, /<TaskPanel/);
+assert.match(pane, /<MapJobPopover/);
 assert.doesNotMatch(pane, /<IrrigationPanel/);
 
 const afterSidebar = app.slice(app.indexOf('<Sidebar'));

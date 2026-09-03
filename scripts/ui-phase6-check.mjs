@@ -20,11 +20,14 @@ assert.match(panel, /text-3xl font-bold leading-none">\{minutes\}/);
 
 const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
 const mapBlock = app.slice(app.indexOf('relative min-h-0 min-w-0 flex-1'));
-assert.doesNotMatch(mapBlock, /<TaskPanel/);
+assert.match(mapBlock, /<MapJobPopover/);
 assert.doesNotMatch(mapBlock, /<IrrigationPanel/);
 
 const sidebar = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
-assert.match(sidebar, /<TaskPanel/);
-assert.match(sidebar, /<IrrigationPanel/);
+assert.doesNotMatch(sidebar, /<TaskPanel/);
+assert.doesNotMatch(sidebar, /<IrrigationPanel/);
+
+const popover = readFileSync(new URL('../src/components/MapJobPopover.jsx', import.meta.url), 'utf8');
+assert.match(popover, /<TaskPanel/);
 
 console.log('ui phase6 checks passed');

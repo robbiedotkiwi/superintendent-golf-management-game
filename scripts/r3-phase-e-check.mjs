@@ -60,9 +60,9 @@ const removed = reducer(state, { type: 'DELETE_PRESET', id: 1 });
 assert.equal(removed.customPresets.length, 0);
 assert.equal(removed.surfaces.greens.hoc, 2.8);
 
-const panel = readFileSync(new URL('../src/components/TaskPanel.jsx', import.meta.url), 'utf8');
-assert.match(panel, /onSavePreset/);
-assert.match(panel, /onApplyPreset/);
+const turf = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+assert.match(turf, /onSavePreset/);
+assert.match(turf, /onApplyPreset/);
 assert.doesNotMatch(readFileSync(new URL('../src/engine/mowing.js', import.meta.url), 'utf8'), /SAVE_PRESET/);
 
 console.log('round 3 phase E checks passed');
