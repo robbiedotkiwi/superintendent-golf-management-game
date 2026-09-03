@@ -94,11 +94,23 @@ import { courseBounds, holesForCount } from '../data/course.js';
 import { clampView, defaultView } from './view.js';
 import { defaultSectionTabs, normalizeSection, normalizeTabs, tabListForSection } from './section.js';
 import { formatMoney } from './format.js';
+import { buyUsed, rollUsedListings, sellMachine } from './market.js';
 
 export function createInitialState() {
   const calendar = calendarFromDay(STARTING_DAY);
   const rng = createRng(STARTING_RNG_SEED);
   const forecast = buildForecast({ day: STARTING_DAY, weather: STARTING_WEATHER }, rng);
+  const rngSeed = rng.seed;
+  const candidates = generateCandidates(rng);
+  const usedListings = rollUsedListings(
+    {
+      ownedMachines: [...STARTING_MACHINE_IDS],
+      pendingDeliveries: [],
+      activeSales: [],
+      salesmanRelationship: SALESMAN_RELATIONSHIP_START,
+    },
+    rng,
+  );
   return {
     day: STARTING_DAY,
     season: calendar.season,
@@ -107,7 +119,7 @@ export function createInitialState() {
     holes: HOLE_COUNT,
     weather: STARTING_WEATHER,
     ...forecast,
-    rngSeed: rng.seed,
+    rngSeed,
     workers: [
       {
         id: PLAYER_ID,
@@ -163,13 +175,13 @@ export function createInitialState() {
     machineCondition: Object.fromEntries(STARTING_MACHINE_IDS.map((id) => [id, STARTING_MACHINE_CONDITION])),
     machineDailyMinutes: Object.fromEntries(STARTING_MACHINE_IDS.map((id) => [id, MACHINE_DAILY_MINUTES])),
     salesmanRelationship: SALESMAN_RELATIONSHIP_START,
-    usedListings: [],
+    usedListings,
     pendingDeliveries: [],
     activeSales: [],
     eventInvitations: [],
     hasFoleyGrinder: false,
     autoWeek: { weekStart: STARTING_DAY, hits: [] },
-    candidates: generateCandidates(rng),
+    candidates,
     candidatesSeason: calendar.season,
     volunteerWeekday: VOLUNTEER_DEFAULT_WEEKDAY,
     volunteerDayChangedThisSeason: false,
@@ -471,6 +483,10 @@ export function reducer(state, action) {
       return buyAutoPicker(state);
     case 'BUY_MACHINE':
       return buyMachine(state, action.machineId);
+    case 'BUY_USED':
+      return buyUsed(state, action.listingId);
+    case 'SELL_MACHINE':
+      return sellMachine(state, action.machineId);
     case 'BUY_FOLEY':
       return buyFoley(state);
     case 'SEND_GRIND':

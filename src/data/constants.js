@@ -418,6 +418,16 @@ export const MACHINE_DAILY_MINUTES = DAY_LENGTH_MINUTES;
 export const SALESMAN_RELATIONSHIP_MIN = 0;
 export const SALESMAN_RELATIONSHIP_MAX = 100;
 export const SALESMAN_RELATIONSHIP_START = 50;
+export const SALESMAN_BUY_RELATIONSHIP = 6;
+export const SALESMAN_SELL_RELATIONSHIP = 3;
+export const USED_LISTING_COUNT = 3;
+export const USED_CONDITION_MIN = 45;
+export const USED_CONDITION_MAX = 88;
+export const USED_PRICE_FRACTION = 0.55;
+export const USED_RELATIONSHIP_DISCOUNT_PER_POINT = 0.003;
+export const USED_DELIVERY_DAYS = 3;
+export const SALE_DAYS = 4;
+export const SALE_PRICE_FRACTION = 0.4;
 
 export const SPEED_SKILL_BASE = 1.3;
 export const SPEED_SKILL_STEP = 0.1;

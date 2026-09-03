@@ -97,6 +97,33 @@ export function stampOwnedMachine(state, machineId, condition = NEW_PURCHASE_CON
   };
 }
 
+export function dropOwnedMachine(state, machineId) {
+  const { [machineId]: _wear, ...machineWear } = state.machineWear ?? {};
+  const { [machineId]: _broken, ...machineBroken } = state.machineBroken ?? {};
+  const { [machineId]: _away, ...machineAwayUntil } = state.machineAwayUntil ?? {};
+  const { [machineId]: _condition, ...machineCondition } = state.machineCondition ?? {};
+  const { [machineId]: _daily, ...machineDailyMinutes } = state.machineDailyMinutes ?? {};
+  const removed = (state.plannedTasks ?? []).filter((item) => item.machineId === machineId);
+  const refund = {};
+  for (const item of removed) {
+    refund[item.workerId] = (refund[item.workerId] ?? 0) + item.minutes;
+  }
+  return {
+    ...state,
+    ownedMachines: (state.ownedMachines ?? []).filter((id) => id !== machineId),
+    machineWear,
+    machineBroken,
+    machineAwayUntil,
+    machineCondition,
+    machineDailyMinutes,
+    plannedTasks: (state.plannedTasks ?? []).filter((item) => item.machineId !== machineId),
+    workers: (state.workers ?? []).map((worker) => ({
+      ...worker,
+      minutesUsed: worker.minutesUsed - (refund[worker.id] ?? 0),
+    })),
+  };
+}
+
 export function isMachineAvailable(state, machineId) {
   if (!state.ownedMachines.includes(machineId)) return false;
   if (state.machineBroken[machineId]) return false;
@@ -264,6 +291,9 @@ export function canBuyMachine(state, machineId) {
   const machine = getMachine(machineId);
   if (!machine || machine.ownedAtStart) return { ok: false, reason: 'Already in the shed.' };
   if (state.ownedMachines.includes(machineId)) return { ok: false, reason: 'Already owned.' };
+  if ((state.pendingDeliveries ?? []).some((item) => item.machineId === machineId)) {
+    return { ok: false, reason: 'Already on a truck.' };
+  }
   if ((state.capitalBudget ?? 0) < machine.cost) {
     return { ok: false, reason: `Needs ${formatMoney(machine.cost)} capital, only ${formatMoney(state.capitalBudget ?? 0)} posted.` };
   }

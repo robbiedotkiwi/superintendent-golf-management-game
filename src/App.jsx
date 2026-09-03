@@ -198,6 +198,8 @@ export default function App() {
           onTab={(section, tab) => dispatch({ type: 'SET_TAB', section, tab })}
           onLease={(machineId) => dispatch({ type: 'LEASE_MACHINE', machineId })}
           onStopLease={(machineId) => dispatch({ type: 'STOP_LEASE', machineId })}
+          onBuyUsed={(listingId) => dispatch({ type: 'BUY_USED', listingId })}
+          onSell={(machineId) => dispatch({ type: 'SELL_MACHINE', machineId })}
           onSnap={() => dispatch({ type: 'SNAP_TOURNAMENT' })}
           onLoan={(amount) => dispatch({ type: 'TAKE_LOAN', amount })}
           onReadMail={(id) => dispatch({ type: 'READ_MAIL', id })}
@@ -291,6 +293,8 @@ function GameScreen({
   onDeletePreset,
   onLease,
   onStopLease,
+  onBuyUsed,
+  onSell,
   onSnap,
   onLoan,
   onReadMail,
@@ -408,6 +412,8 @@ function GameScreen({
             onRepair={onRepair}
             onLease={onLease}
             onStopLease={onStopLease}
+            onBuyUsed={onBuyUsed}
+            onSell={onSell}
           />
         ) : view === SECTION_CREW ? (
           <Crew

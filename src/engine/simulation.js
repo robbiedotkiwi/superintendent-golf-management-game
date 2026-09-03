@@ -74,6 +74,7 @@ import { tickProjects } from './projects.js';
 import { buildYearReview, emptyYearRecord, hiredIds, recordYearDay } from './history.js';
 import { clampRange, clampStanding, tickSatisfaction } from './satisfaction.js';
 import { GM_MEETING_SKIP_STANDING } from '../data/constants.js';
+import { tickMarket, rollUsedListings } from './market.js';
 
 export function clampQuality(value) {
   return Math.min(QUALITY_MAX, Math.max(QUALITY_MIN, value));
@@ -428,6 +429,7 @@ export function resolveDay(state) {
       },
     ),
   };
+  next = tickMarket(next);
   let seasonClose = null;
   if (seasonChanged) {
     const ignored = next.pendingTournamentSetup;
@@ -471,6 +473,7 @@ export function resolveDay(state) {
         yearRecord: emptyYearRecord(calendar.year, hiredIds(next)),
       };
     }
+    next = { ...next, usedListings: rollUsedListings(next, rng) };
   }
   const built = tickProjects(next);
   next = built.state;

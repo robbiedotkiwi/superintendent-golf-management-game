@@ -13,7 +13,7 @@ import {
   SEASON_ORDER,
 } from '../data/constants.js';
 import { getMachine } from '../data/equipment.js';
-import { stampOwnedMachine } from './equipment.js';
+import { dropOwnedMachine, stampOwnedMachine } from './equipment.js';
 import { formatMoney } from './format.js';
 
 export function gmStandingMultiplier(standing) {
@@ -76,6 +76,9 @@ export function canLeaseMachine(state, machineId) {
   const machine = getMachine(machineId);
   if (!machine || machine.ownedAtStart) return { ok: false, reason: 'Already in the shed.' };
   if (state.ownedMachines.includes(machineId)) return { ok: false, reason: 'Already owned.' };
+  if ((state.pendingDeliveries ?? []).some((item) => item.machineId === machineId)) {
+    return { ok: false, reason: 'Already on a truck.' };
+  }
   return { ok: true };
 }
 
@@ -95,20 +98,10 @@ export function stopLease(state, machineId) {
 }
 
 function repossess(state, machineId) {
-  const { [machineId]: _wear, ...machineWear } = state.machineWear;
-  const { [machineId]: _broken, ...machineBroken } = state.machineBroken;
-  const { [machineId]: _away, ...machineAwayUntil } = state.machineAwayUntil;
-  const { [machineId]: _condition, ...machineCondition } = state.machineCondition ?? {};
-  const { [machineId]: _daily, ...machineDailyMinutes } = state.machineDailyMinutes ?? {};
+  const dropped = dropOwnedMachine(state, machineId);
   return {
-    ...state,
-    ownedMachines: state.ownedMachines.filter((id) => id !== machineId),
-    leasedMachines: (state.leasedMachines ?? []).filter((id) => id !== machineId),
-    machineWear,
-    machineBroken,
-    machineAwayUntil,
-    machineCondition,
-    machineDailyMinutes,
+    ...dropped,
+    leasedMachines: (dropped.leasedMachines ?? []).filter((id) => id !== machineId),
   };
 }
 

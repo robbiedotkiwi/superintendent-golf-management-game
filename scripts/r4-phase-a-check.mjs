@@ -16,6 +16,7 @@ import {
   SALESMAN_RELATIONSHIP_START,
   STARTING_MACHINE_CONDITION,
   STARTING_MACHINE_ID,
+  USED_LISTING_COUNT,
   WALK_BEHIND_TIME_MULT,
 } from '../src/data/constants.js';
 import { durationForTask } from '../src/engine/assignment.js';
@@ -48,7 +49,7 @@ const start = createInitialState();
 assert.equal(start.machineCondition[STARTING_MACHINE_ID], STARTING_MACHINE_CONDITION);
 assert.equal(start.machineDailyMinutes[STARTING_MACHINE_ID], MACHINE_DAILY_MINUTES);
 assert.equal(start.salesmanRelationship, SALESMAN_RELATIONSHIP_START);
-assert.deepEqual(start.usedListings, []);
+assert.equal(start.usedListings.length, USED_LISTING_COUNT);
 assert.deepEqual(start.pendingDeliveries, []);
 assert.deepEqual(start.activeSales, []);
 assert.deepEqual(start.eventInvitations, []);
