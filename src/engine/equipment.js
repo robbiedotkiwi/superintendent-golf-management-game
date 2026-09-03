@@ -17,7 +17,11 @@ import {
   CONDITION_MAX,
   CONDITION_MIN,
   CONDITION_TIME_PENALTY_PER_POINT,
+  CUT_TASK_BY_SURFACE,
   DAYS_PER_WEEK,
+  HOC_SURFACES,
+  MACHINE_OVERRIDE_AUTO,
+  MACHINE_OVERRIDE_FALLBACK,
   FOLEY_GRINDER_COST,
   FOLEY_GRIND_MINUTES,
   GRIND_AWAY_COST,
@@ -163,6 +167,67 @@ export function allowingMachines(state, task) {
   );
 }
 
+export function emptyMachineOverride() {
+  return Object.fromEntries(HOC_SURFACES.map((surface) => [surface, null]));
+}
+
+export function normalizeMachineOverride(raw) {
+  const next = emptyMachineOverride();
+  if (!raw || typeof raw !== 'object') return next;
+  for (const surface of HOC_SURFACES) {
+    const id = raw[surface];
+    next[surface] = typeof id === 'string' && id && id !== MACHINE_OVERRIDE_AUTO ? id : null;
+  }
+  return next;
+}
+
+export function machineOverrideId(state, surface) {
+  if (!surface) return null;
+  const id = state.machineOverride?.[surface];
+  return typeof id === 'string' && id && id !== MACHINE_OVERRIDE_AUTO ? id : null;
+}
+
+export function overrideCandidates(state, surface) {
+  const task = getTask(CUT_TASK_BY_SURFACE[surface]);
+  if (!task) return [];
+  return ownedMachineList(state).filter((machine) => machineAllows(machine, surface, task));
+}
+
+function overrideUsable(state, machineId, task, options = {}) {
+  const { ignoreTaskId, minutesNeeded } = options;
+  const machine = getMachine(machineId);
+  if (!machine || !task?.surface) return false;
+  if (!isMachineAvailable(state, machineId)) return false;
+  if (!machineAllows(machine, task.surface, task)) return false;
+  if (minutesNeeded && machineMinutesRemaining(state, machineId, ignoreTaskId) < minutesNeeded(machineId)) {
+    return false;
+  }
+  return true;
+}
+
+function compareAutoMachines(state, surface, a, b) {
+  const ceilA = a.ceiling?.[surface] ?? 0;
+  const ceilB = b.ceiling?.[surface] ?? 0;
+  if (ceilB !== ceilA) return ceilB - ceilA;
+  if (a.timeMult !== b.timeMult) return a.timeMult - b.timeMult;
+  const timeA = machineMultiplierFor(state, a.id);
+  const timeB = machineMultiplierFor(state, b.id);
+  if (timeA !== timeB) return timeA - timeB;
+  return a.id.localeCompare(b.id);
+}
+
+export function machineAssignment(state, surface, worker) {
+  const task = getTask(CUT_TASK_BY_SURFACE[surface]);
+  const machine = task ? pickMachineForTask(state, task, worker) : null;
+  const overrideId = machineOverrideId(state, surface);
+  const override = overrideId ? getMachine(overrideId) : null;
+  const fallbackReason =
+    overrideId && machine?.id !== overrideId
+      ? MACHINE_OVERRIDE_FALLBACK(override?.name ?? overrideId)
+      : null;
+  return { machine, fallbackReason, overrideId };
+}
+
 export function durationOnMachine(state, taskId, worker, machineId) {
   const task = getTask(taskId);
   const base =
@@ -185,11 +250,13 @@ export function durationOnMachine(state, taskId, worker, machineId) {
 
 export function pickMachine(state, task, options = {}) {
   const { ignoreTaskId, minutesNeeded } = options;
+  const overrideId = machineOverrideId(state, task?.surface);
+  if (overrideId && overrideUsable(state, overrideId, task, options)) {
+    return getMachine(overrideId);
+  }
   const candidates = allowingMachines(state, task);
   if (!candidates.length) return null;
-  const ranked = [...candidates].sort(
-    (a, b) => machineMultiplierFor(state, a.id) - machineMultiplierFor(state, b.id),
-  );
+  const ranked = [...candidates].sort((a, b) => compareAutoMachines(state, task.surface, a, b));
   if (!minutesNeeded) return ranked[0];
   for (const machine of ranked) {
     const need = minutesNeeded(machine.id);

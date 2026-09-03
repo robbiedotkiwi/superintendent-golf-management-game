@@ -27,7 +27,7 @@ import {
   SALESMAN_RELATIONSHIP_START,
 } from '../data/constants.js';
 import { emptyDisease, emptyUntil } from './disease.js';
-import { migrateMachineMaps } from './equipment.js';
+import { migrateMachineMaps, normalizeMachineOverride } from './equipment.js';
 import { emptyYearRecord } from './history.js';
 import { emptyDaysSinceWorked } from './mail.js';
 import { mergeSurfaceFields } from './mowing.js';
@@ -94,6 +94,7 @@ export function withDefaults(state) {
     machineAwayUntil: state.machineAwayUntil ?? {},
     machineCondition: machines.machineCondition,
     machineDailyMinutes: machines.machineDailyMinutes,
+    machineOverride: normalizeMachineOverride(state.machineOverride),
     salesmanRelationship: Number.isFinite(Number(state.salesmanRelationship))
       ? Math.min(
           SALESMAN_RELATIONSHIP_MAX,

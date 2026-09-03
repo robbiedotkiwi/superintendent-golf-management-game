@@ -186,4 +186,12 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 
 - Section buttons are four full-width stacked blocks (`SIDEBAR_NAV_GAP` 8) with the spec one-liners. Weather sits on the season line at `text-xs` so the descriptions fit at `SIDEBAR_FIT_HEIGHT` 720. Badges and dots stay on the block. The sidebar still does not scroll.
 
+### Phase B
+
+- Last-cut memory is three new fields (`heightAtLastCut`, `patternAtLastCut`, `angleAtLastCut`) written only in `applyMowingAftermath`. They start `null` so a new game and migrated saves count as never cut. Existing `hocAtLastCut` / `lastPattern` / `lastAngle` stay for the height-change and grain-wear rules.
+- Match last mowing is one Summary action (`MATCH_LAST_MOWING`). It restores settings through the same surface patch as `SET_HOC` / `SET_PATTERN` / `SET_ANGLE` and never adds tasks. Surfaces with `heightAtLastCut == null` are skipped, including bunkers (not a cut).
+- Plan this cut lives on Mowing rows and on Summary rows that have a cut (`HOC_SURFACES`). Bunkers keep rake on Other.
+- Auto-pick ranks owned, permitted, available machines by highest surface ceiling, then lowest catalogue `timeMult`. A per-surface `machineOverride` is a preference: if that unit is missing, broken, away, or out of daily minutes, planning falls back to auto and the UI shows `MACHINE_OVERRIDE_FALLBACK`.
+- Turf tabs are Summary · Mowing · Irrigation · Other · Presets. `TURF_TAB_BUNKERS` and `TURF_TAB_POND` alias Other; old `bunkers` / `pond` tab values migrate. Pond map clicks still use `TURF_TAB_POND`.
+
 

@@ -117,6 +117,7 @@ export function defaultSurfaceFields(kind) {
     fields.hoc = HOC_RANGE[kind].default;
     fields.hocAtLastCut = HOC_RANGE[kind].default;
     fields.lastMownDay = STARTING_DAY;
+    fields.heightAtLastCut = null;
   }
   if (kind === 'bunkers') {
     fields.lastRakedDay = STARTING_DAY;
@@ -128,6 +129,8 @@ export function defaultSurfaceFields(kind) {
     fields.patternWear = PATTERN_WEAR_DEFAULT;
     fields.lastPattern = null;
     fields.lastAngle = null;
+    fields.patternAtLastCut = null;
+    fields.angleAtLastCut = null;
   }
   if (MOISTURE_SURFACES.includes(kind)) {
     fields.moisture = MOISTURE_HIDDEN;
@@ -142,6 +145,7 @@ export function mergeSurfaceFields(kind, surface = {}) {
     next.hoc = surface.hoc ?? defaults.hoc;
     next.hocAtLastCut = surface.hocAtLastCut ?? next.hoc;
     next.lastMownDay = surface.lastMownDay ?? defaults.lastMownDay;
+    next.heightAtLastCut = surface.heightAtLastCut !== undefined ? surface.heightAtLastCut : defaults.heightAtLastCut;
   }
   if (kind === 'bunkers') {
     next.lastRakedDay = surface.lastRakedDay ?? defaults.lastRakedDay;
@@ -153,6 +157,8 @@ export function mergeSurfaceFields(kind, surface = {}) {
     next.patternWear = surface.patternWear ?? defaults.patternWear;
     next.lastPattern = surface.lastPattern ?? defaults.lastPattern;
     next.lastAngle = surface.lastAngle ?? defaults.lastAngle;
+    next.patternAtLastCut = surface.patternAtLastCut !== undefined ? surface.patternAtLastCut : defaults.patternAtLastCut;
+    next.angleAtLastCut = surface.angleAtLastCut !== undefined ? surface.angleAtLastCut : defaults.angleAtLastCut;
   }
   if (MOISTURE_SURFACES.includes(kind)) {
     next.moisture = surface.moisture === undefined ? defaults.moisture : surface.moisture;
@@ -167,6 +173,7 @@ export function applyMowingAftermath(surface, kind, day, wearIncremented) {
   }
   if (HOC_RANGE[kind]) {
     next.hocAtLastCut = next.hoc;
+    next.heightAtLastCut = next.hoc;
     next.lastMownDay = day;
   }
   if (hasPattern(kind)) {
@@ -187,6 +194,8 @@ export function applyMowingAftermath(surface, kind, day, wearIncremented) {
     }
     next.lastPattern = cutPattern;
     next.lastAngle = cutAngle;
+    next.patternAtLastCut = cutPattern;
+    next.angleAtLastCut = cutAngle;
     if (next.autoRotate) {
       next.angle = rotatePatternAngle(cutAngle);
     }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   AERATOR_COST,
+  CUT_TASK_BY_SURFACE,
   GREENS_SENSORS_COST,
   HOC_RANGE,
   HOC_STEP,
@@ -8,10 +9,13 @@ import {
   HOC_STRESS_THRESHOLD,
   HOC_SURFACES,
   IRRIGATION_POLICIES,
+  MACHINE_OVERRIDE_AUTO,
+  MATCH_LAST_MOWING_LABEL,
   PATTERN_ANGLE_MAX,
   PATTERN_ANGLE_MIN,
   PATTERN_KEYS,
   PATTERN_LABELS,
+  PLAN_THIS_CUT_LABEL,
   POND_CAPACITY,
   PRESET_MAX,
   PRESET_NAME_MAX,
@@ -23,6 +27,7 @@ import {
   TURF_TAB_IRRIGATION,
   TURF_TAB_LABELS,
   TURF_TAB_MOWING,
+  TURF_TAB_OTHER,
   TURF_TAB_POND,
   TURF_TAB_PRESETS,
   TURF_TAB_SUMMARY,
@@ -32,6 +37,11 @@ import {
 } from '../data/constants.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import { durationForTask } from '../engine/assignment.js';
+import {
+  machineAssignment,
+  machineMinutesRemaining,
+  overrideCandidates,
+} from '../engine/equipment.js';
 import { canPlanTask } from '../engine/gameState.js';
 import { formatMoney } from '../engine/format.js';
 import { canBuyAerator, irrigationDemand, IRRIGATED_SURFACES, pondPercent } from '../engine/irrigation.js';
@@ -43,13 +53,6 @@ import ForecastStrip from './ForecastStrip.jsx';
 import { GreensMoistureList, MoistureLine } from './MoistureReadout.jsx';
 import SectionTabs from './SectionTabs.jsx';
 import { DiseaseReadout } from './WeatherStrip.jsx';
-
-const CUT_TASK = {
-  greens: 'cutGreens',
-  tees: 'cutTees',
-  fairways: 'cutFairways',
-  rough: 'cutRough',
-};
 
 const POLICY_LABELS = {
   off: 'Off',
@@ -94,6 +97,8 @@ export default function Turf({
   onApplyPreset,
   onApplyShippedPreset,
   onDeletePreset,
+  onMatchLastMowing,
+  onSetMachineOverride,
 }) {
   const debris = state.plannedTasks.find((item) => item.taskId === 'clearDebris');
   const debrisCheck = canPlanTask(state, 'clearDebris');
@@ -137,11 +142,19 @@ export default function Turf({
             )
           ) : null}
           <div className="mt-4 space-y-2">
+            <button
+              type="button"
+              onClick={onMatchLastMowing}
+              className="border border-[var(--sand)] px-3 py-2 font-semibold"
+            >
+              {MATCH_LAST_MOWING_LABEL}
+            </button>
             {SURFACE_KEYS.map((surface) => {
               const record = state.surfaces[surface];
               const days = daysSinceLastWorked(state, surface);
               const neglected = isNeglected(state, surface);
               const disease = state.disease?.[surface];
+              const cuttable = Boolean(CUT_TASK_BY_SURFACE[surface]);
               return (
                 <section key={surface} className={`border p-3 ${neglected ? 'border-[var(--machine-orange)]' : 'border-[var(--sand)]'}`}>
                   <div className="flex items-baseline justify-between gap-2">
@@ -167,6 +180,12 @@ export default function Turf({
                       {disease.outbreak ? ' · outbreak' : ''}
                     </p>
                   ) : null}
+                  {cuttable ? (
+                    <>
+                      <MachinePicker state={state} surface={surface} onSetMachineOverride={onSetMachineOverride} />
+                      <PlanThisCut state={state} surface={surface} onPlan={onPlan} onRemove={onRemove} />
+                    </>
+                  ) : null}
                 </section>
               );
             })}
@@ -185,6 +204,9 @@ export default function Turf({
               onSetPattern={onSetPattern}
               onSetAngle={onSetAngle}
               onSetAutoRotate={onSetAutoRotate}
+              onPlan={onPlan}
+              onRemove={onRemove}
+              onSetMachineOverride={onSetMachineOverride}
             />
           ))}
         </div>
@@ -283,37 +305,10 @@ export default function Turf({
         </div>
       ) : null}
 
-      {tab === TURF_TAB_BUNKERS ? (
-        <BunkerTab state={state} onPlan={onPlan} onRemove={onRemove} />
-      ) : null}
-
-      {tab === TURF_TAB_POND ? (
-        <div className="space-y-3">
-          <div>
-            <div className="text-sm text-[var(--sand)]">Volume</div>
-            <div className="font-condensed text-4xl font-bold leading-none">{Math.round(state.pond.volume)}</div>
-            <p className="mt-1 text-sm text-[var(--sand)]">
-              {Math.round(percent)}% of {POND_CAPACITY} m³ · health {Math.round(state.pond.health)}
-            </p>
-          </div>
-          <p>Aerator {state.hasAerator ? 'running' : 'not installed'}.</p>
-          <p className="text-sm text-[var(--sand)]">Recent mains spend {formatMoney(state.lastMainsCost ?? 0)}.</p>
-          {state.hasAerator ? (
-            <p>In the pond. Holds health up.</p>
-          ) : (
-            <>
-              <p className="text-sm text-[var(--sand)]">Keeps pond health from falling. {formatMoney(AERATOR_COST)} from capital.</p>
-              <button
-                type="button"
-                disabled={!aerator.ok}
-                onClick={onBuyAerator}
-                className="border border-[var(--sand)] px-3 py-2 disabled:opacity-40"
-                title={aerator.ok ? undefined : aerator.reason}
-              >
-                Buy aerator · {formatMoney(AERATOR_COST)}
-              </button>
-            </>
-          )}
+      {tab === TURF_TAB_OTHER || tab === TURF_TAB_BUNKERS || tab === TURF_TAB_POND ? (
+        <div className="space-y-4">
+          <BunkerTab state={state} onPlan={onPlan} onRemove={onRemove} />
+          <PondPanel state={state} percent={percent} aerator={aerator} onBuyAerator={onBuyAerator} />
         </div>
       ) : null}
 
@@ -330,13 +325,116 @@ export default function Turf({
   );
 }
 
-function MowingSurface({ surface, state, onSetHoc, onSetPattern, onSetAngle, onSetAutoRotate }) {
+function PlanThisCut({ state, surface, onPlan, onRemove }) {
+  const taskId = CUT_TASK_BY_SURFACE[surface];
+  if (!taskId) return null;
+  const planned = state.plannedTasks.find((item) => item.taskId === taskId);
+  const check = canPlanTask(state, taskId);
+  const minutes = planned?.minutes ?? durationForTask(state, taskId);
+  if (planned) {
+    return (
+      <button type="button" onClick={() => onRemove(taskId)} className="mt-3 border border-[var(--sand)] px-3 py-2">
+        {PLAN_THIS_CUT_LABEL} planned · {planned.minutes} min
+      </button>
+    );
+  }
+  return (
+    <button
+      type="button"
+      disabled={!check.ok}
+      onClick={() => onPlan(taskId)}
+      className="mt-3 bg-[var(--machine-orange)] px-3 py-2 font-semibold disabled:opacity-40"
+      title={check.ok ? undefined : check.reason}
+    >
+      {PLAN_THIS_CUT_LABEL} · {minutes} min
+    </button>
+  );
+}
+
+function MachinePicker({ state, surface, onSetMachineOverride }) {
+  const assignment = machineAssignment(state, surface);
+  const options = overrideCandidates(state, surface);
+  const overrideId = state.machineOverride?.[surface] ?? MACHINE_OVERRIDE_AUTO;
+  return (
+    <div className="mt-2">
+      <p className="text-sm">
+        {assignment.machine ? assignment.machine.name : 'No machine available'}
+      </p>
+      {assignment.fallbackReason ? (
+        <p className="text-sm text-[var(--machine-orange)]">{assignment.fallbackReason}</p>
+      ) : null}
+      <label className="mt-1 block text-sm text-[var(--sand)]">
+        Machine
+        <select
+          value={overrideId || MACHINE_OVERRIDE_AUTO}
+          onChange={(event) => {
+            const value = event.target.value;
+            onSetMachineOverride(surface, value === MACHINE_OVERRIDE_AUTO ? null : value);
+          }}
+          className="mt-1 w-full border border-[var(--sand)] bg-[var(--soil)] px-2 py-1 text-[var(--paint)]"
+        >
+          <option value={MACHINE_OVERRIDE_AUTO}>Auto</option>
+          {options.map((machine) => (
+            <option key={machine.id} value={machine.id}>
+              {machine.name} · {machine.ceiling?.[surface] ?? '—'} · {machine.timeMult}× ·{' '}
+              {machineMinutesRemaining(state, machine.id)} min
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
+function PondPanel({ state, percent, aerator, onBuyAerator }) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <div className="text-sm text-[var(--sand)]">Volume</div>
+        <div className="font-condensed text-4xl font-bold leading-none">{Math.round(state.pond.volume)}</div>
+        <p className="mt-1 text-sm text-[var(--sand)]">
+          {Math.round(percent)}% of {POND_CAPACITY} m³ · health {Math.round(state.pond.health)}
+        </p>
+      </div>
+      <p>Aerator {state.hasAerator ? 'running' : 'not installed'}.</p>
+      <p className="text-sm text-[var(--sand)]">Recent mains spend {formatMoney(state.lastMainsCost ?? 0)}.</p>
+      {state.hasAerator ? (
+        <p>In the pond. Holds health up.</p>
+      ) : (
+        <>
+          <p className="text-sm text-[var(--sand)]">Keeps pond health from falling. {formatMoney(AERATOR_COST)} from capital.</p>
+          <button
+            type="button"
+            disabled={!aerator.ok}
+            onClick={onBuyAerator}
+            className="border border-[var(--sand)] px-3 py-2 disabled:opacity-40"
+            title={aerator.ok ? undefined : aerator.reason}
+          >
+            Buy aerator · {formatMoney(AERATOR_COST)}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function MowingSurface({
+  surface,
+  state,
+  onSetHoc,
+  onSetPattern,
+  onSetAngle,
+  onSetAutoRotate,
+  onPlan,
+  onRemove,
+  onSetMachineOverride,
+}) {
   const record = state.surfaces[surface];
   const showHoc = hasHoc(surface);
   const showPattern = hasPattern(surface);
   const stress = showHoc && inHocStressBand(surface, record.hoc);
   const threshold = stressThresholdHeight(surface);
-  const cutId = CUT_TASK[surface];
+  const cutId = CUT_TASK_BY_SURFACE[surface];
   const minutes = cutId ? durationForTask(state, cutId) : null;
   return (
     <section className="border border-[var(--sand)] p-3">
@@ -415,6 +513,8 @@ function MowingSurface({ surface, state, onSetHoc, onSetPattern, onSetAngle, onS
           <span className="ml-2 text-sm font-semibold text-[var(--sand)]">min at these settings</span>
         </p>
       ) : null}
+      <MachinePicker state={state} surface={surface} onSetMachineOverride={onSetMachineOverride} />
+      <PlanThisCut state={state} surface={surface} onPlan={onPlan} onRemove={onRemove} />
     </section>
   );
 }

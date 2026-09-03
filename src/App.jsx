@@ -204,6 +204,10 @@ export default function App() {
           onApplyPreset={(id) => dispatch({ type: 'APPLY_PRESET', id })}
           onApplyShippedPreset={(id) => dispatch({ type: 'APPLY_SHIPPED_PRESET', id })}
           onDeletePreset={(id) => dispatch({ type: 'DELETE_PRESET', id })}
+          onMatchLastMowing={() => dispatch({ type: 'MATCH_LAST_MOWING' })}
+          onSetMachineOverride={(surface, machineId) =>
+            dispatch({ type: 'SET_MACHINE_OVERRIDE', surface, machineId })
+          }
           onTab={(section, tab) => dispatch({ type: 'SET_TAB', section, tab })}
           onLease={(machineId) => dispatch({ type: 'LEASE_MACHINE', machineId })}
           onStopLease={(machineId) => dispatch({ type: 'STOP_LEASE', machineId })}
@@ -305,6 +309,8 @@ function GameScreen({
   onApplyPreset,
   onApplyShippedPreset,
   onDeletePreset,
+  onMatchLastMowing,
+  onSetMachineOverride,
   onLease,
   onStopLease,
   onBuyUsed,
@@ -472,6 +478,8 @@ function GameScreen({
             onApplyPreset={onApplyPreset}
             onApplyShippedPreset={onApplyShippedPreset}
             onDeletePreset={onDeletePreset}
+            onMatchLastMowing={onMatchLastMowing}
+            onSetMachineOverride={onSetMachineOverride}
           />
         ) : (
           <>

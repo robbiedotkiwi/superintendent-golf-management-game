@@ -2,7 +2,8 @@ import { getTask } from '../data/tasks.js';
 import { calendarFromDay } from './calendar.js';
 import { buildForecast } from './weather.js';
 import { createRng } from './rng.js';
-import { buyFoley, buyMachine, grindInHouse, repairMachine, sendForGrind, machinePlanCheck, durationOnMachine, recomputePlannedMinutes, allowingMachines, pickMachineForTask, MACHINE_BOOKED_REASON, NO_MACHINE_REASON } from './equipment.js';
+import { buyFoley, buyMachine, grindInHouse, repairMachine, sendForGrind, machinePlanCheck, durationOnMachine, recomputePlannedMinutes, allowingMachines, pickMachineForTask, MACHINE_BOOKED_REASON, NO_MACHINE_REASON, getMachine, normalizeMachineOverride } from './equipment.js';
+import { machineAllows } from '../data/equipment.js';
 import { assignWorker, certifiedPresent, workerById, workerAllows, isWorkerPresent } from './assignment.js';
 import {
   applyEarlyStartComplaints,
@@ -35,8 +36,11 @@ import { buyAutoPicker, startProject } from './projects.js';
 import { bumpCapitalSpent, emptyYearRecord } from './history.js';
 import { resolveDay } from './simulation.js';
 import {
+  CUT_TASK_BY_SURFACE,
   DAY_LENGTH_MINUTES,
+  HOC_SURFACES,
   HOLE_COUNT,
+  MACHINE_OVERRIDE_AUTO,
   MOWING_WEATHER,
   PLAYER_ID,
   PLAYER_MORALE,
@@ -176,6 +180,7 @@ export function createInitialState() {
     machineAwayUntil: {},
     machineCondition: Object.fromEntries(STARTING_MACHINE_IDS.map((id) => [id, STARTING_MACHINE_CONDITION])),
     machineDailyMinutes: Object.fromEntries(STARTING_MACHINE_IDS.map((id) => [id, MACHINE_DAILY_MINUTES])),
+    machineOverride: normalizeMachineOverride(null),
     salesmanRelationship: SALESMAN_RELATIONSHIP_START,
     usedListings,
     pendingDeliveries: [],
@@ -592,6 +597,42 @@ export function reducer(state, action) {
     case 'SET_AUTO_ROTATE': {
       if (!hasPattern(action.surface) || !state.surfaces[action.surface]) return state;
       return applySurfacePatch(state, action.surface, { autoRotate: Boolean(action.value) });
+    }
+    case 'MATCH_LAST_MOWING': {
+      let next = state;
+      for (const surface of HOC_SURFACES) {
+        const record = next.surfaces?.[surface];
+        if (record?.heightAtLastCut == null) continue;
+        const patch = { hoc: clampHoc(surface, record.heightAtLastCut) };
+        if (hasPattern(surface) && record.patternAtLastCut != null && PATTERN_KEYS.includes(record.patternAtLastCut)) {
+          patch.pattern = record.patternAtLastCut;
+        }
+        if (hasPattern(surface) && record.angleAtLastCut != null) {
+          const angle = clampAngle(record.angleAtLastCut);
+          patch.angle = angle;
+          const prev = record.angle ?? 0;
+          if (angleDelta(angle, prev) >= PATTERN_ANGLE_RESET_DELTA) {
+            patch.patternWear = 0;
+          }
+        }
+        next = applySurfacePatch(next, surface, patch);
+      }
+      return next;
+    }
+    case 'SET_MACHINE_OVERRIDE': {
+      const surface = action.surface;
+      if (!HOC_SURFACES.includes(surface)) return state;
+      let machineId = action.machineId ?? null;
+      if (machineId === MACHINE_OVERRIDE_AUTO || machineId === '') machineId = null;
+      if (machineId) {
+        const machine = getMachine(machineId);
+        const task = getTask(CUT_TASK_BY_SURFACE[surface]);
+        if (!machine || !machineAllows(machine, surface, task)) return state;
+      }
+      return recomputePlannedMinutes({
+        ...state,
+        machineOverride: { ...normalizeMachineOverride(state.machineOverride), [surface]: machineId },
+      });
     }
     case 'SET_IRRIGATION': {
       if (!IRRIGATED_SURFACES.includes(action.surface) || !isIrrigationPolicy(action.policy)) return state;
