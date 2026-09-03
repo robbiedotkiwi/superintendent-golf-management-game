@@ -13,24 +13,26 @@ export default function PlanList({ state, compact = false, onReorder, onRemove }
   tasksRef.current = tasks;
   onReorderRef.current = onReorder;
 
-  function move(fromId, toId) {
-    if (!fromId || !toId || fromId === toId) return;
+  function moveToPoint(fromId, clientY, row) {
+    if (!fromId || !row) return;
+    const toId = row.dataset.planTask;
+    if (!toId || toId === fromId) return;
     const ids = tasksRef.current.map((item) => item.taskId);
     const from = ids.indexOf(fromId);
     const to = ids.indexOf(toId);
     if (from < 0 || to < 0) return;
+    const rect = row.getBoundingClientRect();
+    let insert = clientY < rect.top + rect.height / 2 ? to : to + 1;
+    if (from < insert) insert -= 1;
+    if (insert === from) return;
     ids.splice(from, 1);
-    ids.splice(to, 0, fromId);
+    ids.splice(insert, 0, fromId);
     onReorderRef.current?.(ids);
   }
 
-  function startDrag(id, event) {
+  function startDrag(id) {
     dragIdRef.current = id;
     setDragId(id);
-    if (event?.dataTransfer) {
-      event.dataTransfer.setData('text/plain', id);
-      event.dataTransfer.effectAllowed = 'move';
-    }
   }
 
   function endDrag() {
@@ -39,16 +41,26 @@ export default function PlanList({ state, compact = false, onReorder, onRemove }
   }
 
   useEffect(() => {
-    function onUp(event) {
+    function rowAt(event) {
+      const el = document.elementFromPoint(event.clientX, event.clientY);
+      return el?.closest('[data-plan-task]') ?? null;
+    }
+    function onMove(event) {
       const fromId = dragIdRef.current;
       if (!fromId) return;
-      const el = document.elementFromPoint(event.clientX, event.clientY);
-      const row = el?.closest('[data-plan-task]');
-      if (row?.dataset.planTask) move(fromId, row.dataset.planTask);
+      moveToPoint(fromId, event.clientY, rowAt(event));
+    }
+    function onUp(event) {
+      const fromId = dragIdRef.current;
+      if (fromId) moveToPoint(fromId, event.clientY, rowAt(event));
       endDrag();
     }
+    window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
-    return () => window.removeEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
   }, []);
 
   return (
@@ -66,25 +78,13 @@ export default function PlanList({ state, compact = false, onReorder, onRemove }
               <li
                 key={planned.taskId}
                 data-plan-task={planned.taskId}
-                draggable
                 onPointerDown={(event) => {
                   if (event.button !== 0) return;
                   if (event.target.closest('button')) return;
-                  startDrag(planned.taskId, event);
-                }}
-                onDragStart={(event) => startDrag(planned.taskId, event)}
-                onDragEnd={endDrag}
-                onDragOver={(event) => {
                   event.preventDefault();
-                  event.dataTransfer.dropEffect = 'move';
+                  startDrag(planned.taskId);
                 }}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  const fromId = event.dataTransfer.getData('text/plain') || dragIdRef.current;
-                  move(fromId, planned.taskId);
-                  endDrag();
-                }}
-                className={`flex cursor-grab items-start justify-between gap-2 border border-[var(--sand)] p-2 active:cursor-grabbing ${
+                className={`flex cursor-grab select-none items-start justify-between gap-2 border border-[var(--sand)] p-2 active:cursor-grabbing ${
                   dragId === planned.taskId ? 'opacity-50' : ''
                 }`}
               >
@@ -101,7 +101,6 @@ export default function PlanList({ state, compact = false, onReorder, onRemove }
                 {onRemove ? (
                   <button
                     type="button"
-                    draggable={false}
                     onPointerDown={(event) => event.stopPropagation()}
                     onClick={() => onRemove(planned.taskId)}
                     className="border border-[var(--sand)] px-2 py-1 text-sm"

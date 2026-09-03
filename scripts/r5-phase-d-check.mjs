@@ -108,7 +108,9 @@ assert.doesNotMatch(panel, /[↑↓]/);
 
 const plan = readFileSync(new URL('../src/components/PlanList.jsx', import.meta.url), 'utf8');
 assert.match(plan, /OVERRUN_DROP_COPY/);
-assert.match(plan, /draggable/);
+assert.match(plan, /data-plan-task/);
+assert.match(plan, /onPointerDown/);
+assert.match(plan, /pointermove/);
 assert.match(plan, /REORDER_TASKS|onReorder/);
 assert.match(plan, /\{index \+ 1\}/);
 assert.doesNotMatch(plan, /[↑↓]/);
