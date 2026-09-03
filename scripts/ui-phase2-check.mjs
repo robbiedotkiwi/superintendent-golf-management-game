@@ -4,7 +4,7 @@
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { paint, sand, soil, turf, turfStressed } from '../src/data/constants.js';
+import { BUNKER_DULL, paint, sand, soil, turf, turfStressed } from '../src/data/constants.js';
 import {
   healthyFill,
   inPaletteRange,
@@ -26,8 +26,10 @@ for (const surface of TURF_SURFACES) {
 }
 
 assert.equal(surfaceFill('bunkers', 100).toLowerCase(), sand.toLowerCase());
-assert.ok(inPaletteRange(surfaceFill('bunkers', 0), PALETTE));
-assert.ok(inPaletteRange(surfaceFill('bunkers', 50), PALETTE));
+assert.notEqual(surfaceFill('bunkers', 0).toLowerCase(), soil.toLowerCase());
+assert.ok(luminance(surfaceFill('bunkers', 0)) > luminance(soil) + 40, 'neglected bunkers stay sand-coloured');
+assert.ok(inPaletteRange(surfaceFill('bunkers', 0), [...PALETTE, BUNKER_DULL]));
+assert.ok(inPaletteRange(surfaceFill('bunkers', 50), [...PALETTE, BUNKER_DULL]));
 assert.notEqual(surfaceFill('bunkers', 10), surfaceFill('bunkers', 100));
 
 const healthy = {

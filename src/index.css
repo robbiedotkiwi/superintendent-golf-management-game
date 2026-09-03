@@ -36,7 +36,7 @@ select:focus-visible {
 }
 
 .mower-dot {
-  offset-path: path('M 400 570 Q 502 518 540 410');
+  offset-path: path('M 520 770 L 540 600 L 760 500');
   offset-distance: 0%;
   animation: mower-run var(--mower-ms, 1800ms) linear forwards;
 }

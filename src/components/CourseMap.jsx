@@ -7,6 +7,14 @@ import {
   FLAG_POLE,
   FLAG_WIDTH,
   HOLE_COUNT,
+  MOWER_ANIM_MS,
+  PATTERN_CHECK_SIZE,
+  PATTERN_CHECKERBOARD,
+  PATTERN_DIAMOND,
+  PATTERN_RINGS,
+  PATTERN_RING_SPACING,
+  PATTERN_STRIPE_SPACING,
+  PATTERN_STRIPE_WIDTH,
   POND_CX,
   POND_CY,
   POND_HEALTH_STRESSED,
@@ -19,12 +27,15 @@ import {
   RANGE_Y,
   TEE_MARKER_FONT,
   TEE_MARKER_RADIUS,
+  paint,
 } from '../data/constants.js';
 import {
   courseBoundaryPath,
   courseBounds,
   holesForCount,
+  holePath,
   mapViewBoxForHoles,
+  mowerPathFor,
   SHED_HEIGHT,
   SHED_ROOF,
   SHED_DOOR_HEIGHT,
@@ -34,8 +45,9 @@ import {
   SHED_Y,
 } from '../data/course.js';
 import { pondPercent } from '../engine/irrigation.js';
+import { hasPattern } from '../engine/mowing.js';
+import { patternRotate, patternStripeColor, surfacePatternOpacity } from '../engine/pattern.js';
 import { prefersReducedMotion } from '../engine/sound.js';
-import { MOWER_ANIM_MS } from '../data/constants.js';
 
 function activate(event, surface, onSelect) {
   if (event.key === 'Enter' || event.key === ' ') {
@@ -56,6 +68,50 @@ function surfaceStrokeWidth(surface, selected) {
   return 1;
 }
 
+function MowPattern({ id, pattern, angle, color }) {
+  const rotate = patternRotate(pattern, angle);
+  if (pattern === PATTERN_RINGS) {
+    return (
+      <pattern
+        id={id}
+        width={PATTERN_RING_SPACING}
+        height={PATTERN_RING_SPACING}
+        patternUnits="userSpaceOnUse"
+        patternTransform={`rotate(${rotate})`}
+      >
+        <circle
+          cx={PATTERN_RING_SPACING / 2}
+          cy={PATTERN_RING_SPACING / 2}
+          r={PATTERN_RING_SPACING / 2 - PATTERN_STRIPE_WIDTH}
+          fill="none"
+          stroke={color}
+          strokeWidth={PATTERN_STRIPE_WIDTH}
+        />
+      </pattern>
+    );
+  }
+  if (pattern === PATTERN_CHECKERBOARD || pattern === PATTERN_DIAMOND) {
+    const size = PATTERN_CHECK_SIZE;
+    return (
+      <pattern id={id} width={size} height={size} patternUnits="userSpaceOnUse" patternTransform={`rotate(${rotate})`}>
+        <rect width={size / 2} height={size / 2} fill={color} />
+        <rect x={size / 2} y={size / 2} width={size / 2} height={size / 2} fill={color} />
+      </pattern>
+    );
+  }
+  return (
+    <pattern
+      id={id}
+      width={PATTERN_STRIPE_SPACING}
+      height={PATTERN_STRIPE_SPACING}
+      patternUnits="userSpaceOnUse"
+      patternTransform={`rotate(${rotate})`}
+    >
+      <rect width={PATTERN_STRIPE_WIDTH} height={PATTERN_STRIPE_SPACING} fill={color} />
+    </pattern>
+  );
+}
+
 export default function CourseMap({
   surfaces,
   pond,
@@ -66,6 +122,7 @@ export default function CourseMap({
   selected,
   onSelect,
   onOpenShed,
+  day = 1,
 }) {
   const fills = {
     greens: surfaceFill('greens', surfaces.greens.quality),
@@ -76,6 +133,8 @@ export default function CourseMap({
   };
   const layout = holesForCount(holes);
   const bounds = courseBounds(layout);
+  const patternState = { day, surfaces };
+  const patterned = ['greens', 'tees', 'fairways'].filter((surface) => hasPattern(surface));
 
   return (
     <svg
@@ -85,6 +144,17 @@ export default function CourseMap({
       role="img"
       aria-label={`${holes}-hole course map`}
     >
+      <defs>
+        {patterned.map((surface) => (
+          <MowPattern
+            key={surface}
+            id={`mow-${surface}`}
+            pattern={surfaces[surface].pattern}
+            angle={surfaces[surface].angle}
+            color={patternStripeColor(fills[surface], paint)}
+          />
+        ))}
+      </defs>
       <rect
         x={bounds.minX}
         y={bounds.minY}
@@ -137,7 +207,7 @@ export default function CourseMap({
       {layout.map((hole) => (
         <path
           key={`rough-${hole.id}`}
-          d={hole.rough}
+          d={holePath(hole.rough)}
           fill={fills.rough}
           stroke={surfaceStroke('rough', selected, surfaces.greens.quality)}
           strokeWidth={surfaceStrokeWidth('rough', selected)}
@@ -150,28 +220,32 @@ export default function CourseMap({
         />
       ))}
       {layout.map((hole) => (
-        <path
-          key={`fairway-${hole.id}`}
-          d={hole.fairway}
-          fill={fills.fairways}
-          stroke={surfaceStroke('fairways', selected, surfaces.greens.quality)}
-          strokeWidth={surfaceStrokeWidth('fairways', selected)}
-          className="course-surface cursor-pointer outline-none"
-          tabIndex={0}
-          role="button"
-          aria-label={`Hole ${hole.id} fairway`}
-          onClick={() => onSelect('fairways')}
-          onKeyDown={(event) => activate(event, 'fairways', onSelect)}
-        />
+        <g key={`fairway-${hole.id}`}>
+          <path
+            d={holePath(hole.fairway)}
+            fill={fills.fairways}
+            stroke={surfaceStroke('fairways', selected, surfaces.greens.quality)}
+            strokeWidth={surfaceStrokeWidth('fairways', selected)}
+            className="course-surface cursor-pointer outline-none"
+            tabIndex={0}
+            role="button"
+            aria-label={`Hole ${hole.id} fairway`}
+            onClick={() => onSelect('fairways')}
+            onKeyDown={(event) => activate(event, 'fairways', onSelect)}
+          />
+          <path
+            d={holePath(hole.fairway)}
+            fill="url(#mow-fairways)"
+            opacity={surfacePatternOpacity(patternState, 'fairways')}
+            pointerEvents="none"
+          />
+        </g>
       ))}
       {layout.map((hole) =>
-        hole.bunker ? (
-          <ellipse
-            key={`bunker-${hole.id}`}
-            cx={hole.bunker.cx}
-            cy={hole.bunker.cy}
-            rx={hole.bunker.rx}
-            ry={hole.bunker.ry}
+        hole.bunkers.map((bunker, index) => (
+          <path
+            key={`bunker-${hole.id}-${index}`}
+            d={holePath(bunker)}
             fill={fills.bunkers}
             stroke={surfaceStroke('bunkers', selected, surfaces.greens.quality)}
             strokeWidth={surfaceStrokeWidth('bunkers', selected)}
@@ -182,43 +256,63 @@ export default function CourseMap({
             onClick={() => onSelect('bunkers')}
             onKeyDown={(event) => activate(event, 'bunkers', onSelect)}
           />
-        ) : null,
+        )),
       )}
       {layout.map((hole) => (
-        <rect
-          key={`tee-${hole.id}`}
-          x={hole.tee.cx - hole.tee.rx}
-          y={hole.tee.cy - hole.tee.ry}
-          width={hole.tee.rx * 2}
-          height={hole.tee.ry * 2}
-          fill={fills.tees}
-          stroke={surfaceStroke('tees', selected, surfaces.greens.quality)}
-          strokeWidth={surfaceStrokeWidth('tees', selected)}
-          className="course-surface cursor-pointer outline-none"
-          tabIndex={0}
-          role="button"
-          aria-label={`Hole ${hole.id} tee`}
-          onClick={() => onSelect('tees')}
-          onKeyDown={(event) => activate(event, 'tees', onSelect)}
-        />
+        <g key={`tee-${hole.id}`}>
+          <rect
+            x={hole.tee.cx - hole.tee.rx}
+            y={hole.tee.cy - hole.tee.ry}
+            width={hole.tee.rx * 2}
+            height={hole.tee.ry * 2}
+            fill={fills.tees}
+            stroke={surfaceStroke('tees', selected, surfaces.greens.quality)}
+            strokeWidth={surfaceStrokeWidth('tees', selected)}
+            className="course-surface cursor-pointer outline-none"
+            tabIndex={0}
+            role="button"
+            aria-label={`Hole ${hole.id} tee`}
+            onClick={() => onSelect('tees')}
+            onKeyDown={(event) => activate(event, 'tees', onSelect)}
+          />
+          <rect
+            x={hole.tee.cx - hole.tee.rx}
+            y={hole.tee.cy - hole.tee.ry}
+            width={hole.tee.rx * 2}
+            height={hole.tee.ry * 2}
+            fill="url(#mow-tees)"
+            opacity={surfacePatternOpacity(patternState, 'tees')}
+            pointerEvents="none"
+          />
+        </g>
       ))}
       {layout.map((hole) => (
-        <ellipse
-          key={`green-${hole.id}`}
-          cx={hole.green.cx}
-          cy={hole.green.cy}
-          rx={hole.green.rx}
-          ry={hole.green.ry}
-          fill={fills.greens}
-          stroke={surfaceStroke('greens', selected, surfaces.greens.quality)}
-          strokeWidth={surfaceStrokeWidth('greens', selected)}
-          className="course-surface cursor-pointer outline-none"
-          tabIndex={0}
-          role="button"
-          aria-label={`Hole ${hole.id} green`}
-          onClick={() => onSelect('greens')}
-          onKeyDown={(event) => activate(event, 'greens', onSelect)}
-        />
+        <g key={`green-${hole.id}`}>
+          <ellipse
+            cx={hole.green.cx}
+            cy={hole.green.cy}
+            rx={hole.green.rx}
+            ry={hole.green.ry}
+            fill={fills.greens}
+            stroke={surfaceStroke('greens', selected, surfaces.greens.quality)}
+            strokeWidth={surfaceStrokeWidth('greens', selected)}
+            className="course-surface cursor-pointer outline-none"
+            tabIndex={0}
+            role="button"
+            aria-label={`Hole ${hole.id} green`}
+            onClick={() => onSelect('greens')}
+            onKeyDown={(event) => activate(event, 'greens', onSelect)}
+          />
+          <ellipse
+            cx={hole.green.cx}
+            cy={hole.green.cy}
+            rx={hole.green.rx}
+            ry={hole.green.ry}
+            fill="url(#mow-greens)"
+            opacity={surfacePatternOpacity(patternState, 'greens')}
+            pointerEvents="none"
+          />
+        </g>
       ))}
       {layout.map((hole) => {
         const poleX = hole.green.cx;
@@ -320,7 +414,7 @@ export default function CourseMap({
           className="mower-dot"
           r="7"
           fill="var(--machine-orange)"
-          style={{ ['--mower-ms']: `${MOWER_ANIM_MS}ms` }}
+          style={{ ['--mower-ms']: `${MOWER_ANIM_MS}ms`, offsetPath: `path('${mowerPathFor(layout)}')` }}
         />
       ) : null}
       <text

@@ -354,6 +354,7 @@ function GameScreen({
           selected={selected}
           onSelect={onSelect}
           onOpenShed={onOpenShed}
+          day={state.day}
         />
       </div>
       <DaySummary summary={summary} onContinue={onDismissSummary} />

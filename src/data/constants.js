@@ -11,6 +11,7 @@ export const SURFACE_LIGHTEN_TEES = 0.14;
 export const SURFACE_DARKEN_ROUGH = 0.4;
 export const SURFACE_STRESS_MIX = 0.82;
 export const BUNKER_STRESS_MIX = 0.4;
+export const BUNKER_DULL = '#B9A888';
 export const GREEN_OUTLINE_MIX = 0.45;
 
 export const DAY_LENGTH_MINUTES = 480;
@@ -188,8 +189,16 @@ export const CONDITION_WEIGHTS = {
 };
 
 export const BUNKER_HOLE_COUNT = 3;
-export const FAIRWAY_HALF_WIDTH = 22;
+export const FAIRWAY_HALF_WIDTH = 15;
+export const FAIRWAY_TEE_EXTRA = 14;
+export const FAIRWAY_GREEN_EXTRA = 8;
+export const FAIRWAY_LANDING_T = 0.35;
+export const FAIRWAY_APPROACH_T = 0.8;
 export const ROUGH_HALF_WIDTH = 50;
+export const ROUGH_BEYOND_FAIRWAY = 22;
+export const ROUGH_WIDTH_VARIATION = 14;
+export const ROUGH_END_EXTRA = 6;
+export const ROUGH_GAP_MIN = 10;
 export const GREEN_RX = 24;
 export const GREEN_RY = 16;
 export const TEE_RX = 11;
@@ -197,9 +206,25 @@ export const TEE_RY = 8;
 export const BUNKER_RX = 16;
 export const BUNKER_RY = 10;
 export const BUNKER_OFFSET = 32;
+export const BUNKER_BLOB_VERTICES = 7;
+export const BUNKER_BLOB_JIGGLE = 0.34;
+export const BUNKER_LANDING_T = 0.4;
+export const BUNKER_GREENSIDE_T = 0.9;
 export const HOLE_PATH_SAMPLES = 16;
-export const POND_CX = 215;
-export const POND_CY = 255;
+export const RIBBON_CAP_SAMPLES = 8;
+export const DOGLEG_MIN_HOLES = 3;
+export const DOGLEG_MIN_TURN = 35;
+export const HOLE_WALK_MAX = 160;
+export const SHED_PROXIMITY_MAX = 200;
+export const PATTERN_STRIPE_SPACING = 12;
+export const PATTERN_STRIPE_WIDTH = 6;
+export const PATTERN_RING_SPACING = 18;
+export const PATTERN_CHECK_SIZE = 14;
+export const PATTERN_OVERLAY_MIX = 0.28;
+export const PATTERN_OPACITY_FRESH = 1;
+export const PATTERN_OPACITY_OVERDUE = 0;
+export const POND_CX = 90;
+export const POND_CY = 380;
 export const POND_RX = 58;
 export const POND_RY = 34;
 export const AERATOR_RX = 8;
@@ -479,9 +504,9 @@ export const PROJECT_DAILY_MINUTES = {
   [PROJECT_EXTRA_BUNKERS]: EXTRA_BUNKERS_DAILY_MINUTES,
   [PROJECT_NEW_TEES]: NEW_TEES_DAILY_MINUTES,
 };
-export const BACK_NINE_OFFSET_X = 980;
-export const RANGE_X = 500;
-export const RANGE_Y = 625;
+export const BACK_NINE_OFFSET_X = 1180;
+export const RANGE_X = 360;
+export const RANGE_Y = 940;
 export const RANGE_WIDTH = 100;
 export const RANGE_HEIGHT = 48;
 export const SAVE_VERSION = 1;

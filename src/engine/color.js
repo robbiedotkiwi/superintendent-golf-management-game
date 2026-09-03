@@ -1,5 +1,6 @@
 import {
   BUNKER_STRESS_MIX,
+  BUNKER_DULL,
   BOUNDARY_DARKEN,
   GREEN_OUTLINE_MIX,
   QUALITY_MAX,
@@ -50,7 +51,7 @@ export function healthyFill(surface) {
 }
 
 export function stressedFill(surface) {
-  if (surface === 'bunkers') return lerpHex(sand, soil, BUNKER_STRESS_MIX);
+  if (surface === 'bunkers') return lerpHex(sand, BUNKER_DULL, BUNKER_STRESS_MIX);
   return lerpHex(healthyFill(surface), turfStressed, SURFACE_STRESS_MIX);
 }
 

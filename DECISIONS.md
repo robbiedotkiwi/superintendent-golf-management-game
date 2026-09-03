@@ -112,4 +112,8 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Tournament line, disease, GM meeting, ball pick, and storm debris sit after Money and before Surfaces so those actions stay reachable without the old top weather strip.
 - Sound stays next to End day in the pinned footer. Task reorder arrows sit under the time bar, not inside it.
 - The map pane is an unpadded `flex-1` column with the SVG `absolute inset-0`. `xMidYMid meet` is kept so the whole course stays visible; leftover pane area is the same soil fill as the map, not a HUD gutter.
+- Course layout lives in `courseLayout.js` as centerline coordinates plus bunker placements. `holeShape.js` expands those into polygons; `CourseMap` only draws the polygons so a later generator can replace the data file.
+- Rough polygons are asserted with a `ROUGH_GAP_MIN` inflate so a visible gap is required, not just a non-touching edge. Sequential green-to-tee walks may be up to `HOLE_WALK_MAX` because pinched collars still need space.
+- Neglected bunkers lerp `sand` toward `BUNKER_DULL`, never toward `soil` or turf. Bunkers are irregular polygons (7 vertices), not ellipses.
+- Pattern fill is an SVG `<pattern>` rotated by the surface angle (diamond adds 45°). Opacity runs linearly from 1 on the cut day to 0 at that surface's neglect threshold. Rough has no pattern overlay.
 
