@@ -138,6 +138,7 @@ export default function App() {
           onSetAngle={(surface, angle) => dispatch({ type: 'SET_ANGLE', surface, angle })}
           onSetAutoRotate={(surface, value) => dispatch({ type: 'SET_AUTO_ROTATE', surface, value })}
           onSetIrrigation={(surface, policy) => dispatch({ type: 'SET_IRRIGATION', surface, policy })}
+          onSetView={(view) => dispatch({ type: 'SET_VIEW', view })}
           onBuyAerator={() => dispatch({ type: 'BUY_AERATOR' })}
           onLease={(machineId) => dispatch({ type: 'LEASE_MACHINE', machineId })}
           onStopLease={(machineId) => dispatch({ type: 'STOP_LEASE', machineId })}
@@ -219,6 +220,7 @@ function GameScreen({
   onSetAngle,
   onSetAutoRotate,
   onSetIrrigation,
+  onSetView,
   onBuyAerator,
   onLease,
   onStopLease,
@@ -340,6 +342,7 @@ function GameScreen({
         onSetAngle={onSetAngle}
         onSetAutoRotate={onSetAutoRotate}
         onSetIrrigation={onSetIrrigation}
+        onSetView={onSetView}
         onBuyAerator={onBuyAerator}
         onToggleSound={onToggleSound}
       />
@@ -355,6 +358,8 @@ function GameScreen({
           onSelect={onSelect}
           onOpenShed={onOpenShed}
           day={state.day}
+          view={state.view}
+          onView={onSetView}
         />
       </div>
       <DaySummary summary={summary} onContinue={onDismissSummary} />

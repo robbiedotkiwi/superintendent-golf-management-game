@@ -72,6 +72,8 @@ import {
   VIEW_PAN_Y_DEFAULT,
 } from '../data/constants.js';
 import { clampAngle, clampHoc, hasHoc, hasPattern, mergeSurfaceFields, angleDelta } from './mowing.js';
+import { courseBounds, holesForCount } from '../data/course.js';
+import { clampView, defaultView } from './view.js';
 
 export function createInitialState() {
   const calendar = calendarFromDay(STARTING_DAY);
@@ -497,6 +499,10 @@ export function reducer(state, action) {
         { ...state, capitalBudget: state.capitalBudget - AERATOR_COST, hasAerator: true },
         AERATOR_COST,
       );
+    }
+    case 'SET_VIEW': {
+      const layout = holesForCount(state.holes ?? HOLE_COUNT);
+      return { ...state, view: clampView({ ...defaultView(), ...action.view }, courseBounds(layout)) };
     }
     case 'TOGGLE_SOUND':
       return { ...state, soundEnabled: !state.soundEnabled };

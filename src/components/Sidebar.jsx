@@ -14,6 +14,7 @@ import { canPlanTask } from '../engine/gameState.js';
 import { meetingDue } from '../engine/mail.js';
 import { daysSinceLastWorked, isNeglected } from '../engine/neglect.js';
 import { daysUntilNextTournament, nextTournament } from '../engine/tournament.js';
+import { fitCourse } from '../engine/view.js';
 import IrrigationPanel from './IrrigationPanel.jsx';
 import TaskPanel from './TaskPanel.jsx';
 import TimeBar from './TimeBar.jsx';
@@ -45,6 +46,7 @@ export default function Sidebar({
   onSetAngle,
   onSetAutoRotate,
   onSetIrrigation,
+  onSetView,
   onBuyAerator,
   onToggleSound,
 }) {
@@ -268,6 +270,13 @@ export default function Sidebar({
           </div>
         ) : null}
         <div className="mt-2 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onSetView(fitCourse())}
+            className="border border-[var(--sand)] px-3 py-2 text-sm"
+          >
+            Fit
+          </button>
           <button
             type="button"
             onClick={onToggleSound}

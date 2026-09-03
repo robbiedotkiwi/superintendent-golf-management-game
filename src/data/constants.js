@@ -166,8 +166,15 @@ export const PATTERN_WEAR_DAMAGE = 3;
 export const PATTERN_WEAR_DEFAULT = 0;
 
 export const VIEW_ZOOM_DEFAULT = 1;
+export const VIEW_ZOOM_MIN = 0.5;
+export const VIEW_ZOOM_MAX = 4;
+export const VIEW_ZOOM_STEP = 1.15;
+export const VIEW_ZOOM_WHEEL_FACTOR = 1.12;
 export const VIEW_PAN_X_DEFAULT = 0;
 export const VIEW_PAN_Y_DEFAULT = 0;
+export const VIEW_PAN_KEEP = 80;
+export const VIEW_PAN_STEP = 48;
+export const VIEW_DRAG_THRESHOLD = 5;
 export const MOISTURE_HIDDEN = null;
 export const MOISTURE_SURFACES = ['greens', 'tees', 'fairways'];
 

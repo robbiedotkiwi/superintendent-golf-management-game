@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { boundaryFill, greenOutline, surfaceFill } from '../engine/color.js';
 import {
   AERATOR_ARM,
@@ -27,6 +28,8 @@ import {
   RANGE_Y,
   TEE_MARKER_FONT,
   TEE_MARKER_RADIUS,
+  VIEW_ZOOM_STEP,
+  VIEW_ZOOM_WHEEL_FACTOR,
   paint,
 } from '../data/constants.js';
 import {
@@ -34,7 +37,6 @@ import {
   courseBounds,
   holesForCount,
   holePath,
-  mapViewBoxForHoles,
   mowerPathFor,
   SHED_HEIGHT,
   SHED_ROOF,
@@ -48,6 +50,20 @@ import { pondPercent } from '../engine/irrigation.js';
 import { hasPattern } from '../engine/mowing.js';
 import { patternRotate, patternStripeColor, surfacePatternOpacity } from '../engine/pattern.js';
 import { prefersReducedMotion } from '../engine/sound.js';
+import {
+  clientToWorld,
+  clampView,
+  defaultView,
+  fitCourse,
+  fitToRect,
+  holeBounds,
+  isDrag,
+  panBy,
+  panByKey,
+  viewBoxString,
+  zoomAround,
+  zoomBy,
+} from '../engine/view.js';
 
 function activate(event, surface, onSelect) {
   if (event.key === 'Enter' || event.key === ' ') {
@@ -123,7 +139,12 @@ export default function CourseMap({
   onSelect,
   onOpenShed,
   day = 1,
+  view = defaultView(),
+  onView,
 }) {
+  const svgRef = useRef(null);
+  const dragRef = useRef(null);
+  const viewRef = useRef(view);
   const fills = {
     greens: surfaceFill('greens', surfaces.greens.quality),
     tees: surfaceFill('tees', surfaces.tees.quality),
@@ -133,16 +154,117 @@ export default function CourseMap({
   };
   const layout = holesForCount(holes);
   const bounds = courseBounds(layout);
+  const camera = clampView(view, bounds);
+  viewRef.current = camera;
   const patternState = { day, surfaces };
   const patterned = ['greens', 'tees', 'fairways'].filter((surface) => hasPattern(surface));
 
+  function setView(next) {
+    const clamped = clampView(next, bounds);
+    viewRef.current = clamped;
+    onView?.(clamped);
+  }
+
+  function fitHole(hole) {
+    setView(fitToRect(bounds, holeBounds(hole)));
+  }
+
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return undefined;
+    function onWheel(event) {
+      event.preventDefault();
+      const world = clientToWorld(svg, event.clientX, event.clientY);
+      const factor = event.deltaY > 0 ? 1 / VIEW_ZOOM_WHEEL_FACTOR : VIEW_ZOOM_WHEEL_FACTOR;
+      const current = viewRef.current;
+      const next = zoomAround(current, bounds, world.x, world.y, current.zoom * factor);
+      viewRef.current = next;
+      onView?.(next);
+    }
+    svg.addEventListener('wheel', onWheel, { passive: false });
+    return () => svg.removeEventListener('wheel', onWheel);
+  }, [holes, onView]);
+
+  useEffect(() => {
+    function onKey(event) {
+      if (event.target.closest?.('input, select, textarea')) return;
+      if (event.key === '0') {
+        event.preventDefault();
+        setView(fitCourse());
+      } else if (event.key === '+' || event.key === '=') {
+        event.preventDefault();
+        setView(zoomBy(viewRef.current, bounds, VIEW_ZOOM_STEP));
+      } else if (event.key === '-' || event.key === '_') {
+        event.preventDefault();
+        setView(zoomBy(viewRef.current, bounds, 1 / VIEW_ZOOM_STEP));
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        setView(panByKey(viewRef.current, bounds, 1, 0));
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        setView(panByKey(viewRef.current, bounds, -1, 0));
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        setView(panByKey(viewRef.current, bounds, 0, 1));
+      } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        setView(panByKey(viewRef.current, bounds, 0, -1));
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [holes]);
+
   return (
     <svg
-      viewBox={mapViewBoxForHoles(holes)}
+      ref={svgRef}
+      viewBox={viewBoxString(camera, bounds)}
       preserveAspectRatio="xMidYMid meet"
-      className="absolute inset-0 h-full w-full"
+      className="absolute inset-0 h-full w-full touch-none"
       role="img"
       aria-label={`${holes}-hole course map`}
+      onPointerDown={(event) => {
+        if (event.button !== 0) return;
+        dragRef.current = {
+          pointerId: event.pointerId,
+          x: event.clientX,
+          y: event.clientY,
+          dragging: false,
+        };
+      }}
+      onPointerMove={(event) => {
+        const drag = dragRef.current;
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        const dx = event.clientX - drag.x;
+        const dy = event.clientY - drag.y;
+        if (!drag.dragging && isDrag(dx, dy)) {
+          drag.dragging = true;
+          svgRef.current?.setPointerCapture(event.pointerId);
+        }
+        if (!drag.dragging) return;
+        const svg = svgRef.current;
+        if (!svg) return;
+        const from = clientToWorld(svg, drag.x, drag.y);
+        const to = clientToWorld(svg, event.clientX, event.clientY);
+        drag.x = event.clientX;
+        drag.y = event.clientY;
+        setView(panBy(viewRef.current, bounds, to.x - from.x, to.y - from.y));
+      }}
+      onPointerUp={(event) => {
+        const drag = dragRef.current;
+        if (drag?.dragging) event.currentTarget.releasePointerCapture?.(event.pointerId);
+        dragRef.current = drag?.dragging ? { ...drag, ended: true } : null;
+      }}
+      onPointerCancel={() => {
+        dragRef.current = null;
+      }}
+      onClickCapture={(event) => {
+        if (dragRef.current?.dragging || dragRef.current?.ended) {
+          event.stopPropagation();
+          event.preventDefault();
+          dragRef.current = null;
+        }
+      }}
     >
       <defs>
         {patterned.map((surface) => (
@@ -216,6 +338,10 @@ export default function CourseMap({
           role="button"
           aria-label={`Hole ${hole.id} rough`}
           onClick={() => onSelect('rough')}
+          onDoubleClick={(event) => {
+            event.preventDefault();
+            fitHole(hole);
+          }}
           onKeyDown={(event) => activate(event, 'rough', onSelect)}
         />
       ))}
@@ -231,6 +357,10 @@ export default function CourseMap({
             role="button"
             aria-label={`Hole ${hole.id} fairway`}
             onClick={() => onSelect('fairways')}
+            onDoubleClick={(event) => {
+              event.preventDefault();
+              fitHole(hole);
+            }}
             onKeyDown={(event) => activate(event, 'fairways', onSelect)}
           />
           <path
@@ -254,6 +384,10 @@ export default function CourseMap({
             role="button"
             aria-label={`Hole ${hole.id} bunker`}
             onClick={() => onSelect('bunkers')}
+            onDoubleClick={(event) => {
+              event.preventDefault();
+              fitHole(hole);
+            }}
             onKeyDown={(event) => activate(event, 'bunkers', onSelect)}
           />
         )),
@@ -273,6 +407,10 @@ export default function CourseMap({
             role="button"
             aria-label={`Hole ${hole.id} tee`}
             onClick={() => onSelect('tees')}
+            onDoubleClick={(event) => {
+              event.preventDefault();
+              fitHole(hole);
+            }}
             onKeyDown={(event) => activate(event, 'tees', onSelect)}
           />
           <rect
@@ -301,6 +439,10 @@ export default function CourseMap({
             role="button"
             aria-label={`Hole ${hole.id} green`}
             onClick={() => onSelect('greens')}
+            onDoubleClick={(event) => {
+              event.preventDefault();
+              fitHole(hole);
+            }}
             onKeyDown={(event) => activate(event, 'greens', onSelect)}
           />
           <ellipse
