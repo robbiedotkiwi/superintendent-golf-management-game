@@ -13,6 +13,7 @@ import {
   VOLUNTEER_MINUTES,
 } from '../data/constants.js';
 import { dayOfWeek } from '../engine/staff.js';
+import { workerAbsenceReason } from '../engine/availability.js';
 import { formatMoney } from '../engine/format.js';
 import SectionTabs from './SectionTabs.jsx';
 
@@ -51,9 +52,12 @@ export default function Crew({
 
       <h2 className="font-condensed text-3xl">On the books</h2>
       <div className="mt-3 space-y-4">
-        {paid.map((worker) => (
+        {paid.map((worker) => {
+          const reason = workerAbsenceReason(state, worker);
+          return (
           <section key={worker.id} className="border-2 border-[var(--sand)] p-4">
-            <h3 className="text-2xl font-semibold">{worker.name}</h3>
+            <h3 className={`text-2xl font-semibold ${reason ? 'line-through' : ''}`}>{worker.name}</h3>
+            {reason ? <p className="text-sm text-[var(--sand)]">{reason}</p> : null}
             <p>
               Speed {worker.speedSkill} · Quality {worker.qualitySkill} · Morale {Math.round(worker.morale)} · Wage {formatMoney(worker.wage)}/day
               {worker.isMechanic ? ' · Mechanic' : ''}
@@ -80,10 +84,21 @@ export default function Crew({
               </button>
             ) : null}
           </section>
-        ))}
+          );
+        })}
       </div>
 
       <h2 className="mt-10 font-condensed text-3xl">Volunteer</h2>
+      {(() => {
+        const volunteer = state.workers.find((worker) => worker.isVolunteer);
+        const reason = volunteer ? workerAbsenceReason(state, volunteer) : null;
+        return (
+          <>
+            <p className={`mt-2 ${reason ? 'line-through' : ''}`}>{volunteer?.name ?? 'Volunteer'}</p>
+            {reason ? <p className="text-sm text-[var(--sand)]">{reason}</p> : null}
+          </>
+        );
+      })()}
       <p className="mt-2">
         Comes on day {state.volunteerWeekday ?? VOLUNTEER_DEFAULT_WEEKDAY} of each {DAYS_PER_WEEK}-day week with {VOLUNTEER_MINUTES} min. Fairways and rough only. Wage {formatMoney(PLAYER_WAGE)}.
       </p>

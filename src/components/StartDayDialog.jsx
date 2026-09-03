@@ -3,12 +3,10 @@ import {
   START_DAY_LABEL,
 } from '../data/constants.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
-import { getTask } from '../data/tasks.js';
-import { workerById } from '../engine/assignment.js';
 import { skippedOverdueSurfaces, unusedTimeCopy } from '../engine/badges.js';
-import { getMachine } from '../engine/equipment.js';
 import { IRRIGATED_SURFACES } from '../engine/irrigation.js';
 import ForecastStrip from './ForecastStrip.jsx';
+import PlanList from './PlanList.jsx';
 
 const POLICY_LABELS = {
   off: 'Off',
@@ -20,6 +18,7 @@ export default function StartDayDialog({
   state,
   minutesRemaining,
   onRemove,
+  onReorder,
   onSetIrrigation,
   onConfirm,
   onBack,
@@ -34,35 +33,7 @@ export default function StartDayDialog({
         <p className="mt-3 text-lg">{unused}</p>
 
         <h3 className="mt-6 font-condensed text-2xl">The plan</h3>
-        <p className="mt-1 text-sm text-[var(--sand)]">Top runs first. Anything can still come off.</p>
-        {state.plannedTasks.length === 0 ? (
-          <p className="mt-2 text-sm text-[var(--sand)]">Nothing planned.</p>
-        ) : (
-          <ol className="mt-2 space-y-2">
-            {state.plannedTasks.map((planned, index) => {
-              const task = getTask(planned.taskId);
-              const worker = workerById(state, planned.workerId);
-              const machine = planned.machineId ? getMachine(planned.machineId) : null;
-              return (
-                <li key={planned.taskId} className="flex items-start justify-between gap-2 border border-[var(--sand)] p-2">
-                  <div>
-                    <div className="font-semibold">
-                      {index + 1}. {task?.name ?? planned.taskId}
-                    </div>
-                    <p className="text-sm text-[var(--sand)]">
-                      {worker?.name ?? 'Unassigned'}
-                      {machine ? ` · ${machine.name}` : ''}
-                      {` · ${planned.minutes} min`}
-                    </p>
-                  </div>
-                  <button type="button" onClick={() => onRemove(planned.taskId)} className="border border-[var(--sand)] px-2 py-1 text-sm">
-                    Remove
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
-        )}
+        <PlanList state={state} onReorder={onReorder} onRemove={onRemove} />
 
         <h3 className="mt-6 font-condensed text-2xl">Overdue and skipped</h3>
         {overdue.length === 0 ? (

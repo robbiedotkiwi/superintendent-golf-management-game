@@ -7,6 +7,7 @@ import Office from './components/Office.jsx';
 import PlayoutBar from './components/PlayoutBar.jsx';
 import MapJobPopover from './components/MapJobPopover.jsx';
 import StartDayDialog from './components/StartDayDialog.jsx';
+import PlanList from './components/PlanList.jsx';
 import Tutorial from './components/Tutorial.jsx';
 import Turf from './components/Turf.jsx';
 import YearReview from './components/YearReview.jsx';
@@ -181,6 +182,7 @@ export default function App() {
           onGrindInHouse={(machineId) => dispatch({ type: 'GRIND_IN_HOUSE', machineId })}
           onRepair={(machineId) => dispatch({ type: 'REPAIR_MACHINE', machineId })}
           onMove={(taskId, direction) => dispatch({ type: 'MOVE_TASK', taskId, direction })}
+          onReorder={(order) => dispatch({ type: 'REORDER_TASKS', order })}
           onHire={(candidateId) => dispatch({ type: 'HIRE_WORKER', candidateId })}
           onTrain={(workerId, axis) => dispatch({ type: 'TRAIN_WORKER', workerId, axis })}
           onVolunteerDay={(weekday) => dispatch({ type: 'SET_VOLUNTEER_WEEKDAY', weekday })}
@@ -281,6 +283,7 @@ function GameScreen({
   onGrindInHouse,
   onRepair,
   onMove,
+  onReorder,
   onHire,
   onTrain,
   onVolunteerDay,
@@ -505,6 +508,16 @@ function GameScreen({
               onSkip={onSkipPlayout}
               onSkipPref={onSetSkipPref}
             />
+            {!watching ? (
+              <div className="pointer-events-auto absolute bottom-3 left-3 z-20 w-80 max-h-[40%] overflow-y-auto border-2 border-[var(--sand)] bg-[var(--soil)] p-3">
+                <PlanList
+                  compact
+                  state={state}
+                  onReorder={onReorder}
+                  onRemove={onRemove}
+                />
+              </div>
+            ) : null}
           </>
         )}
       </div>
@@ -513,6 +526,7 @@ function GameScreen({
           state={state}
           minutesRemaining={minutesRemaining}
           onRemove={onRemove}
+          onReorder={onReorder}
           onSetIrrigation={onSetIrrigation}
           onConfirm={() => {
             onCloseShed();

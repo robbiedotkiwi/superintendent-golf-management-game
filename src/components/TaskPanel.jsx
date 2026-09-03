@@ -1,5 +1,6 @@
 import { tasksForSurface, taskUsesMachine } from '../data/tasks.js';
-import { durationForTask, assignWorker, certifiedPresent, workerById } from '../engine/assignment.js';
+import { durationForTask, assignWorker, certifiedPresent, workerById, workerAllows } from '../engine/assignment.js';
+import { workerAbsenceReason } from '../engine/availability.js';
 import { getMachine, ineligibleMachines, pickMachineForTask } from '../engine/equipment.js';
 import { inPrepWindow } from '../engine/tournament.js';
 import { canPlanTask } from '../engine/gameState.js';
@@ -43,20 +44,29 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
                   <p>
                     Planned · {planned.minutes} min · {workerById(state, planned.workerId)?.name}
                   </p>
-                  <label className="block text-sm text-[var(--sand)]">
+                  <div className="block text-sm text-[var(--sand)]">
                     Worker
-                    <select
-                      className="ml-2 border border-[var(--sand)] bg-[var(--soil)] p-1 text-[var(--paint)]"
-                      value={planned.workerId}
-                      onChange={(event) => onSetWorker(task.id, event.target.value)}
-                    >
-                      {workers.map((worker) => (
-                        <option key={worker.id} value={worker.id}>
-                          {worker.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                    <ul className="mt-1 space-y-1">
+                      {workers.map((worker) => {
+                        const reason = workerAbsenceReason(state, worker);
+                        const selectable = !reason && workerAllows(worker, task.surface);
+                        return (
+                          <li key={worker.id}>
+                            <button
+                              type="button"
+                              disabled={!selectable}
+                              onClick={() => onSetWorker(task.id, worker.id)}
+                              className={`block w-full border border-[var(--sand)] px-2 py-1 text-left text-[var(--paint)] disabled:opacity-70 ${
+                                reason ? 'line-through' : ''
+                              } ${planned.workerId === worker.id ? 'bg-[var(--machine-orange)]' : ''}`}
+                            >
+                              {reason ?? worker.name}
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
                   <button type="button" onClick={() => onRemove(task.id)} className="border border-[var(--sand)] px-3 py-1">
                     Take off
                   </button>

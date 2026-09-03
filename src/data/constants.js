@@ -725,6 +725,15 @@ export const GM_MEETING_LEAD_DAYS = 2;
 export const MORALE_BADGE_BELOW = MORALE_SLOW_BELOW;
 export const START_DAY_LABEL = 'Start day';
 export const DAY_FULLY_COMMITTED_COPY = 'The day is fully committed.';
+
+/** Round 5 Phase D — unavailable workers and plan order. */
+export const VOLUNTEER_OFF_REASON = 'Volunteer — not in today';
+export const TRAINING_BACK_DAY_REASON = (name, backDay) => `${name} — training, back day ${backDay}`;
+export const MORALE_HOME_REASON = (name) => `${name} — staying home (morale)`;
+export const SICK_REASON = (name) => `${name} — off sick`;
+export const WORKER_ABSENT_REASON = 'Not in today';
+export const OVERRUN_DROP_COPY =
+  'Top runs first. The last task is the one dropped if the day overruns.';
 export const SIDEBAR_FIT_HEIGHT = 720;
 export const SHIPPED_PRESET_DAILY = 'daily';
 export const SHIPPED_PRESET_TOURNAMENT = 'tournament';

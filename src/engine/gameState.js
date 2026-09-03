@@ -509,6 +509,20 @@ export function reducer(state, action) {
       list[nextIndex] = swap;
       return { ...state, plannedTasks: list };
     }
+    case 'REORDER_TASKS': {
+      const order = action.order;
+      if (!Array.isArray(order) || order.length !== state.plannedTasks.length) return state;
+      const byId = new Map(state.plannedTasks.map((item) => [item.taskId, item]));
+      const next = [];
+      for (const taskId of order) {
+        const item = byId.get(taskId);
+        if (!item) return state;
+        next.push(item);
+        byId.delete(taskId);
+      }
+      if (byId.size > 0) return state;
+      return { ...state, plannedTasks: next };
+    }
     case 'HIRE_WORKER': {
       const candidate = state.candidates.find((item) => item.id === action.candidateId);
       if (!candidate) return state;
