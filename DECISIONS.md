@@ -207,4 +207,8 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - One status line under the title: broken, then grinding, then leased, then `Used · N hours` if hours > 0, else `New`. Starters start at 340 / 480 hours. Hours are a stored field and do not tick with use. New shop buys stay instant (acquisition system is out of scope); used orders still queue on `pendingDeliveries` and are the Deliveries section on Yard.
 - Invented delivery sources are `new` / `ex-demo` / `used`. Used buys write `used`. Empty copy is `Nothing is on order.`
 
+### Phase E
+
+- `VOLUNTEER_DAY` is 3 and is also `VOLUNTEER_DEFAULT_WEEKDAY`. Saves with weekday 6 (the old default) or a missing weekday migrate to 3. Any other stored weekday is kept.
+
 

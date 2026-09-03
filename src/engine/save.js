@@ -37,6 +37,7 @@ import { migrateMoisture } from './moisture.js';
 import { createRng } from './rng.js';
 import { buildForecast } from './weather.js';
 import { normalizeSection, normalizeTabs } from './section.js';
+import { migrateVolunteerWeekday } from './staff.js';
 
 export function withDefaults(state) {
   const surfaces = state.surfaces?.greens
@@ -163,6 +164,7 @@ export function withDefaults(state) {
     nextPresetId: Number.isInteger(state.nextPresetId) && state.nextPresetId > 0 ? state.nextPresetId : 1,
     lastMainsCost: Number.isFinite(Number(state.lastMainsCost)) ? Number(state.lastMainsCost) : 0,
     lastDeliveryDay: Number.isInteger(state.lastDeliveryDay) ? state.lastDeliveryDay : null,
+    volunteerWeekday: migrateVolunteerWeekday(state.volunteerWeekday),
     section: normalizeSection(state.section),
     tabs: normalizeTabs(state.tabs),
   };

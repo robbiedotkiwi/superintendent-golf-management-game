@@ -17,7 +17,9 @@ import {
   TRAINING_COST,
   TRAINING_DAYS,
   TRAINING_SKILL_GAIN,
+  VOLUNTEER_DAY,
   VOLUNTEER_DEFAULT_WEEKDAY,
+  VOLUNTEER_LEGACY_WEEKDAY,
   VOLUNTEER_MINUTES,
 } from '../data/constants.js';
 import { minutesTodayForWeather } from './weather.js';
@@ -25,6 +27,13 @@ import { constructionMinutes } from './projects.js';
 
 export function dayOfWeek(day) {
   return ((day - 1) % DAYS_PER_WEEK) + 1;
+}
+
+export function migrateVolunteerWeekday(value) {
+  if (value == null || Number(value) === VOLUNTEER_LEGACY_WEEKDAY) return VOLUNTEER_DAY;
+  const weekday = Number(value);
+  if (!Number.isInteger(weekday) || weekday < 1 || weekday > DAYS_PER_WEEK) return VOLUNTEER_DAY;
+  return weekday;
 }
 
 export function hasMechanic(state) {
