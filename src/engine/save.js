@@ -11,14 +11,37 @@ import {
   STARTING_IRRIGATION,
   STARTING_MACHINE_ID,
   STARTING_MAINTENANCE_BUDGET,
+  SURFACE_KEYS,
+  VIEW_PAN_X_DEFAULT,
+  VIEW_PAN_Y_DEFAULT,
+  VIEW_ZOOM_DEFAULT,
 } from '../data/constants.js';
 import { emptyDisease, emptyUntil } from './disease.js';
 import { emptyYearRecord } from './history.js';
 import { emptyDaysSinceWorked } from './mail.js';
+import { mergeSurfaceFields } from './mowing.js';
 
 export function withDefaults(state) {
+  const surfaces = state.surfaces?.greens
+    ? SURFACE_KEYS.reduce((next, key) => {
+        next[key] = mergeSurfaceFields(key, state.surfaces?.[key] ?? {});
+        return next;
+      }, {})
+    : state.surfaces;
+  const plannedTasks = (state.plannedTasks ?? []).map((item) => {
+    const rest = { ...item };
+    delete rest.level;
+    return rest;
+  });
   return {
     ...state,
+    surfaces,
+    plannedTasks,
+    view: {
+      zoom: state.view?.zoom ?? VIEW_ZOOM_DEFAULT,
+      panX: state.view?.panX ?? VIEW_PAN_X_DEFAULT,
+      panY: state.view?.panY ?? VIEW_PAN_Y_DEFAULT,
+    },
     ownedMachines: state.ownedMachines ?? [STARTING_MACHINE_ID],
     machineWear: state.machineWear ?? { [STARTING_MACHINE_ID]: 0 },
     machineBroken: state.machineBroken ?? {},

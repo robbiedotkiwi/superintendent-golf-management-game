@@ -118,7 +118,7 @@ export default function App() {
           minutesCapacity={minutesCapacity}
           condition={condition}
           onSelect={setSelected}
-          onPlan={(taskId, level) => dispatch({ type: 'PLAN_TASK', taskId, level })}
+          onPlan={(taskId) => dispatch({ type: 'PLAN_TASK', taskId })}
           onRemove={(taskId) => dispatch({ type: 'REMOVE_TASK', taskId })}
           onEndDay={() => dispatch({ type: 'END_DAY' })}
           onDismissSummary={() => setSummary(null)}
@@ -137,6 +137,10 @@ export default function App() {
           onVolunteerDay={(weekday) => dispatch({ type: 'SET_VOLUNTEER_WEEKDAY', weekday })}
           onEarlyStart={(value) => dispatch({ type: 'SET_EARLY_START', value })}
           onSetWorker={(taskId, workerId) => dispatch({ type: 'SET_TASK_WORKER', taskId, workerId })}
+          onSetHoc={(surface, hoc) => dispatch({ type: 'SET_HOC', surface, hoc })}
+          onSetPattern={(surface, pattern) => dispatch({ type: 'SET_PATTERN', surface, pattern })}
+          onSetAngle={(surface, angle) => dispatch({ type: 'SET_ANGLE', surface, angle })}
+          onSetAutoRotate={(surface, value) => dispatch({ type: 'SET_AUTO_ROTATE', surface, value })}
           onSetIrrigation={(surface, policy) => dispatch({ type: 'SET_IRRIGATION', surface, policy })}
           onBuyAerator={() => dispatch({ type: 'BUY_AERATOR' })}
           onLease={(machineId) => dispatch({ type: 'LEASE_MACHINE', machineId })}
@@ -214,6 +218,10 @@ function GameScreen({
   onVolunteerDay,
   onEarlyStart,
   onSetWorker,
+  onSetHoc,
+  onSetPattern,
+  onSetAngle,
+  onSetAutoRotate,
   onSetIrrigation,
   onBuyAerator,
   onLease,
@@ -358,6 +366,10 @@ function GameScreen({
             onPlan={onPlan}
             onRemove={onRemove}
             onSetWorker={onSetWorker}
+            onSetHoc={onSetHoc}
+            onSetPattern={onSetPattern}
+            onSetAngle={onSetAngle}
+            onSetAutoRotate={onSetAutoRotate}
             onClose={() => onSelect(null)}
           />
         ) : null}

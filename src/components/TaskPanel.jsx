@@ -1,7 +1,16 @@
-import { LEVEL_KEYS } from '../data/constants.js';
-import { LEVEL_LABELS, SURFACE_LABELS, tasksForSurface, taskUsesMachine } from '../data/tasks.js';
+import {
+  HOC_RANGE,
+  HOC_STEP,
+  HOC_STRESS_DAMAGE,
+  PATTERN_ANGLE_MAX,
+  PATTERN_ANGLE_MIN,
+  PATTERN_KEYS,
+  PATTERN_LABELS,
+} from '../data/constants.js';
+import { SURFACE_LABELS, tasksForSurface, taskUsesMachine } from '../data/tasks.js';
 import { durationForTask, assignWorker, certifiedPresent, workerById } from '../engine/assignment.js';
 import { ineligibleMachines, pickMachine, surfaceCeiling } from '../engine/equipment.js';
+import { hasHoc, hasPattern, inHocStressBand } from '../engine/mowing.js';
 import { inPrepWindow } from '../engine/tournament.js';
 import { canPlanTask } from '../engine/gameState.js';
 
@@ -9,9 +18,24 @@ function formatQuality(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
-export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorker, onClose }) {
-  const quality = state.surfaces[surface].quality;
+export default function TaskPanel({
+  surface,
+  state,
+  onPlan,
+  onRemove,
+  onSetWorker,
+  onSetHoc,
+  onSetPattern,
+  onSetAngle,
+  onSetAutoRotate,
+  onClose,
+}) {
+  const record = state.surfaces[surface];
+  const quality = record.quality;
   const tasks = tasksForSurface(surface);
+  const showHoc = hasHoc(surface);
+  const showPattern = hasPattern(surface);
+  const stress = showHoc && inHocStressBand(surface, record.hoc);
 
   return (
     <aside
@@ -29,7 +53,7 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
           <div className="px-4 py-3">
             <div className="text-sm text-[var(--sand)]">Quality</div>
             <div className="font-condensed text-6xl font-bold leading-none">{formatQuality(quality)}</div>
-            <p className="mt-1 text-sm text-[var(--sand)]">Ceiling {surfaceCeiling(state, surface)}</p>
+            <p className="mt-1 text-sm text-[var(--sand)]">Ceiling {formatQuality(surfaceCeiling(state, surface))}</p>
             {state.disease?.[surface] ? (
               <p className="mt-2 text-sm">
                 Disease pressure {Math.round(state.disease[surface].pressure)}
@@ -38,6 +62,69 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
             ) : null}
           </div>
           <div className="flex-1 space-y-4 overflow-auto px-4 pb-5">
+            {showHoc ? (
+              <section className="border border-[var(--sand)] p-3">
+                <label className="block">
+                  <span className="text-sm text-[var(--sand)]">Height of cut</span>
+                  <div className="font-condensed text-3xl font-bold leading-none">{record.hoc} mm</div>
+                  <input
+                    type="range"
+                    min={HOC_RANGE[surface].min}
+                    max={HOC_RANGE[surface].max}
+                    step={HOC_STEP[surface]}
+                    value={record.hoc}
+                    onChange={(event) => onSetHoc(surface, Number(event.target.value))}
+                    className="mt-2 w-full"
+                  />
+                </label>
+                {stress ? (
+                  <p className="mt-2 text-sm text-[var(--machine-orange)]">
+                    Low cut — {HOC_STRESS_DAMAGE} quality/day in summer or when dry
+                  </p>
+                ) : null}
+              </section>
+            ) : null}
+            {showPattern ? (
+              <section className="border border-[var(--sand)] p-3">
+                <div className="text-sm text-[var(--sand)]">Pattern</div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {PATTERN_KEYS.map((pattern) => (
+                    <button
+                      key={pattern}
+                      type="button"
+                      onClick={() => onSetPattern(surface, pattern)}
+                      className={`border px-2 py-2 text-left ${
+                        record.pattern === pattern
+                          ? 'border-[var(--machine-orange)] bg-[var(--machine-orange)] text-[var(--paint)]'
+                          : 'border-[var(--sand)]'
+                      }`}
+                    >
+                      {PATTERN_LABELS[pattern]}
+                    </button>
+                  ))}
+                </div>
+                <label className="mt-3 block">
+                  <span className="text-sm text-[var(--sand)]">Angle {record.angle}°</span>
+                  <input
+                    type="range"
+                    min={PATTERN_ANGLE_MIN}
+                    max={PATTERN_ANGLE_MAX}
+                    step={1}
+                    value={record.angle}
+                    onChange={(event) => onSetAngle(surface, Number(event.target.value))}
+                    className="mt-1 w-full"
+                  />
+                </label>
+                <label className="mt-2 flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(record.autoRotate)}
+                    onChange={(event) => onSetAutoRotate(surface, event.target.checked)}
+                  />
+                  Auto-rotate each cut
+                </label>
+              </section>
+            ) : null}
             {tasks.some((task) => task.requiresSpray) && !certifiedPresent(state, surface) ? (
               <p className="text-sm text-[var(--sand)]">Spray and fertiliser do not appear — no spray-certified worker available.</p>
             ) : null}
@@ -64,9 +151,7 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
                   {planned ? (
                     <div className="mt-2 space-y-2">
                       <p>
-                        Planned
-                        {task.usesQualityLevel && planned.level ? ` ${LEVEL_LABELS[planned.level]}` : ''} · {planned.minutes}{' '}
-                        min · {workerById(state, planned.workerId)?.name}
+                        Planned · {planned.minutes} min · {workerById(state, planned.workerId)?.name}
                       </p>
                       <label className="block text-sm text-[var(--sand)]">
                         Worker
@@ -91,49 +176,24 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
                       </button>
                     </div>
                   ) : (
-                    task.usesQualityLevel ? (
-                    <div className="mt-3 grid grid-cols-3 gap-2">
-                      {LEVEL_KEYS.map((level) => {
-                        const assigned = assignWorker(state, task, level);
-                        const minutes = durationForTask(state, task.id, level, assigned);
-                        const check = canPlanTask(state, task.id, level);
-                        return (
-                          <button
-                            key={level}
-                            type="button"
-                            disabled={!check.ok}
-                            onClick={() => onPlan(task.id, level)}
-                            className="border border-[var(--sand)] px-2 py-2 text-left disabled:opacity-40"
-                            title={check.ok ? undefined : check.reason}
-                          >
-                            <div className="font-condensed text-3xl font-bold leading-none">{minutes}</div>
-                            <div className="text-xs text-[var(--sand)]">min</div>
-                            <div className="mt-1 text-sm">{LEVEL_LABELS[level]}</div>
-                            {!check.ok ? <div className="mt-1 text-xs text-[var(--sand)]">{check.reason}</div> : null}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    ) : (
-                      (() => {
-                        const assigned = assignWorker(state, task);
-                        const minutes = durationForTask(state, task.id, undefined, assigned);
-                        const check = canPlanTask(state, task.id);
-                        return (
-                          <button
-                            type="button"
-                            disabled={!check.ok}
-                            onClick={() => onPlan(task.id)}
-                            className="mt-3 border border-[var(--sand)] px-3 py-2 text-left disabled:opacity-40"
-                            title={check.ok ? undefined : check.reason}
-                          >
-                            <div className="font-condensed text-3xl font-bold leading-none">{minutes}</div>
-                            <div className="text-xs text-[var(--sand)]">min</div>
-                            {!check.ok ? <div className="mt-1 text-xs text-[var(--sand)]">{check.reason}</div> : null}
-                          </button>
-                        );
-                      })()
-                    )
+                    (() => {
+                      const assigned = assignWorker(state, task);
+                      const minutes = durationForTask(state, task.id, assigned);
+                      const check = canPlanTask(state, task.id);
+                      return (
+                        <button
+                          type="button"
+                          disabled={!check.ok}
+                          onClick={() => onPlan(task.id)}
+                          className="mt-3 border border-[var(--sand)] px-3 py-2 text-left disabled:opacity-40"
+                          title={check.ok ? undefined : check.reason}
+                        >
+                          <div className="font-condensed text-3xl font-bold leading-none">{minutes}</div>
+                          <div className="text-xs text-[var(--sand)]">min</div>
+                          {!check.ok ? <div className="mt-1 text-xs text-[var(--sand)]">{check.reason}</div> : null}
+                        </button>
+                      );
+                    })()
                   )}
                 </section>
               );

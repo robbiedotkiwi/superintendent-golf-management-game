@@ -6,8 +6,15 @@ import {
   GAIN_DIMINISH,
   GAIN_DIMINISH_ABOVE,
   HEAVY_RAIN_BUNKER_LOSS,
-  LEVEL_STANDARD_GAIN,
+  BASE_GAIN,
+  HOC_STRESS_DAMAGE,
+  HOC_SURFACES,
   MOWING_WEATHER,
+  PATTERN_WEAR_DAMAGE,
+  PATTERN_WEAR_DECAY,
+  PATTERN_WEAR_DEFAULT,
+  PATTERN_WEAR_THRESHOLD,
+  PATTERNED_SURFACES,
   QUALITY_MAX,
   QUALITY_MIN,
   ROLLER_GAIN_BONUS,
@@ -17,8 +24,9 @@ import {
 } from '../data/constants.js';
 import { PLAYER_ID } from '../data/constants.js';
 import { generateCandidates } from '../data/staff.js';
-import { getTask, taskGain } from '../data/tasks.js';
-import { workerById } from './assignment.js';
+import { getTask, taskAppliesQuality } from '../data/tasks.js';
+import { workerById, workerQualityMultiplier, qualityRandomFactor } from './assignment.js';
+import { applyMowingAftermath, hocStressApplies, mowingGain } from './mowing.js';
 import { calendarFromDay } from './calendar.js';
 import {
   applyWear,
@@ -31,7 +39,6 @@ import {
   surfaceCeiling,
   wearMultiplier,
 } from './equipment.js';
-import { qualityRandomFactor, workerQualityMultiplier } from './skills.js';
 import { applyEarlyStartComplaints, applyMorale, prepareMorningWorkers, wageBill } from './staff.js';
 import { createRng } from './rng.js';
 import { applyFertiliser, applySpray, emptyDisease, resolveDisease } from './disease.js';
@@ -122,80 +129,72 @@ export function resolveDay(state) {
     if (id && !usedMachineIds.includes(id)) usedMachineIds.push(id);
   }
 
+  const wearIncremented = new Set();
+
   for (const plannedTask of planned) {
     const task = getTask(plannedTask.taskId);
-    if (!task.usesQualityLevel) {
-      if (task.kind === 'spray' && task.surface) {
-        const sprayed = applySpray({ ...state, disease, sprayedUntil }, task.surface);
-        disease = sprayed.disease;
-        sprayedUntil = sprayed.sprayedUntil;
-      }
-      if (task.kind === 'fertiliser' && task.surface) {
-        fertiliserUntil = applyFertiliser({ ...state, fertiliserUntil }, task.surface).fertiliserUntil;
-      }
-      if (task.materialsCost) {
-        maintenanceBudget -= task.materialsCost;
-        materialsSpent += task.materialsCost;
-      }
-      if (task.kind === 'prep') {
-        tournamentPrepScore += task.prepBonus ?? 0;
-        if (task.surface) worked.add(task.surface);
-      }
-      if (task.mowing) {
-        const machine = pickMachine(state, task);
-        if (machine) markUsed(machine.id);
-      }
-      done.push({
-        taskId: plannedTask.taskId,
-        name: task.name,
-        surface: task.surface,
-        level: plannedTask.level,
-        minutes: plannedTask.minutes,
-        before: null,
-        after: null,
-      });
-      continue;
+    if (task.kind === 'spray' && task.surface) {
+      const sprayed = applySpray({ ...state, disease, sprayedUntil }, task.surface);
+      disease = sprayed.disease;
+      sprayedUntil = sprayed.sprayedUntil;
     }
-
-    if (!task.surface) {
-      done.push({
-        taskId: plannedTask.taskId,
-        name: task.name,
-        surface: null,
-        level: plannedTask.level,
-        minutes: plannedTask.minutes,
-        before: null,
-        after: null,
-      });
-      continue;
+    if (task.kind === 'fertiliser' && task.surface) {
+      fertiliserUntil = applyFertiliser({ ...state, fertiliserUntil }, task.surface).fertiliserUntil;
+    }
+    if (task.materialsCost) {
+      maintenanceBudget -= task.materialsCost;
+      materialsSpent += task.materialsCost;
+    }
+    if (task.kind === 'prep') {
+      tournamentPrepScore += task.prepBonus ?? 0;
+      if (task.surface) worked.add(task.surface);
     }
 
     const machine = pickMachine(state, task);
-    if (machine) markUsed(machine.id);
+    if (machine && (task.mowing || task.id === 'rollGreens')) markUsed(machine.id);
     if (task.id === 'rollGreens' && isMachineAvailable(state, 'greensRoller')) {
       markUsed('greensRoller');
     }
 
-    let gain = plannedTask.level ? taskGain(plannedTask.level) : LEVEL_STANDARD_GAIN;
+    if (!taskAppliesQuality(task) || !task.surface) {
+      done.push({
+        taskId: plannedTask.taskId,
+        name: task.name,
+        surface: task.surface,
+        minutes: plannedTask.minutes,
+        before: null,
+        after: null,
+      });
+      continue;
+    }
+
+    const worker = workerById(state, plannedTask.workerId) ?? state.workers[0];
+    let gain = task.mowing
+      ? mowingGain({ ...state, surfaces }, task.id, workerQualityMultiplier(worker))
+      : BASE_GAIN * workerQualityMultiplier(worker);
     if (task.id === 'rollGreens' && isMachineAvailable(state, 'greensRoller')) {
       gain += ROLLER_GAIN_BONUS;
     }
     if (machine) {
       gain *= wearMultiplier(state, machine.id);
     }
-    const worker = workerById(state, plannedTask.workerId) ?? state.workers[0];
-    gain *= workerQualityMultiplier(worker);
     gain *= qualityRandomFactor(worker, rng);
 
     const qualityBefore = surfaces[task.surface].quality;
-    const qualityAfter = applyGain(qualityBefore, gain, surfaceCeiling({ ...state, fertiliserUntil }, task.surface));
-    surfaces[task.surface].quality = qualityAfter;
+    let qualityAfter = applyGain(qualityBefore, gain, surfaceCeiling({ ...state, fertiliserUntil, surfaces }, task.surface));
+    surfaces[task.surface] = { ...surfaces[task.surface], quality: qualityAfter };
+    if (task.mowing) {
+      surfaces[task.surface] = applyMowingAftermath(surfaces[task.surface], task.surface, state.day, wearIncremented);
+      qualityAfter = surfaces[task.surface].quality;
+    }
+    if (task.id === 'rakeBunkers') {
+      surfaces.bunkers = { ...surfaces.bunkers, lastRakedDay: state.day };
+    }
     worked.add(task.surface);
     done.push({
       taskId: plannedTask.taskId,
       name: task.name,
       surface: task.surface,
-      level: plannedTask.level,
       minutes: plannedTask.minutes,
       before: qualityBefore,
       after: qualityAfter,
@@ -204,21 +203,28 @@ export function resolveDay(state) {
 
   if (autonomousReady(state) && !MOWING_WEATHER.includes(state.weather)) {
     markUsed('autonomousMower');
+    const autoBySurface = { fairways: 'cutFairways', rough: 'cutRough' };
     for (const surface of ['fairways', 'rough']) {
       if (worked.has(surface)) continue;
       const qualityBefore = surfaces[surface].quality;
-      const qualityAfter = applyGain(
+      const gain = mowingGain({ ...state, surfaces }, autoBySurface[surface], 1);
+      let qualityAfter = applyGain(
         qualityBefore,
-        LEVEL_STANDARD_GAIN,
-        surfaceCeiling({ ...state, fertiliserUntil }, surface),
+        gain,
+        surfaceCeiling({ ...state, fertiliserUntil, surfaces }, surface),
       );
-      surfaces[surface].quality = qualityAfter;
+      surfaces[surface] = applyMowingAftermath(
+        { ...surfaces[surface], quality: qualityAfter },
+        surface,
+        state.day,
+        wearIncremented,
+      );
+      qualityAfter = surfaces[surface].quality;
       worked.add(surface);
       done.push({
         taskId: 'autonomousMower',
         name: 'Autonomous cut',
         surface,
-        level: 'standard',
         minutes: 0,
         before: qualityBefore,
         after: qualityAfter,
@@ -244,6 +250,30 @@ export function resolveDay(state) {
     surfaces[surface].quality = clampQuality(surfaces[surface].quality - amount);
     const skip = skipped.find((item) => item.surface === surface);
     if (skip) skip.after = surfaces[surface].quality;
+  }
+
+  for (const key of PATTERNED_SURFACES) {
+    if (!wearIncremented.has(key) && !surfaces[key].autoRotate) {
+      surfaces[key] = {
+        ...surfaces[key],
+        patternWear: Math.max(PATTERN_WEAR_DEFAULT, (surfaces[key].patternWear ?? 0) - PATTERN_WEAR_DECAY),
+      };
+    }
+    if ((surfaces[key].patternWear ?? 0) > PATTERN_WEAR_THRESHOLD) {
+      surfaces[key] = {
+        ...surfaces[key],
+        quality: clampQuality(surfaces[key].quality - PATTERN_WEAR_DAMAGE),
+      };
+    }
+  }
+
+  for (const key of HOC_SURFACES) {
+    if (hocStressApplies({ ...state, surfaces }, key, irrigation.watered)) {
+      surfaces[key] = {
+        ...surfaces[key],
+        quality: clampQuality(surfaces[key].quality - HOC_STRESS_DAMAGE),
+      };
+    }
   }
 
   const diseaseTick = resolveDisease({ ...state, disease, sprayedUntil }, irrigation.watered);

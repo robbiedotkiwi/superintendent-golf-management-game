@@ -16,7 +16,9 @@ import {
   WEATHER_HEAVY_RAIN,
   WEATHER_RAIN,
   WEATHER_STORM,
+  HOC_WATER_MULT,
 } from '../data/constants.js';
+import { hocFactor } from './mowing.js';
 
 export const IRRIGATED_SURFACES = ['greens', 'tees', 'fairways'];
 
@@ -28,7 +30,8 @@ export function irrigationDemand(state) {
     const policy = state.irrigation[surface];
     let amount = 0;
     if (policy === 'light' || policy === 'full') {
-      amount = IRRIGATION_M3[surface][policy] * seasonMult;
+      const factor = hocFactor(surface, state.surfaces?.[surface]?.hoc);
+      amount = IRRIGATION_M3[surface][policy] * seasonMult * HOC_WATER_MULT(factor);
     }
     if (surface === 'greens' && state.plannedTasks.some((item) => item.taskId === 'handWater')) {
       amount = 0;

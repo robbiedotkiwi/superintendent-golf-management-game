@@ -166,29 +166,22 @@ Surfaces are managed as **five groups**, not 36 individual patches. Clicking any
 | Rough | Cut |
 | Bunkers | Rake |
 
-Each task is chosen at one of three **quality levels**:
-
-| Level | Time multiplier | Base quality gain |
-|---|---|---|
-| Quick | 0.7x | +3 |
-| Standard | 1.0x | +6 |
-| Thorough | 1.4x | +10 |
-
-Base task times, one worker, starting equipment, nine holes:
+Mowing is configured by **height of cut** and **pattern** (Fixes Round 2, Phase A). Height is persistent per surface. Pattern (stripes, rings, checkerboard, diamond) applies to greens, tees and fairways. Rough is cut one way. Rolling, raking, cups, hand watering, spraying and fertilising have a single fixed time and one Plan button.
 
 ```js
-TASK_MINUTES = {
-  cutGreens: 120,
-  rollGreens: 75,
-  changeCups: 30,
-  cutTees: 70,
-  cutFairways: 150,
-  cutRough: 180,
-  rakeBunkers: 50
-}
+taskMinutes = round(BASE_MINUTES[surface] * HOC_TIME_MULT(hocFactor) * PATTERN_TIME_MULT[pattern])
+gain = BASE_GAIN * (0.8 + hocFactor * 0.5) * workerQualityFactor
 ```
 
-Total is 675 minutes against a 480-minute day. **This overload is deliberate.** The player must skip things from day one.
+`BASE_GAIN` is 6. Height ranges and pattern multipliers live in `constants.js`.
+
+Base mowing times at default height and stripes, one worker, starting equipment, nine holes:
+
+```js
+BASE_MINUTES = { greens: 104, tees: 64, fairways: 136, rough: 152 }
+```
+
+Displayed cut times at those defaults are 120 / 70 / 150 / 175. With roll (75), cups (30) and rake (50) the full list is **670 minutes** against a 480-minute day (~140%). **This overload is deliberate.** The player must skip things from day one.
 
 Adding a task decrements the pool and fills the time bar. A task that would exceed remaining time is shown but disabled, with the reason stated. Tasks can be removed to refund the time.
 
@@ -305,7 +298,7 @@ A broken machine is unusable until repaired: 120 minutes of worker time, or free
 
 1. Buying a machine deducts cash and immediately changes task times.
 2. The capability matrix is enforced — a Ventrac is never offered on greens or tees, with a reason shown.
-3. Ceilings apply per surface: with only the push rotary, greens cannot exceed 65 however many thorough cuts are done.
+3. Ceilings apply per surface: with only the push rotary, greens cannot exceed the rotary ceiling plus the height-of-cut bonus, however many cuts are done.
 4. Wear accumulates with use and is visible in the shed.
 5. A worn machine demonstrably produces smaller gains.
 6. Sending a machine away makes it unavailable for exactly two days.

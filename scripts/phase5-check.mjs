@@ -8,7 +8,6 @@ import {
   DAYS_PER_SEASON,
   GROUNDWATER_M3,
   HAND_WATER_MINUTES,
-  IRRIGATION_M3,
   MAINS_COST_PER_M3,
   PLAYER_SPEED_SKILL,
   POND_CAPACITY,
@@ -17,7 +16,6 @@ import {
   POND_LOW_FRACTION,
   POND_START_VOLUME,
   RAIN_POND_M3,
-  SEASON_WATER,
   SPEED_SKILL_BASE,
   SPEED_SKILL_STEP,
   STARTING_CASH,
@@ -77,9 +75,14 @@ const summerVol = volumeAfter('summer', allFull);
 const winterVol = volumeAfter('winter', allFull);
 assert.ok(summerVol < POND_START_VOLUME, 'pond drops overnight');
 assert.ok(summerVol < winterVol, 'summer draw is heavier than winter');
-const summerDraw =
-  (IRRIGATION_M3.greens.full + IRRIGATION_M3.tees.full + IRRIGATION_M3.fairways.full) * SEASON_WATER.summer;
-assert.equal(summerVol, POND_START_VOLUME - summerDraw + GROUNDWATER_M3);
+const summerDemand = irrigationDemand({
+  ...createInitialState(),
+  season: 'summer',
+  weather: STARTING_WEATHER,
+  irrigation: allFull,
+  plannedTasks: [],
+}).total;
+assert.equal(summerVol, POND_START_VOLUME - summerDemand + GROUNDWATER_M3);
 
 const rainy = resolveIrrigation({
   ...createInitialState(),

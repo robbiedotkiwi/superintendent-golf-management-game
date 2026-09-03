@@ -50,12 +50,8 @@ export const BALL_PICK_MINUTES = 45;
 export const AUTO_PICK_MINUTES = 10;
 
 export const TASK_MINUTES = {
-  cutGreens: 120,
   rollGreens: 75,
   changeCups: 30,
-  cutTees: 70,
-  cutFairways: 150,
-  cutRough: 180,
   rakeBunkers: 50,
   clearDebris: 90,
   handWater: HAND_WATER_MINUTES,
@@ -72,20 +68,107 @@ export const TASK_MINUTES = {
   pickBalls: BALL_PICK_MINUTES,
 };
 
-export const LEVEL_QUICK_TIME_MULT = 0.7;
-export const LEVEL_STANDARD_TIME_MULT = 1.0;
-export const LEVEL_THOROUGH_TIME_MULT = 1.4;
-export const LEVEL_QUICK_GAIN = 3;
-export const LEVEL_STANDARD_GAIN = 6;
-export const LEVEL_THOROUGH_GAIN = 10;
-
-export const QUALITY_LEVELS = {
-  quick: { timeMultiplier: LEVEL_QUICK_TIME_MULT, qualityGain: LEVEL_QUICK_GAIN },
-  standard: { timeMultiplier: LEVEL_STANDARD_TIME_MULT, qualityGain: LEVEL_STANDARD_GAIN },
-  thorough: { timeMultiplier: LEVEL_THOROUGH_TIME_MULT, qualityGain: LEVEL_THOROUGH_GAIN },
+export const BASE_MINUTES = {
+  greens: 104,
+  tees: 64,
+  fairways: 136,
+  rough: 152,
 };
 
-export const LEVEL_KEYS = ['quick', 'standard', 'thorough'];
+export const DEFAULT_DAY_OVERLOAD_MINUTES = 670;
+export const DEFAULT_DAY_OVERLOAD_RATIO = 1.4;
+
+export const BASE_GAIN = 6;
+export const HOC_GAIN_BASE = 0.8;
+export const HOC_GAIN_PER_FACTOR = 0.5;
+
+export const HOC_RANGE = {
+  greens: { min: 2.5, max: 5.0, default: 3.5 },
+  tees: { min: 6, max: 12, default: 9 },
+  fairways: { min: 10, max: 18, default: 14 },
+  rough: { min: 35, max: 60, default: 45 },
+};
+
+export const HOC_SURFACES = ['greens', 'tees', 'fairways', 'rough'];
+export const HOC_TIME_MULT_BASE = 0.85;
+export const HOC_TIME_MULT_PER_FACTOR = 0.5;
+export const HOC_CEILING_BONUS_PER_FACTOR = 12;
+export const HOC_WATER_MULT_BASE = 1;
+export const HOC_WATER_MULT_PER_FACTOR = 0.4;
+export const HOC_FERT_INTERVAL_PER_FACTOR = 8;
+export const HOC_STRESS_THRESHOLD = 0.6;
+export const HOC_STRESS_DAMAGE = 4;
+export const HOC_CHANGE_PENALTY = 6;
+export const HOC_STEP = {
+  greens: 0.1,
+  tees: 1,
+  fairways: 1,
+  rough: 1,
+};
+
+export function HOC_TIME_MULT(factor) {
+  return HOC_TIME_MULT_BASE + factor * HOC_TIME_MULT_PER_FACTOR;
+}
+
+export function HOC_CEILING_BONUS(factor) {
+  return factor * HOC_CEILING_BONUS_PER_FACTOR;
+}
+
+export function HOC_WATER_MULT(factor) {
+  return HOC_WATER_MULT_BASE + factor * HOC_WATER_MULT_PER_FACTOR;
+}
+
+export function HOC_FERT_INTERVAL(factor) {
+  return FERTILISER_DAYS - factor * HOC_FERT_INTERVAL_PER_FACTOR;
+}
+
+export function HOC_GAIN_MULT(factor) {
+  return HOC_GAIN_BASE + factor * HOC_GAIN_PER_FACTOR;
+}
+
+export const PATTERN_STRIPES = 'stripes';
+export const PATTERN_RINGS = 'rings';
+export const PATTERN_CHECKERBOARD = 'checkerboard';
+export const PATTERN_DIAMOND = 'diamond';
+export const PATTERN_KEYS = [PATTERN_STRIPES, PATTERN_RINGS, PATTERN_CHECKERBOARD, PATTERN_DIAMOND];
+export const PATTERN_DEFAULT = PATTERN_STRIPES;
+export const PATTERNED_SURFACES = ['greens', 'tees', 'fairways'];
+export const PATTERN_TIME_MULT = {
+  [PATTERN_STRIPES]: 1.0,
+  [PATTERN_RINGS]: 1.25,
+  [PATTERN_CHECKERBOARD]: 1.35,
+  [PATTERN_DIAMOND]: 1.5,
+};
+export const PATTERN_PRESENTATION = {
+  [PATTERN_STRIPES]: 4,
+  [PATTERN_RINGS]: 7,
+  [PATTERN_CHECKERBOARD]: 8,
+  [PATTERN_DIAMOND]: 10,
+};
+export const PATTERN_LABELS = {
+  [PATTERN_STRIPES]: 'Stripes',
+  [PATTERN_RINGS]: 'Rings',
+  [PATTERN_CHECKERBOARD]: 'Checkerboard',
+  [PATTERN_DIAMOND]: 'Diamond',
+};
+export const PATTERN_UNAVAILABLE_TIME_MULT = 1;
+export const PATTERN_ANGLE_MIN = 0;
+export const PATTERN_ANGLE_MAX = 180;
+export const PATTERN_ANGLE_DEFAULT = 0;
+export const PATTERN_AUTO_ROTATE_DEFAULT = false;
+export const PATTERN_AUTO_ROTATE_STEP = 45;
+export const PATTERN_ANGLE_RESET_DELTA = 30;
+export const PATTERN_WEAR_INCREMENT = 6;
+export const PATTERN_WEAR_DECAY = 3;
+export const PATTERN_WEAR_THRESHOLD = 40;
+export const PATTERN_WEAR_DAMAGE = 3;
+export const PATTERN_WEAR_DEFAULT = 0;
+
+export const VIEW_ZOOM_DEFAULT = 1;
+export const VIEW_PAN_X_DEFAULT = 0;
+export const VIEW_PAN_Y_DEFAULT = 0;
+export const MOISTURE_HIDDEN = null;
+export const MOISTURE_SURFACES = ['greens', 'tees', 'fairways'];
 
 export const DECAY_BASE = 8;
 export const DECAY_ACCELERATION = 1.5;

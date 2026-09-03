@@ -1,4 +1,4 @@
-import { getTask, LEVEL_LABELS } from '../data/tasks.js';
+import { getTask } from '../data/tasks.js';
 
 export function timeFillPercent(minutes, capacity) {
   if (capacity <= 0) return 0;
@@ -7,8 +7,7 @@ export function timeFillPercent(minutes, capacity) {
 
 function plannedLabel(planned) {
   const task = getTask(planned.taskId);
-  const level = planned.level ? LEVEL_LABELS[planned.level] : null;
-  return `${task.name}${level ? ` · ${level}` : ''} · ${planned.minutes} min`;
+  return `${task.name} · ${planned.minutes} min`;
 }
 
 export default function TimeBar({

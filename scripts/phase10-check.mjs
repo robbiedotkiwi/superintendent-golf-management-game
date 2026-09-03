@@ -30,8 +30,8 @@ let play = createInitialState();
 play = reducer(play, { type: 'DISMISS_TUTORIAL' });
 play = reducer(play, { type: 'SET_TOURNAMENTS', count: 0 });
 assert.equal(play.tutorialDone, true);
-assert.equal(canPlanTask(play, 'cutGreens', 'standard').ok, true);
-play = reducer(play, { type: 'PLAN_TASK', taskId: 'cutGreens', level: 'standard' });
+assert.equal(canPlanTask(play, 'cutGreens').ok, true);
+play = reducer(play, { type: 'PLAN_TASK', taskId: 'cutGreens' });
 play = reducer(play, { type: 'END_DAY' });
 assert.equal(play.day, STARTING_DAY + 1);
 

@@ -72,8 +72,8 @@ assert.equal(done.projects.length, 0);
 assert.equal(holesForCount(done.holes).length, EXPANDED_HOLE_COUNT);
 assert.equal(holesForCount(HOLE_COUNT).length, HOLE_COUNT);
 
-const nineMin = durationForTask(start, 'cutGreens', 'standard', start.workers[0]);
-const eighteenMin = durationForTask({ ...start, holes: EXPANDED_HOLE_COUNT }, 'cutGreens', 'standard', start.workers[0]);
+const nineMin = durationForTask(start, 'cutGreens', start.workers[0]);
+const eighteenMin = durationForTask({ ...start, holes: EXPANDED_HOLE_COUNT }, 'cutGreens', start.workers[0]);
 assert.equal(eighteenMin, nineMin * TASK_TIME_MULT_18);
 
 let range = reducer(

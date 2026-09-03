@@ -1,4 +1,4 @@
-import { SURFACE_LABELS, LEVEL_LABELS } from '../data/tasks.js';
+import { SURFACE_LABELS } from '../data/tasks.js';
 
 function formatQuality(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -28,7 +28,7 @@ export default function DaySummary({ summary, onContinue }) {
               <li key={`${item.taskId}-${item.surface ?? 'none'}`}>
                 {item.before == null
                   ? `${item.name} · ${item.minutes} min`
-                  : `${item.name} (${item.level ? LEVEL_LABELS[item.level] : 'done'}): ${SURFACE_LABELS[item.surface]} ${formatQuality(item.before)} → ${formatQuality(item.after)}`}
+                  : `${item.name}: ${SURFACE_LABELS[item.surface]} ${formatQuality(item.before)} → ${formatQuality(item.after)}`}
               </li>
             ))}
           </ul>

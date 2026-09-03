@@ -9,13 +9,14 @@ import {
   DISEASE_SUSCEPTIBILITY,
   DISEASE_UNDERWATER_MULT,
   DISEASE_WET_MULT,
-  FERTILISER_DAYS,
+  HOC_FERT_INTERVAL,
   SPRAY_SUPPRESS_DAYS,
   STARTING_DISEASE_PRESSURE,
   WEATHER_HEAVY_RAIN,
   WEATHER_RAIN,
   WEATHER_STORM,
 } from '../data/constants.js';
+import { hocFactor } from './mowing.js';
 
 export const DISEASE_SURFACES = ['greens', 'tees', 'fairways', 'rough'];
 
@@ -58,9 +59,11 @@ export function applySpray(state, surface) {
 }
 
 export function applyFertiliser(state, surface) {
+  const factor = hocFactor(surface, state.surfaces?.[surface]?.hoc);
+  const days = Math.round(HOC_FERT_INTERVAL(factor));
   return {
     ...state,
-    fertiliserUntil: { ...state.fertiliserUntil, [surface]: state.day + FERTILISER_DAYS },
+    fertiliserUntil: { ...state.fertiliserUntil, [surface]: state.day + days },
   };
 }
 

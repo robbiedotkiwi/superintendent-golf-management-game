@@ -1,4 +1,5 @@
 import { clampRange } from './satisfaction.js';
+import { presentationScore } from './mowing.js';
 import { logTournament } from './history.js';
 import {
   DAYS_PER_SEASON,
@@ -27,10 +28,11 @@ import {
 const RAIN_DAYS = [WEATHER_RAIN, WEATHER_HEAVY_RAIN, WEATHER_STORM];
 
 export function tournamentScore(surfaces) {
-  return Object.entries(TOURNAMENT_WEIGHTS).reduce(
+  const quality = Object.entries(TOURNAMENT_WEIGHTS).reduce(
     (total, [surface, weight]) => total + (surfaces[surface]?.quality ?? 0) * weight,
     0,
   );
+  return quality + presentationScore(surfaces);
 }
 
 export function bandFromScore(score) {

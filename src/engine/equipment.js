@@ -1,5 +1,7 @@
 import {
   FERTILISER_CEILING_BONUS,
+  HOC_CEILING_BONUS,
+  TASK_MINUTES,
   EXTRA_BUNKER_CEILING_BONUS,
   NEW_TEES_CEILING_BONUS,
   AUTO_INTERRUPT_MAX_COUNT,
@@ -24,7 +26,8 @@ import {
   WEAR_THRESHOLD,
 } from '../data/constants.js';
 import { getMachine, MACHINES, machineAllows, TURF_DAMAGE_REASON } from '../data/equipment.js';
-import { getTask, taskDuration } from '../data/tasks.js';
+import { getTask } from '../data/tasks.js';
+import { hocFactor, mowingMinutes } from './mowing.js';
 import { taskTimeMultiplier } from './projects.js';
 import { bumpCapitalSpent } from './history.js';
 import { workerTimeMultiplier } from './skills.js';
@@ -70,7 +73,13 @@ export function surfaceCeiling(state, surface) {
     const value = machine.ceiling[surface];
     if (value > best) best = value;
   }
-  return (best || QUALITY_MAX) + fertiliserBonus(state, surface) + projectCeilingBonus(state, surface);
+  return (best || QUALITY_MAX) + fertiliserBonus(state, surface) + projectCeilingBonus(state, surface) + hocCeilingBonus(state, surface);
+}
+
+function hocCeilingBonus(state, surface) {
+  const height = state.surfaces?.[surface]?.hoc;
+  if (height == null) return 0;
+  return HOC_CEILING_BONUS(hocFactor(surface, height));
 }
 
 function fertiliserBonus(state, surface) {
@@ -94,9 +103,10 @@ export function ineligibleMachines(state, task) {
     }));
 }
 
-export function machineDurationForTask(state, taskId, level) {
+export function machineDurationForTask(state, taskId) {
   const task = getTask(taskId);
-  return Math.round(taskDuration(taskId, level, machineTimeMultiplier(state, task)) * taskTimeMultiplier(state, task));
+  const base = task?.mowing ? mowingMinutes(state, taskId) : TASK_MINUTES[taskId];
+  return Math.round(base * machineTimeMultiplier(state, task) * taskTimeMultiplier(state, task));
 }
 
 export function wearMultiplier(state, machineId) {
@@ -183,7 +193,7 @@ export function recomputePlannedMinutes(state) {
   }
   const plannedTasks = state.plannedTasks.map((planned) => {
     const worker = state.workers.find((item) => item.id === planned.workerId);
-    const base = machineDurationForTask(state, planned.taskId, planned.level);
+    const base = machineDurationForTask(state, planned.taskId);
     const minutes = worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
     return { ...planned, minutes };
   });

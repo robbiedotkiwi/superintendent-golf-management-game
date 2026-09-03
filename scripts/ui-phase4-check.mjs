@@ -1,14 +1,17 @@
 /**
- * UI Phase 4: time bar fills by task segment; 120 min is a quarter day.
+ * UI Phase 4: time bar fills by task segment; default greens cut is a quarter day.
  * Run: node scripts/ui-phase4-check.mjs
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { DAY_LENGTH_MINUTES, TASK_MINUTES } from '../src/data/constants.js';
+import { DAY_LENGTH_MINUTES } from '../src/data/constants.js';
+import { createInitialState } from '../src/engine/gameState.js';
+import { mowingMinutes } from '../src/engine/mowing.js';
 
-assert.equal(TASK_MINUTES.cutGreens, 120);
+const cutGreens = mowingMinutes(createInitialState(), 'cutGreens');
+assert.equal(cutGreens, 120);
 assert.equal(DAY_LENGTH_MINUTES, 480);
-assert.equal((TASK_MINUTES.cutGreens / DAY_LENGTH_MINUTES) * 100, 25);
+assert.equal((cutGreens / DAY_LENGTH_MINUTES) * 100, 25);
 
 const src = readFileSync(new URL('../src/components/TimeBar.jsx', import.meta.url), 'utf8');
 assert.match(src, /export function timeFillPercent/);

@@ -8,10 +8,8 @@ import {
   DISEASE_OUTBREAK_DROP,
   DISEASE_OUTBREAK_THRESHOLD,
   FERTILISER_CEILING_BONUS,
-  FERTILISER_DAYS,
   FERTILISER_MATERIALS_COST,
   PLAYER_ID,
-  PUSH_ROTARY_CEILING,
   SPRAY_MATERIALS_COST,
   SPRAY_SUPPRESS_DAYS,
   STARTING_DISEASE_PRESSURE,
@@ -141,15 +139,15 @@ suppressed = endKeep(suppressed, { season: 'summer', weather: WEATHER_RAIN });
 assert.ok(suppressed.disease.greens.pressure > STARTING_DISEASE_PRESSURE);
 
 let fed = certify(createInitialState());
-assert.equal(surfaceCeiling(fed, 'greens'), PUSH_ROTARY_CEILING);
+const greensCeiling = surfaceCeiling(fed, 'greens');
 fed = reducer(fed, { type: 'PLAN_TASK', taskId: 'fertiliseGreens' });
 const maintBeforeFert = fed.maintenanceBudget;
 fed = endKeep(fed);
-assert.equal(surfaceCeiling(fed, 'greens'), PUSH_ROTARY_CEILING + FERTILISER_CEILING_BONUS);
+assert.equal(surfaceCeiling(fed, 'greens'), greensCeiling + FERTILISER_CEILING_BONUS);
 assert.equal(fed.maintenanceBudget, maintBeforeFert - FERTILISER_MATERIALS_COST);
 while (fed.day < fed.fertiliserUntil.greens) {
   fed = endKeep(fed);
 }
-assert.equal(surfaceCeiling(fed, 'greens'), PUSH_ROTARY_CEILING);
+assert.equal(surfaceCeiling(fed, 'greens'), greensCeiling);
 
 console.log('phase6 checks passed');

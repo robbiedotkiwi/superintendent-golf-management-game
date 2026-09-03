@@ -12,6 +12,7 @@ import {
   SATISFACTION_POND_WEIGHT,
   SURFACE_KEYS,
 } from '../data/constants.js';
+import { presentationScore } from './mowing.js';
 
 export function clampRange(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -27,6 +28,7 @@ export function conditionForSatisfaction(surfaces) {
 
 export function satisfactionTarget(state) {
   let target = conditionForSatisfaction(state.surfaces);
+  target += presentationScore(state.surfaces);
   target += ((state.pond?.health ?? POND_HEALTH_START) - POND_HEALTH_START) * SATISFACTION_POND_WEIGHT;
   target -= unreadComplaints(state) * SATISFACTION_COMPLAINT_PENALTY;
   return clampRange(target, SATISFACTION_MIN, SATISFACTION_MAX);

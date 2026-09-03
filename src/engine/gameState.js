@@ -2,7 +2,7 @@ import { getTask } from '../data/tasks.js';
 import { calendarFromDay } from './calendar.js';
 import { pickWeather } from './weather.js';
 import { createRng } from './rng.js';
-import { buyFoley, buyMachine, grindInHouse, repairMachine, sendForGrind, pickMachine } from './equipment.js';
+import { buyFoley, buyMachine, grindInHouse, repairMachine, sendForGrind, pickMachine, recomputePlannedMinutes } from './equipment.js';
 import { assignWorker, certifiedPresent, durationForTask, workerById, workerAllows, isWorkerPresent } from './assignment.js';
 import {
   applyEarlyStartComplaints,
@@ -65,7 +65,13 @@ import {
   AERATOR_COST,
   SAVE_VERSION,
   SOUND_DEFAULT_ON,
+  PATTERN_KEYS,
+  PATTERN_ANGLE_RESET_DELTA,
+  VIEW_ZOOM_DEFAULT,
+  VIEW_PAN_X_DEFAULT,
+  VIEW_PAN_Y_DEFAULT,
 } from '../data/constants.js';
+import { clampAngle, clampHoc, hasHoc, hasPattern, mergeSurfaceFields, angleDelta } from './mowing.js';
 
 export function createInitialState() {
   const calendar = calendarFromDay(STARTING_DAY);
@@ -115,11 +121,16 @@ export function createInitialState() {
       },
     ],
     surfaces: {
-      greens: { quality: STARTING_QUALITY_GREENS },
-      tees: { quality: STARTING_QUALITY_TEES },
-      fairways: { quality: STARTING_QUALITY_FAIRWAYS },
-      rough: { quality: STARTING_QUALITY_ROUGH },
-      bunkers: { quality: STARTING_QUALITY_BUNKERS },
+      greens: mergeSurfaceFields('greens', { quality: STARTING_QUALITY_GREENS }),
+      tees: mergeSurfaceFields('tees', { quality: STARTING_QUALITY_TEES }),
+      fairways: mergeSurfaceFields('fairways', { quality: STARTING_QUALITY_FAIRWAYS }),
+      rough: mergeSurfaceFields('rough', { quality: STARTING_QUALITY_ROUGH }),
+      bunkers: mergeSurfaceFields('bunkers', { quality: STARTING_QUALITY_BUNKERS }),
+    },
+    view: {
+      zoom: VIEW_ZOOM_DEFAULT,
+      panX: VIEW_PAN_X_DEFAULT,
+      panY: VIEW_PAN_Y_DEFAULT,
     },
     plannedTasks: [],
     log: [],
@@ -202,7 +213,7 @@ export function combinedMinutesUsed(state) {
   return state.workers.reduce((total, worker) => total + worker.minutesUsed, 0);
 }
 
-export function canPlanTask(state, taskId, level, workerId) {
+export function canPlanTask(state, taskId, workerId) {
   const task = getTask(taskId);
   if (!task) return { ok: false, reason: 'Unknown job.' };
 
@@ -253,7 +264,8 @@ export function canPlanTask(state, taskId, level, workerId) {
     }
   }
 
-  const worker = workerId ? workerById(state, workerId) : assignWorker(state, task, level);
+  const requested = workerId ? workerById(state, workerId) : null;
+  const worker = requested ?? assignWorker(state, task);
   if (task.requiresSpray && worker && !worker.sprayCertified) {
     return { ok: false, reason: 'No spray-certified worker available.' };
   }
@@ -267,16 +279,54 @@ export function canPlanTask(state, taskId, level, workerId) {
     if (!fallback) {
       return { ok: false, reason: 'No one available for that job.' };
     }
-    const minutes = durationForTask(state, taskId, level, fallback);
+    const minutes = durationForTask(state, taskId, fallback);
     const remaining = fallback.minutesToday - fallback.minutesUsed;
     return { ok: false, reason: `Needs ${minutes} min, only ${remaining} left.` };
   }
-  const minutes = durationForTask(state, taskId, level, worker);
+  const minutes = durationForTask(state, taskId, worker);
   const remaining = worker.minutesToday - worker.minutesUsed;
   if (minutes > remaining) {
     return { ok: false, reason: `Needs ${minutes} min on ${worker.name}, only ${remaining} left.` };
   }
   return { ok: true, minutes, workerId: worker.id };
+}
+
+function removePlannedTask(state, taskId) {
+  const planned = state.plannedTasks.find((item) => item.taskId === taskId);
+  if (!planned) return state;
+  return {
+    ...state,
+    plannedTasks: state.plannedTasks.filter((item) => item.taskId !== taskId),
+    workers: state.workers.map((item) =>
+      item.id === planned.workerId ? { ...item, minutesUsed: item.minutesUsed - planned.minutes } : item,
+    ),
+  };
+}
+
+function dropUnfittableMowing(state, surface) {
+  let next = state;
+  for (const planned of [...state.plannedTasks]) {
+    const task = getTask(planned.taskId);
+    if (!task?.mowing || task.surface !== surface) continue;
+    const worker = next.workers.find((item) => item.id === planned.workerId);
+    const current = next.plannedTasks.find((item) => item.taskId === planned.taskId);
+    if (!worker || !current) continue;
+    if (worker.minutesUsed > worker.minutesToday) {
+      next = removePlannedTask(next, planned.taskId);
+    }
+  }
+  return next;
+}
+
+function applySurfacePatch(state, surface, patch) {
+  const next = {
+    ...state,
+    surfaces: {
+      ...state.surfaces,
+      [surface]: { ...state.surfaces[surface], ...patch },
+    },
+  };
+  return dropUnfittableMowing(recomputePlannedMinutes(next), surface);
 }
 
 export function reducer(state, action) {
@@ -287,7 +337,7 @@ export function reducer(state, action) {
       return action.state;
     case 'PLAN_TASK': {
       const task = getTask(action.taskId);
-      const check = canPlanTask(state, action.taskId, action.level, action.workerId);
+      const check = canPlanTask(state, action.taskId, action.workerId);
       if (!task || !check.ok) return state;
       return {
         ...state,
@@ -296,7 +346,6 @@ export function reducer(state, action) {
           {
             taskId: action.taskId,
             surface: task.surface,
-            level: action.level,
             workerId: check.workerId,
             minutes: check.minutes,
           },
@@ -306,19 +355,8 @@ export function reducer(state, action) {
         ),
       };
     }
-    case 'REMOVE_TASK': {
-      const planned = state.plannedTasks.find((item) => item.taskId === action.taskId);
-      if (!planned) return state;
-      return {
-        ...state,
-        plannedTasks: state.plannedTasks.filter((item) => item.taskId !== action.taskId),
-        workers: state.workers.map((item) =>
-          item.id === planned.workerId
-            ? { ...item, minutesUsed: item.minutesUsed - planned.minutes }
-            : item,
-        ),
-      };
-    }
+    case 'REMOVE_TASK':
+      return removePlannedTask(state, action.taskId);
     case 'END_DAY': {
       if (state.dismissed) return state;
       const { state: next, summary } = resolveDay(state);
@@ -401,7 +439,7 @@ export function reducer(state, action) {
       if (!planned || !worker || !task) return state;
       if (!workerAllows(worker, task.surface) || !isWorkerPresent(worker)) return state;
       if (task.requiresSpray && !worker.sprayCertified) return state;
-      const minutes = durationForTask(state, planned.taskId, planned.level, worker);
+      const minutes = durationForTask(state, planned.taskId, worker);
       if (worker.minutesToday - worker.minutesUsed + (planned.workerId === worker.id ? planned.minutes : 0) < minutes) {
         return state;
       }
@@ -422,6 +460,28 @@ export function reducer(state, action) {
         ),
       };
       return next;
+    }
+    case 'SET_HOC': {
+      if (!hasHoc(action.surface) || !state.surfaces[action.surface]) return state;
+      return applySurfacePatch(state, action.surface, { hoc: clampHoc(action.surface, action.hoc) });
+    }
+    case 'SET_PATTERN': {
+      if (!hasPattern(action.surface) || !PATTERN_KEYS.includes(action.pattern)) return state;
+      return applySurfacePatch(state, action.surface, { pattern: action.pattern });
+    }
+    case 'SET_ANGLE': {
+      if (!hasPattern(action.surface) || !state.surfaces[action.surface]) return state;
+      const angle = clampAngle(action.angle);
+      const prev = state.surfaces[action.surface].angle ?? 0;
+      const patch = { angle };
+      if (angleDelta(angle, prev) >= PATTERN_ANGLE_RESET_DELTA) {
+        patch.patternWear = 0;
+      }
+      return applySurfacePatch(state, action.surface, patch);
+    }
+    case 'SET_AUTO_ROTATE': {
+      if (!hasPattern(action.surface) || !state.surfaces[action.surface]) return state;
+      return applySurfacePatch(state, action.surface, { autoRotate: Boolean(action.value) });
     }
     case 'SET_IRRIGATION': {
       if (!IRRIGATED_SURFACES.includes(action.surface) || !isIrrigationPolicy(action.policy)) return state;

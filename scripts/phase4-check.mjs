@@ -78,12 +78,12 @@ fast.workers = [
 ];
 const player = fast.workers.find((worker) => worker.id === PLAYER_ID);
 const speedy = fast.workers.find((worker) => worker.id === 'fast');
-const slowTime = durationForTask(fast, 'cutFairways', 'standard', player);
-const fastTime = durationForTask(fast, 'cutFairways', 'standard', speedy);
+const slowTime = durationForTask(fast, 'cutFairways', player);
+const fastTime = durationForTask(fast, 'cutFairways', speedy);
 assert.ok(fastTime < slowTime);
 
 const greensTask = getTask('cutGreens');
-assert.equal(assignWorker(fast, greensTask, 'standard')?.id, PLAYER_ID);
+assert.equal(assignWorker(fast, greensTask)?.id, PLAYER_ID);
 
 let day = createInitialState();
 while (dayOfWeek(day.day) !== VOLUNTEER_DEFAULT_WEEKDAY) {
@@ -91,8 +91,8 @@ while (dayOfWeek(day.day) !== VOLUNTEER_DEFAULT_WEEKDAY) {
 }
 const vol = day.workers.find((worker) => worker.id === VOLUNTEER_ID);
 assert.equal(vol.minutesToday, VOLUNTEER_MINUTES);
-assert.equal(assignWorker(day, getTask('cutGreens'), 'standard')?.id, PLAYER_ID);
-assert.ok(assignWorker(day, getTask('cutFairways'), 'standard'));
+assert.equal(assignWorker(day, getTask('cutGreens'))?.id, PLAYER_ID);
+assert.ok(assignWorker(day, getTask('cutFairways')));
 
 let trained = reducer(hired, { type: 'TRAIN_WORKER', workerId: hired.workers.at(-1).id, axis: 'speedSkill' });
 assert.equal(trained.cash, STARTING_CASH - TRAINING_COST);

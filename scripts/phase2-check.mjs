@@ -55,19 +55,19 @@ assert.equal(walked.season, STARTING_SEASON);
 assert.equal(walked.year, 2);
 
 const rain = withWeather(createInitialState(), WEATHER_RAIN);
-assert.equal(canPlanTask(rain, 'cutGreens', 'standard').ok, false);
-assert.match(canPlanTask(rain, 'cutGreens', 'standard').reason, /Mowing/);
-assert.equal(canPlanTask(rain, 'cutTees', 'standard').ok, false);
-assert.equal(canPlanTask(rain, 'rollGreens', 'standard').ok, true);
-assert.equal(canPlanTask(rain, 'changeCups', 'standard').ok, true);
+assert.equal(canPlanTask(rain, 'cutGreens').ok, false);
+assert.match(canPlanTask(rain, 'cutGreens').reason, /Mowing/);
+assert.equal(canPlanTask(rain, 'cutTees').ok, false);
+assert.equal(canPlanTask(rain, 'rollGreens').ok, true);
+assert.equal(canPlanTask(rain, 'changeCups').ok, true);
 
 const storm = withWeather(createInitialState(), WEATHER_STORM);
-assert.equal(canPlanTask(storm, 'rollGreens', 'standard').ok, false);
-assert.match(canPlanTask(storm, 'rollGreens', 'standard').reason, /debris/i);
+assert.equal(canPlanTask(storm, 'rollGreens').ok, false);
+assert.match(canPlanTask(storm, 'rollGreens').reason, /debris/i);
 const afterDebris = reducer(storm, { type: 'PLAN_TASK', taskId: 'clearDebris' });
 assert.equal(afterDebris.plannedTasks[0].minutes, TASK_MINUTES.clearDebris);
-assert.equal(canPlanTask(afterDebris, 'rollGreens', 'standard').ok, true);
-assert.equal(canPlanTask(afterDebris, 'cutGreens', 'standard').ok, false);
+assert.equal(canPlanTask(afterDebris, 'rollGreens').ok, true);
+assert.equal(canPlanTask(afterDebris, 'cutGreens').ok, false);
 
 const frost = withWeather(createInitialState(), WEATHER_FROST);
 assert.equal(combinedMinutesRemaining(frost), DAY_LENGTH_MINUTES - FROST_SHORT_MINUTES);
