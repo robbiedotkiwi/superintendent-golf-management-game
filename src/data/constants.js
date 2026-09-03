@@ -428,6 +428,14 @@ export const USED_RELATIONSHIP_DISCOUNT_PER_POINT = 0.003;
 export const USED_DELIVERY_DAYS = 3;
 export const SALE_DAYS = 4;
 export const SALE_PRICE_FRACTION = 0.4;
+export const EVENT_KIND_MEMBER_DAY = 'memberDay';
+export const EVENT_MAIL_KIND = 'eventInvite';
+export const EVENT_RESPONSE_ACCEPT = 'accept';
+export const EVENT_RESPONSE_DECLINE = 'decline';
+export const EVENT_INVITE_DAY_OF_SEASON = 10;
+export const EVENT_RESPOND_DAYS = 5;
+export const EVENT_ACCEPT_STANDING = 4;
+export const EVENT_DECLINE_STANDING = 3;
 
 export const SPEED_SKILL_BASE = 1.3;
 export const SPEED_SKILL_STEP = 0.1;

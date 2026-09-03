@@ -95,6 +95,7 @@ import { clampView, defaultView } from './view.js';
 import { defaultSectionTabs, normalizeSection, normalizeTabs, tabListForSection } from './section.js';
 import { formatMoney } from './format.js';
 import { buyUsed, rollUsedListings, sellMachine } from './market.js';
+import { acceptEvent, declineEvent } from './events.js';
 
 export function createInitialState() {
   const calendar = calendarFromDay(STARTING_DAY);
@@ -650,6 +651,10 @@ export function reducer(state, action) {
       return applySnapTournament(state);
     case 'READ_MAIL':
       return markMailRead(state, action.id);
+    case 'ACCEPT_EVENT':
+      return acceptEvent(state, action.inviteId);
+    case 'DECLINE_EVENT':
+      return declineEvent(state, action.inviteId);
     case 'SET_PLAYOUT_SPEED':
       return PLAYOUT_SPEEDS.includes(action.speed) ? { ...state, playoutSpeed: action.speed } : state;
     case 'SET_SKIP_PLAYOUT':

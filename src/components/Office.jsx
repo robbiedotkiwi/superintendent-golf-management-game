@@ -1,5 +1,10 @@
 import {
   AUTO_PICKER_COST,
+  EVENT_ACCEPT_STANDING,
+  EVENT_DECLINE_STANDING,
+  EVENT_MAIL_KIND,
+  EVENT_RESPONSE_ACCEPT,
+  EVENT_RESPONSE_DECLINE,
   GM_MEETING_MINUTES,
   GM_MEETING_SKIP_STANDING,
   GM_TOURNAMENT_DECLINE_STANDING,
@@ -14,6 +19,7 @@ import {
 import { canTakeLoan, maxLoan } from '../engine/budget.js';
 import { unreadCount } from '../engine/mail.js';
 import { formatMoney } from '../engine/format.js';
+import { invitationById } from '../engine/events.js';
 import { canPlanTask } from '../engine/gameState.js';
 import SeasonStart from './SeasonStart.jsx';
 import SectionTabs from './SectionTabs.jsx';
@@ -38,6 +44,8 @@ export default function Office({
   onPlanMeeting,
   onRemoveMeeting,
   onDeclineTournament,
+  onAcceptEvent,
+  onDeclineEvent,
   onSetTournaments,
   onStartProject,
   onBuyPicker,
@@ -213,6 +221,14 @@ export default function Office({
                     Decline (−{GM_TOURNAMENT_DECLINE_STANDING} standing)
                   </button>
                 ) : null}
+                {item.kind === EVENT_MAIL_KIND ? (
+                  <EventInviteActions
+                    state={state}
+                    item={item}
+                    onAccept={onAcceptEvent}
+                    onDecline={onDeclineEvent}
+                  />
+                ) : null}
                 {item.read ? null : (
                   <button type="button" onClick={() => onRead(item.id)} className="mt-3 border border-[var(--sand)] px-3 py-1">
                     Mark read
@@ -223,6 +239,35 @@ export default function Office({
           </div>
         </>
       ) : null}
+    </div>
+  );
+}
+
+function EventInviteActions({ state, item, onAccept, onDecline }) {
+  const invite = invitationById(state, item.inviteId);
+  if (!invite) return null;
+  if (invite.response === EVENT_RESPONSE_ACCEPT) {
+    return <p className="mt-3 text-sm">Accepted. Standing +{EVENT_ACCEPT_STANDING}.</p>;
+  }
+  if (invite.response === EVENT_RESPONSE_DECLINE) {
+    return <p className="mt-3 text-sm">Declined. Standing −{EVENT_DECLINE_STANDING}.</p>;
+  }
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      <button
+        type="button"
+        onClick={() => onAccept(invite.id)}
+        className="bg-[var(--machine-orange)] px-3 py-1 font-semibold"
+      >
+        Accept (+{EVENT_ACCEPT_STANDING} standing)
+      </button>
+      <button
+        type="button"
+        onClick={() => onDecline(invite.id)}
+        className="border border-[var(--sand)] px-3 py-1"
+      >
+        Decline (−{EVENT_DECLINE_STANDING} standing)
+      </button>
     </div>
   );
 }

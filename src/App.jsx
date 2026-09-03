@@ -205,6 +205,8 @@ export default function App() {
           onReadMail={(id) => dispatch({ type: 'READ_MAIL', id })}
           onSetTournaments={(count) => dispatch({ type: 'SET_TOURNAMENTS', count })}
           onDeclineTournament={() => dispatch({ type: 'DECLINE_TOURNAMENT_REQUEST' })}
+          onAcceptEvent={(inviteId) => dispatch({ type: 'ACCEPT_EVENT', inviteId })}
+          onDeclineEvent={(inviteId) => dispatch({ type: 'DECLINE_EVENT', inviteId })}
           onStartProject={(projectId) => dispatch({ type: 'START_PROJECT', projectId })}
           onBuyPicker={() => dispatch({ type: 'BUY_AUTO_PICKER' })}
           onToggleSound={() => dispatch({ type: 'TOGGLE_SOUND' })}
@@ -300,6 +302,8 @@ function GameScreen({
   onReadMail,
   onSetTournaments,
   onDeclineTournament,
+  onAcceptEvent,
+  onDeclineEvent,
   onStartProject,
   onBuyPicker,
   onToggleSound,
@@ -438,6 +442,8 @@ function GameScreen({
             onPlanMeeting={() => onPlan('gmMeeting')}
             onRemoveMeeting={() => onRemove('gmMeeting')}
             onDeclineTournament={onDeclineTournament}
+            onAcceptEvent={onAcceptEvent}
+            onDeclineEvent={onDeclineEvent}
             onSetTournaments={onSetTournaments}
             onStartProject={onStartProject}
             onBuyPicker={onBuyPicker}

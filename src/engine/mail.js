@@ -31,6 +31,7 @@ export function pushMail(state, mail) {
     subject: mail.subject,
     body: mail.body,
     ...(mail.deadlineDay != null ? { deadlineDay: mail.deadlineDay } : {}),
+    ...(mail.inviteId != null ? { inviteId: mail.inviteId } : {}),
   };
   return {
     ...state,
