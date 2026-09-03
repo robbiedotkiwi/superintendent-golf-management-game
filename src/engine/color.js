@@ -1,5 +1,6 @@
 import {
   BUNKER_STRESS_MIX,
+  BOUNDARY_DARKEN,
   GREEN_OUTLINE_MIX,
   QUALITY_MAX,
   SURFACE_DARKEN_ROUGH,
@@ -55,6 +56,10 @@ export function stressedFill(surface) {
 
 export function surfaceFill(surface, quality) {
   return lerpHex(stressedFill(surface), healthyFill(surface), quality / QUALITY_MAX);
+}
+
+export function boundaryFill() {
+  return lerpHex(healthyFill('rough'), soil, BOUNDARY_DARKEN);
 }
 
 export function greenOutline(quality) {

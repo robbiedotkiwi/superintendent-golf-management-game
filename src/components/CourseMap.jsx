@@ -1,9 +1,11 @@
-import { greenOutline, surfaceFill } from '../engine/color.js';
+import { boundaryFill, greenOutline, surfaceFill } from '../engine/color.js';
 import {
   AERATOR_ARM,
   AERATOR_RX,
   AERATOR_RY,
-  EXPANDED_HOLE_COUNT,
+  FLAG_HEIGHT,
+  FLAG_POLE,
+  FLAG_WIDTH,
   HOLE_COUNT,
   POND_CX,
   POND_CY,
@@ -15,9 +17,21 @@ import {
   RANGE_WIDTH,
   RANGE_X,
   RANGE_Y,
+  TEE_MARKER_OFFSET,
 } from '../data/constants.js';
-import { holesForCount, mapViewBoxForHoles, courseBounds, SHED_HEIGHT, SHED_WIDTH, SHED_X, SHED_Y } from '../data/course.js';
-import { SURFACE_LABELS } from '../data/tasks.js';
+import {
+  courseBoundaryPath,
+  courseBounds,
+  holesForCount,
+  mapViewBoxForHoles,
+  SHED_HEIGHT,
+  SHED_ROOF,
+  SHED_DOOR_HEIGHT,
+  SHED_DOOR_WIDTH,
+  SHED_WIDTH,
+  SHED_X,
+  SHED_Y,
+} from '../data/course.js';
 import { pondPercent } from '../engine/irrigation.js';
 import { prefersReducedMotion } from '../engine/sound.js';
 import { MOWER_ANIM_MS } from '../data/constants.js';
@@ -78,6 +92,7 @@ export default function CourseMap({
         fill="var(--soil)"
         onClick={() => onSelect(null)}
       />
+      <path d={courseBoundaryPath(layout)} fill={boundaryFill()} pointerEvents="none" />
       <g
         tabIndex={0}
         role="button"
@@ -94,8 +109,20 @@ export default function CourseMap({
           }
         }}
       >
+        <polygon
+          points={`${SHED_X},${SHED_Y} ${SHED_X + SHED_WIDTH / 2},${SHED_Y - SHED_ROOF} ${SHED_X + SHED_WIDTH},${SHED_Y}`}
+          fill="var(--soil)"
+          stroke="var(--paint)"
+        />
         <rect x={SHED_X} y={SHED_Y} width={SHED_WIDTH} height={SHED_HEIGHT} fill="var(--sand)" stroke="var(--paint)" />
-        <text x={SHED_X + SHED_WIDTH / 2} y={SHED_Y + SHED_HEIGHT / 2 + 5} textAnchor="middle" fill="var(--soil)" fontSize="16">
+        <rect
+          x={SHED_X + SHED_WIDTH / 2 - SHED_DOOR_WIDTH / 2}
+          y={SHED_Y + SHED_HEIGHT - SHED_DOOR_HEIGHT}
+          width={SHED_DOOR_WIDTH}
+          height={SHED_DOOR_HEIGHT}
+          fill="var(--soil)"
+        />
+        <text x={SHED_X + SHED_WIDTH / 2} y={SHED_Y + 18} textAnchor="middle" fill="var(--soil)" fontSize="12">
           Shed
         </text>
       </g>
@@ -185,6 +212,48 @@ export default function CourseMap({
           onKeyDown={(event) => activate(event, 'greens', onSelect)}
         />
       ))}
+      {layout.map((hole) => {
+        const poleX = hole.green.cx;
+        const poleBase = hole.green.cy - hole.green.ry;
+        const poleTop = poleBase - FLAG_POLE;
+        return (
+          <g key={`flag-${hole.id}`} pointerEvents="none">
+            <line
+              x1={poleX}
+              y1={poleBase}
+              x2={poleX}
+              y2={poleTop}
+              stroke="var(--paint)"
+              strokeWidth="1.5"
+            />
+            <polygon
+              points={`${poleX},${poleTop} ${poleX + FLAG_WIDTH},${poleTop + FLAG_HEIGHT / 2} ${poleX},${poleTop + FLAG_HEIGHT}`}
+              fill="var(--machine-orange)"
+            />
+          </g>
+        );
+      })}
+      {layout.map((hole) => (
+        <g key={`marker-${hole.id}`} pointerEvents="none">
+          <circle
+            cx={hole.tee.cx - TEE_MARKER_OFFSET}
+            cy={hole.tee.cy - TEE_MARKER_OFFSET}
+            r="9"
+            fill="var(--soil)"
+            stroke="var(--paint)"
+          />
+          <text
+            x={hole.tee.cx - TEE_MARKER_OFFSET}
+            y={hole.tee.cy - TEE_MARKER_OFFSET + 4}
+            textAnchor="middle"
+            fill="var(--paint)"
+            fontSize="11"
+            fontWeight="700"
+          >
+            {hole.id}
+          </text>
+        </g>
+      ))}
       <g
         tabIndex={0}
         role="button"
@@ -244,9 +313,15 @@ export default function CourseMap({
           style={{ ['--mower-ms']: `${MOWER_ANIM_MS}ms` }}
         />
       ) : null}
-      <text x="24" y="36" fill="var(--sand)" fontSize="18">
-        Click a surface — {SURFACE_LABELS.greens.toLowerCase()} work all{' '}
-        {holes >= EXPANDED_HOLE_COUNT ? 'eighteen' : 'nine'}.
+      <text
+        x={SHED_X + SHED_WIDTH / 2}
+        y={bounds.minY + 28}
+        textAnchor="middle"
+        fill="var(--sand)"
+        fontSize="16"
+        pointerEvents="none"
+      >
+        {holes}-hole course
       </text>
     </svg>
   );

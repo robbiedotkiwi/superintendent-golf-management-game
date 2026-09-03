@@ -1,5 +1,6 @@
 import {
   BACK_NINE_OFFSET_X,
+  BOUNDARY_EXPAND,
   BUNKER_HOLE_COUNT,
   BUNKER_OFFSET,
   BUNKER_RX,
@@ -26,15 +27,15 @@ import {
 } from './constants.js';
 
 const HOLE_LAYOUT = [
-  { id: 1, tee: [130, 630], green: [230, 410], curve: 70, bunker: false },
-  { id: 2, tee: [80, 350], green: [210, 150], curve: -85, bunker: true },
-  { id: 3, tee: [300, 80], green: [520, 60], curve: 50, bunker: false },
-  { id: 4, tee: [580, 50], green: [820, 120], curve: -55, bunker: false },
-  { id: 5, tee: [900, 180], green: [950, 400], curve: 95, bunker: true },
-  { id: 6, tee: [970, 470], green: [830, 650], curve: -75, bunker: false },
-  { id: 7, tee: [740, 690], green: [520, 670], curve: 45, bunker: true },
-  { id: 8, tee: [420, 700], green: [260, 650], curve: -35, bunker: false },
-  { id: 9, tee: [400, 490], green: [600, 330], curve: 110, bunker: false },
+  { id: 1, tee: [440, 580], green: [700, 460], curve: 48, bunker: false },
+  { id: 2, tee: [730, 440], green: [800, 220], curve: -52, bunker: true },
+  { id: 3, tee: [780, 190], green: [530, 70], curve: 55, bunker: false },
+  { id: 4, tee: [500, 70], green: [240, 130], curve: -42, bunker: false },
+  { id: 5, tee: [210, 160], green: [130, 360], curve: 68, bunker: true },
+  { id: 6, tee: [150, 390], green: [260, 520], curve: -48, bunker: false },
+  { id: 7, tee: [300, 540], green: [520, 500], curve: 36, bunker: true },
+  { id: 8, tee: [550, 480], green: [640, 300], curve: -62, bunker: false },
+  { id: 9, tee: [620, 280], green: [490, 555], curve: 70, bunker: false },
 ];
 
 function quadPoint(x1, y1, cx, cy, x2, y2, t) {
@@ -112,10 +113,13 @@ if (HOLE_LAYOUT.filter((hole) => hole.bunker).length !== BUNKER_HOLE_COUNT) {
 }
 
 export const HOLES = HOLE_LAYOUT.map(buildHole);
-export const SHED_X = 470;
-export const SHED_Y = 200;
-export const SHED_WIDTH = 100;
-export const SHED_HEIGHT = 64;
+export const SHED_X = 400;
+export const SHED_Y = 600;
+export const SHED_WIDTH = 88;
+export const SHED_HEIGHT = 42;
+export const SHED_ROOF = 20;
+export const SHED_DOOR_WIDTH = 16;
+export const SHED_DOOR_HEIGHT = 20;
 
 function pathPoints(d) {
   const points = [];
@@ -148,7 +152,7 @@ export function courseBounds(layout) {
     includeEllipse(box, hole.green);
     if (hole.bunker) includeEllipse(box, hole.bunker);
   }
-  includePoint(box, SHED_X, SHED_Y);
+  includePoint(box, SHED_X, SHED_Y - SHED_ROOF);
   includePoint(box, SHED_X + SHED_WIDTH, SHED_Y + SHED_HEIGHT);
   includePoint(box, POND_CX - POND_RX, POND_CY - POND_RY);
   includePoint(box, POND_CX + POND_RX, POND_CY + POND_RY + POND_LABEL_OFFSET);
@@ -170,6 +174,57 @@ export function mapViewBoxFromBounds(bounds) {
 export const MAP_WIDTH = 1040;
 export const MAP_HEIGHT = 760;
 export const MAP_VIEWBOX = mapViewBoxFromBounds(courseBounds(HOLES));
+
+function cross(origin, a, b) {
+  return (a[0] - origin[0]) * (b[1] - origin[1]) - (a[1] - origin[1]) * (b[0] - origin[0]);
+}
+
+function convexHull(points) {
+  const pts = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  if (pts.length < 3) return pts;
+  const lower = [];
+  for (const point of pts) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], point) <= 0) {
+      lower.pop();
+    }
+    lower.push(point);
+  }
+  const upper = [];
+  for (let i = pts.length - 1; i >= 0; i -= 1) {
+    const point = pts[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], point) <= 0) {
+      upper.pop();
+    }
+    upper.push(point);
+  }
+  lower.pop();
+  upper.pop();
+  return lower.concat(upper);
+}
+
+function expandPolygon(poly, amount) {
+  const count = poly.length;
+  if (count < 3) return poly;
+  return poly.map((cur, index) => {
+    const prev = poly[(index + count - 1) % count];
+    const next = poly[(index + 1) % count];
+    const e1 = [cur[0] - prev[0], cur[1] - prev[1]];
+    const e2 = [next[0] - cur[0], next[1] - cur[1]];
+    const o1 = normalize(e1[1], -e1[0]);
+    const o2 = normalize(e2[1], -e2[0]);
+    return [cur[0] + (o1[0] + o2[0]) * amount, cur[1] + (o1[1] + o2[1]) * amount];
+  });
+}
+
+export function courseBoundaryPath(layout) {
+  const points = [];
+  for (const hole of layout) {
+    for (const point of pathPoints(hole.rough)) points.push(point);
+  }
+  points.push([SHED_X, SHED_Y - SHED_ROOF], [SHED_X + SHED_WIDTH, SHED_Y + SHED_HEIGHT]);
+  const hull = expandPolygon(convexHull(points), BOUNDARY_EXPAND);
+  return hull.map((point, index) => `${index === 0 ? 'M' : 'L'}${point[0].toFixed(1)},${point[1].toFixed(1)}`).join(' ') + ' Z';
+}
 
 function offsetPath(path, dx) {
   return path.replace(/([ML])(-?[\d.]+),(-?[\d.]+)/g, (_, cmd, x, y) => `${cmd}${(Number(x) + dx).toFixed(1)},${y}`);
