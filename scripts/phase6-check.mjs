@@ -4,6 +4,7 @@
  */
 import assert from 'node:assert/strict';
 import {
+  DAYS_PER_SEASON,
   DISEASE_OUTBREAK_DAILY,
   DISEASE_OUTBREAK_DROP,
   DISEASE_OUTBREAK_THRESHOLD,
@@ -43,6 +44,8 @@ function certify(state) {
   return next;
 }
 
+const afterGrace = { day: DAYS_PER_SEASON + 1, season: 'summer' };
+
 const start = createInitialState();
 assert.equal(start.workers.find((worker) => worker.id === PLAYER_ID).sprayCertified, false);
 assert.equal(canPlanTask(start, 'sprayGreens').ok, false);
@@ -64,7 +67,7 @@ assert.equal(start.disease.rough.pressure, STARTING_DISEASE_PRESSURE);
 
 let wet = {
   ...createInitialState(),
-  season: 'summer',
+  ...afterGrace,
   weather: WEATHER_RAIN,
   irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
 };
@@ -79,6 +82,7 @@ assert.ok(wet.disease.greens.pressure >= DISEASE_OUTBREAK_THRESHOLD);
 
 const outbreakStart = {
   ...createInitialState(),
+  ...afterGrace,
   season: 'winter',
   weather: STARTING_WEATHER,
   surfaces: {
@@ -112,6 +116,7 @@ assert.equal(afterOngoing.surfaces.greens.quality, expectedOngoing);
 let sprayed = certify(createInitialState());
 sprayed = {
   ...sprayed,
+  ...afterGrace,
   disease: {
     ...sprayed.disease,
     greens: { pressure: DISEASE_OUTBREAK_THRESHOLD, outbreak: true },
