@@ -320,11 +320,16 @@ function GameScreen({
 }) {
   useEffect(() => {
     function onKey(event) {
-      if (event.key === 'Escape') onSelect(null);
+      if (event.key !== 'Escape') return;
+      if (view !== SECTION_MAP) {
+        onCloseShed();
+        return;
+      }
+      onSelect(null);
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onSelect]);
+  }, [onSelect, onCloseShed, view]);
 
   useEffect(() => {
     if (state.weather === WEATHER_FINE) playBirds(state.soundEnabled);
