@@ -351,7 +351,7 @@ function GameScreen({
             onBuyAerator={onBuyAerator}
             onClose={() => onSelect(null)}
           />
-        ) : (
+        ) : selected ? (
           <TaskPanel
             surface={selected}
             state={state}
@@ -360,7 +360,7 @@ function GameScreen({
             onSetWorker={onSetWorker}
             onClose={() => onSelect(null)}
           />
-        )}
+        ) : null}
       </div>
       <DaySummary summary={summary} onContinue={onDismissSummary} />
     </div>

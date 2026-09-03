@@ -10,19 +10,13 @@ function formatQuality(value) {
 }
 
 export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorker, onClose }) {
-  const open = Boolean(surface);
-  const quality = surface ? state.surfaces[surface].quality : 0;
-  const tasks = surface ? tasksForSurface(surface) : [];
+  const quality = state.surfaces[surface].quality;
+  const tasks = tasksForSurface(surface);
 
   return (
     <aside
-      className={`absolute inset-y-0 right-0 z-20 flex w-72 max-w-[min(18rem,100%)] flex-col border-l-4 border-[var(--sand)] bg-[var(--soil)] text-[var(--paint)] transition-transform duration-200 ${
-        open ? 'translate-x-0' : 'translate-x-full'
-      } ${open ? '' : 'pointer-events-none'}`}
-      aria-hidden={!open}
+      className="absolute inset-y-0 right-0 z-20 flex w-72 max-w-[min(18rem,100%)] flex-col border-l-4 border-[var(--sand)] bg-[var(--soil)] text-[var(--paint)]"
     >
-      {surface ? (
-        <>
           <div className="flex items-start justify-between gap-4 border-b border-[var(--sand)] px-4 py-3">
             <div>
               <h2 className="font-condensed text-4xl font-bold">{SURFACE_LABELS[surface]}</h2>
@@ -145,8 +139,6 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
               );
             })}
           </div>
-        </>
-      ) : null}
     </aside>
   );
 }

@@ -25,5 +25,6 @@ const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
 const mapBlock = app.slice(app.indexOf('relative min-h-0 flex-1'));
 assert.match(mapBlock, /<TaskPanel/);
 assert.match(mapBlock, /<IrrigationPanel/);
+assert.match(app, /selected \? \(/);
 
 console.log('ui phase6 checks passed');
