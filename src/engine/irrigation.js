@@ -88,7 +88,7 @@ export function summerUnderwaterDecay(state, watered) {
 
 export function canBuyAerator(state) {
   if (state.hasAerator) return { ok: false, reason: 'Already in the pond.' };
-  if (state.cash < AERATOR_COST) return { ok: false, reason: `Needs ${AERATOR_COST}, only ${state.cash} in the tin.` };
+  if (state.capitalBudget < AERATOR_COST) return { ok: false, reason: `Needs ${AERATOR_COST} capital, only ${state.capitalBudget} posted.` };
   return { ok: true };
 }
 

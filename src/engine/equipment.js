@@ -107,14 +107,16 @@ export function canBuyMachine(state, machineId) {
   const machine = getMachine(machineId);
   if (!machine || machine.ownedAtStart) return { ok: false, reason: 'Already in the shed.' };
   if (state.ownedMachines.includes(machineId)) return { ok: false, reason: 'Already owned.' };
-  if (state.cash < machine.cost) return { ok: false, reason: `Needs ${machine.cost}, only ${state.cash} in the tin.` };
+  if ((state.capitalBudget ?? 0) < machine.cost) {
+    return { ok: false, reason: `Needs ${machine.cost} capital, only ${state.capitalBudget ?? 0} posted.` };
+  }
   return { ok: true };
 }
 
 export function canBuyFoley(state) {
   if (state.hasFoleyGrinder) return { ok: false, reason: 'Already installed.' };
-  if (state.cash < FOLEY_GRINDER_COST) {
-    return { ok: false, reason: `Needs ${FOLEY_GRINDER_COST}, only ${state.cash} in the tin.` };
+  if ((state.capitalBudget ?? 0) < FOLEY_GRINDER_COST) {
+    return { ok: false, reason: `Needs ${FOLEY_GRINDER_COST} capital, only ${state.capitalBudget ?? 0} posted.` };
   }
   return { ok: true };
 }
@@ -125,8 +127,8 @@ export function canSendGrind(state, machineId) {
   if (!isMachineAvailable(state, machineId) && !state.machineBroken[machineId]) {
     return { ok: false, reason: 'That unit is not here.' };
   }
-  if (state.cash < GRIND_AWAY_COST) {
-    return { ok: false, reason: `Needs ${GRIND_AWAY_COST}, only ${state.cash} in the tin.` };
+  if ((state.maintenanceBudget ?? 0) < GRIND_AWAY_COST) {
+    return { ok: false, reason: `Needs ${GRIND_AWAY_COST} from maintenance.` };
   }
   return { ok: true };
 }
@@ -195,7 +197,7 @@ export function buyMachine(state, machineId) {
   const machine = getMachine(machineId);
   let next = {
     ...state,
-    cash: state.cash - machine.cost,
+    capitalBudget: state.capitalBudget - machine.cost,
     ownedMachines: [...state.ownedMachines, machineId],
     machineWear: { ...state.machineWear, [machineId]: 0 },
   };
@@ -210,7 +212,7 @@ export function buyMachine(state, machineId) {
 export function buyFoley(state) {
   const check = canBuyFoley(state);
   if (!check.ok) return state;
-  return { ...state, cash: state.cash - FOLEY_GRINDER_COST, hasFoleyGrinder: true };
+  return { ...state, capitalBudget: state.capitalBudget - FOLEY_GRINDER_COST, hasFoleyGrinder: true };
 }
 
 export function sendForGrind(state, machineId) {
@@ -218,7 +220,7 @@ export function sendForGrind(state, machineId) {
   if (!check.ok) return state;
   const next = {
     ...state,
-    cash: state.cash - GRIND_AWAY_COST,
+    maintenanceBudget: state.maintenanceBudget - GRIND_AWAY_COST,
     machineAwayUntil: { ...state.machineAwayUntil, [machineId]: state.day + GRIND_AWAY_DAYS },
     machineWear: { ...state.machineWear, [machineId]: 0 },
     machineBroken: { ...state.machineBroken, [machineId]: false },

@@ -86,6 +86,13 @@ export default function DaySummary({ summary, onContinue }) {
             Disease still eating: {summary.diseaseOngoing.map((item) => SURFACE_LABELS[item.surface]).join(', ')}
           </p>
         ) : null}
+        {summary.seasonClose ? (
+          <p className="mt-2">
+            Season closed. Maintenance leftover {Math.round(summary.seasonClose.leftover)} rolled to cash.
+            {summary.seasonClose.insolvent ? ' In the red.' : ''}
+            {summary.seasonClose.dismissed ? ' Dismissed.' : ''}
+          </p>
+        ) : null}
 
         <button
           type="button"

@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import {
   AERATOR_COST,
+  DAYS_PER_SEASON,
   GROUNDWATER_M3,
   HAND_WATER_MINUTES,
   IRRIGATION_M3,
@@ -90,6 +91,7 @@ assert.equal(rainy.pond.volume, POND_START_VOLUME + GROUNDWATER_M3 + RAIN_POND_M
 
 const dry = {
   ...createInitialState(),
+  day: DAYS_PER_SEASON + 1,
   pond: { volume: 0, health: POND_HEALTH_START },
   irrigation: allFull,
   season: 'summer',
@@ -103,7 +105,8 @@ const dryEnded = reducer(dry, { type: 'END_DAY' });
 const drySummary = dryEnded.log.at(-1);
 assert.equal(drySummary.mainsCost, short.mainsCost);
 assert.equal(drySummary.mainsM3, short.shortfall);
-assert.equal(dryEnded.cash, STARTING_CASH - short.mainsCost);
+assert.equal(dryEnded.maintenanceBudget, dry.maintenanceBudget - short.mainsCost);
+assert.equal(dryEnded.cash, STARTING_CASH);
 
 let offSummer = {
   ...createInitialState(),
@@ -160,7 +163,8 @@ assert.equal(lowAfter.pond.health, POND_HEALTH_START - POND_HEALTH_LOW_DROP);
 
 const bought = reducer(createInitialState(), { type: 'BUY_AERATOR' });
 assert.equal(bought.hasAerator, true);
-assert.equal(bought.cash, STARTING_CASH - AERATOR_COST);
+assert.equal(bought.capitalBudget, createInitialState().capitalBudget - AERATOR_COST);
+assert.equal(bought.cash, STARTING_CASH);
 const held = resolveIrrigation({
   ...bought,
   season: 'summer',

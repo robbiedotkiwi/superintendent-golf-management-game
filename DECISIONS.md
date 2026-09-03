@@ -54,3 +54,11 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Spray and fertiliser are per-surface tasks on greens, tees and fairways. Both need a spray ticket. The player can take the ticket (5 days away) as well as hired staff.
 - Materials come off `maintenanceBudget`, a separate tin that starts at `STARTING_MAINTENANCE_BUDGET`. Cash is untouched by spray/fertiliser. Phase 7 will grant and spend this budget properly.
 - Pressure formula (base × susceptibility × season × wet × underwater) is invented; rough susceptibility 0 so it never outbreaks.
+
+## Phase 7
+
+- Opening maintenance and capital grants use the plan formula at satisfaction 50 and GM standing 50 (12,000 and 40,000). Cash stays as the rolled reserve.
+- Wages, mains, materials, grind-away, fines and leases hit maintenance. Machines, Foley and the aerator hit capital.
+- Snap tournaments use the Phase 8 score table so the raise-cash button has a real payout. Full season booking is still Phase 8.
+- Insolvent means cash below zero after unspent maintenance rolls in. Two consecutive season ends in that state dismiss the player.
+- GM meeting is due when `day % 7 === 0`. Skipping costs `GM_MEETING_SKIP_STANDING` (10).

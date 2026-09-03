@@ -61,7 +61,7 @@ export default function IrrigationPanel({ state, onSetPolicy, onBuyAerator, onCl
             <p className="mt-2">In the pond. Holds health up.</p>
           ) : (
             <>
-              <p className="mt-2 text-sm">Keeps pond health from falling. {AERATOR_COST} from the tin.</p>
+              <p className="mt-2 text-sm">Keeps pond health from falling. {AERATOR_COST} from capital.</p>
               <button
                 type="button"
                 disabled={!aerator.ok}

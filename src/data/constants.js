@@ -36,6 +36,7 @@ export const SURFACE_KEYS = ['greens', 'tees', 'fairways', 'rough', 'bunkers'];
 export const HAND_WATER_MINUTES = 60;
 export const SPRAY_MINUTES = 90;
 export const FERTILISER_MINUTES = 75;
+export const GM_MEETING_MINUTES = 60;
 
 export const TASK_MINUTES = {
   cutGreens: 120,
@@ -53,6 +54,7 @@ export const TASK_MINUTES = {
   fertiliseGreens: FERTILISER_MINUTES,
   fertiliseTees: FERTILISER_MINUTES,
   fertiliseFairways: FERTILISER_MINUTES,
+  gmMeeting: GM_MEETING_MINUTES,
 };
 
 export const LEVEL_QUICK_TIME_MULT = 0.7;
@@ -252,8 +254,6 @@ export const STARTING_IRRIGATION = {
   fairways: 'off',
 };
 export const IRRIGATION_POLICIES = ['off', 'light', 'full'];
-
-export const STARTING_MAINTENANCE_BUDGET = 8000;
 export const SPRAY_MATERIALS_COST = 600;
 export const SPRAY_SUPPRESS_DAYS = 14;
 export const FERTILISER_MATERIALS_COST = 450;
@@ -281,3 +281,45 @@ export const DISEASE_SEASON = {
   winter: 0.2,
 };
 export const STARTING_DISEASE_PRESSURE = 0;
+
+export const SATISFACTION_START = 50;
+export const SATISFACTION_MIN = 0;
+export const SATISFACTION_MAX = 100;
+export const BUDGET_SATISFACTION_OFFSET = 0.5;
+export const SATISFACTION_LAG = 0.2;
+export const SATISFACTION_POND_WEIGHT = 0.15;
+export const SATISFACTION_COMPLAINT_PENALTY = 4;
+export const GM_STANDING_START = 50;
+export const GM_STANDING_MIN = 0;
+export const GM_STANDING_MAX = 100;
+export const GM_STANDING_MULT_MIN = 0.6;
+export const GM_STANDING_MULT_MAX = 1.4;
+export const GM_MEETING_SKIP_STANDING = 10;
+export const MAINTENANCE_BASE = 12000;
+export const CAPITAL_BASE = 40000;
+export const STARTING_MAINTENANCE_BUDGET = 12000;
+export const STARTING_CAPITAL_BUDGET = 40000;
+export const LEASE_RATE = 0.1;
+export const LOAN_LIMIT_MULTIPLIER = 2;
+export const LOAN_INTEREST = 0.1;
+export const INSOLVENT_DISMISS_STREAK = 2;
+export const BUNKER_NEGLECT_DAYS = 7;
+export const COMPLAINT_GREENS_QUALITY = 45;
+export const COMPLAINT_ROUGH_DAYS = 7;
+export const TOURNAMENT_WEIGHTS = {
+  greens: 0.55,
+  tees: 0.15,
+  fairways: 0.2,
+  bunkers: 0.1,
+};
+export const TOURNAMENT_EXCELLENT_MIN = 85;
+export const TOURNAMENT_GOOD_MIN = 70;
+export const TOURNAMENT_ACCEPTABLE_MIN = 55;
+export const TOURNAMENT_EXCELLENT_PAY = 18000;
+export const TOURNAMENT_GOOD_PAY = 12000;
+export const TOURNAMENT_ACCEPTABLE_PAY = 7000;
+export const TOURNAMENT_POOR_PAY = 3000;
+export const TOURNAMENT_EXCELLENT_SAT = 12;
+export const TOURNAMENT_GOOD_SAT = 6;
+export const TOURNAMENT_ACCEPTABLE_SAT = 0;
+export const TOURNAMENT_POOR_SAT = -15;

@@ -37,6 +37,10 @@ import { createRng } from './rng.js';
 import { applyFertiliser, applySpray, emptyDisease, resolveDisease } from './disease.js';
 import { resolveIrrigation, summerUnderwaterDecay } from './irrigation.js';
 import { rollMorningWithRng } from './weather.js';
+import { closeSeason } from './budget.js';
+import { golferMail, gmSeasonMail, meetingDue, pushMail, tickDaysSinceWorked } from './mail.js';
+import { clampStanding, tickSatisfaction } from './satisfaction.js';
+import { GM_MEETING_SKIP_STANDING } from '../data/constants.js';
 
 export function clampQuality(value) {
   return Math.min(QUALITY_MAX, Math.max(QUALITY_MIN, value));
@@ -255,19 +259,42 @@ export function resolveDay(state) {
     );
   }
   workers = applyMorale(workers);
-  let cash = state.cash - wageBill(state.workers) - irrigation.mainsCost;
-  const complaint = applyEarlyStartComplaints({ ...state, cash, workers });
-  cash = complaint.state.cash;
+  maintenanceBudget = maintenanceBudget - wageBill(state.workers) - irrigation.mainsCost;
+  const complaint = applyEarlyStartComplaints({ ...state, maintenanceBudget, workers, surfaces });
+  maintenanceBudget = complaint.state.maintenanceBudget;
+
+  const daysSinceWorked = tickDaysSinceWorked(state.daysSinceWorked, worked);
+  let gmStanding = state.gmStanding ?? 0;
+  if (meetingDue(state.day) && !planned.some((item) => item.taskId === 'gmMeeting')) {
+    gmStanding = clampStanding(gmStanding - GM_MEETING_SKIP_STANDING);
+  }
+
+  let mailed = {
+    ...complaint.state,
+    workers,
+    surfaces,
+    maintenanceBudget,
+    daysSinceWorked,
+    gmStanding,
+    inbox: state.inbox ?? [],
+    nextMailId: state.nextMailId ?? 1,
+    pond: irrigation.pond,
+  };
+  for (const mail of golferMail(mailed, daysSinceWorked)) {
+    mailed = pushMail(mailed, mail);
+  }
+  const satisfaction = tickSatisfaction(mailed);
 
   const day = state.day + 1;
   const calendar = calendarFromDay(day);
   const seasonChanged = calendar.season !== state.season;
+  const yearChanged = calendar.year !== state.year;
   let next = {
-    ...complaint.state,
+    ...mailed,
     day,
     season: calendar.season,
     year: calendar.year,
-    cash,
+    cash: state.cash,
     surfaces,
     pond: irrigation.pond,
     maintenanceBudget,
@@ -278,7 +305,12 @@ export function resolveDay(state) {
     machineBroken,
     plannedTasks: [],
     workers,
+    satisfaction,
+    gmStanding,
+    daysSinceWorked,
+    snappedToday: false,
   };
+  let seasonClose = null;
   if (seasonChanged) {
     next = {
       ...next,
@@ -287,6 +319,19 @@ export function resolveDay(state) {
       volunteerDayChangedThisSeason: false,
       neighbourComplaintsThisSeason: 0,
     };
+    seasonClose = closeSeason(next, { yearChanged });
+    next = seasonClose.state;
+    for (const mail of seasonClose.mail.concat(
+      gmSeasonMail({
+        leftover: seasonClose.leftover,
+        insolvent: seasonClose.insolvent,
+        yearChanged,
+        maintenance: next.maintenanceBudget,
+        capital: next.capitalBudget,
+      }),
+    )) {
+      next = pushMail(next, mail);
+    }
   }
   const scheduled = ensureAutoWeek(next, rng);
   next = scheduled.state;
@@ -318,6 +363,9 @@ export function resolveDay(state) {
     outbreaks: diseaseTick.outbreaks,
     diseaseOngoing: diseaseTick.ongoing,
     disease,
+    seasonClose: seasonClose
+      ? { leftover: seasonClose.leftover, insolvent: seasonClose.insolvent, dismissed: next.dismissed }
+      : null,
     before,
     after: cloneSurfaces(surfaces),
     conditionBefore,

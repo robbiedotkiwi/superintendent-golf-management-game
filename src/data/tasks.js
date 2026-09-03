@@ -24,6 +24,7 @@ export const TASKS = [
   { id: 'fertiliseGreens', surface: 'greens', name: FERTILISER_BRAND, mowing: false, usesQualityLevel: false, requiresSpray: true, kind: 'fertiliser', materialsCost: FERTILISER_MATERIALS_COST },
   { id: 'fertiliseTees', surface: 'tees', name: FERTILISER_BRAND, mowing: false, usesQualityLevel: false, requiresSpray: true, kind: 'fertiliser', materialsCost: FERTILISER_MATERIALS_COST },
   { id: 'fertiliseFairways', surface: 'fairways', name: FERTILISER_BRAND, mowing: false, usesQualityLevel: false, requiresSpray: true, kind: 'fertiliser', materialsCost: FERTILISER_MATERIALS_COST },
+  { id: 'gmMeeting', surface: null, name: 'GM meeting', mowing: false, usesQualityLevel: false, kind: 'meeting' },
 ];
 
 export const LEVEL_LABELS = {

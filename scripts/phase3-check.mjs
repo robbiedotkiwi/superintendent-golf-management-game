@@ -8,6 +8,8 @@ import {
   GRIND_AWAY_DAYS,
   PUSH_ROTARY_CEILING,
   REPAIR_MINUTES,
+  GM_STANDING_START,
+  SATISFACTION_START,
   STARTING_CASH,
   STARTING_WEATHER,
   TASK_MINUTES,
@@ -18,6 +20,7 @@ import {
 } from '../src/data/constants.js';
 import { getTask } from '../src/data/tasks.js';
 import { durationForTask } from '../src/engine/assignment.js';
+import { capitalGrant } from '../src/engine/budget.js';
 import {
   canBuyMachine,
   ineligibleMachines,
@@ -50,7 +53,7 @@ const baseTime = durationForTask(createInitialState(), 'cutGreens', 'standard');
 assert.equal(baseTime, TASK_MINUTES.cutGreens);
 
 let bought = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
-assert.equal(bought.cash, STARTING_CASH - WALK_BEHIND_COST);
+assert.equal(bought.capitalBudget, capitalGrant(SATISFACTION_START, GM_STANDING_START) - WALK_BEHIND_COST);
 assert.equal(
   durationForTask(bought, 'cutGreens', 'standard'),
   Math.round(TASK_MINUTES.cutGreens * WALK_BEHIND_TIME_MULT),

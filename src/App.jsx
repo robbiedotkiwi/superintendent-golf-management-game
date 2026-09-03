@@ -3,7 +3,9 @@ import CourseMap from './components/CourseMap.jsx';
 import DaySummary from './components/DaySummary.jsx';
 import TaskPanel from './components/TaskPanel.jsx';
 import Crew from './components/Crew.jsx';
+import GameOver from './components/GameOver.jsx';
 import IrrigationPanel from './components/IrrigationPanel.jsx';
+import Office from './components/Office.jsx';
 import Shed from './components/Shed.jsx';
 import TimeBar from './components/TimeBar.jsx';
 import WeatherStrip from './components/WeatherStrip.jsx';
@@ -28,6 +30,7 @@ import {
 } from './engine/gameState.js';
 import { courseCondition } from './engine/simulation.js';
 import { pondPercent } from './engine/irrigation.js';
+import { unreadCount } from './engine/mail.js';
 import { clearSave, hasSave, loadGame, saveGame } from './engine/save.js';
 
 function paletteStyle() {
@@ -116,6 +119,7 @@ export default function App() {
           onDismissSummary={() => setSummary(null)}
           onOpenShed={() => setView('shed')}
           onOpenCrew={() => setView('crew')}
+          onOpenOffice={() => setView('office')}
           onCloseShed={() => setView('course')}
           onBuy={(machineId) => dispatch({ type: 'BUY_MACHINE', machineId })}
           onBuyFoley={() => dispatch({ type: 'BUY_FOLEY' })}
@@ -130,6 +134,12 @@ export default function App() {
           onSetWorker={(taskId, workerId) => dispatch({ type: 'SET_TASK_WORKER', taskId, workerId })}
           onSetIrrigation={(surface, policy) => dispatch({ type: 'SET_IRRIGATION', surface, policy })}
           onBuyAerator={() => dispatch({ type: 'BUY_AERATOR' })}
+          onLease={(machineId) => dispatch({ type: 'LEASE_MACHINE', machineId })}
+          onStopLease={(machineId) => dispatch({ type: 'STOP_LEASE', machineId })}
+          onSnap={() => dispatch({ type: 'SNAP_TOURNAMENT' })}
+          onLoan={(amount) => dispatch({ type: 'TAKE_LOAN', amount })}
+          onReadMail={(id) => dispatch({ type: 'READ_MAIL', id })}
+          onNewGame={handleNewGame}
         />
       )}
     </div>
@@ -179,6 +189,7 @@ function GameScreen({
   onDismissSummary,
   onOpenShed,
   onOpenCrew,
+  onOpenOffice,
   onCloseShed,
   onBuy,
   onBuyFoley,
@@ -193,6 +204,12 @@ function GameScreen({
   onSetWorker,
   onSetIrrigation,
   onBuyAerator,
+  onLease,
+  onStopLease,
+  onSnap,
+  onLoan,
+  onReadMail,
+  onNewGame,
 }) {
   if (view === 'shed') {
     return (
@@ -204,6 +221,8 @@ function GameScreen({
         onSendGrind={onSendGrind}
         onGrindInHouse={onGrindInHouse}
         onRepair={onRepair}
+        onLease={onLease}
+        onStopLease={onStopLease}
       />
     );
   }
@@ -221,8 +240,23 @@ function GameScreen({
     );
   }
 
+  if (view === 'office') {
+    return (
+      <Office
+        state={state}
+        onBack={onCloseShed}
+        onSnap={onSnap}
+        onLoan={onLoan}
+        onRead={onReadMail}
+        onPlanMeeting={() => onPlan('gmMeeting')}
+        onRemoveMeeting={() => onRemove('gmMeeting')}
+      />
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
+      {state.dismissed ? <GameOver onNewGame={onNewGame} /> : null}
       <TimeBar
         remaining={minutesRemaining}
         used={minutesUsed}
@@ -233,15 +267,19 @@ function GameScreen({
         onMove={onMove}
         onOpenShed={onOpenShed}
         onOpenCrew={onOpenCrew}
+        onOpenOffice={onOpenOffice}
         onOpenPond={() => onSelect('pond')}
+        unread={unreadCount(state)}
       />
       <WeatherStrip state={state} onPlan={onPlan} onRemove={onRemove} />
       <div className="flex flex-wrap items-end gap-8 px-4 py-3">
         <Stat label="Day" value={state.day} />
         <Stat label="Season" value={`${state.season} · ${state.year}`} />
-        <Stat label="Cash" value={state.cash} />
-        <Stat label="Maintenance" value={state.maintenanceBudget} />
+        <Stat label="Cash" value={Math.round(state.cash)} />
+        <Stat label="Maintenance" value={Math.round(state.maintenanceBudget)} />
+        <Stat label="Capital" value={Math.round(state.capitalBudget)} />
         <Stat label="Condition" value={condition} />
+        <Stat label="Satisfaction" value={Math.round(state.satisfaction)} />
         <Stat
           label="Pond"
           value={`${Math.round(state.pond.volume)} m³`}

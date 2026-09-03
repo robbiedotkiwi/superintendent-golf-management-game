@@ -3,11 +3,13 @@ import {
   FOLEY_GRIND_MINUTES,
   GRIND_AWAY_COST,
   GRIND_AWAY_DAYS,
+  LEASE_RATE,
   REPAIR_MINUTES,
   WEAR_MAX,
   WEAR_THRESHOLD,
 } from '../data/constants.js';
 import { MACHINES } from '../data/equipment.js';
+import { canLeaseMachine, leaseCost } from '../engine/budget.js';
 import {
   canBuyFoley,
   canBuyMachine,
@@ -26,7 +28,17 @@ function capability(machine, surface) {
   return 'no — would damage the turf';
 }
 
-export default function Shed({ state, onBack, onBuy, onBuyFoley, onSendGrind, onGrindInHouse, onRepair }) {
+export default function Shed({
+  state,
+  onBack,
+  onBuy,
+  onBuyFoley,
+  onSendGrind,
+  onGrindInHouse,
+  onRepair,
+  onLease,
+  onStopLease,
+}) {
   const shop = MACHINES.filter((machine) => !machine.ownedAtStart);
   const foleyBuy = canBuyFoley(state);
 
@@ -38,7 +50,9 @@ export default function Shed({ state, onBack, onBuy, onBuyFoley, onSendGrind, on
           Back to the course
         </button>
       </div>
-      <p className="mb-6 text-[var(--sand)]">Cash {state.cash}</p>
+      <p className="mb-6 text-[var(--sand)]">
+        Cash {Math.round(state.cash)} · Capital {Math.round(state.capitalBudget)} · Maintenance {Math.round(state.maintenanceBudget)}
+      </p>
 
       <h2 className="font-condensed text-3xl">In the shed</h2>
       <div className="mt-3 space-y-4">
@@ -96,6 +110,15 @@ export default function Shed({ state, onBack, onBuy, onBuyFoley, onSendGrind, on
                     Grind in-house ({FOLEY_GRIND_MINUTES} min)
                   </button>
                 ) : null}
+                {(state.leasedMachines ?? []).includes(id) ? (
+                  <button
+                    type="button"
+                    onClick={() => onStopLease(id)}
+                    className="border border-[var(--sand)] px-3 py-2"
+                  >
+                    Return lease
+                  </button>
+                ) : null}
                 {broken ? (
                   <button
                     type="button"
@@ -131,15 +154,26 @@ export default function Shed({ state, onBack, onBuy, onBuyFoley, onSendGrind, on
                 {SURFACE_ORDER.map((surface) => `${surface}: ${capability(machine, surface)}`).join(' · ')}
               </p>
               {owned ? null : (
-                <button
-                  type="button"
-                  disabled={!check.ok}
-                  title={check.reason}
-                  onClick={() => onBuy(machine.id)}
-                  className="mt-3 bg-[var(--machine-orange)] px-3 py-2 font-semibold disabled:opacity-40"
-                >
-                  {check.ok ? 'Buy' : check.reason}
-                </button>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={!check.ok}
+                    title={check.reason}
+                    onClick={() => onBuy(machine.id)}
+                    className="bg-[var(--machine-orange)] px-3 py-2 font-semibold disabled:opacity-40"
+                  >
+                    {check.ok ? 'Buy' : check.reason}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!canLeaseMachine(state, machine.id).ok}
+                    title={canLeaseMachine(state, machine.id).reason}
+                    onClick={() => onLease(machine.id)}
+                    className="border border-[var(--sand)] px-3 py-2 disabled:opacity-40"
+                  >
+                    Lease · {leaseCost(machine.id)} / season ({LEASE_RATE * 100}%)
+                  </button>
+                </div>
               )}
             </section>
           );

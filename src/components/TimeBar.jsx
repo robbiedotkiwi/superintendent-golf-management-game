@@ -11,6 +11,8 @@ export default function TimeBar({
   onOpenShed,
   onOpenCrew,
   onOpenPond,
+  onOpenOffice,
+  unread,
 }) {
   const usedPercent = capacity <= 0 ? 0 : (used / capacity) * 100;
 
@@ -61,6 +63,13 @@ export default function TimeBar({
         className="border border-[var(--sand)] px-4 text-lg text-[var(--paint)]"
       >
         Pond
+      </button>
+      <button
+        type="button"
+        onClick={onOpenOffice}
+        className="border border-[var(--sand)] px-4 text-lg text-[var(--paint)]"
+      >
+        Office{unread ? ` (${unread})` : ''}
       </button>
       <button
         type="button"

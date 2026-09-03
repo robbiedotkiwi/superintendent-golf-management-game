@@ -51,8 +51,10 @@ const candidate = start.candidates.find((item) => item.speedSkill < 5 && !item.i
 let hired = reducer(start, { type: 'HIRE_WORKER', candidateId: candidate.id });
 assert.ok(hired.workers.length > start.workers.length);
 assert.equal(combinedMinutesRemaining(hired), DAY_LENGTH_MINUTES + DAY_LENGTH_MINUTES);
+const hiredMaint = hired.maintenanceBudget;
 const afterWages = end(hired);
-assert.equal(afterWages.cash, STARTING_CASH - candidate.wage);
+assert.equal(afterWages.maintenanceBudget, hiredMaint - candidate.wage);
+assert.equal(afterWages.cash, STARTING_CASH);
 
 const fast = { ...createInitialState() };
 fast.workers = [
@@ -138,8 +140,10 @@ const tired = moraleState.workers.find((worker) => worker.id === PLAYER_ID);
 assert.ok(tired.morale < MORALE_SLOW_BELOW);
 
 let early = { ...createInitialState(), earlyStart: true };
+const earlyMaint = early.maintenanceBudget;
 for (let i = 0; i < EARLY_START_FINE_COUNT; i += 1) early = reducer(early, { type: 'END_DAY' });
-assert.equal(early.cash, STARTING_CASH - EARLY_START_FINE);
+assert.equal(early.maintenanceBudget, earlyMaint - EARLY_START_FINE);
+assert.equal(early.cash, STARTING_CASH);
 assert.equal(early.earlyStart, true);
 
 console.log('phase4 checks passed');

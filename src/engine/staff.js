@@ -135,16 +135,18 @@ export function setVolunteerWeekday(state, weekday) {
 export function applyEarlyStartComplaints(state) {
   if (!state.earlyStart) return { state, warning: false, fine: 0 };
   const complaints = (state.neighbourComplaintsThisSeason ?? 0) + 1;
-  let cash = state.cash;
   let fine = 0;
   let warning = false;
   if (complaints === EARLY_START_WARNING_COUNT) warning = true;
   if (complaints === EARLY_START_FINE_COUNT) {
     fine = EARLY_START_FINE;
-    cash -= EARLY_START_FINE;
   }
   return {
-    state: { ...state, neighbourComplaintsThisSeason: complaints, cash },
+    state: {
+      ...state,
+      neighbourComplaintsThisSeason: complaints,
+      maintenanceBudget: state.maintenanceBudget - fine,
+    },
     warning,
     fine,
   };

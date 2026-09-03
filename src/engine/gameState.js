@@ -13,6 +13,9 @@ import {
 import { generateCandidates } from '../data/staff.js';
 import { emptyDisease, emptyUntil } from './disease.js';
 import { canBuyAerator, IRRIGATED_SURFACES, isIrrigationPolicy } from './irrigation.js';
+import { capitalGrant, leaseMachine, maintenanceGrant, stopLease, takeLoan } from './budget.js';
+import { emptyDaysSinceWorked, markMailRead, meetingDue } from './mail.js';
+import { applySnapTournament } from './tournament.js';
 import { resolveDay } from './simulation.js';
 import {
   DAY_LENGTH_MINUTES,
@@ -47,7 +50,8 @@ import {
   POND_HEALTH_START,
   POND_START_VOLUME,
   STARTING_IRRIGATION,
-  STARTING_MAINTENANCE_BUDGET,
+  SATISFACTION_START,
+  GM_STANDING_START,
   AERATOR_COST,
 } from '../data/constants.js';
 
@@ -123,10 +127,23 @@ export function createInitialState() {
     pond: { volume: POND_START_VOLUME, health: POND_HEALTH_START },
     irrigation: { ...STARTING_IRRIGATION },
     hasAerator: false,
-    maintenanceBudget: STARTING_MAINTENANCE_BUDGET,
     disease: emptyDisease(),
     sprayedUntil: emptyUntil(),
     fertiliserUntil: emptyUntil(),
+    satisfaction: SATISFACTION_START,
+    gmStanding: GM_STANDING_START,
+    maintenanceBudget: maintenanceGrant(SATISFACTION_START, GM_STANDING_START),
+    capitalBudget: capitalGrant(SATISFACTION_START, GM_STANDING_START),
+    leasedMachines: [],
+    loan: null,
+    lastSeasonRevenue: 0,
+    seasonRevenue: 0,
+    insolventStreak: 0,
+    dismissed: false,
+    inbox: [],
+    nextMailId: 1,
+    daysSinceWorked: emptyDaysSinceWorked(),
+    snappedToday: false,
   };
 }
 
@@ -159,6 +176,10 @@ export function canPlanTask(state, taskId, level, workerId) {
   const debrisPlanned = state.plannedTasks.some((planned) => planned.taskId === 'clearDebris');
   if (state.weather === WEATHER_STORM && task.id !== 'clearDebris' && !debrisPlanned) {
     return { ok: false, reason: `Clear debris first (${TASK_MINUTES.clearDebris} min).` };
+  }
+
+  if (task.id === 'gmMeeting' && !meetingDue(state.day)) {
+    return { ok: false, reason: 'No GM meeting today.' };
   }
 
   if (state.plannedTasks.some((planned) => planned.taskId === taskId)) {
@@ -254,6 +275,7 @@ export function reducer(state, action) {
       };
     }
     case 'END_DAY': {
+      if (state.dismissed) return state;
       const { state: next, summary } = resolveDay(state);
       return { ...next, log: [...next.log, summary] };
     }
@@ -327,8 +349,18 @@ export function reducer(state, action) {
     case 'BUY_AERATOR': {
       const check = canBuyAerator(state);
       if (!check.ok) return state;
-      return { ...state, cash: state.cash - AERATOR_COST, hasAerator: true };
+      return { ...state, capitalBudget: state.capitalBudget - AERATOR_COST, hasAerator: true };
     }
+    case 'LEASE_MACHINE':
+      return leaseMachine(state, action.machineId);
+    case 'STOP_LEASE':
+      return stopLease(state, action.machineId);
+    case 'TAKE_LOAN':
+      return takeLoan(state, action.amount);
+    case 'SNAP_TOURNAMENT':
+      return applySnapTournament(state);
+    case 'READ_MAIL':
+      return markMailRead(state, action.id);
     default:
       return state;
   }
