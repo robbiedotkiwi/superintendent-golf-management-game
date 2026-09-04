@@ -1,6 +1,7 @@
 import {
   AUTONOMOUS_CEILING,
   AUTONOMOUS_COST,
+  DAMAGING_JOB_REASON,
   FAIRWAY_UNIT_CEILING,
   FAIRWAY_UNIT_COST,
   FAIRWAY_UNIT_TIME_MULT,
@@ -10,10 +11,14 @@ import {
   GREENSMASTER_TIME_MULT,
   GREENS_ROLLER_COST,
   GREENS_ROLLER_TIME_MULT,
+  HOC_SURFACES,
   MACHINE_BRAND_NEXMOW,
   MACHINE_BRAND_SALSCO,
   MACHINE_BRAND_TORO,
   MACHINE_BRAND_VENTRAC,
+  MACHINE_CLASS_BY_TYPE,
+  MACHINE_SUITABILITY,
+  MACHINE_TIME_MULT,
   MODEL_AUTONOMOUS,
   MODEL_FAIRWAY_UNIT,
   MODEL_GREENSMASTER,
@@ -39,6 +44,7 @@ import {
   RIDE_ON_REEL_COST,
   RIDE_ON_REEL_TIME_MULT,
   ROLLER_GAIN_BONUS,
+  SUITABILITY_DAMAGING,
   TYPE_AUTONOMOUS,
   TYPE_GREENS_ROLLER,
   TYPE_PREMIUM_RIDE_ON,
@@ -237,13 +243,52 @@ export function getMachine(id) {
   return MACHINES.find((machine) => machine.id === id);
 }
 
+export function machineClass(machine) {
+  if (!machine) return null;
+  return MACHINE_CLASS_BY_TYPE[machine.type] ?? null;
+}
+
+export function machineTimeMult(machine) {
+  if (!machine) return 1;
+  const cls = machineClass(machine);
+  if (cls && MACHINE_TIME_MULT[cls] != null) return MACHINE_TIME_MULT[cls];
+  return machine.timeMult ?? 1;
+}
+
+export function machineSuitability(machine, surface) {
+  const cls = machineClass(machine);
+  if (!cls || !surface) return null;
+  return MACHINE_SUITABILITY[cls]?.[surface] ?? null;
+}
+
+export function machineNativeCeiling(machine, surface) {
+  if (!machine) return 0;
+  const listed = machine.ceiling?.[surface];
+  if (listed != null) return listed;
+  const values = Object.values(machine.ceiling ?? {}).filter((value) => Number.isFinite(value));
+  return values.length ? Math.max(...values) : 0;
+}
+
+export function machineCanMow(machine) {
+  return Boolean(machine) && !machine.rollOnly && !machine.autonomous;
+}
+
 export function machineAllows(machine, surface, task) {
-  const allow = machine.surfaces[surface];
-  if (!allow) return false;
+  if (!machine) return false;
   if (machine.rollOnly) return task?.id === 'rollGreens';
   if (task?.id === 'rollGreens') return false;
   if (machine.autonomous) return false;
-  return allow === true;
+  if (HOC_SURFACES.includes(surface)) return true;
+  return machine.surfaces[surface] === true;
 }
 
 export const TURF_DAMAGE_REASON = 'Would damage the turf.';
+
+export function damagingJobReason(machine, surface, surfaceLabel) {
+  const name = machine?.name ?? 'That mower';
+  return DAMAGING_JOB_REASON(name, surfaceLabel ?? surface);
+}
+
+export function isDamagingAssignment(machine, surface) {
+  return machineSuitability(machine, surface) === SUITABILITY_DAMAGING;
+}

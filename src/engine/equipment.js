@@ -1,6 +1,12 @@
 import {
   FERTILISER_CEILING_BONUS,
   HOC_CEILING_BONUS,
+  SUITABILITY_ACCEPTABLE,
+  SUITABILITY_ACCEPTABLE_CEILING_PENALTY,
+  SUITABILITY_DAMAGING,
+  SUITABILITY_DAMAGING_CEILING_PENALTY,
+  SUITABILITY_IDEAL,
+  SUITABILITY_RANK,
   TASK_MINUTES,
   EXTRA_BUNKER_CEILING_BONUS,
   NEW_TEES_CEILING_BONUS,
@@ -44,7 +50,17 @@ import {
   WEAR_PER_USE,
   WEAR_THRESHOLD,
 } from '../data/constants.js';
-import { getMachine, MACHINES, machineAllows, TURF_DAMAGE_REASON } from '../data/equipment.js';
+import {
+  getMachine,
+  MACHINES,
+  machineAllows,
+  machineCanMow,
+  machineClass,
+  machineNativeCeiling,
+  machineSuitability,
+  machineTimeMult,
+  TURF_DAMAGE_REASON,
+} from '../data/equipment.js';
 import { getTask, taskUsesMachine } from '../data/tasks.js';
 import { hocFactor, mowingMinutes } from './mowing.js';
 import { setupMinutesFor, variableJobMinutes } from './jobs.js';
@@ -232,10 +248,15 @@ function overrideUsable(state, machineId, task, options = {}) {
 }
 
 function compareAutoMachines(state, surface, a, b) {
+  const rankA = SUITABILITY_RANK[machineSuitability(a, surface)] ?? 99;
+  const rankB = SUITABILITY_RANK[machineSuitability(b, surface)] ?? 99;
+  if (rankA !== rankB) return rankA - rankB;
   const ceilA = a.ceiling?.[surface] ?? 0;
   const ceilB = b.ceiling?.[surface] ?? 0;
   if (ceilB !== ceilA) return ceilB - ceilA;
-  if (a.timeMult !== b.timeMult) return a.timeMult - b.timeMult;
+  const specA = machineTimeMult(a);
+  const specB = machineTimeMult(b);
+  if (specA !== specB) return specA - specB;
   const timeA = machineMultiplierFor(state, a.id);
   const timeB = machineMultiplierFor(state, b.id);
   if (timeA !== timeB) return timeA - timeB;
@@ -279,6 +300,14 @@ export function durationOnMachine(state, taskId, worker, machineId, holeIds) {
   return Math.round(setup + variable * machine * extras * workerMult);
 }
 
+function autoPickPool(state, task, candidates) {
+  const preferred = candidates.filter((machine) => {
+    const suit = machineSuitability(machine, task?.surface);
+    return suit === SUITABILITY_IDEAL || suit === SUITABILITY_ACCEPTABLE;
+  });
+  return preferred.length ? preferred : candidates;
+}
+
 export function pickMachine(state, task, options = {}) {
   const { ignoreTaskId, minutesNeeded } = options;
   const overrideId = machineOverrideId(state, task?.surface);
@@ -287,7 +316,8 @@ export function pickMachine(state, task, options = {}) {
   }
   const candidates = allowingMachines(state, task);
   if (!candidates.length) return null;
-  const ranked = [...candidates].sort((a, b) => compareAutoMachines(state, task.surface, a, b));
+  const pool = autoPickPool(state, task, candidates);
+  const ranked = [...pool].sort((a, b) => compareAutoMachines(state, task.surface, a, b));
   if (!minutesNeeded) return ranked[0];
   for (const machine of ranked) {
     const need = minutesNeeded(machine.id);
@@ -325,7 +355,22 @@ export function machinePlanCheck(state, task, worker, machineId) {
 export function machineMultiplierFor(state, machineId) {
   const machine = getMachine(machineId);
   if (!machine) return 1;
-  return machine.timeMult * conditionTimeMultiplier(conditionOf(state, machineId));
+  return machineTimeMult(machine) * conditionTimeMultiplier(conditionOf(state, machineId));
+}
+
+export function suitabilityCeilingPenalty(suitability) {
+  if (suitability === SUITABILITY_ACCEPTABLE) return SUITABILITY_ACCEPTABLE_CEILING_PENALTY;
+  if (suitability === SUITABILITY_DAMAGING) return SUITABILITY_DAMAGING_CEILING_PENALTY;
+  return 0;
+}
+
+export function jobCeiling(state, surface, machineId) {
+  const machine = getMachine(machineId);
+  if (!machine) return surfaceCeiling(state, surface);
+  const native = machineNativeCeiling(machine, surface);
+  const penalty = suitabilityCeilingPenalty(machineSuitability(machine, surface));
+  const cap = Math.max(0, Math.min(QUALITY_MAX, native - penalty));
+  return cap + fertiliserBonus(state, surface) + projectCeilingBonus(state, surface) + hocCeilingBonus(state, surface);
 }
 
 export function machineTimeMultiplier(state, task) {
@@ -338,8 +383,10 @@ export function surfaceCeiling(state, surface) {
   let best = 0;
   for (const machine of ownedMachineList(state)) {
     if (machine.rollOnly || machine.autonomous) continue;
-    if (!machine.surfaces[surface]) continue;
-    const value = machine.ceiling[surface];
+    const suit = machineSuitability(machine, surface);
+    if (suit !== SUITABILITY_IDEAL && suit !== SUITABILITY_ACCEPTABLE) continue;
+    const value = machine.ceiling?.[surface];
+    if (value == null) continue;
     if (value > best) best = value;
   }
   return (best || QUALITY_MAX) + fertiliserBonus(state, surface) + projectCeilingBonus(state, surface) + hocCeilingBonus(state, surface);
@@ -365,10 +412,11 @@ function projectCeilingBonus(state, surface) {
 export function ineligibleMachines(state, task) {
   if (!task?.surface) return [];
   return ownedMachineList(state)
-    .filter((machine) => !machineAllows(machine, task.surface, task) && machine.surfaces[task.surface] === false)
+    .filter((machine) => machineCanMow(machine) && machineSuitability(machine, task.surface) === SUITABILITY_DAMAGING)
     .map((machine) => ({
       machine,
       reason: TURF_DAMAGE_REASON,
+      suitability: SUITABILITY_DAMAGING,
     }));
 }
 
@@ -624,4 +672,14 @@ export function interruptionMinutesForDay(state) {
   return (state.autoWeek?.hits ?? []).filter((hit) => hit.day === state.day).reduce((sum, hit) => sum + hit.minutes, 0);
 }
 
-export { MACHINES, getMachine, TURF_DAMAGE_REASON };
+export {
+  MACHINES,
+  getMachine,
+  machineAllows,
+  machineCanMow,
+  machineClass,
+  machineNativeCeiling,
+  machineSuitability,
+  machineTimeMult,
+  TURF_DAMAGE_REASON,
+};

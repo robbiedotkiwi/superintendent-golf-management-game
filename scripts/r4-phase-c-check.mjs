@@ -58,8 +58,8 @@ assert.equal(
     durationForTask(start, 'cutRough', player) +
     durationForTask(start, 'rakeBunkers', player),
 );
-assert.ok(ratio > 1.8);
-assert.ok(ratio < 2.0);
+assert.ok(ratio > 1.5);
+assert.ok(ratio < 1.7);
 assert.equal(percent, Math.round(DEFAULT_DAY_OVERLOAD_RATIO * 100));
 
 console.log(

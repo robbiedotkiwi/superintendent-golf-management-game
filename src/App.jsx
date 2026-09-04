@@ -168,7 +168,15 @@ export default function App() {
           minutesCapacity={minutesCapacity}
           condition={condition}
           onSelect={setSelected}
-          onPlan={(taskId, holes) => dispatch({ type: 'PLAN_TASK', taskId, holes })}
+          onPlan={(taskId, holes, options) =>
+            dispatch({
+              type: 'PLAN_TASK',
+              taskId,
+              holes,
+              confirmDamaging: options?.confirmDamaging,
+              machineId: options?.machineId,
+            })
+          }
           onRemove={(taskId, planId) => dispatch({ type: 'REMOVE_TASK', taskId, planId })}
           onSelectHoles={(holes) => dispatch({ type: 'SET_SELECTED_HOLES', holes })}
           onToggleHole={(holeId) => dispatch({ type: 'TOGGLE_HOLE', holeId })}

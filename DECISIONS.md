@@ -234,4 +234,14 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Repeat last snapshots the plan at day start (`lastDayJobs`) and replays it the next morning. Anything that no longer fits is skipped and listed in `lastRepeatDropped`.
 - Spray and fertiliser jobs take time for the selected holes but still apply type-wide until Phase F.
 
+### Phase C
+
+- Catalogue `surfaces` flags stay as native/designed-for metadata and ceiling lookup. They no longer gate assignment. Any non-roller, non-autonomous mower can be sent to any turf surface.
+- Suitability and `MACHINE_TIME_MULT` are by machine class: walk-behind reel, greens triplex (`rideOnReel` and `premiumRideOn`), fairway unit (`reelmaster3100` and `fairwayUnit`), rough/utility, push rotary. Roller and autonomous stay out of player mowing assignment.
+- Course-wide `surfaceCeiling` uses only a listed `ceiling[surface]` on ideal or acceptable machines, so a fairway unit cannot raise the greens cap. A job uses that machine's native ceiling (or the max of its ceilings if the surface is unlisted) minus the suitability penalty.
+- Auto-pick ranks suitability first (ideal, then acceptable, then damaging), then listed ceiling, then spec time. Damaging is never auto-picked when an ideal or acceptable unit is owned — a booked better mower reports booked rather than silently sending a damaging stand-in. A damaging machine is auto-picked only when it is the only class owned, and planning still requires confirm.
+- `ineligibleMachines` is the damaging list so older damage-copy checks still hold. Override lists every mower.
+- Planning a damaging job without `confirmDamaging` no-ops. The UI is a two-step confirm, not `window.confirm`. Repeat last passes confirm because yesterday already chose that machine.
+- Catalogue `timeMult` constants now alias the class `MACHINE_TIME_MULT` values. The full-day total moved from 910 to 756; historical 1.8–2.0 ratio windows follow the new 1.575 until Phase D retunes the day.
+
 

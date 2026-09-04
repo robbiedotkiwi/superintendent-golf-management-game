@@ -16,6 +16,8 @@ import {
   PATTERN_KEYS,
   PATTERN_LABELS,
   PLAN_THIS_CUT_LABEL,
+  SUITABILITY_LABELS,
+  SUITABILITY_PENALTY_COPY,
   POND_CAPACITY,
   PRESET_MAX,
   PRESET_NAME_MAX,
@@ -41,10 +43,13 @@ import { findPlannedJob } from '../engine/jobs.js';
 import {
   machineAssignment,
   machineMinutesRemaining,
+  machineSuitability,
+  machineTimeMult,
   overrideCandidates,
 } from '../engine/equipment.js';
 import { machineTitle } from '../engine/machineDisplay.js';
 import { canPlanTask } from '../engine/gameState.js';
+import PlanConfirmButton from './PlanConfirmButton.jsx';
 import { formatMoney } from '../engine/format.js';
 import { canBuyAerator, irrigationDemand, IRRIGATED_SURFACES, pondPercent } from '../engine/irrigation.js';
 import { canBuyGreensSensors, canBuyTurfRad } from '../engine/moisture.js';
@@ -332,7 +337,6 @@ function PlanThisCut({ state, surface, onPlan, onRemove }) {
   const taskId = CUT_TASK_BY_SURFACE[surface];
   if (!taskId) return null;
   const planned = findPlannedJob(state, taskId);
-  const check = canPlanTask(state, taskId);
   const minutes = planned?.minutes ?? durationForTask(state, taskId);
   if (planned) {
     return (
@@ -342,15 +346,14 @@ function PlanThisCut({ state, surface, onPlan, onRemove }) {
     );
   }
   return (
-    <button
-      type="button"
-      disabled={!check.ok}
-      onClick={() => onPlan(taskId)}
+    <PlanConfirmButton
+      state={state}
+      taskId={taskId}
+      onPlan={onPlan}
       className="mt-3 bg-[var(--machine-orange)] px-3 py-2 font-semibold disabled:opacity-40"
-      title={check.ok ? undefined : check.reason}
     >
       {PLAN_THIS_CUT_LABEL} · {minutes} min
-    </button>
+    </PlanConfirmButton>
   );
 }
 
@@ -377,12 +380,17 @@ function MachinePicker({ state, surface, onSetMachineOverride }) {
           className="mt-1 w-full border border-[var(--sand)] bg-[var(--soil)] px-2 py-1 text-[var(--paint)]"
         >
           <option value={MACHINE_OVERRIDE_AUTO}>Auto</option>
-          {options.map((machine) => (
-            <option key={machine.id} value={machine.id}>
-              {machineTitle(machine)} · {machine.ceiling?.[surface] ?? '—'} · {machine.timeMult}× ·{' '}
-              {machineMinutesRemaining(state, machine.id)} min
-            </option>
-          ))}
+          {options.map((machine) => {
+            const suit = machineSuitability(machine, surface);
+            const suitLabel = suit ? `${SUITABILITY_LABELS[suit]} · ${SUITABILITY_PENALTY_COPY(suit)}` : '';
+            return (
+              <option key={machine.id} value={machine.id}>
+                {machineTitle(machine)}
+                {suitLabel ? ` · ${suitLabel}` : ''} · {machine.ceiling?.[surface] ?? '—'} · {machineTimeMult(machine)}× ·{' '}
+                {machineMinutesRemaining(state, machine.id)} min
+              </option>
+            );
+          })}
         </select>
       </label>
     </div>

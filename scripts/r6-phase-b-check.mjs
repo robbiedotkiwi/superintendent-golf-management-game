@@ -130,8 +130,8 @@ assert.equal(pickMachine(both, getTask('cutRough'))?.id, 'ventrac', 'highest cei
 
 const greensOnly = overrideCandidates(both, 'greens').map((machine) => machine.id);
 assert.ok(greensOnly.includes(start.ownedMachines[0]));
-assert.equal(greensOnly.includes('ventrac'), false);
-assert.equal(greensOnly.includes('fairwayUnit'), false);
+assert.equal(greensOnly.includes('ventrac'), true);
+assert.equal(greensOnly.includes('fairwayUnit'), true);
 
 let over = reducer(both, { type: 'SET_MACHINE_OVERRIDE', surface: 'rough', machineId: 'fairwayUnit' });
 assert.equal(over.machineOverride.rough, 'fairwayUnit');
@@ -177,7 +177,7 @@ console.log('GATE B1 PASS Plan this cut exists on Summary and Mowing; PLAN_TASK 
 console.log('GATE B2 PASS Match last mowing restores last-cut settings and does not plan');
 console.log('GATE B3 PASS never-cut surfaces are skipped by Match last mowing');
 console.log('GATE B4 PASS auto-pick ranks highest ceiling then lowest time multiplier');
-console.log('GATE B5 PASS override lists only permitted machines and persists across days');
+console.log('GATE B5 PASS override lists every mower, including damaging units, and persists across days');
 console.log('GATE B6 PASS unavailable override falls back to auto with MACHINE_OVERRIDE_FALLBACK');
 console.log('GATE B7 PASS Turf has five tabs; Bunkers and Pond live on Other');
 console.log('round 6 phase B checks passed');

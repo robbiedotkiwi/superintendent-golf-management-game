@@ -19,6 +19,8 @@ import {
   QUALITY_MAX,
   QUALITY_MIN,
   ROLLER_GAIN_BONUS,
+  SUITABILITY_DAMAGING,
+  SUITABILITY_DAMAGING_QUALITY_HIT,
   SEASON_GROWTH,
   SURFACE_KEYS,
   SATISFACTION_MAX,
@@ -50,6 +52,8 @@ import {
   interruptionMinutesForDay,
   isMachineAvailable,
   getMachine,
+  jobCeiling,
+  machineSuitability,
   pickMachineForTask,
   rollBreakdowns,
   surfaceCeiling,
@@ -244,10 +248,16 @@ export function resolveDay(state) {
     if (isAboveBand(moisture, task.surface)) gain *= WET_GAIN_MULT;
 
     const qualityBefore = meanQuality(live, task.surface);
-    const ceiling = surfaceCeiling({ ...live, fertiliserUntil }, task.surface);
+    const ceiling = machine
+      ? jobCeiling({ ...live, fertiliserUntil }, task.surface, machine.id)
+      : surfaceCeiling({ ...live, fertiliserUntil }, task.surface);
+    const suitability = machineSuitability(machine, task.surface);
     holes = mapHoleSurfaces(holes, task.surface, (record, hole) => {
       if (jobHoles.length && !jobHoles.includes(hole.id)) return record;
       let qualityAfter = applyGain(record.quality, gain, ceiling);
+      if (task.mowing && suitability === SUITABILITY_DAMAGING) {
+        qualityAfter = clampQuality(qualityAfter - SUITABILITY_DAMAGING_QUALITY_HIT);
+      }
       let next = { ...record, quality: qualityAfter };
       if (task.mowing) {
         next = applyMowingAftermath(

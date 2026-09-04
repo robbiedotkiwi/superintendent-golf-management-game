@@ -163,8 +163,8 @@ assert.equal(
     durationForTask(start, 'cutRough', player) +
     durationForTask(start, 'rakeBunkers', player),
 );
-assert.ok(dayTotal / DAY_LENGTH_MINUTES > 1.8);
-assert.ok(dayTotal / DAY_LENGTH_MINUTES < 2.0);
+assert.ok(dayTotal / DAY_LENGTH_MINUTES > 1.5);
+assert.ok(dayTotal / DAY_LENGTH_MINUTES < 1.7);
 assert.equal(BASE_GAIN, 6);
 
 console.log('fix phase A checks passed');

@@ -37,7 +37,7 @@ assert.equal(GREENSMASTER_CEILING, 68);
 assert.equal(GREENSMASTER_TIME_MULT, 1);
 assert.equal(GREENSMASTER_START_CONDITION, 28);
 assert.equal(REELMASTER_CEILING, 62);
-assert.equal(REELMASTER_TIME_MULT, 0.75);
+assert.equal(REELMASTER_TIME_MULT, 0.35);
 assert.equal(REELMASTER_START_CONDITION, 24);
 
 const greensmaster = getMachine(GREENSMASTER_ID);
@@ -93,8 +93,8 @@ const ratio = dayTotal / DAY_LENGTH_MINUTES;
 const percent = Math.round(ratio * 100);
 assert.equal(dayTotal, DEFAULT_DAY_OVERLOAD_MINUTES);
 assert.equal(percent, Math.round(DEFAULT_DAY_OVERLOAD_RATIO * 100));
-assert.ok(ratio > 1.8);
-assert.ok(ratio < 2.0);
+assert.ok(ratio > 1.5);
+assert.ok(ratio < 1.7);
 assert.equal(
   dayTotal,
   durationForTask(start, 'cutGreens', player) +
