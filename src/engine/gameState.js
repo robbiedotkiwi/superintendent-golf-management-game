@@ -2,7 +2,7 @@ import { getTask, SURFACE_LABELS } from '../data/tasks.js';
 import { calendarFromDay } from './calendar.js';
 import { buildForecast } from './weather.js';
 import { createRng } from './rng.js';
-import { buyFoley, buyMachine, grindInHouse, repairMachine, sendForGrind, machinePlanCheck, durationOnMachine, recomputePlannedMinutes, allowingMachines, pickMachineForTask, MACHINE_BOOKED_REASON, NO_MACHINE_REASON, getMachine, normalizeMachineOverride, machineSuitability } from './equipment.js';
+import { buyFoley, buyMachine, grindInHouse, repairMachine, sendForGrind, machinePlanCheck, durationOnMachine, recomputePlannedMinutes, allowingMachines, pickMachine, pickMachineForTask, machineMinutesRemaining, MACHINE_BOOKED_REASON, NO_MACHINE_REASON, getMachine, normalizeMachineOverride, machineSuitability } from './equipment.js';
 import { machineAllows } from '../data/equipment.js';
 import { machineTitle } from './machineDisplay.js';
 import { assignWorker, certifiedPresent, workerById, workerAllows, isWorkerPresent } from './assignment.js';
@@ -366,7 +366,8 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
     if (!fallback) {
       return { ok: false, reason: 'No one available for that job.' };
     }
-    const picked = pickMachineForTask(state, task, fallback);
+    const auto = pickMachineForTask(state, task, fallback, undefined, holes);
+    const picked = auto ?? pickMachine(state, task);
     if (task.mowing) {
       const someoneHasTime = state.workers.some(
         (item) =>
@@ -375,7 +376,7 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
           (!task.requiresSpray || item.sprayCertified) &&
           item.minutesToday - item.minutesUsed >= durationOnMachine(state, taskId, item, picked?.id, holes),
       );
-      if (someoneHasTime && !picked) {
+      if (someoneHasTime && !auto) {
         return { ok: false, reason: MACHINE_BOOKED_REASON };
       }
     }
@@ -383,12 +384,15 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
     const remaining = fallback.minutesToday - fallback.minutesUsed;
     return { ok: false, reason: `Needs ${minutes} min, only ${remaining} left.` };
   }
-  const machineCheck = machinePlanCheck(state, task, worker, options.machineId);
+  const machineCheck = machinePlanCheck(state, task, worker, options.machineId, holes);
   if (!machineCheck.ok) return machineCheck;
   const minutes = durationOnMachine(state, taskId, worker, machineCheck.machine?.id, holes);
   const remaining = worker.minutesToday - worker.minutesUsed;
   if (minutes > remaining) {
     return { ok: false, reason: `Needs ${minutes} min on ${worker.name}, only ${remaining} left.` };
+  }
+  if (machineCheck.machine && machineMinutesRemaining(state, machineCheck.machine.id) < minutes) {
+    return { ok: false, reason: MACHINE_BOOKED_REASON };
   }
   const suitability = machineSuitability(machineCheck.machine, task.surface);
   if (suitability === SUITABILITY_DAMAGING && !options.confirmDamaging) {
@@ -658,9 +662,9 @@ export function reducer(state, action) {
         ...state,
         plannedTasks: state.plannedTasks.filter((item) => item.taskId !== planned.taskId),
       };
-      const machineCheck = machinePlanCheck(probe, task, worker);
+      const machineCheck = machinePlanCheck(probe, task, worker, undefined, planned.holes);
       if (!machineCheck.ok) return state;
-      const minutes = durationOnMachine(probe, planned.taskId, worker, machineCheck.machine?.id);
+      const minutes = durationOnMachine(probe, planned.taskId, worker, machineCheck.machine?.id, planned.holes);
       if (worker.minutesToday - worker.minutesUsed + (planned.workerId === worker.id ? planned.minutes : 0) < minutes) {
         return state;
       }

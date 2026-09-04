@@ -65,9 +65,8 @@ assert.equal(start.machineCondition[REELMASTER_ID], REELMASTER_START_CONDITION);
 assert.equal(canBuyMachine(start, PUSH_ROTARY_ID).ok, true);
 
 assert.equal(canPlanTask(start, 'cutFairways').ok, true);
-assert.equal(canPlanTask(start, 'cutRough').ok, true);
 assert.ok(durationForTask(start, 'cutFairways') < DAY_LENGTH_MINUTES);
-assert.ok(durationForTask(start, 'cutRough') < DAY_LENGTH_MINUTES);
+assert.ok(durationForTask(start, 'cutRough') > DAY_LENGTH_MINUTES);
 
 assert.equal(
   durationForTask(start, 'cutGreens'),
@@ -93,8 +92,6 @@ const ratio = dayTotal / DAY_LENGTH_MINUTES;
 const percent = Math.round(ratio * 100);
 assert.equal(dayTotal, DEFAULT_DAY_OVERLOAD_MINUTES);
 assert.equal(percent, Math.round(DEFAULT_DAY_OVERLOAD_RATIO * 100));
-assert.ok(ratio > 1.5);
-assert.ok(ratio < 1.7);
 assert.equal(
   dayTotal,
   durationForTask(start, 'cutGreens', player) +
@@ -111,7 +108,7 @@ console.log(
 );
 console.log('GATE C1 PASS new game owns Greensmaster 1000 at 28 and Reelmaster 3100 at 24');
 console.log('GATE C2 PASS Phase 1 duration uses machine timeMult and condition penalty');
-console.log('GATE C3 PASS fairways and rough can be cut on day 1 in under a day');
+console.log('GATE C3 PASS fairways can be cut on day 1 in under a day; rough cannot');
 console.log(`GATE C4 PASS full-day total ${dayTotal} is ${percent}% of ${DAY_LENGTH_MINUTES}`);
 console.log('GATE C5 PASS push rotary is purchasable and not owned at start');
 console.log('round 6 phase C checks passed');

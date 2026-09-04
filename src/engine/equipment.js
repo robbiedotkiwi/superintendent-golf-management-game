@@ -326,15 +326,15 @@ export function pickMachine(state, task, options = {}) {
   return null;
 }
 
-export function pickMachineForTask(state, task, worker, ignoreTaskId) {
+export function pickMachineForTask(state, task, worker, ignoreTaskId, holeIds) {
   if (!taskUsesMachine(task)) return pickMachine(state, task, { ignoreTaskId });
   return pickMachine(state, task, {
     ignoreTaskId,
-    minutesNeeded: (machineId) => durationOnMachine(state, task.id, worker, machineId),
+    minutesNeeded: (machineId) => durationOnMachine(state, task.id, worker, machineId, holeIds),
   });
 }
 
-export function machinePlanCheck(state, task, worker, machineId) {
+export function machinePlanCheck(state, task, worker, machineId, holeIds) {
   if (machineId) {
     if (!isMachineAvailable(state, machineId) || !state.ownedMachines?.includes(machineId)) {
       return { ok: false, reason: 'That machine is not available.', machine: null };
@@ -342,12 +342,12 @@ export function machinePlanCheck(state, task, worker, machineId) {
     return { ok: true, machine: getMachine(machineId) };
   }
   if (!task?.mowing) {
-    return { ok: true, machine: taskUsesMachine(task) ? pickMachineForTask(state, task, worker) : null };
+    return { ok: true, machine: taskUsesMachine(task) ? pickMachineForTask(state, task, worker, undefined, holeIds) : null };
   }
   if (!allowingMachines(state, task).length) {
     return { ok: false, reason: NO_MACHINE_REASON, machine: null };
   }
-  const machine = pickMachineForTask(state, task, worker);
+  const machine = pickMachineForTask(state, task, worker, undefined, holeIds) ?? pickMachine(state, task);
   if (!machine) return { ok: false, reason: MACHINE_BOOKED_REASON, machine: null };
   return { ok: true, machine };
 }
@@ -518,11 +518,11 @@ export function recomputePlannedMinutes(state) {
     const probe = { ...state, plannedTasks };
     let machineId = null;
     if (task?.mowing) {
-      const machine = pickMachineForTask(probe, task, worker);
+      const machine = pickMachineForTask(probe, task, worker, undefined, planned.holes);
       if (!machine) continue;
       machineId = machine.id;
     } else if (taskUsesMachine(task)) {
-      machineId = pickMachineForTask(probe, task, worker)?.id ?? null;
+      machineId = pickMachineForTask(probe, task, worker, undefined, planned.holes)?.id ?? null;
     }
     const minutes = durationOnMachine(probe, planned.taskId, worker, machineId, planned.holes);
     plannedTasks.push({ ...planned, minutes, machineId });

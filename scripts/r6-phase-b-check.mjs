@@ -92,7 +92,7 @@ assert.equal(holeSurface(planned, 1, 'greens').heightAtLastCut, null, 'last-cut 
 let changed = reducer(start, { type: 'SET_HOC', surface: 'greens', hoc: 2.8 });
 changed = reducer(changed, { type: 'SET_PATTERN', surface: 'greens', pattern: PATTERN_RINGS });
 changed = reducer(changed, { type: 'SET_ANGLE', surface: 'greens', angle: 45 });
-changed = reducer(changed, { type: 'PLAN_TASK', taskId: 'cutGreens' });
+changed = reducer(changed, { type: 'PLAN_TASK', taskId: 'cutGreens', holes: [1] });
 assert.equal(holeSurface(changed, 1, 'greens').heightAtLastCut, null);
 let resolved = reducer(changed, { type: 'END_DAY' });
 assert.equal(holeSurface(resolved, 1, 'greens').heightAtLastCut, 2.8);
@@ -123,9 +123,11 @@ const autoGreens = pickMachine(start, getTask('cutGreens'));
 assert.ok(autoGreens);
 assert.equal(machineAssignment(start, 'greens').machine?.id, autoGreens.id);
 
-let both = { ...createInitialState(), capitalBudget: 100000 };
+let both = { ...createInitialState(), capitalBudget: 250000 };
 both = reducer(both, { type: 'BUY_MACHINE', machineId: 'fairwayUnit' });
 both = reducer(both, { type: 'BUY_MACHINE', machineId: 'ventrac' });
+assert.ok(both.ownedMachines.includes('fairwayUnit'));
+assert.ok(both.ownedMachines.includes('ventrac'));
 assert.equal(pickMachine(both, getTask('cutRough'))?.id, 'ventrac', 'highest ceiling wins over a faster lower-ceiling unit');
 
 const greensOnly = overrideCandidates(both, 'greens').map((machine) => machine.id);

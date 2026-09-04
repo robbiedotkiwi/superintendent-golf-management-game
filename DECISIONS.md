@@ -244,4 +244,12 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Planning a damaging job without `confirmDamaging` no-ops. The UI is a two-step confirm, not `window.confirm`. Repeat last passes confirm because yesterday already chose that machine.
 - Catalogue `timeMult` constants now alias the class `MACHINE_TIME_MULT` values. The full-day total moved from 910 to 756; historical 1.8–2.0 ratio windows follow the new 1.575 until Phase D retunes the day.
 
+### Phase D
+
+- Nine greens 384 is a target. `PER_HOLE_MINUTES.greens` is `(384 − 35) / (9 × default height/pattern × walk-behind 1.0 × condition 28)`.
+- Weekly extras are one cups, one rake, one roll and one GM meeting. Tees 90 / fairways 91 / rough 1450 are the job-length targets that land the fortnightly cadence on 2160 min (75% of 2880) and make a weekly full rough overflow 2880.
+- A full-course rough job is longer than a machine day, so duration uses auto-pick even when the job cannot be planned in one go. Partial jobs from Phase B are how rough actually gets done. `pickMachineForTask` uses the selected hole set so a one-hole job is not treated as a 1450-minute claim.
+- `NZ_PRICE_MULT` is 2.5. Machine, wage, training, materials, lease rate and repair (grind-away) use `nzPrice`. Lease rate becomes 0.25 so the dollar lease scales with prices, not 6.25×. Starter machines stay $0. Fines were scaled as a cost. Mains water stayed at $2.5/m³ — it is not a listed materials cost.
+- Historical packed-day checks now hire a second worker, plan a one-hole rough, or buy with a larger capital pot, because nine greens is 384 min and NZ prices no longer fit the old $40,000 / one-worker packing.
+
 

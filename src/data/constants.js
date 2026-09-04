@@ -105,13 +105,6 @@ export const TASK_MINUTES = {
   pickBalls: BALL_PICK_MINUTES,
 };
 
-export const BASE_MINUTES = {
-  greens: 91,
-  tees: 56,
-  fairways: 118,
-  rough: 130,
-};
-
 export const JOB_SETUP_MINUTES = {
   green: 35,
   tee: 25,
@@ -126,12 +119,28 @@ export const JOB_SETUP_MINUTES_BY_TYPE = {
   rough: JOB_SETUP_MINUTES.rough,
   bunkers: JOB_SETUP_MINUTES.bunker,
 };
-export const PER_HOLE_MINUTES = {
-  greens: BASE_MINUTES.greens / HOLE_COUNT,
-  tees: BASE_MINUTES.tees / HOLE_COUNT,
-  fairways: BASE_MINUTES.fairways / HOLE_COUNT,
-  rough: BASE_MINUTES.rough / HOLE_COUNT,
-};
+export const NINE_GREENS_TARGET_MINUTES = 384;
+export const NINE_GREENS_DAY_FRACTION = 0.8;
+export const WEEKLY_WORK_DAYS = 6;
+export const WEEKLY_MINUTES = DAY_LENGTH_MINUTES * WEEKLY_WORK_DAYS;
+export const WEEKLY_CADENCE_FRACTION = 0.75;
+export const WEEKLY_CADENCE_TARGET_MINUTES = WEEKLY_MINUTES * WEEKLY_CADENCE_FRACTION;
+export const WEEKLY_CUTS_GREENS = 2;
+export const WEEKLY_CUTS_TEES = 2;
+export const WEEKLY_CUTS_FAIRWAYS = 2;
+export const ROUGH_CUTS_PER_FORTNIGHT = 1;
+export const WEEKLY_CUTS_ROUGH = 0.5;
+export const WEEKLY_CUPS_JOBS = 1;
+export const WEEKLY_BUNKER_JOBS = 1;
+export const WEEKLY_ROLL_JOBS = 1;
+export const WEEKLY_ADMIN_JOBS = 1;
+export const NINE_TEES_TARGET_MINUTES = 90;
+export const NINE_FAIRWAYS_TARGET_MINUTES = 91;
+export const NINE_ROUGH_TARGET_MINUTES = 1450;
+export const NZ_PRICE_MULT = 2.5;
+export function nzPrice(amount, step) {
+  return Math.round((amount * NZ_PRICE_MULT) / step) * step;
+}
 export const SAVED_ROUTE_CAP = 8;
 export const FRONT_NINE_COUNT = 9;
 export const SELECT_ALL_LABEL = 'All';
@@ -141,7 +150,7 @@ export const SAVE_ROUTE_LABEL = 'Save route';
 export const REPEAT_LAST_LABEL = 'Repeat last';
 export const ROUTE_NAME_MAX = 24;
 
-export const DEFAULT_DAY_OVERLOAD_MINUTES = 756;
+export const DEFAULT_DAY_OVERLOAD_MINUTES = 2260;
 export const DEFAULT_DAY_OVERLOAD_RATIO = DEFAULT_DAY_OVERLOAD_MINUTES / DAY_LENGTH_MINUTES;
 
 export const BASE_GAIN = 6;
@@ -260,8 +269,8 @@ export const MOISTURE_BAND = {
 export const WET_DISEASE_MULT = 1.5;
 export const WET_GAIN_MULT = 0.85;
 export const MOISTURE_DATA_FRESH_DAYS = 2;
-export const GREENS_SENSORS_COST = 12000;
-export const TURFRAD_COST = 20000;
+export const GREENS_SENSORS_COST = nzPrice(12000, 1000);
+export const TURFRAD_COST = nzPrice(20000, 1000);
 export const GREEN_DRYING_FACTOR_MIN = 0.8;
 export const GREEN_DRYING_FACTOR_MAX = 1.3;
 export const MOISTURE_MIN = 0;
@@ -476,9 +485,9 @@ export const WEAR_PER_USE = 8;
 export const WEAR_THRESHOLD = 60;
 export const WEAR_GAIN_PENALTY = 0.3;
 export const WEAR_MAX = 100;
-export const GRIND_AWAY_COST = 400;
+export const GRIND_AWAY_COST = nzPrice(400, 100);
 export const GRIND_AWAY_DAYS = 2;
-export const FOLEY_GRINDER_COST = 15000;
+export const FOLEY_GRINDER_COST = nzPrice(15000, 1000);
 export const FOLEY_GRIND_MINUTES = 90;
 export const REPAIR_MINUTES = 120;
 export const BREAKDOWN_BASE = 0.005;
@@ -569,7 +578,7 @@ export function DAMAGING_JOB_REASON(machineName, surfaceLabel) {
 export const CONFIRM_DAMAGING_LABEL = 'Confirm damaging job';
 
 export const PUSH_ROTARY_ID = 'pushRotary';
-export const PUSH_ROTARY_COST = 1200;
+export const PUSH_ROTARY_COST = nzPrice(1200, 1000);
 export const PUSH_ROTARY_CEILING = 65;
 export const PUSH_ROTARY_TIME_MULT = MACHINE_TIME_MULT_PUSH_ROTARY;
 export const GREENSMASTER_ID = 'greensmaster1000';
@@ -582,25 +591,25 @@ export const REELMASTER_COST = 0;
 export const REELMASTER_CEILING = 62;
 export const REELMASTER_TIME_MULT = MACHINE_TIME_MULT_RIDING_FAIRWAY_UNIT;
 export const REELMASTER_START_CONDITION = 24;
-export const WALK_BEHIND_COST = 4500;
+export const WALK_BEHIND_COST = nzPrice(4500, 1000);
 export const WALK_BEHIND_CEILING = 80;
 export const WALK_BEHIND_TIME_MULT = MACHINE_TIME_MULT_WALK_BEHIND_REEL;
-export const RIDE_ON_REEL_COST = 22000;
+export const RIDE_ON_REEL_COST = nzPrice(22000, 1000);
 export const RIDE_ON_REEL_CEILING = 92;
 export const RIDE_ON_REEL_TIME_MULT = MACHINE_TIME_MULT_RIDING_GREENS_TRIPLEX;
-export const PREMIUM_REEL_COST = 48000;
+export const PREMIUM_REEL_COST = nzPrice(48000, 1000);
 export const PREMIUM_REEL_CEILING = 97;
 export const PREMIUM_REEL_TIME_MULT = MACHINE_TIME_MULT_RIDING_GREENS_TRIPLEX;
-export const FAIRWAY_UNIT_COST = 30000;
+export const FAIRWAY_UNIT_COST = nzPrice(30000, 1000);
 export const FAIRWAY_UNIT_CEILING = 88;
 export const FAIRWAY_UNIT_TIME_MULT = MACHINE_TIME_MULT_RIDING_FAIRWAY_UNIT;
-export const VENTRAC_COST = 18000;
+export const VENTRAC_COST = nzPrice(18000, 1000);
 export const VENTRAC_FAIRWAY_CEILING = 85;
 export const VENTRAC_ROUGH_CEILING = 90;
 export const VENTRAC_TIME_MULT = MACHINE_TIME_MULT_ROUGH_UTILITY;
-export const GREENS_ROLLER_COST = 9000;
+export const GREENS_ROLLER_COST = nzPrice(9000, 1000);
 export const GREENS_ROLLER_TIME_MULT = 0.7;
-export const AUTONOMOUS_COST = 35000;
+export const AUTONOMOUS_COST = nzPrice(35000, 1000);
 export const AUTONOMOUS_CEILING = 85;
 export const STARTING_MACHINE_ID = GREENSMASTER_ID;
 export const STARTING_MACHINE_IDS = [GREENSMASTER_ID, REELMASTER_ID];
@@ -675,6 +684,56 @@ export const STARTING_MACHINE_CONDITION = 100;
 export const MIGRATED_MACHINE_CONDITION = 80;
 export const NEW_PURCHASE_CONDITION = 100;
 export const CONDITION_TIME_PENALTY_PER_POINT = 0.005;
+export function conditionTimeMultFrom(condition) {
+  return 1 + (CONDITION_MAX - condition) * CONDITION_TIME_PENALTY_PER_POINT;
+}
+export function defaultHeightPatternMult(surface) {
+  const range = HOC_RANGE[surface];
+  const factor = (range.max - range.default) / (range.max - range.min);
+  return HOC_TIME_MULT(factor) * PATTERN_TIME_MULT[PATTERN_SURFACE_DEFAULT[surface]];
+}
+export function perHoleMinutesFromNineTarget(target, setup, surface, machineTimeMult, condition) {
+  return (
+    (target - setup) /
+    (HOLE_COUNT * defaultHeightPatternMult(surface) * machineTimeMult * conditionTimeMultFrom(condition))
+  );
+}
+export const PER_HOLE_MINUTES = {
+  greens: perHoleMinutesFromNineTarget(
+    NINE_GREENS_TARGET_MINUTES,
+    JOB_SETUP_MINUTES.green,
+    'greens',
+    MACHINE_TIME_MULT_WALK_BEHIND_REEL,
+    GREENSMASTER_START_CONDITION,
+  ),
+  tees: perHoleMinutesFromNineTarget(
+    NINE_TEES_TARGET_MINUTES,
+    JOB_SETUP_MINUTES.tee,
+    'tees',
+    MACHINE_TIME_MULT_WALK_BEHIND_REEL,
+    GREENSMASTER_START_CONDITION,
+  ),
+  fairways: perHoleMinutesFromNineTarget(
+    NINE_FAIRWAYS_TARGET_MINUTES,
+    JOB_SETUP_MINUTES.fairway,
+    'fairways',
+    MACHINE_TIME_MULT_RIDING_FAIRWAY_UNIT,
+    REELMASTER_START_CONDITION,
+  ),
+  rough: perHoleMinutesFromNineTarget(
+    NINE_ROUGH_TARGET_MINUTES,
+    JOB_SETUP_MINUTES.rough,
+    'rough',
+    MACHINE_TIME_MULT_RIDING_FAIRWAY_UNIT,
+    REELMASTER_START_CONDITION,
+  ),
+};
+export const BASE_MINUTES = {
+  greens: PER_HOLE_MINUTES.greens * HOLE_COUNT,
+  tees: PER_HOLE_MINUTES.tees * HOLE_COUNT,
+  fairways: PER_HOLE_MINUTES.fairways * HOLE_COUNT,
+  rough: PER_HOLE_MINUTES.rough * HOLE_COUNT,
+};
 export const CONDITION_LOSS_PER_USE = 1;
 export const CONDITION_SLOW_THRESHOLD = 80;
 export const MACHINE_DAILY_MINUTES = DAY_LENGTH_MINUTES;
@@ -727,15 +786,15 @@ export const VOLUNTEER_NAME = 'Volunteer';
 export const VOLUNTEER_SPEED_SKILL = 2;
 export const VOLUNTEER_QUALITY_SKILL = 2;
 export const TRAINING_DAYS = 5;
-export const TRAINING_COST = 1200;
+export const TRAINING_COST = nzPrice(1200, 100);
 export const TRAINING_SKILL_GAIN = 0.5;
 export const EARLY_START_MINUTES = 60;
 export const EARLY_START_WARNING_COUNT = 3;
 export const EARLY_START_FINE_COUNT = 6;
-export const EARLY_START_FINE = 2000;
-export const MECHANIC_WAGE = 90;
-export const WAGE_BASE = 45;
-export const WAGE_PER_SKILL = 12;
+export const EARLY_START_FINE = nzPrice(2000, 1000);
+export const MECHANIC_WAGE = nzPrice(90, 5);
+export const WAGE_BASE = nzPrice(45, 5);
+export const WAGE_PER_SKILL = nzPrice(12, 5);
 export const CANDIDATE_COUNT = 3;
 export const WEAR_MECHANIC_FACTOR = 0.5;
 
@@ -751,7 +810,7 @@ export const GROUNDWATER_M3 = 20;
 export const RAIN_POND_M3 = 150;
 export const STORM_POND_M3 = 400;
 export const MAINS_COST_PER_M3 = 2.5;
-export const AERATOR_COST = 6000;
+export const AERATOR_COST = nzPrice(6000, 1000);
 export const SUMMER_UNDERWATER_DECAY = {
   greens: 10,
   tees: 4,
@@ -775,9 +834,9 @@ export const STARTING_IRRIGATION = {
   fairways: 'off',
 };
 export const IRRIGATION_POLICIES = ['off', 'light', 'full'];
-export const SPRAY_MATERIALS_COST = 600;
+export const SPRAY_MATERIALS_COST = nzPrice(600, 100);
 export const SPRAY_SUPPRESS_DAYS = 14;
-export const FERTILISER_MATERIALS_COST = 450;
+export const FERTILISER_MATERIALS_COST = nzPrice(450, 100);
 export const FERTILISER_CEILING_BONUS = 5;
 export const FERTILISER_DAYS = 21;
 export const FERTILISER_BRAND = 'Plant Fitness';
@@ -820,7 +879,7 @@ export const MAINTENANCE_BASE = 12000;
 export const CAPITAL_BASE = 40000;
 export const STARTING_MAINTENANCE_BUDGET = 12000;
 export const STARTING_CAPITAL_BUDGET = 40000;
-export const LEASE_RATE = 0.1;
+export const LEASE_RATE = 0.1 * NZ_PRICE_MULT;
 export const LOAN_LIMIT_MULTIPLIER = 2;
 export const LOAN_INTEREST = 0.1;
 export const INSOLVENT_DISMISS_STREAK = 2;
@@ -866,20 +925,20 @@ export const GM_TOURNAMENT_DECLINE_STANDING = 8;
 
 export const EXPANDED_HOLE_COUNT = 18;
 export const TASK_TIME_MULT_18 = 2;
-export const EXPAND_18_COST = 180000;
+export const EXPAND_18_COST = nzPrice(180000, 1000);
 export const EXPAND_18_DAYS = 60;
 export const EXPAND_18_SATISFACTION_MIN = 70;
 export const EXPAND_18_DAILY_MINUTES = 90;
-export const DRIVING_RANGE_COST = 60000;
+export const DRIVING_RANGE_COST = nzPrice(60000, 1000);
 export const DRIVING_RANGE_DAYS = 20;
 export const DRIVING_RANGE_DAILY_MINUTES = 40;
-export const AUTO_PICKER_COST = 25000;
-export const EXTRA_BUNKERS_COST = 18000;
+export const AUTO_PICKER_COST = nzPrice(25000, 1000);
+export const EXTRA_BUNKERS_COST = nzPrice(18000, 1000);
 export const EXTRA_BUNKERS_DAYS = 10;
 export const EXTRA_BUNKERS_DAILY_MINUTES = 30;
 export const EXTRA_BUNKER_TIME_MULT = 1.3;
 export const EXTRA_BUNKER_CEILING_BONUS = 8;
-export const NEW_TEES_COST = 22000;
+export const NEW_TEES_COST = nzPrice(22000, 1000);
 export const NEW_TEES_DAYS = 14;
 export const NEW_TEES_DAILY_MINUTES = 30;
 export const NEW_TEES_TIME_MULT = 1.25;

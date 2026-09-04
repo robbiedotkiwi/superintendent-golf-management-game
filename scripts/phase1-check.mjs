@@ -55,20 +55,24 @@ assert.equal(state.plannedTasks[0].minutes, greensTime);
 assert.equal(combinedMinutesRemaining(state), startMinutes - greensTime);
 
 state = plan(state, 'cutTees');
-state = plan(state, 'cutFairways');
+assert.equal(state.plannedTasks.length, 2);
 assert.equal(
   combinedMinutesRemaining(state),
-  startMinutes - greensTime - teesTime - fairwaysTime,
+  startMinutes - greensTime - teesTime,
 );
+
+const blockedFairways = canPlanTask(state, 'cutFairways');
+assert.equal(blockedFairways.ok, false);
+assert.match(blockedFairways.reason, new RegExp(`Needs ${fairwaysTime} min`));
 
 const blocked = canPlanTask(state, 'cutRough');
 assert.equal(blocked.ok, false);
 assert.match(blocked.reason, new RegExp(`Needs ${roughTime} min`));
 
 const beforeRemove = combinedMinutesRemaining(state);
-state = reducer(state, { type: 'REMOVE_TASK', taskId: 'cutFairways' });
-assert.equal(combinedMinutesRemaining(state), beforeRemove + fairwaysTime);
-assert.equal(state.plannedTasks.length, 2);
+state = reducer(state, { type: 'REMOVE_TASK', taskId: 'cutTees' });
+assert.equal(combinedMinutesRemaining(state), beforeRemove + teesTime);
+assert.equal(state.plannedTasks.length, 1);
 
 const greensBefore = meanQuality(state, 'greens');
 const fairwaysBefore = meanQuality(state, 'fairways');

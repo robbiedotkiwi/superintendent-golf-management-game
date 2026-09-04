@@ -215,7 +215,7 @@ export function resolveDay(state) {
 
     const machine = plannedTask.machineId
       ? getMachine(plannedTask.machineId)
-      : pickMachineForTask(state, task, workerById(state, plannedTask.workerId));
+      : pickMachineForTask(state, task, workerById(state, plannedTask.workerId), undefined, plannedTask.holes);
     if (machine && (task.mowing || task.id === 'rollGreens')) markUsed(machine.id);
     if (task.id === 'rollGreens' && isMachineAvailable(state, 'greensRoller')) {
       markUsed('greensRoller');

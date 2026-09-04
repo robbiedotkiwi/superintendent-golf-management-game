@@ -37,7 +37,7 @@ export default function TaskPanel({ surface, state, holes, onPlan, onRemove, onS
           const machine = planned?.machineId
             ? getMachine(planned.machineId)
             : taskUsesMachine(task)
-              ? pickMachineForTask(state, task, assigned)
+              ? pickMachineForTask(state, task, assigned, undefined, jobHoles)
               : null;
           const blocked = taskUsesMachine(task) ? ineligibleMachines(state, task) : [];
           const workers = task.requiresSpray

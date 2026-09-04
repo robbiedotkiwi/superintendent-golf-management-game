@@ -72,20 +72,20 @@ const homeWorker = {
 };
 assert.equal(workerAbsenceReason(start, homeWorker), MORALE_HOME_REASON(homeWorker.name));
 
-let ordered = reducer(start, { type: 'PLAN_TASK', taskId: 'cutGreens' });
-ordered = reducer(ordered, { type: 'PLAN_TASK', taskId: 'changeCups' });
+let ordered = reducer(start, { type: 'PLAN_TASK', taskId: 'changeCups' });
 ordered = reducer(ordered, { type: 'PLAN_TASK', taskId: 'rakeBunkers' });
+ordered = reducer(ordered, { type: 'PLAN_TASK', taskId: 'cutTees' });
 const ids = ordered.plannedTasks.map((item) => item.taskId);
-assert.deepEqual(ids, ['cutGreens', 'changeCups', 'rakeBunkers']);
+assert.deepEqual(ids, ['changeCups', 'rakeBunkers', 'cutTees']);
 const reversed = reducer(ordered, { type: 'REORDER_TASKS', order: [...ids].reverse() });
 assert.deepEqual(
   reversed.plannedTasks.map((item) => item.taskId),
-  ['rakeBunkers', 'changeCups', 'cutGreens'],
+  ['cutTees', 'rakeBunkers', 'changeCups'],
 );
 const kept = reducer(reversed, { type: 'SET_IRRIGATION', surface: 'greens', policy: 'off' });
 assert.deepEqual(
   kept.plannedTasks.map((item) => item.taskId),
-  ['rakeBunkers', 'changeCups', 'cutGreens'],
+  ['cutTees', 'rakeBunkers', 'changeCups'],
 );
 
 const lastId = reversed.plannedTasks.at(-1).taskId;

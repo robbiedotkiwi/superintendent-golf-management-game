@@ -66,7 +66,7 @@ assert.equal(machineStatusLine(broken, GREENSMASTER_ID), MACHINE_STATUS_BROKEN);
 const grinding = { ...start, machineAwayUntil: { [GREENSMASTER_ID]: 12 } };
 assert.equal(machineStatusLine(grinding, GREENSMASTER_ID), MACHINE_STATUS_GRINDING(12));
 
-const listing = start.usedListings[0];
+const listing = [...start.usedListings].sort((a, b) => a.price - b.price)[0];
 assert.ok(listing);
 assert.ok(Number.isInteger(listing.hours));
 let ordered = reducer(start, { type: 'BUY_USED', listingId: listing.id });

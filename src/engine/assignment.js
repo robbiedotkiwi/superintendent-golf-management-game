@@ -1,6 +1,6 @@
 import { getTask, taskUsesMachine } from '../data/tasks.js';
 import { AUTO_PICK_MINUTES, BALL_PICK_MINUTES, TASK_MINUTES } from '../data/constants.js';
-import { durationOnMachine, pickMachineForTask } from './equipment.js';
+import { durationOnMachine, pickMachine, pickMachineForTask } from './equipment.js';
 import { mowingMinutes } from './mowing.js';
 import { handWaterMinutes } from './moisture.js';
 import { isWorkerPresent, workerAllows } from './skills.js';
@@ -25,7 +25,7 @@ export function durationForTask(state, taskId, worker, machineId, holeIds) {
   const task = getTask(taskId);
   const id =
     machineId ??
-    (taskUsesMachine(task) ? pickMachineForTask(state, task, worker)?.id : null);
+    (taskUsesMachine(task) ? pickMachine(state, task)?.id : null);
   return durationOnMachine(state, taskId, worker, id, holeIds);
 }
 
@@ -36,8 +36,8 @@ export function assignWorker(state, task, holeIds) {
     .filter((worker) => (task.requiresSpray ? worker.sprayCertified : true))
     .sort((a, b) => b[stat] - a[stat] || b.speedSkill - a.speedSkill);
   for (const worker of ranked) {
-    if (task.mowing && !pickMachineForTask(state, task, worker)) continue;
-    const machine = pickMachineForTask(state, task, worker);
+    if (task.mowing && !pickMachineForTask(state, task, worker, undefined, holeIds)) continue;
+    const machine = pickMachineForTask(state, task, worker, undefined, holeIds);
     const minutes = durationForTask(state, task.id, worker, machine?.id, holeIds);
     if (worker.minutesToday - worker.minutesUsed >= minutes) return worker;
   }

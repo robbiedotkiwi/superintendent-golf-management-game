@@ -70,7 +70,8 @@ assert.equal(
 );
 assert.ok(durationForTask(bought, 'cutGreens') < baseTime);
 
-const withVentrac = reducer({ ...createInitialState(), cash: 100000 }, { type: 'BUY_MACHINE', machineId: 'ventrac' });
+const withVentrac = reducer({ ...createInitialState(), capitalBudget: 250000 }, { type: 'BUY_MACHINE', machineId: 'ventrac' });
+assert.ok(withVentrac.ownedMachines.includes('ventrac'));
 const blocked = ineligibleMachines(withVentrac, getTask('cutGreens'));
 assert.ok(blocked.some((item) => item.machine.id === 'ventrac'));
 assert.match(blocked[0].reason, /damage/i);
@@ -115,7 +116,7 @@ assert.equal(isMachineAvailable(away, 'walkBehindReel'), false);
 away = end(away);
 assert.equal(isMachineAvailable(away, 'walkBehindReel'), true);
 
-let foley = { ...createInitialState(), cash: 40000 };
+let foley = { ...createInitialState(), capitalBudget: 250000 };
 foley = reducer(foley, { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
 foley = reducer(foley, { type: 'BUY_FOLEY' });
 foley.machineWear = { ...foley.machineWear, walkBehindReel: 80 };
@@ -130,14 +131,12 @@ broken = reducer(broken, { type: 'REPAIR_MACHINE', machineId: 'walkBehindReel' }
 assert.equal(broken.machineBroken.walkBehindReel, false);
 assert.equal(broken.workers[0].minutesUsed, REPAIR_MINUTES);
 
-let auto = { ...createInitialState(), cash: 100000, weather: STARTING_WEATHER };
+let auto = { ...createInitialState(), capitalBudget: 250000, weather: STARTING_WEATHER };
 auto = reducer(auto, { type: 'BUY_MACHINE', machineId: 'autonomousMower' });
+assert.ok(auto.ownedMachines.includes('autonomousMower'));
 auto.autoWeek = { weekStart: auto.day, hits: [{ day: auto.day, minutes: 40 }] };
 auto = plan(auto, 'cutGreens');
-auto = plan(auto, 'cutFairways');
 auto = plan(auto, 'cutTees');
-auto = plan(auto, 'rollGreens');
-auto = plan(auto, 'changeCups');
 const last = auto.plannedTasks[auto.plannedTasks.length - 1];
 const resolved = reducer(auto, { type: 'END_DAY' });
 assert.ok(resolved.log.at(-1).interruptions > 0);

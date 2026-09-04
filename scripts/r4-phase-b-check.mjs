@@ -39,8 +39,11 @@ assert.equal(
   MACHINE_DAILY_MINUTES - greens.plannedTasks[0].minutes,
 );
 
-let packed = greens;
-packed = reducer(packed, { type: 'PLAN_TASK', taskId: 'cutTees' });
+const candidate = start.candidates.find((item) => item.speedSkill <= 3);
+assert.ok(candidate);
+let packed = reducer(createInitialState(), { type: 'HIRE_WORKER', candidateId: candidate.id });
+packed = reducer(packed, { type: 'PLAN_TASK', taskId: 'cutGreens', workerId: PLAYER_ID });
+packed = reducer(packed, { type: 'PLAN_TASK', taskId: 'cutTees', workerId: PLAYER_ID });
 packed = reducer(packed, { type: 'PLAN_TASK', taskId: 'cutFairways' });
 assert.equal(packed.plannedTasks.find((item) => item.taskId === 'cutFairways').machineId, REELMASTER_ID);
 const packedClaim = claimedMinutesByMachine(packed)[GREENSMASTER_ID];
@@ -53,8 +56,7 @@ const soloBlocked = canPlanTask(packed, 'cutRough');
 assert.equal(soloBlocked.ok, false);
 assert.match(soloBlocked.reason, /Needs .* min/);
 
-const candidate = start.candidates.find((item) => item.speedSkill <= 3);
-assert.ok(candidate);
+const PARTIAL_ROUGH = [1];
 let crew = reducer(createInitialState(), { type: 'HIRE_WORKER', candidateId: candidate.id });
 const hire = crew.workers.find((item) => item.id !== PLAYER_ID && !item.isVolunteer);
 assert.ok(hire);
@@ -64,25 +66,26 @@ crew = {
   ...crew,
   machineDailyMinutes: { ...crew.machineDailyMinutes, [REELMASTER_ID]: fairwayMinutes },
 };
-const booked = canPlanTask(crew, 'cutRough', hire.id);
+const booked = canPlanTask(crew, 'cutRough', hire.id, { holes: PARTIAL_ROUGH });
 assert.equal(booked.ok, false);
 assert.equal(booked.reason, MACHINE_BOOKED_REASON);
-const bookedAssign = canPlanTask(crew, 'cutRough');
+const bookedAssign = canPlanTask(crew, 'cutRough', undefined, { holes: PARTIAL_ROUGH });
 assert.equal(bookedAssign.ok, false);
 assert.equal(bookedAssign.reason, MACHINE_BOOKED_REASON);
-const refused = reducer(crew, { type: 'PLAN_TASK', taskId: 'cutRough', workerId: hire.id });
+const refused = reducer(crew, { type: 'PLAN_TASK', taskId: 'cutRough', workerId: hire.id, holes: PARTIAL_ROUGH });
 assert.equal(refused.plannedTasks.length, crew.plannedTasks.length);
 
-let two = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: 'ventrac' });
+let two = reducer({ ...createInitialState(), capitalBudget: 250000 }, { type: 'BUY_MACHINE', machineId: 'ventrac' });
+assert.ok(two.ownedMachines.includes('ventrac'));
 two = reducer(two, { type: 'HIRE_WORKER', candidateId: candidate.id });
 const hireTwo = two.workers.find((item) => item.id !== PLAYER_ID && !item.isVolunteer);
-two = reducer(two, { type: 'PLAN_TASK', taskId: 'cutGreens' });
-two = reducer(two, { type: 'PLAN_TASK', taskId: 'cutTees' });
+two = reducer(two, { type: 'PLAN_TASK', taskId: 'cutGreens', workerId: PLAYER_ID });
+two = reducer(two, { type: 'PLAN_TASK', taskId: 'cutTees', workerId: PLAYER_ID });
 two = reducer(two, { type: 'PLAN_TASK', taskId: 'cutFairways' });
-const extra = canPlanTask(two, 'cutRough', hireTwo.id);
+const extra = canPlanTask(two, 'cutRough', hireTwo.id, { holes: PARTIAL_ROUGH });
 assert.equal(extra.ok, true);
 assert.equal(extra.machineId, 'ventrac');
-two = reducer(two, { type: 'PLAN_TASK', taskId: 'cutRough', workerId: hireTwo.id });
+two = reducer(two, { type: 'PLAN_TASK', taskId: 'cutRough', workerId: hireTwo.id, holes: PARTIAL_ROUGH });
 assert.equal(two.plannedTasks.find((item) => item.taskId === 'cutRough').machineId, 'ventrac');
 
 const gameSrc = readFileSync(new URL('../src/engine/gameState.js', import.meta.url), 'utf8');
