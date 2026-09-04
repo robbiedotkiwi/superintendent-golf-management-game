@@ -16,6 +16,7 @@ import { qualityColor } from '../engine/color.js';
 import { sectionBadge } from '../engine/badges.js';
 import { formatMoney } from '../engine/format.js';
 import { GM_LOCK_HINT, isSectionLocked } from '../engine/gm.js';
+import { pondDoseBriefing } from '../engine/irrigation.js';
 import { fitCourse } from '../engine/view.js';
 import TimeBar from './TimeBar.jsx';
 
@@ -77,6 +78,7 @@ export default function Sidebar({
   const crew = sectionBadge(state, 'crew');
   const shed = sectionBadge(state, 'shed');
   const tomorrow = WEATHER_LABELS[state.forecast] ?? state.forecast;
+  const pondBriefing = pondDoseBriefing(state);
 
   return (
     <aside
@@ -94,6 +96,11 @@ export default function Sidebar({
             </span>
           </p>
         </header>
+        {pondBriefing ? (
+          <p className="mt-2 text-sm text-[var(--machine-orange)]" data-morning-briefing="pond-dose">
+            {pondBriefing}
+          </p>
+        ) : null}
 
         <div className="mt-3">
           <div className="text-xs text-[var(--sand)]">Condition</div>

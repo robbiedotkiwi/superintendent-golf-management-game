@@ -1,9 +1,10 @@
-import { FORECAST_FUEL_LOOKBACK_DAYS, POND_DOSE_COST } from '../data/constants.js';
+import { FORECAST_FUEL_LOOKBACK_DAYS, POND_DOSE_COST, POND_DOSE_WEEK_DAYS, POND_DOSING_LABEL } from '../data/constants.js';
 import { getMachine } from '../data/equipment.js';
 import { leaseCost, seasonGrant } from './budget.js';
 import { daysUntilSeasonEnd, seasonEndDay } from './calendar.js';
 import { cashOnHand } from './cash.js';
 import { wageBill } from './staff.js';
+import { daysSincePondDose } from './irrigation.js';
 
 function paidWorkers(state) {
   return (state.workers ?? []).filter((worker) => !worker.isVolunteer && (worker.wage ?? 0) > 0);
@@ -28,14 +29,27 @@ export function leaseForecastLines(state) {
   }));
 }
 
+export function pondDoseDueDays(state) {
+  const end = seasonEndDay(state.day);
+  const days = [];
+  let nextDue =
+    daysSincePondDose(state) >= POND_DOSE_WEEK_DAYS
+      ? state.day
+      : (Number(state.lastPondDoseDay) || 0) + POND_DOSE_WEEK_DAYS;
+  for (let day = nextDue; day <= end; day += POND_DOSE_WEEK_DAYS) {
+    days.push(day);
+  }
+  return days;
+}
+
 export function pondDosingForecast(state) {
-  if (!state.pondDosing) return null;
-  const days = daysUntilSeasonEnd(state.day);
+  const days = pondDoseDueDays(state);
+  if (!days.length) return null;
   return {
-    label: 'Pond dosing',
-    days,
+    label: POND_DOSING_LABEL,
+    days: days.length,
     daily: POND_DOSE_COST,
-    amount: POND_DOSE_COST * days,
+    amount: POND_DOSE_COST * days.length,
   };
 }
 
@@ -79,14 +93,15 @@ function firstNegativeDay(state, fuel) {
   const end = seasonEndDay(state.day);
   const remaining = daysUntilSeasonEnd(state.day);
   const dailyWage = wageBill(state.workers);
-  const dailyDose = state.pondDosing ? POND_DOSE_COST : 0;
   const dailyFuel = remaining > 0 ? fuel / remaining : 0;
   const leases = leaseForecastLines(state).reduce((total, line) => total + line.amount, 0);
   const grant = expectedGrant(state);
   const loan = loanForecast(state)?.amount ?? 0;
+  const doseDays = new Set(pondDoseDueDays(state));
   let cash = cashOnHand(state);
   for (let day = state.day; day <= end; day += 1) {
-    cash -= dailyWage + dailyDose + dailyFuel;
+    cash -= dailyWage + dailyFuel;
+    if (doseDays.has(day)) cash -= POND_DOSE_COST;
     if (day === end) {
       cash -= leases;
       cash += grant;

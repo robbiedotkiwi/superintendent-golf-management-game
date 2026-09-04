@@ -1,7 +1,6 @@
-import { POND_CAPACITY } from '../data/constants.js';
 import { qualityColor } from '../engine/color.js';
 import { formatMoney } from '../engine/format.js';
-import { pondPercent } from '../engine/irrigation.js';
+import { pondCapacity, pondPercent } from '../engine/irrigation.js';
 import { constructionMinutes } from '../engine/projects.js';
 
 const SIZE_CLASS = {
@@ -24,6 +23,7 @@ function Stat({ label, value, hint, size = 'secondary', valueStyle }) {
 }
 
 export default function Hud({ state, condition }) {
+  const capacity = pondCapacity(state);
   return (
     <div className="flex shrink-0 flex-wrap items-end gap-x-10 gap-y-3 px-4 py-2">
       <div className="flex items-end gap-6">
@@ -43,7 +43,7 @@ export default function Hud({ state, condition }) {
       <Stat
         label="Pond"
         value={`${Math.round(state.pond.volume)} m³`}
-        hint={`${Math.round(pondPercent(state.pond.volume))}% of ${POND_CAPACITY} · health ${Math.round(state.pond.health)}`}
+        hint={`${Math.round(pondPercent(state.pond.volume, capacity))}% of ${capacity} · health ${Math.round(state.pond.health)}`}
         size="tertiary"
       />
       {state.projects?.length ? (

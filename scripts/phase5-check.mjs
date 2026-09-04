@@ -16,6 +16,7 @@ import {
   POND_HEALTH_LOW_DROP,
   POND_HEALTH_START,
   POND_LOW_FRACTION,
+  POND_DOSE_WEEK_DAYS,
   POND_START_VOLUME,
   RAIN_POND_M3,
   SPEED_SKILL_BASE,
@@ -167,6 +168,8 @@ assert.ok(afterDryGreens < expectedHandGreens);
 
 const lowPond = {
   ...createInitialState(),
+  day: 1 + POND_DOSE_WEEK_DAYS,
+  lastPondDoseDay: 1,
   season: 'winter',
   weather: STARTING_WEATHER,
   irrigation: allOff,

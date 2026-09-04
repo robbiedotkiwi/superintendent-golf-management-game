@@ -216,7 +216,6 @@ export default function App() {
           onSetAngle={(surface, angle) => dispatch({ type: 'SET_ANGLE', surface, angle })}
           onSetAutoRotate={(surface, value) => dispatch({ type: 'SET_AUTO_ROTATE', surface, value })}
           onSetIrrigation={(surface, mm) => dispatch({ type: 'SET_IRRIGATION', surface, mm })}
-          onSetPondDosing={(on) => dispatch({ type: 'SET_POND_DOSING', on })}
           onSetView={(view) => dispatch({ type: 'SET_VIEW', view })}
           onBuyAerator={() => dispatch({ type: 'BUY_AERATOR' })}
           onBuyGreensSensors={() => dispatch({ type: 'BUY_GREENS_SENSORS' })}
@@ -331,7 +330,6 @@ function GameScreen({
   onSetAngle,
   onSetAutoRotate,
   onSetIrrigation,
-  onSetPondDosing,
   onSetView,
   onBuyAerator,
   onBuyGreensSensors,
@@ -508,7 +506,6 @@ function GameScreen({
             onSetAngle={onSetAngle}
             onSetAutoRotate={onSetAutoRotate}
             onSetIrrigation={onSetIrrigation}
-            onSetPondDosing={onSetPondDosing}
             onBuyAerator={onBuyAerator}
             onBuyGreensSensors={onBuyGreensSensors}
             onBuyTurfRad={onBuyTurfRad}
@@ -526,6 +523,7 @@ function GameScreen({
               hasAerator={state.hasAerator}
               holes={holeCount(state)}
               hasDrivingRange={state.hasDrivingRange}
+              hasPondExpansion={state.hasPondExpansion}
               showMower={showMower}
               selected={selected}
               highlight={event?.surface ?? selected}

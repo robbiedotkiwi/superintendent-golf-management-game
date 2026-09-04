@@ -8,12 +8,15 @@ import {
   MAINS_COST_PER_M3,
   MOISTURE_PER_MM,
   POND_CAPACITY,
+  POND_EXPANDED_CAPACITY,
+  POND_EXPANDED_GROUNDWATER_M3,
+  POND_EXPANDED_HEALTH_DECAY_MULT,
   POND_HEALTH_LOW_DROP,
   POND_HEALTH_MAX,
   POND_HEALTH_SUMMER_DROP,
   POND_LOW_FRACTION,
-  POND_DOSE_COST,
-  POND_DOSE_MINUTES,
+  POND_DOSE_WEEK_DAYS,
+  POND_DOSE_DUE_COPY,
   RAIN_POND_M3,
   STARTING_IRRIGATION,
   STORM_POND_M3,
@@ -90,6 +93,37 @@ export function rainFill(weather) {
   return 0;
 }
 
+export function pondCapacity(state) {
+  return state?.hasPondExpansion ? POND_EXPANDED_CAPACITY : POND_CAPACITY;
+}
+
+export function groundwaterM3(state) {
+  return state?.hasPondExpansion ? POND_EXPANDED_GROUNDWATER_M3 : GROUNDWATER_M3;
+}
+
+export function pondHealthDecayMult(state) {
+  return state?.hasPondExpansion ? POND_EXPANDED_HEALTH_DECAY_MULT : 1;
+}
+
+export function daysSincePondDose(state) {
+  const last = Number(state.lastPondDoseDay);
+  if (!Number.isFinite(last)) return Number.POSITIVE_INFINITY;
+  return Math.max(0, state.day - last);
+}
+
+export function isPondDoseCurrent(state) {
+  return daysSincePondDose(state) < POND_DOSE_WEEK_DAYS;
+}
+
+export function isPondDoseDue(state) {
+  return !isPondDoseCurrent(state);
+}
+
+export function pondDoseBriefing(state) {
+  if (!isPondDoseDue(state)) return null;
+  return POND_DOSE_DUE_COPY;
+}
+
 export function resolveIrrigation(state) {
   const { demand, total } = irrigationDemand(state);
   let volume = state.pond.volume;
@@ -97,23 +131,16 @@ export function resolveIrrigation(state) {
   volume -= fromPond;
   const shortfall = total - fromPond;
   const mainsCost = shortfall * MAINS_COST_PER_M3;
-  volume = Math.min(POND_CAPACITY, volume + GROUNDWATER_M3 + rainFill(state.weather));
+  const capacity = pondCapacity(state);
+  volume = Math.min(capacity, volume + groundwaterM3(state) + rainFill(state.weather));
 
   let health = state.pond.health;
-  const low = volume / POND_CAPACITY < POND_LOW_FRACTION;
-  let doseCost = 0;
-  let dosed = false;
-  if (state.pondDosing) {
-    const doseCash = needsCash(state, POND_DOSE_COST);
-    if (doseCash.ok) {
-      doseCost = POND_DOSE_COST;
-      dosed = true;
-    }
-  }
-  const held = Boolean(state.hasAerator) || dosed;
+  const low = volume / capacity < POND_LOW_FRACTION;
+  const held = Boolean(state.hasAerator) || isPondDoseCurrent(state);
   if (!held) {
-    if (state.season === 'summer') health -= POND_HEALTH_SUMMER_DROP;
-    if (low) health -= POND_HEALTH_LOW_DROP;
+    const mult = pondHealthDecayMult(state);
+    if (state.season === 'summer') health -= POND_HEALTH_SUMMER_DROP * mult;
+    if (low) health -= POND_HEALTH_LOW_DROP * mult;
   }
   health = Math.max(0, Math.min(POND_HEALTH_MAX, health));
 
@@ -122,13 +149,14 @@ export function resolveIrrigation(state) {
     mainsCost,
     shortfall,
     demand,
-    doseCost,
-    dosed,
+    doseCost: 0,
+    dosed: isPondDoseCurrent(state),
   };
 }
 
-export function pondDoseMinutes(state) {
-  return state.pondDosing ? POND_DOSE_MINUTES : 0;
+export function pondPercent(volume, capacity = POND_CAPACITY) {
+  if (!capacity) return 0;
+  return (volume / capacity) * 100;
 }
 
 export function canBuyAerator(state) {
@@ -136,8 +164,4 @@ export function canBuyAerator(state) {
   const aeratorCash = needsCash(state, AERATOR_COST);
   if (!aeratorCash.ok) return aeratorCash;
   return { ok: true };
-}
-
-export function pondPercent(volume) {
-  return (volume / POND_CAPACITY) * 100;
 }

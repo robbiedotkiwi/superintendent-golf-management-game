@@ -327,3 +327,19 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Old Off / Light / Full values migrate on load: Off → 0, Light → half the surface default (2 mm greens/tees, 1.5 mm fairways), Full → default. `SET_IRRIGATION` still accepts a legacy `policy` field and stores millimetres.
 - Unused `IrrigationPanel.jsx` is deleted. Hand-water, sensors and TurfRad stay below the per-surface two-column blocks. Check moisture and the hole selector live in the right column.
 
+### Phase D
+
+- Inputs left column is product, hole selector, cost, minutes and the plan actions. Right column is read-only status: pressure (flagged at `DISEASE_OUTBREAK_WARN`), fertiliser/spray expiry, moisture, and which holes are treated when coverage is partial.
+
+### Phase E
+
+- Pond dosing is task `pondDose` (`POND_DOSE_MINUTES`, `POND_DOSE_COST`). It is due `POND_DOSE_WEEK_DAYS` after `lastPondDoseDay`, not on a weekday. New games start current (`lastPondDoseDay = 1`). Old `pondDosing: true` saves stamp `lastPondDoseDay` to the save's day; otherwise the field is dropped and the dose is treated as overdue.
+- Health holds while current or if the aerator is in. A planned dose counts as current for that night's resolve even if the job later drops.
+- Silent `pondDoseMinutes` deduction is gone. Site-work still takes player minutes outside the bar, as before.
+- Morning briefing copy is `POND_DOSE_DUE_COPY`, shown in the sidebar and Start day dialog.
+
+### Phase F
+
+- Pond expansion is Office → Projects (`POND_EXPANSION_COST` 95000, `POND_EXPANSION_DAYS` 45). Daily site minutes are `POND_EXPANSION_DAILY_MINUTES` (40), scaled by `SEASON_GROWTH` like the other projects.
+- On completion `hasPondExpansion` raises capacity to 14,000, groundwater to 35 m³/day, and halves both pond health drops. Volume is unchanged; the level bar rescales off `pondCapacity(state)`.
+

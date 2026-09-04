@@ -66,8 +66,8 @@ assert.ok(highSat.grant > lowSat.grant);
 const leased = seasonCashForecast({ ...start, leasedMachines: [PUSH_ROTARY_ID] });
 assert.equal(leased.leases[0].amount, leaseCost(PUSH_ROTARY_ID));
 
-const dosing = seasonCashForecast({ ...start, pondDosing: true });
-assert.equal(dosing.dosing.amount, POND_DOSE_COST * remaining);
+const dosing = seasonCashForecast(start);
+assert.equal(dosing.dosing.amount, POND_DOSE_COST * 4);
 
 const loaned = seasonCashForecast({
   ...start,
@@ -93,6 +93,6 @@ assert.equal(projectedFuelSpend(burning), Math.round((70 * 7) / FORECAST_FUEL_LO
 
 const emptyFuel = seasonCashForecast(start);
 assert.equal(emptyFuel.fuel, 0);
-assert.equal(emptyFuel.closing, emptyFuel.cashNow + emptyFuel.grant);
+assert.equal(emptyFuel.closing, emptyFuel.cashNow + emptyFuel.grant - (emptyFuel.dosing?.amount ?? 0));
 
 console.log('r8-phase-b-check: ok');

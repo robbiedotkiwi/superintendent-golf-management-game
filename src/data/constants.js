@@ -102,6 +102,7 @@ export const TASK_MINUTES = {
   fertiliseTees: FERTILISER_MINUTES,
   fertiliseFairways: FERTILISER_MINUTES,
   pondRescue: POND_RESCUE_MINUTES,
+  pondDose: POND_DOSE_MINUTES,
   gmMeeting: GM_MEETING_MINUTES,
   doubleCutGreens: DOUBLE_CUT_MINUTES,
   extraRoll: EXTRA_ROLL_MINUTES,
@@ -827,6 +828,9 @@ export const POND_DOSE_WEEK_DAYS = DAYS_PER_WEEK;
 export const POND_DOSE_WEEKLY_COST = POND_DOSE_COST * POND_DOSE_WEEK_DAYS;
 export const HEALTHY_PONDS_BRAND = 'Healthy Ponds';
 export const POND_DOSING_LABEL = 'Healthy Ponds dosing';
+export const POND_DOSE_TASK = 'pondDose';
+export const POND_DOSE_DUE_COPY =
+  'Pond dosing is due. Health will start dropping until you dose.';
 export const POND_RESCUE_LABEL = 'Pond rescue treatment';
 export const POND_RESCUE_TASK = 'pondRescue';
 export const CHECK_MOISTURE_LABEL = 'Check moisture';
@@ -1015,11 +1019,19 @@ export const PROJECT_EXPAND_18 = 'expand18';
 export const PROJECT_DRIVING_RANGE = 'drivingRange';
 export const PROJECT_EXTRA_BUNKERS = 'extraBunkers';
 export const PROJECT_NEW_TEES = 'newTees';
+export const PROJECT_POND_EXPANSION = 'pondExpansion';
+export const POND_EXPANSION_COST = 95000;
+export const POND_EXPANSION_DAYS = 45;
+export const POND_EXPANDED_CAPACITY = 14000;
+export const POND_EXPANDED_HEALTH_DECAY_MULT = 0.5;
+export const POND_EXPANDED_GROUNDWATER_M3 = 35;
+export const POND_EXPANSION_DAILY_MINUTES = 40;
 export const PROJECT_DAILY_MINUTES = {
   [PROJECT_EXPAND_18]: EXPAND_18_DAILY_MINUTES,
   [PROJECT_DRIVING_RANGE]: DRIVING_RANGE_DAILY_MINUTES,
   [PROJECT_EXTRA_BUNKERS]: EXTRA_BUNKERS_DAILY_MINUTES,
   [PROJECT_NEW_TEES]: NEW_TEES_DAILY_MINUTES,
+  [PROJECT_POND_EXPANSION]: POND_EXPANSION_DAILY_MINUTES,
 };
 export const BACK_NINE_OFFSET_X = 1320;
 export const RANGE_X = 40;

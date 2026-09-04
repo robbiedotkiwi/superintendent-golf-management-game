@@ -170,7 +170,12 @@ export function withDefaults(state) {
     pond: state.pond ?? { volume: POND_START_VOLUME, health: POND_HEALTH_START },
     irrigation: migrateIrrigation(state.irrigation),
     hasAerator: Boolean(state.hasAerator),
-    pondDosing: Boolean(state.pondDosing),
+    lastPondDoseDay: (() => {
+      const last = Number(state.lastPondDoseDay);
+      if (Number.isFinite(last)) return last;
+      if (state.pondDosing) return state.day ?? 1;
+      return undefined;
+    })(),
     ...migrateMoisture(state),
     cash: migrateCash(state),
     grantForecast: state.grantForecast ?? null,
@@ -201,6 +206,7 @@ export function withDefaults(state) {
     hasAutoPicker: Boolean(state.hasAutoPicker),
     hasExtraBunkers: Boolean(state.hasExtraBunkers),
     hasNewTees: Boolean(state.hasNewTees),
+    hasPondExpansion: Boolean(state.hasPondExpansion),
     saveVersion: SAVE_VERSION,
     soundEnabled: state.soundEnabled ?? SOUND_DEFAULT_ON,
     tutorialDone: state.sectionUnlocks == null ? true : Boolean(state.tutorialDone),
@@ -242,6 +248,7 @@ export function withDefaults(state) {
   };
   delete next.customPresets;
   delete next.nextPresetId;
+  delete next.pondDosing;
   return next;
 }
 

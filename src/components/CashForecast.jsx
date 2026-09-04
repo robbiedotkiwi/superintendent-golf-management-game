@@ -50,11 +50,11 @@ export default function CashForecast({ state }) {
         {forecast.dosing ? (
           <Line
             label={forecast.dosing.label}
-            note={`${forecast.dosing.days} night${forecast.dosing.days === 1 ? '' : 's'}`}
+            note={`${forecast.dosing.days} treatment${forecast.dosing.days === 1 ? '' : 's'} to season end`}
             amount={forecast.dosing.amount}
           />
         ) : (
-          <p className="text-sm text-[var(--sand)]">Pond dosing off.</p>
+          <p className="text-sm text-[var(--sand)]">No pond dose due this season.</p>
         )}
         {forecast.deliveries.length ? (
           forecast.deliveries.map((line) => (

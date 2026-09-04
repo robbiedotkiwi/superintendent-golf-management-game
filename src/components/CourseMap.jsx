@@ -53,7 +53,7 @@ import {
   SHED_X,
   SHED_Y,
 } from '../data/course.js';
-import { pondPercent } from '../engine/irrigation.js';
+import { pondCapacity, pondPercent } from '../engine/irrigation.js';
 import { moistureOverlayColor, moistureStatus, outOfBand } from '../engine/moisture.js';
 import { patternRotate, patternStripeColor, showsMowOverlay, surfacePatternOpacity } from '../engine/pattern.js';
 import { prefersReducedMotion } from '../engine/sound.js';
@@ -178,6 +178,7 @@ export default function CourseMap({
   hasAerator,
   holes = HOLE_COUNT,
   hasDrivingRange = false,
+  hasPondExpansion = false,
   showMower = false,
   selected,
   onSelect,
@@ -196,6 +197,7 @@ export default function CourseMap({
   const holeDragRef = useRef(null);
   const viewRef = useRef(view);
   const selectedSet = new Set(selectedHoles ?? []);
+  const capacity = pondCapacity({ hasPondExpansion });
 
   function holeHandlers(hole, surface) {
     return {
@@ -608,7 +610,7 @@ export default function CourseMap({
       <g
         tabIndex={0}
         role="button"
-        aria-label={`Pond ${Math.round(pond.volume)} cubic metres, ${Math.round(pondPercent(pond.volume))} percent`}
+        aria-label={`Pond ${Math.round(pond.volume)} cubic metres, ${Math.round(pondPercent(pond.volume, capacity))} percent`}
         className="course-surface cursor-pointer outline-none"
         onClick={(event) => {
           event.stopPropagation();

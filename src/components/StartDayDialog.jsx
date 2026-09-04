@@ -2,7 +2,7 @@ import { FUEL_TANK_CAPACITY, START_DAY_LABEL } from '../data/constants.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import { skippedOverdueSurfaces, unusedTimeCopy } from '../engine/badges.js';
 import { plannedDayFuel } from '../engine/fuel.js';
-import { IRRIGATED_SURFACES } from '../engine/irrigation.js';
+import { IRRIGATED_SURFACES, pondDoseBriefing } from '../engine/irrigation.js';
 import ForecastStrip from './ForecastStrip.jsx';
 import IrrigationMmSlider from './IrrigationMmSlider.jsx';
 import PlanList from './PlanList.jsx';
@@ -19,11 +19,17 @@ export default function StartDayDialog({
   const overdue = skippedOverdueSurfaces(state);
   const unused = unusedTimeCopy(minutesRemaining);
   const fuel = plannedDayFuel(state);
+  const pondBriefing = pondDoseBriefing(state);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--soil)]/85 p-4">
       <section className="max-h-[90vh] w-full max-w-xl overflow-y-auto border-4 border-[var(--sand)] bg-[var(--soil)] p-6 text-[var(--paint)]">
         <h2 className="font-condensed text-4xl font-bold">{START_DAY_LABEL}</h2>
+        {pondBriefing ? (
+          <p className="mt-3 text-lg text-[var(--machine-orange)]" data-morning-briefing="pond-dose">
+            {pondBriefing}
+          </p>
+        ) : null}
         <p className="mt-3 text-lg">{unused}</p>
         <p className="mt-2">
           Tank {Math.round(fuel.tank)} / {FUEL_TANK_CAPACITY} L

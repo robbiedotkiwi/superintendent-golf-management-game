@@ -19,6 +19,7 @@ import {
   POND_HEALTH_MAX,
   POND_RESCUE_HEALTH,
   POND_RESCUE_TASK,
+  POND_DOSE_TASK,
   QUALITY_MAX,
   QUALITY_MIN,
   ROLLER_GAIN_BONUS,
@@ -147,10 +148,14 @@ function capacityOf(state) {
 
 export function resolveDay(state) {
   const rng = createRng(state.rngSeed);
-  const irrigation = resolveIrrigation(state);
+  const dosePlanned = (state.plannedTasks ?? []).some((item) => item.taskId === POND_DOSE_TASK);
+  const irrigation = resolveIrrigation({
+    ...state,
+    lastPondDoseDay: dosePlanned ? state.day : state.lastPondDoseDay,
+  });
   let pond = { ...irrigation.pond };
   let cash = state.cash ?? 0;
-  cash -= irrigation.doseCost ?? 0;
+  let lastPondDoseDay = state.lastPondDoseDay;
   let holes = cloneHoles(state.holes);
   const before = cloneHoles(state.holes);
   const conditionBefore = courseCondition(state);
@@ -168,7 +173,7 @@ export function resolveDay(state) {
   }
   let sprayedUntil = { ...(state.sprayedUntil ?? {}) };
   let fertiliserUntil = { ...(state.fertiliserUntil ?? {}) };
-  let materialsSpent = irrigation.doseCost ?? 0;
+  let materialsSpent = 0;
   let tournamentPrepScore = state.tournamentPrepScore ?? 0;
 
   let planned = [...state.plannedTasks];
@@ -254,6 +259,9 @@ export function resolveDay(state) {
         ...pond,
         health: Math.max(0, Math.min(POND_HEALTH_MAX, pond.health + POND_RESCUE_HEALTH)),
       };
+    }
+    if (task.id === POND_DOSE_TASK) {
+      lastPondDoseDay = state.day;
     }
     if (task.materialsCost) {
       cash -= task.materialsCost;
@@ -548,6 +556,7 @@ export function resolveDay(state) {
     moisture,
     moistureReadDay,
     pond,
+    lastPondDoseDay,
     lastMainsCost: irrigation.mainsCost,
     disease,
     sprayedUntil,

@@ -18,6 +18,8 @@ import {
   INPUTS_SURFACES,
   POND_DOSE_COST,
   POND_DOSE_MINUTES,
+  POND_DOSE_TASK,
+  POND_DOSE_WEEK_DAYS,
   POND_DOSE_WEEKLY_COST,
   POND_DOSING_LABEL,
   POND_HEALTH_START,
@@ -46,7 +48,7 @@ import { surfaceCeiling } from '../src/engine/equipment.js';
 import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
 import { holeSurface } from '../src/engine/holes.js';
 import { greensStatuses } from '../src/engine/moisture.js';
-import { pondDoseMinutes, resolveIrrigation } from '../src/engine/irrigation.js';
+import { isPondDoseCurrent, resolveIrrigation } from '../src/engine/irrigation.js';
 import { migrateSave } from '../src/engine/save.js';
 import { applyWeatherToWorkers } from '../src/engine/weather.js';
 
@@ -86,6 +88,7 @@ assert.equal(roller.cost, GREENS_ROLLER_COST);
 assert.ok(MACHINES.some((machine) => machine.id === 'greensRoller' && !machine.ownedAtStart));
 assert.equal(getTask(ROLL_GREENS_TASK).name, ROLL_GREENS_LABEL);
 assert.equal(getTask(POND_RESCUE_TASK).kind, 'pondRescue');
+assert.equal(getTask(POND_DOSE_TASK).kind, 'pondDose');
 assert.equal(getTask('checkMoistureGreens').kind, 'moistureCheck');
 
 const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
@@ -94,6 +97,7 @@ assert.match(turfSrc, /InputsTab/);
 assert.match(turfSrc, /ROLL_GREENS_TASK/);
 assert.match(turfSrc, /CHECK_MOISTURE_BY_SURFACE/);
 assert.match(turfSrc, /POND_DOSING_LABEL/);
+assert.match(turfSrc, /POND_DOSE_TASK/);
 assert.match(turfSrc, /POND_RESCUE_TASK/);
 assert.doesNotMatch(turfSrc, /tab === TURF_TAB_BUNKERS \?/);
 assert.match(turfSrc, new RegExp(`${TURF_TAB_MOWING}|ROLL_GREENS`));
@@ -125,10 +129,12 @@ function certify(state) {
 }
 
 const start = createInitialState();
-assert.equal(start.pondDosing, false);
+assert.equal(start.lastPondDoseDay, 1);
+assert.equal(start.pondDosing, undefined);
 assert.equal(canPlanTask(start, 'checkMoistureGreens').ok, true);
 assert.equal(canPlanTask(start, ROLL_GREENS_TASK).ok, true);
 assert.equal(canPlanTask(start, POND_RESCUE_TASK).ok, true);
+assert.equal(canPlanTask(start, POND_DOSE_TASK).ok, true);
 
 let partial = reducer(start, { type: 'SET_SELECTED_HOLES', holes: [1, 2] });
 partial = reducer(partial, { type: 'PLAN_TASK', taskId: 'checkMoistureGreens', holes: [1, 2] });
@@ -166,36 +172,35 @@ sprayed = reducer(sprayed, { type: 'END_DAY' });
 assert.equal(holeSurface(sprayed, 4, 'greens').sprayedUntil, certified.day + SPRAY_SUPPRESS_DAYS);
 assert.equal(holeSurface(sprayed, 1, 'greens').sprayedUntil, 0);
 
-assert.equal(pondDoseMinutes({ pondDosing: true }), POND_DOSE_MINUTES);
-assert.equal(pondDoseMinutes({ pondDosing: false }), 0);
+assert.equal(getTask(POND_DOSE_TASK).materialsCost, POND_DOSE_COST);
 
 const summerProbe = {
   ...start,
+  day: 1 + POND_DOSE_WEEK_DAYS,
+  lastPondDoseDay: 1,
   season: 'summer',
   pond: { volume: POND_START_VOLUME, health: POND_HEALTH_START },
-  pondDosing: false,
   hasAerator: false,
 };
+assert.equal(isPondDoseCurrent(summerProbe), false);
 const droppedIrr = resolveIrrigation(summerProbe);
 assert.ok(droppedIrr.pond.health < POND_HEALTH_START);
 assert.equal(droppedIrr.doseCost, 0);
-const heldIrr = resolveIrrigation({ ...summerProbe, pondDosing: true });
+const heldIrr = resolveIrrigation({ ...summerProbe, lastPondDoseDay: summerProbe.day });
 assert.equal(heldIrr.pond.health, POND_HEALTH_START);
-assert.equal(heldIrr.doseCost, POND_DOSE_COST);
 const aeratorIrr = resolveIrrigation({ ...summerProbe, hasAerator: true });
 assert.equal(aeratorIrr.pond.health, POND_HEALTH_START);
-const bothIrr = resolveIrrigation({ ...summerProbe, hasAerator: true, pondDosing: true });
-assert.equal(bothIrr.pond.health, POND_HEALTH_START);
-assert.equal(bothIrr.doseCost, POND_DOSE_COST);
 
-const dosingOn = reducer(start, { type: 'SET_POND_DOSING', on: true });
-assert.equal(dosingOn.pondDosing, true);
 const undosedMorning = reducer(start, { type: 'END_DAY' });
+let dosingOn = reducer(start, { type: 'PLAN_TASK', taskId: POND_DOSE_TASK });
+assert.equal(dosingOn.plannedTasks[0].taskId, POND_DOSE_TASK);
+assert.ok(dosingOn.plannedTasks[0].minutes > 0);
 const dosedMorning = reducer(dosingOn, { type: 'END_DAY' });
 assert.equal(dosedMorning.cash, undosedMorning.cash - POND_DOSE_COST);
+assert.equal(dosedMorning.lastPondDoseDay, start.day);
 assert.equal(
   dosedMorning.workers.find((worker) => worker.id === 'player').minutesToday,
-  undosedMorning.workers.find((worker) => worker.id === 'player').minutesToday - POND_DOSE_MINUTES,
+  undosedMorning.workers.find((worker) => worker.id === 'player').minutesToday,
 );
 
 const low = { ...start, pond: { volume: POND_START_VOLUME, health: 20 } };
@@ -218,7 +223,8 @@ const old = migrateSave({
   fertiliserUntil: { greens: 20, tees: 0, fairways: 0 },
 });
 assert.ok(old);
-assert.equal(old.pondDosing, false);
+assert.equal(old.pondDosing, undefined);
+assert.equal(old.lastPondDoseDay, undefined);
 assert.equal(holeSurface(old, 1, 'greens').fertiliserUntil, 20);
 assert.equal(holeSurface(old, 7, 'greens').fertiliserUntil, 20);
 

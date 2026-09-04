@@ -27,7 +27,6 @@ import {
 import { cashOnHand } from './cash.js';
 import { minutesTodayForWeather } from './weather.js';
 import { constructionMinutes } from './projects.js';
-import { pondDoseMinutes } from './irrigation.js';
 
 export function dayOfWeek(day) {
   return ((day - 1) % DAYS_PER_WEEK) + 1;
@@ -61,7 +60,7 @@ export function prepareMorningWorkers(state, weather, rng) {
       minutesToday = 0;
     }
     if (worker.id === PLAYER_ID) {
-      minutesToday = Math.max(0, minutesToday - constructionMinutes(state) - pondDoseMinutes(state));
+      minutesToday = Math.max(0, minutesToday - constructionMinutes(state));
     }
     return { ...worker, minutesToday, minutesUsed: 0 };
   });
