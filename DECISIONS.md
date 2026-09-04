@@ -211,4 +211,18 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 
 - `VOLUNTEER_DAY` is 3 and is also `VOLUNTEER_DEFAULT_WEEKDAY`. Saves with weekday 6 (the old default) or a missing weekday migrate to 3. Any other stored weekday is kept.
 
+## Fixes Round 7
+
+- `FIXES_ROUND_7.md` is in the repo root and is the source of truth for this round.
+
+### Phase A
+
+- `state.holes` is the hole-record array; count is `holeCount(state)`. Expanding to 18 appends nine cloned front-nine records via `expandHoleRecords`.
+- Hole records do not store live `hoc` / `pattern` / `angle`. Those live in `surfaceDefaults` plus an optional per-hole `override`. `hocAtLastCut` / `lastPattern` / `lastAngle` stay on the hole for height-change and grain-wear.
+- `MATCH_LAST_MOWING` restores defaults from the most recently cut hole of that type (`mostRecentCut`).
+- Course-wide `autoRotate` rotates `surfaceDefaults.angle` once per job, not once per hole. A per-hole override rotates that hole's override angle.
+- Incomplete saves (day/cash but no grouped `surfaces` and no hole model) refuse rather than inventing a nine-hole course.
+- `state.moisture` arrays stay in parallel for the overlay and ET tick; hole records are the spec home. Phase F may drop the arrays.
+- Neglect mail is one message per neglected hole when the day count equals the threshold (existing equality, not ≥).
+
 

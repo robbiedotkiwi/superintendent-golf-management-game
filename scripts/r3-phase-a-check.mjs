@@ -27,6 +27,8 @@ import {
   tickPlayout,
 } from '../src/engine/playout.js';
 import { migrateSave } from '../src/engine/save.js';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+
 
 function fingerprint(state) {
   return {
@@ -40,11 +42,11 @@ function fingerprint(state) {
     capitalBudget: state.capitalBudget,
     pond: state.pond,
     moisture: state.moisture,
-    greens: state.surfaces.greens.quality,
-    tees: state.surfaces.tees.quality,
-    fairways: state.surfaces.fairways.quality,
-    rough: state.surfaces.rough.quality,
-    bunkers: state.surfaces.bunkers.quality,
+    greens: meanQuality(state, 'greens'),
+    tees: meanQuality(state, 'tees'),
+    fairways: meanQuality(state, 'fairways'),
+    rough: meanQuality(state, 'rough'),
+    bunkers: meanQuality(state, 'bunkers'),
     logDays: state.log.map((item) => item.day),
     planned: state.plannedTasks,
   };
@@ -100,7 +102,7 @@ assert.equal(migrated.skipPlayout, PLAYOUT_SKIP_DEFAULT);
 
 const speedSet = reducer(start, { type: 'SET_PLAYOUT_SPEED', speed: 4 });
 assert.equal(speedSet.playoutSpeed, 4);
-assert.equal(speedSet.surfaces.greens.quality, STARTING_QUALITY_GREENS);
+assert.equal(meanQuality(speedSet, 'greens'), STARTING_QUALITY_GREENS);
 const badSpeed = reducer(speedSet, { type: 'SET_PLAYOUT_SPEED', speed: 3 });
 assert.equal(badSpeed.playoutSpeed, 4);
 const skipSet = reducer(start, { type: 'SET_SKIP_PLAYOUT', value: true });
@@ -147,12 +149,12 @@ const mid = tickPlayout(film, eventDurationMs(first, 1) / 2, 1);
 assert.equal(mid.status, PLAYOUT_PLAYING);
 assert.equal(mid.cursor, 0);
 const surfacesBefore = playoutSurfaces(watchedState.log.at(-1), mid);
-assert.equal(surfacesBefore.greens.quality, watchedState.log.at(-1).before.greens.quality);
+assert.equal(meanQuality({ holes: surfacesBefore }, 'greens'), meanQuality({ holes: watchedState.log.at(-1).before }, 'greens'));
 const afterFirst = tickPlayout(film, eventDurationMs(first, 1), 1);
 assert.equal(afterFirst.status, PLAYOUT_PLAYING);
 assert.equal(afterFirst.cursor, 1);
 const surfacesAfter = playoutSurfaces(watchedState.log.at(-1), afterFirst);
-assert.equal(surfacesAfter.greens.quality, first.after);
+assert.equal(meanQuality({ holes: surfacesAfter }, 'greens'), first.after);
 
 const appSrc = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
 assert.match(appSrc, /buildPlayout/);

@@ -30,6 +30,8 @@ import { createInitialState, reducer } from '../src/engine/gameState.js';
 import { irrigationDemand, pondPercent, resolveIrrigation } from '../src/engine/irrigation.js';
 import { clampQuality, decayAmount } from '../src/engine/simulation.js';
 import { applyWeatherToWorkers } from '../src/engine/weather.js';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+
 
 function endKeep(state, extras = {}) {
   const next = reducer(state, { type: 'END_DAY' });
@@ -117,13 +119,13 @@ let offSummer = {
   weather: STARTING_WEATHER,
   irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
 };
-const greensStart = offSummer.surfaces.greens.quality;
+const greensStart = meanQuality(offSummer, 'greens');
 assert.equal(greensStart, STARTING_QUALITY_GREENS);
 for (let i = 0; i < 5; i += 1) {
   offSummer = endKeep(offSummer, { season: 'summer' }).state;
 }
 assert.ok(
-  greensStart - offSummer.surfaces.greens.quality >= SUMMER_UNDERWATER_DECAY.greens * 5,
+  greensStart - meanQuality(offSummer, 'greens') >= SUMMER_UNDERWATER_DECAY.greens * 5,
   'summer off irrigation hammers greens within five days',
 );
 
@@ -142,16 +144,19 @@ const demand = irrigationDemand(hand);
 assert.equal(demand.demand.greens, 0);
 const afterHand = endKeep(hand, { season: 'summer' });
 const expectedHandGreens = clampQuality(greensStart - decayAmount(greensStart, 'summer'));
-assert.equal(afterHand.state.surfaces.greens.quality, expectedHandGreens);
-const afterDryGreens = endKeep(
-  {
-    ...createInitialState(),
-    season: 'summer',
-    weather: STARTING_WEATHER,
-    irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
-  },
-  { season: 'summer' },
-).state.surfaces.greens.quality;
+assert.ok(Math.abs(meanQuality(afterHand.state, 'greens') - expectedHandGreens) < 1e-9);
+const afterDryGreens = meanQuality(
+  endKeep(
+    {
+      ...createInitialState(),
+      season: 'summer',
+      weather: STARTING_WEATHER,
+      irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
+    },
+    { season: 'summer' },
+  ).state,
+  'greens',
+);
 assert.ok(afterDryGreens < expectedHandGreens);
 
 const lowPond = {

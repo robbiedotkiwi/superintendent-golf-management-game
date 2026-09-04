@@ -21,7 +21,7 @@ const office = readFileSync(new URL('../src/components/Office.jsx', import.meta.
 assert.match(office, /formatMoney\(state\.cash\)/);
 assert.match(office, /formatMoney\(state\.maintenanceBudget\)/);
 assert.match(office, /formatMoney\(state\.capitalBudget\)/);
-assert.match(office, /\{state\.holes\}-hole course/);
+assert.match(office, /\{holeCount\(state\)\}-hole course/);
 
 const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
 assert.match(app, /<Sidebar/);

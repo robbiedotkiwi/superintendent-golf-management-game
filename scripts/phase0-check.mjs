@@ -24,6 +24,7 @@ import {
   initialState,
   reducer,
 } from '../src/engine/gameState.js';
+import { holeCount, meanQuality } from '../src/engine/holes.js';
 
 const state = createInitialState();
 
@@ -31,15 +32,15 @@ assert.equal(state.day, STARTING_DAY);
 assert.equal(state.season, STARTING_SEASON);
 assert.equal(state.year, STARTING_YEAR);
 assert.equal(state.cash, STARTING_CASH);
-assert.equal(state.holes, HOLE_COUNT);
+assert.equal(holeCount(state), HOLE_COUNT);
 assert.ok(Array.isArray(state.workers));
 assert.ok(state.workers.length >= 1);
 assert.equal(state.workers[0].minutesToday, DAY_LENGTH_MINUTES);
-assert.equal(state.surfaces.greens.quality, STARTING_QUALITY_GREENS);
-assert.equal(state.surfaces.tees.quality, STARTING_QUALITY_TEES);
-assert.equal(state.surfaces.fairways.quality, STARTING_QUALITY_FAIRWAYS);
-assert.equal(state.surfaces.rough.quality, STARTING_QUALITY_ROUGH);
-assert.equal(state.surfaces.bunkers.quality, STARTING_QUALITY_BUNKERS);
+assert.equal(meanQuality(state, 'greens'), STARTING_QUALITY_GREENS);
+assert.equal(meanQuality(state, 'tees'), STARTING_QUALITY_TEES);
+assert.equal(meanQuality(state, 'fairways'), STARTING_QUALITY_FAIRWAYS);
+assert.equal(meanQuality(state, 'rough'), STARTING_QUALITY_ROUGH);
+assert.equal(meanQuality(state, 'bunkers'), STARTING_QUALITY_BUNKERS);
 assert.equal(state.workers[0].speedSkill, PLAYER_SPEED_SKILL);
 assert.equal(state.workers[0].qualitySkill, PLAYER_QUALITY_SKILL);
 

@@ -1,5 +1,6 @@
 import { clampRange } from './satisfaction.js';
 import { presentationScore } from './mowing.js';
+import { meanQuality } from './holes.js';
 import { logTournament } from './history.js';
 import { calendarFromDay } from './calendar.js';
 import {
@@ -29,12 +30,19 @@ import {
 
 const RAIN_DAYS = [WEATHER_RAIN, WEATHER_HEAVY_RAIN, WEATHER_STORM];
 
-export function tournamentScore(surfaces) {
+function qualityOf(input, type) {
+  if (Array.isArray(input?.holes) || Array.isArray(input)) {
+    return meanQuality(input, type);
+  }
+  return Number(input?.[type]?.quality ?? input?.surfaces?.[type]?.quality ?? 0);
+}
+
+export function tournamentScore(state) {
   const quality = Object.entries(TOURNAMENT_WEIGHTS).reduce(
-    (total, [surface, weight]) => total + (surfaces[surface]?.quality ?? 0) * weight,
+    (total, [surface, weight]) => total + qualityOf(state, surface) * weight,
     0,
   );
-  return quality + presentationScore(surfaces);
+  return quality + presentationScore(state);
 }
 
 export function bandFromScore(score) {
@@ -44,8 +52,8 @@ export function bandFromScore(score) {
   return 'poor';
 }
 
-export function tournamentResult(surfaces, weather, extraScore = 0) {
-  const score = tournamentScore(surfaces) + extraScore;
+export function tournamentResult(state, weather, extraScore = 0) {
+  const score = tournamentScore(state) + extraScore;
   let band = bandFromScore(score);
   if (RAIN_DAYS.includes(weather) && (band === 'excellent' || band === 'good')) {
     band = 'acceptable';
@@ -61,7 +69,7 @@ export function tournamentResult(surfaces, weather, extraScore = 0) {
 
 export function applySnapTournament(state) {
   if (state.snappedToday) return state;
-  const result = tournamentResult(state.surfaces, state.weather, 0);
+  const result = tournamentResult(state, state.weather, 0);
   return {
     ...state,
     snappedToday: true,
@@ -125,10 +133,10 @@ export function inPrepWindow(state) {
   return days >= 1 && days <= TOURNAMENT_PREP_DAYS;
 }
 
-export function applyScheduledTournament(state, surfaces) {
+export function applyScheduledTournament(state, _ignored) {
   const event = (state.tournaments ?? []).find((item) => item.day === state.day && !item.done);
   if (!event) return { state, result: null };
-  const result = tournamentResult(surfaces, state.weather, state.tournamentPrepScore ?? 0);
+  const result = tournamentResult(state, state.weather, state.tournamentPrepScore ?? 0);
   return {
     state: {
       ...state,

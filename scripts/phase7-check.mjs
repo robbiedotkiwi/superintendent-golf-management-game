@@ -98,7 +98,7 @@ assert.equal(attended.gmStanding, GM_STANDING_START);
 
 const satStart = createInitialState().satisfaction;
 const afterSat = endKeep(createInitialState());
-assert.notEqual(afterSat.satisfaction, courseCondition(afterSat.surfaces));
+assert.notEqual(afterSat.satisfaction, courseCondition(afterSat));
 assert.notEqual(afterSat.satisfaction, satStart);
 
 assert.ok(maintenanceGrant(90, SATISFACTION_START) > maintenanceGrant(10, SATISFACTION_START));

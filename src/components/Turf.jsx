@@ -48,6 +48,7 @@ import { formatMoney } from '../engine/format.js';
 import { canBuyAerator, irrigationDemand, IRRIGATED_SURFACES, pondPercent } from '../engine/irrigation.js';
 import { canBuyGreensSensors, canBuyTurfRad } from '../engine/moisture.js';
 import { daysSinceLastWorked, isNeglected } from '../engine/neglect.js';
+import { courseSettings, holeCount, meanQuality } from '../engine/holes.js';
 import { hasHoc, hasPattern, inHocStressBand } from '../engine/mowing.js';
 import { presetsForSurface } from '../engine/presets.js';
 import ForecastStrip from './ForecastStrip.jsx';
@@ -151,7 +152,7 @@ export default function Turf({
               {MATCH_LAST_MOWING_LABEL}
             </button>
             {SURFACE_KEYS.map((surface) => {
-              const record = state.surfaces[surface];
+              const record = courseSettings(state, surface) ?? {};
               const days = daysSinceLastWorked(state, surface);
               const neglected = isNeglected(state, surface);
               const disease = state.disease?.[surface];
@@ -161,7 +162,7 @@ export default function Turf({
                   <div className="flex items-baseline justify-between gap-2">
                     <h2 className="text-lg font-semibold">{SURFACE_LABELS[surface]}</h2>
                     <span className="text-sm text-[var(--sand)]">
-                      {formatQuality(record.quality)}
+                      {formatQuality(meanQuality(state, surface))}
                       {neglected ? ' · overdue' : ''}
                     </span>
                   </div>
@@ -247,7 +248,7 @@ export default function Turf({
           <section className="border border-[var(--sand)] p-3">
             <h3 className="text-lg font-semibold">Hand-water targeting</h3>
             <div className="mt-2 grid grid-cols-3 gap-1">
-              {Array.from({ length: state.holes ?? 9 }, (_, index) => index + 1).map((id) => {
+              {Array.from({ length: holeCount(state) }, (_, index) => index + 1).map((id) => {
                 const on = (state.handWaterTargets ?? []).includes(id);
                 return (
                   <label key={id} className="flex items-center gap-1 text-sm">
@@ -431,7 +432,7 @@ function MowingSurface({
   onRemove,
   onSetMachineOverride,
 }) {
-  const record = state.surfaces[surface];
+  const record = courseSettings(state, surface) ?? {};
   const showHoc = hasHoc(surface);
   const showPattern = hasPattern(surface);
   const stress = showHoc && inHocStressBand(surface, record.hoc);
@@ -522,7 +523,6 @@ function MowingSurface({
 }
 
 function BunkerTab({ state, onPlan, onRemove }) {
-  const record = state.surfaces.bunkers;
   const days = daysSinceLastWorked(state, 'bunkers');
   const planned = state.plannedTasks.find((item) => item.taskId === 'rakeBunkers');
   const check = canPlanTask(state, 'rakeBunkers');
@@ -531,7 +531,7 @@ function BunkerTab({ state, onPlan, onRemove }) {
     <section className="border border-[var(--sand)] p-3">
       <h3 className="text-lg font-semibold">Bunkers</h3>
       <p className="mt-2">
-        Quality {formatQuality(record.quality)} · {days}d since raked
+        Quality {formatQuality(meanQuality(state, 'bunkers'))} · {days}d since raked
         {isNeglected(state, 'bunkers') ? ' · overdue' : ''}
       </p>
       {planned ? (

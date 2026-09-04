@@ -26,6 +26,8 @@ import { createInitialState, reducer } from '../src/engine/gameState.js';
 import { hocFactor, inHocStressBand, mowingMinutes } from '../src/engine/mowing.js';
 import { migrateSave } from '../src/engine/save.js';
 import { applyWeatherToWorkers } from '../src/engine/weather.js';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
 const thisFile = fileURLToPath(import.meta.url);
@@ -62,19 +64,19 @@ function endKeep(state, extras = {}) {
 }
 
 const start = createInitialState();
-assert.equal(start.surfaces.greens.hoc, HOC_RANGE.greens.default);
-assert.equal(start.surfaces.tees.hoc, HOC_RANGE.tees.default);
-assert.equal(start.surfaces.fairways.hoc, HOC_RANGE.fairways.default);
-assert.equal(start.surfaces.rough.hoc, HOC_RANGE.rough.default);
-assert.equal(start.surfaces.greens.pattern, PATTERN_STRIPES);
-assert.equal(start.surfaces.fairways.pattern, PATTERN_BLOCK);
-assert.equal(start.surfaces.rough.pattern, PATTERN_BLOCK);
+assert.equal(courseSettings(start, 'greens').hoc, HOC_RANGE.greens.default);
+assert.equal(courseSettings(start, 'tees').hoc, HOC_RANGE.tees.default);
+assert.equal(courseSettings(start, 'fairways').hoc, HOC_RANGE.fairways.default);
+assert.equal(courseSettings(start, 'rough').hoc, HOC_RANGE.rough.default);
+assert.equal(courseSettings(start, 'greens').pattern, PATTERN_STRIPES);
+assert.equal(courseSettings(start, 'fairways').pattern, PATTERN_BLOCK);
+assert.equal(courseSettings(start, 'rough').pattern, PATTERN_BLOCK);
 
 let lowered = reducer(start, { type: 'SET_HOC', surface: 'greens', hoc: HOC_RANGE.greens.min });
-assert.equal(lowered.surfaces.greens.hoc, HOC_RANGE.greens.min);
+assert.equal(courseSettings(lowered, 'greens').hoc, HOC_RANGE.greens.min);
 const roundTrip = migrateSave(JSON.parse(JSON.stringify(lowered)));
-assert.equal(roundTrip.surfaces.greens.hoc, HOC_RANGE.greens.min);
-assert.equal(roundTrip.surfaces.greens.pattern, PATTERN_STRIPES);
+assert.equal(courseSettings(roundTrip, 'greens').hoc, HOC_RANGE.greens.min);
+assert.equal(courseSettings(roundTrip, 'greens').pattern, PATTERN_STRIPES);
 assert.equal(roundTrip.view.zoom, 1);
 
 const old = migrateSave({
@@ -88,10 +90,10 @@ const old = migrateSave({
     bunkers: { quality: 40 },
   },
 });
-assert.equal(old.surfaces.greens.hoc, HOC_RANGE.greens.default);
-assert.equal(old.surfaces.greens.pattern, PATTERN_STRIPES);
+assert.equal(courseSettings(old, 'greens').hoc, HOC_RANGE.greens.default);
+assert.equal(courseSettings(old, 'greens').pattern, PATTERN_STRIPES);
 assert.equal(old.view.panX, 0);
-assert.equal(old.surfaces.greens.moisture, null);
+assert.equal(typeof holeSurface(old, 1, 'greens').moisture, 'number');
 
 const defaultTime = mowingMinutes(start, 'cutGreens');
 const defaultCeiling = surfaceCeiling(start, 'greens');
@@ -110,7 +112,7 @@ let low = reducer(
 );
 high = endKeep(high, { season: 'summer' });
 low = endKeep(low, { season: 'summer' });
-assert.equal(high.surfaces.greens.quality - low.surfaces.greens.quality, HOC_STRESS_DAMAGE);
+assert.equal(meanQuality(high, 'greens') - meanQuality(low, 'greens'), HOC_STRESS_DAMAGE);
 
 const panel = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
 assert.match(panel, /inHocStressBand/);
@@ -136,14 +138,14 @@ const irrigated = {
   weather: STARTING_WEATHER,
 };
 const grain = cutGreensDays(irrigated, 8);
-assert.ok(grain.surfaces.greens.patternWear > PATTERN_WEAR_THRESHOLD);
+assert.ok(holeSurface(grain, 1, 'greens').patternWear > PATTERN_WEAR_THRESHOLD);
 
 const rotated = cutGreensDays(
   reducer(irrigated, { type: 'SET_AUTO_ROTATE', surface: 'greens', value: true }),
   8,
 );
-assert.equal(rotated.surfaces.greens.patternWear, 0);
-assert.ok(rotated.surfaces.greens.quality > grain.surfaces.greens.quality);
+assert.equal(holeSurface(rotated, 1, 'greens').patternWear, 0);
+assert.ok(meanQuality(rotated, 'greens') > meanQuality(grain, 'greens'));
 
 const player = start.workers[0];
 const dayTotal = ['cutGreens', 'rollGreens', 'changeCups', 'cutTees', 'cutFairways', 'cutRough', 'rakeBunkers'].reduce(

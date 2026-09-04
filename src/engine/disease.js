@@ -62,7 +62,7 @@ export function applySpray(state, surface) {
 }
 
 export function applyFertiliser(state, surface) {
-  const factor = hocFactor(surface, state.surfaces?.[surface]?.hoc);
+  const factor = hocFactor(surface, state.surfaceDefaults?.[surface]?.hoc);
   const days = Math.round(HOC_FERT_INTERVAL(factor));
   return {
     ...state,

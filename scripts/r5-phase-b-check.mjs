@@ -32,6 +32,8 @@ import {
 } from '../src/engine/badges.js';
 import { createInitialState, reducer } from '../src/engine/gameState.js';
 import { migrateSave } from '../src/engine/save.js';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+
 
 assert.equal(SECTION_TURF, 'turf');
 assert.deepEqual(TURF_TABS, [
@@ -124,8 +126,8 @@ assert.equal(shedDot({ ...start, activeSales: [{ id: 'sale-x' }] }), true);
 assert.equal(shedDot({ ...start, lastDeliveryDay: start.day }), true);
 
 let shipped = reducer(start, { type: 'APPLY_SHIPPED_PRESET', id: 'tournament' });
-assert.equal(shipped.surfaces.greens.hoc, 2.8);
-assert.equal(shipped.surfaces.fairways.pattern, 'stripes');
+assert.equal(courseSettings(shipped, 'greens').hoc, 2.8);
+assert.equal(courseSettings(shipped, 'fairways').pattern, 'stripes');
 
 let mid = start;
 for (let i = 0; i < 39; i += 1) mid = reducer(mid, { type: 'END_DAY' });

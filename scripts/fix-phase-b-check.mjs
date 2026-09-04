@@ -16,6 +16,8 @@ import { createInitialState, reducer } from '../src/engine/gameState.js';
 import { daysSinceLastWorked, isDoubleNeglected, neglectSatisfactionDrain } from '../src/engine/neglect.js';
 import { migrateSave } from '../src/engine/save.js';
 import { applyWeatherToWorkers } from '../src/engine/weather.js';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+
 
 function endKeep(state) {
   const next = reducer(state, { type: 'END_DAY' });
@@ -36,21 +38,21 @@ const start = createInitialState();
 for (const surface of SURFACE_KEYS) {
   assert.equal(daysSinceLastWorked(start, surface), 0);
 }
-assert.equal(start.surfaces.greens.lastMownDay, STARTING_DAY);
-assert.equal(start.surfaces.bunkers.lastRakedDay, STARTING_DAY);
+assert.equal(holeSurface(start, 1, 'greens').lastMownDay, STARTING_DAY);
+assert.equal(holeSurface(start, 1, 'bunkers').lastRakedDay, STARTING_DAY);
 
 let cut = reducer(start, { type: 'PLAN_TASK', taskId: 'cutGreens' });
 cut = endKeep(cut);
-assert.equal(cut.surfaces.greens.lastMownDay, STARTING_DAY);
+assert.equal(holeSurface(cut, 1, 'greens').lastMownDay, STARTING_DAY);
 assert.equal(daysSinceLastWorked(cut, 'greens'), 1);
 
 const saved = migrateSave(JSON.parse(JSON.stringify(cut)));
-assert.equal(saved.surfaces.greens.lastMownDay, STARTING_DAY);
+assert.equal(holeSurface(saved, 1, 'greens').lastMownDay, STARTING_DAY);
 assert.equal(daysSinceLastWorked(saved, 'greens'), 1);
 
 const three = skipDays(3);
 assert.equal(daysSinceLastWorked(three, 'greens'), NEGLECT_THRESHOLD.greens + NEGLECT_GOLFER_AFTER);
-assert.ok(three.inbox.some((item) => item.from === 'golfer' && item.kind === 'greens' && /greens/i.test(item.body)));
+assert.ok(three.inbox.some((item) => item.from === 'golfer' && item.kind === 'greens' && /green/i.test(item.body)));
 assert.equal(
   three.inbox.some((item) => item.from === 'golfer' && item.kind === 'rough'),
   false,
@@ -72,7 +74,7 @@ const doubleGreens = NEGLECT_THRESHOLD.greens * NEGLECT_GM_MULTIPLIER;
 const gmDay = skipDays(doubleGreens);
 assert.equal(daysSinceLastWorked(gmDay, 'greens'), doubleGreens);
 assert.ok(isDoubleNeglected(gmDay, 'greens'));
-assert.ok(gmDay.inbox.some((item) => item.from === 'gm' && item.kind === 'neglect' && /greens/i.test(item.body)));
+assert.ok(gmDay.inbox.some((item) => item.from === 'gm' && item.kind === 'neglect' && /green/i.test(item.body)));
 assert.equal(neglectSatisfactionDrain(gmDay), NEGLECT_SATISFACTION_PENALTY);
 
 const beforeDrain = skipDays(doubleGreens - 1);

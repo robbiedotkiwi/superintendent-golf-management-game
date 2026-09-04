@@ -25,6 +25,7 @@ import { holesForCount } from '../src/data/course.js';
 import { durationForTask } from '../src/engine/assignment.js';
 import { surfaceCeiling } from '../src/engine/equipment.js';
 import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
+import { holeCount } from '../src/engine/holes.js';
 import {
   absorbNote,
   canStartProject,
@@ -52,7 +53,7 @@ assert.equal(canStartProject({ ...funded, satisfaction: EXPAND_18_SATISFACTION_M
 const summer = reducer({ ...funded, season: 'summer' }, { type: 'START_PROJECT', projectId: PROJECT_EXPAND_18 });
 assert.equal(summer.capitalBudget, funded.capitalBudget - EXPAND_18_COST);
 assert.equal(summer.projects[0].dueDay, funded.day + EXPAND_18_DAYS);
-assert.equal(summer.holes, HOLE_COUNT);
+assert.equal(holeCount(summer), HOLE_COUNT);
 
 const winter = reducer({ ...funded, season: 'winter' }, { type: 'START_PROJECT', projectId: PROJECT_EXPAND_18 });
 assert.ok(constructionMinutes(summer) > constructionMinutes(winter));
@@ -67,7 +68,7 @@ let done = {
   irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
 };
 done = reducer(done, { type: 'END_DAY' });
-assert.equal(done.holes, EXPANDED_HOLE_COUNT);
+assert.equal(holeCount(done), EXPANDED_HOLE_COUNT);
 assert.equal(done.projects.length, 0);
 assert.equal(holesForCount(done.holes).length, EXPANDED_HOLE_COUNT);
 assert.equal(holesForCount(HOLE_COUNT).length, HOLE_COUNT);

@@ -22,6 +22,7 @@ import { formatMoney } from '../engine/format.js';
 import { invitationById } from '../engine/events.js';
 import { canPlanTask } from '../engine/gameState.js';
 import { daysUntilNextTournament, nextTournament } from '../engine/tournament.js';
+import { holeCount } from '../engine/holes.js';
 import SeasonStart from './SeasonStart.jsx';
 import SectionTabs from './SectionTabs.jsx';
 import {
@@ -81,7 +82,7 @@ export default function Office({
         Maintenance {formatMoney(state.maintenanceBudget)} · Capital {formatMoney(state.capitalBudget)} · Cash {formatMoney(state.cash)}
       </p>
       <p className="mt-1 text-[var(--sand)]">
-        {state.holes}-hole course · Satisfaction {Math.round(state.satisfaction)} · GM standing {Math.round(state.gmStanding)}
+        {holeCount(state)}-hole course · Satisfaction {Math.round(state.satisfaction)} · GM standing {Math.round(state.gmStanding)}
       </p>
       <p className="mt-1 text-sm text-[var(--sand)]">
         {upcoming == null

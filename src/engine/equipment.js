@@ -336,7 +336,7 @@ export function surfaceCeiling(state, surface) {
 }
 
 function hocCeilingBonus(state, surface) {
-  const height = state.surfaces?.[surface]?.hoc;
+  const height = state.surfaceDefaults?.[surface]?.hoc;
   if (height == null) return 0;
   return HOC_CEILING_BONUS(hocFactor(surface, height));
 }

@@ -19,14 +19,14 @@ assert.deepEqual(skippedOverdueSurfaces(start), []);
 const neglected = {
   ...start,
   day: 10,
-  surfaces: {
-    ...start.surfaces,
-    greens: { ...start.surfaces.greens, lastMownDay: 1 },
-    tees: { ...start.surfaces.tees, lastMownDay: 10 },
-    fairways: { ...start.surfaces.fairways, lastMownDay: 10 },
-    rough: { ...start.surfaces.rough, lastMownDay: 10 },
-    bunkers: { ...start.surfaces.bunkers, lastRakedDay: 10 },
-  },
+  holes: start.holes.map((hole) => ({
+    ...hole,
+    green: { ...hole.green, lastMownDay: 1 },
+    tee: { ...hole.tee, lastMownDay: 10 },
+    fairway: { ...hole.fairway, lastMownDay: 10 },
+    rough: { ...hole.rough, lastMownDay: 10 },
+    bunker: hole.bunker ? { ...hole.bunker, lastRakedDay: 10 } : null,
+  })),
 };
 assert.deepEqual(skippedOverdueSurfaces(neglected), ['greens']);
 const planned = reducer(neglected, { type: 'PLAN_TASK', taskId: 'cutGreens' });

@@ -36,6 +36,7 @@ import { HOLES } from '../data/course.js';
 import { lerpHex } from './color.js';
 import { hocFactor } from './mowing.js';
 import { formatMoney } from './format.js';
+import { holeCount, mapHoleSurfaces } from './holes.js';
 
 const WINDY_WEATHER = [WEATHER_FINE, WEATHER_OVERCAST];
 
@@ -117,7 +118,7 @@ function cloneReadDay(readDay, holes = HOLE_COUNT) {
 }
 
 function etMultiplier(state, surface) {
-  const factor = hocFactor(surface, state.surfaces?.[surface]?.hoc);
+  const factor = hocFactor(surface, state.surfaceDefaults?.[surface]?.hoc);
   const season = MOISTURE_ET_SEASON[state.season] ?? 1;
   const weather = MOISTURE_ET_WEATHER[state.weather] ?? 1;
   const wind = state.windSpeed ?? STARTING_WIND_SPEED;
@@ -137,7 +138,7 @@ function rainAdd(weather) {
 }
 
 export function tickMoisture(state) {
-  const holes = state.holes ?? HOLE_COUNT;
+  const holes = holeCount(state);
   const next = cloneMoisture(state.moisture, holes);
   const rain = rainAdd(state.weather);
   for (const surface of ['tees', 'fairways']) {
@@ -150,6 +151,26 @@ export function tickMoisture(state) {
     const prev = next.greens[index] ?? MOISTURE_START.greens;
     return clampMoisture(prev + greensAdd - greensEt * dryingFactorForGreen(index));
   });
+  return next;
+}
+
+export function writeMoistureToHoles(holes, moisture, moistureReadDay) {
+  let next = holes;
+  next = mapHoleSurfaces(next, 'greens', (record, hole) => ({
+    ...record,
+    moisture: moisture?.greens?.[hole.id - 1] ?? record.moisture,
+    moistureReadDay: moistureReadDay?.greens?.[hole.id - 1] ?? record.moistureReadDay,
+  }));
+  next = mapHoleSurfaces(next, 'tees', (record) => ({
+    ...record,
+    moisture: moisture?.tees ?? record.moisture,
+    moistureReadDay: moistureReadDay?.tees ?? record.moistureReadDay,
+  }));
+  next = mapHoleSurfaces(next, 'fairways', (record) => ({
+    ...record,
+    moisture: moisture?.fairways ?? record.moisture,
+    moistureReadDay: moistureReadDay?.fairways ?? record.moistureReadDay,
+  }));
   return next;
 }
 
@@ -186,7 +207,7 @@ function readingKind(age, neverStale) {
 }
 
 export function moistureStatus(state, surface, greenIndex = null) {
-  const holes = state.holes ?? HOLE_COUNT;
+  const holes = holeCount(state);
   const moisture = state.moisture ?? emptyMoisture(holes);
   const readDay = state.moistureReadDay ?? emptyMoistureReadDay(holes);
   if (surface === 'greens') {
@@ -205,7 +226,7 @@ export function moistureStatus(state, surface, greenIndex = null) {
 }
 
 export function greensStatuses(state) {
-  const holes = state.holes ?? HOLE_COUNT;
+  const holes = holeCount(state);
   return Array.from({ length: holes }, (_, index) => ({
     hole: index + 1,
     ...moistureStatus(state, 'greens', index),
@@ -243,7 +264,7 @@ export function outOfBand(value, surface) {
 }
 
 export function handWaterMinutes(state) {
-  const targets = state.handWaterTargets ?? allGreenIds(state.holes);
+  const targets = state.handWaterTargets ?? allGreenIds(holeCount(state));
   return HAND_WATER_MINUTES_PER_GREEN * targets.length;
 }
 
@@ -264,7 +285,7 @@ export function canBuyTurfRad(state) {
 }
 
 export function migrateMoisture(state) {
-  const holes = state.holes ?? HOLE_COUNT;
+  const holes = holeCount(state);
   const moisture = emptyMoisture(holes);
   if (Array.isArray(state.moisture?.greens)) {
     moisture.greens = Array.from({ length: holes }, (_, index) =>

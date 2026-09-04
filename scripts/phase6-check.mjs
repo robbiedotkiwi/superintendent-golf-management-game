@@ -25,6 +25,8 @@ import { surfaceCeiling } from '../src/engine/equipment.js';
 import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
 import { decayAmount, clampQuality } from '../src/engine/simulation.js';
 import { applyWeatherToWorkers } from '../src/engine/weather.js';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+
 
 function endKeep(state, extras = {}) {
   const next = reducer(state, { type: 'END_DAY' });
@@ -85,10 +87,6 @@ const outbreakStart = {
   ...afterGrace,
   season: 'winter',
   weather: STARTING_WEATHER,
-  surfaces: {
-    ...createInitialState().surfaces,
-    greens: { quality: STARTING_QUALITY_GREENS },
-  },
   disease: {
     ...createInitialState().disease,
     greens: { pressure: DISEASE_OUTBREAK_THRESHOLD, outbreak: false },
@@ -96,7 +94,7 @@ const outbreakStart = {
 };
 const afterOutbreak = endKeep(outbreakStart, { season: 'winter' });
 assert.equal(afterOutbreak.disease.greens.outbreak, true);
-assert.ok(STARTING_QUALITY_GREENS - afterOutbreak.surfaces.greens.quality >= DISEASE_OUTBREAK_DROP);
+assert.ok(STARTING_QUALITY_GREENS - meanQuality(afterOutbreak, 'greens') >= DISEASE_OUTBREAK_DROP);
 const outbreakSummary = afterOutbreak.log.at(-1);
 assert.ok(outbreakSummary.outbreaks.some((item) => item.surface === 'greens' && item.drop === DISEASE_OUTBREAK_DROP));
 
@@ -111,7 +109,7 @@ const afterOngoing = endKeep(ongoingStart, { season: 'winter' });
 const expectedOngoing = clampQuality(
   STARTING_QUALITY_GREENS - decayAmount(STARTING_QUALITY_GREENS, 'winter') - DISEASE_OUTBREAK_DAILY,
 );
-assert.equal(afterOngoing.surfaces.greens.quality, expectedOngoing);
+assert.equal(meanQuality(afterOngoing, 'greens'), expectedOngoing);
 
 let sprayed = certify(createInitialState());
 sprayed = {

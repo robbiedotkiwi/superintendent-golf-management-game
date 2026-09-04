@@ -23,6 +23,7 @@ import {
   TASK_TIME_MULT_18,
 } from '../data/constants.js';
 import { bumpCapitalSpent } from './history.js';
+import { expandHoleRecords, holeCount } from './holes.js';
 import { formatMoney } from './format.js';
 
 export const PROJECTS = {
@@ -77,14 +78,14 @@ export function absorbNote(season) {
 
 export function taskTimeMultiplier(state, task) {
   if (!task || task.id === 'gmMeeting' || task.id === 'pickBalls') return 1;
-  let mult = (state.holes ?? HOLE_COUNT) >= EXPANDED_HOLE_COUNT ? TASK_TIME_MULT_18 : 1;
+  let mult = holeCount(state) >= EXPANDED_HOLE_COUNT ? TASK_TIME_MULT_18 : 1;
   if (task.surface === 'bunkers' && state.hasExtraBunkers) mult *= EXTRA_BUNKER_TIME_MULT;
   if (task.surface === 'tees' && state.hasNewTees) mult *= NEW_TEES_TIME_MULT;
   return mult;
 }
 
 export function alreadyBuilt(state, id) {
-  if (id === PROJECT_EXPAND_18) return (state.holes ?? HOLE_COUNT) >= EXPANDED_HOLE_COUNT;
+  if (id === PROJECT_EXPAND_18) return holeCount(state) >= EXPANDED_HOLE_COUNT;
   if (id === PROJECT_DRIVING_RANGE) return Boolean(state.hasDrivingRange);
   if (id === PROJECT_EXTRA_BUNKERS) return Boolean(state.hasExtraBunkers);
   if (id === PROJECT_NEW_TEES) return Boolean(state.hasNewTees);
@@ -155,7 +156,7 @@ export function buyAutoPicker(state) {
 }
 
 function completeProject(state, id) {
-  if (id === PROJECT_EXPAND_18) return { ...state, holes: EXPANDED_HOLE_COUNT };
+  if (id === PROJECT_EXPAND_18) return { ...state, holes: expandHoleRecords(state) };
   if (id === PROJECT_DRIVING_RANGE) return { ...state, hasDrivingRange: true };
   if (id === PROJECT_EXTRA_BUNKERS) return { ...state, hasExtraBunkers: true };
   if (id === PROJECT_NEW_TEES) return { ...state, hasNewTees: true };

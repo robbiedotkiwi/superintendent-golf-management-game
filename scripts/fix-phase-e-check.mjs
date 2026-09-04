@@ -62,7 +62,7 @@ const reset = reducer(fitted, { type: 'SET_VIEW', view: fitCourse() });
 assert.equal(reset.view.zoom, VIEW_ZOOM_DEFAULT);
 assert.equal(reset.view.panX, VIEW_PAN_X_DEFAULT);
 
-const migrated = withDefaults({ day: 1, surfaces: createInitialState().surfaces });
+const migrated = withDefaults({ day: 1, holes: createInitialState().holes, surfaceDefaults: createInitialState().surfaceDefaults });
 assert.equal(migrated.view.zoom, VIEW_ZOOM_DEFAULT);
 
 const map = readFileSync(new URL('../src/components/CourseMap.jsx', import.meta.url), 'utf8');

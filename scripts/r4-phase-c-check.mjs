@@ -22,6 +22,8 @@ import {
 } from '../src/data/constants.js';
 import { durationForTask } from '../src/engine/assignment.js';
 import { createInitialState } from '../src/engine/gameState.js';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+
 
 assert.equal(PATTERN_SURFACE_DEFAULT.greens, PATTERN_STRIPES);
 assert.equal(PATTERN_SURFACE_DEFAULT.tees, PATTERN_STRIPES);
@@ -32,9 +34,9 @@ assert.ok(PATTERNED_SURFACES.includes('rough'));
 assert.deepEqual(STARTING_MACHINE_IDS, [GREENSMASTER_ID, REELMASTER_ID]);
 
 const start = createInitialState();
-assert.equal(start.surfaces.fairways.pattern, PATTERN_BLOCK);
-assert.equal(start.surfaces.rough.pattern, PATTERN_BLOCK);
-assert.equal(start.surfaces.greens.pattern, PATTERN_STRIPES);
+assert.equal(courseSettings(start, 'fairways').pattern, PATTERN_BLOCK);
+assert.equal(courseSettings(start, 'rough').pattern, PATTERN_BLOCK);
+assert.equal(courseSettings(start, 'greens').pattern, PATTERN_STRIPES);
 assert.deepEqual(start.ownedMachines, STARTING_MACHINE_IDS);
 assert.equal(start.machineCondition[GREENSMASTER_ID], GREENSMASTER_START_CONDITION);
 assert.equal(start.machineCondition[REELMASTER_ID], REELMASTER_START_CONDITION);

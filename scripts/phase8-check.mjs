@@ -46,6 +46,8 @@ import {
   tournamentScore,
 } from '../src/engine/tournament.js';
 import { applyWeatherToWorkers } from '../src/engine/weather.js';
+import { setQualities, setTypeQuality } from '../src/engine/holes.js';
+
 
 function surfaces(values) {
   return {
@@ -141,18 +143,21 @@ assert.equal(rained.pay, TOURNAMENT_ACCEPTABLE_PAY);
 assert.equal(rained.satisfaction, TOURNAMENT_ACCEPTABLE_SAT);
 assert.equal(rained.rained, true);
 
-const paid = applyScheduledTournament(
-  {
-    ...createInitialState(),
-    day: 10,
-    weather: WEATHER_FINE,
-    cash: 0,
-    satisfaction: 50,
-    tournaments: [{ day: 10, done: false }],
-    tournamentPrepScore: 0,
-  },
-  excellent,
-);
+const paid = applyScheduledTournament({
+  ...setQualities(createInitialState(), {
+    greens: 100,
+    tees: 100,
+    fairways: 100,
+    rough: 50,
+    bunkers: 50,
+  }),
+  day: 10,
+  weather: WEATHER_FINE,
+  cash: 0,
+  satisfaction: 50,
+  tournaments: [{ day: 10, done: false }],
+  tournamentPrepScore: 0,
+});
 assert.equal(paid.state.cash, TOURNAMENT_EXCELLENT_PAY);
 assert.equal(paid.state.satisfaction, 50 + TOURNAMENT_EXCELLENT_SAT);
 assert.equal(paid.state.tournaments[0].done, true);
@@ -193,12 +198,19 @@ prepped = {
   season: 'summer',
   weather: WEATHER_FINE,
   irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
-  surfaces: surfaces({ greens: 80, tees: 80, fairways: 80, bunkers: 80 }),
+  holes: setTypeQuality(
+    setTypeQuality(
+      setTypeQuality(setTypeQuality(prepped, 'greens', 80), 'tees', 80),
+      'fairways',
+      80,
+    ),
+    'bunkers',
+    80,
+  ).holes,
 };
 const afterPrep = reducer(prepped, { type: 'END_DAY' });
-const played = afterPrep.log[afterPrep.log.length - 1];
-const withBonus = tournamentResult(played.after, WEATHER_FINE, TOURNAMENT_PREP_ROLL_BONUS);
-const withoutBonus = tournamentResult(played.after, WEATHER_FINE, 0);
+const withBonus = tournamentResult(afterPrep, WEATHER_FINE, TOURNAMENT_PREP_ROLL_BONUS);
+const withoutBonus = tournamentResult(afterPrep, WEATHER_FINE, 0);
 assert.ok(afterPrep.lastTournament);
 assert.equal(afterPrep.lastTournament.score, withBonus.score);
 assert.ok(withBonus.score > withoutBonus.score);
@@ -214,16 +226,21 @@ assert.ok(WEATHER_WEIGHTS.winter.fine < WEATHER_WEIGHTS.spring.fine);
 assert.equal(tournamentResult(excellent, WEATHER_RAIN).band, 'acceptable');
 assert.ok(winterRainShare > 0);
 
-const high = surfaces({ greens: 90, tees: 90, fairways: 90, bunkers: 90 });
+const highState = setQualities(createInitialState(), {
+  greens: 90,
+  tees: 90,
+  fairways: 90,
+  rough: 50,
+  bunkers: 90,
+});
 const snap = applySnapTournament({
-  ...createInitialState(),
+  ...highState,
   tournamentPrepScore: 40,
-  surfaces: high,
   weather: WEATHER_FINE,
   cash: STARTING_CASH,
 });
-assert.equal(snap.lastSnap.score, tournamentScore(high));
-assert.notEqual(snap.lastSnap.score, tournamentScore(high) + 40);
+assert.equal(snap.lastSnap.score, tournamentScore(highState));
+assert.notEqual(snap.lastSnap.score, tournamentScore(highState) + 40);
 assert.equal(canPlanTask({ ...createInitialState(), tournamentPrepScore: 40 }, 'extraRoll').ok, false);
 
 const start = createInitialState();

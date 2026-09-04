@@ -35,6 +35,8 @@ import {
 } from '../src/engine/equipment.js';
 import { createInitialState, reducer } from '../src/engine/gameState.js';
 import { migrateSave } from '../src/engine/save.js';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+
 
 assert.deepEqual(TURF_TABS, [
   TURF_TAB_SUMMARY,
@@ -77,25 +79,25 @@ assert.deepEqual(start.machineOverride, {
   rough: null,
 });
 for (const surface of HOC_SURFACES) {
-  assert.equal(start.surfaces[surface].heightAtLastCut, null);
-  assert.equal(start.surfaces[surface].patternAtLastCut, null);
-  assert.equal(start.surfaces[surface].angleAtLastCut, null);
+  assert.equal(holeSurface(start, 1, surface).heightAtLastCut, null);
+  assert.equal(holeSurface(start, 1, surface).patternAtLastCut, null);
+  assert.equal(holeSurface(start, 1, surface).angleAtLastCut, null);
 }
 
 const planned = reducer(start, { type: 'PLAN_TASK', taskId: CUT_TASK_BY_SURFACE.greens });
 assert.equal(planned.plannedTasks.length, 1);
 assert.equal(planned.plannedTasks[0].taskId, 'cutGreens');
-assert.equal(planned.surfaces.greens.heightAtLastCut, null, 'last-cut fields are not written at plan time');
+assert.equal(holeSurface(planned, 1, 'greens').heightAtLastCut, null, 'last-cut fields are not written at plan time');
 
 let changed = reducer(start, { type: 'SET_HOC', surface: 'greens', hoc: 2.8 });
 changed = reducer(changed, { type: 'SET_PATTERN', surface: 'greens', pattern: PATTERN_RINGS });
 changed = reducer(changed, { type: 'SET_ANGLE', surface: 'greens', angle: 45 });
 changed = reducer(changed, { type: 'PLAN_TASK', taskId: 'cutGreens' });
-assert.equal(changed.surfaces.greens.heightAtLastCut, null);
+assert.equal(holeSurface(changed, 1, 'greens').heightAtLastCut, null);
 let resolved = reducer(changed, { type: 'END_DAY' });
-assert.equal(resolved.surfaces.greens.heightAtLastCut, 2.8);
-assert.equal(resolved.surfaces.greens.patternAtLastCut, PATTERN_RINGS);
-assert.equal(resolved.surfaces.greens.angleAtLastCut, 45);
+assert.equal(holeSurface(resolved, 1, 'greens').heightAtLastCut, 2.8);
+assert.equal(holeSurface(resolved, 1, 'greens').patternAtLastCut, PATTERN_RINGS);
+assert.equal(holeSurface(resolved, 1, 'greens').angleAtLastCut, 45);
 assert.equal(resolved.plannedTasks.length, 0);
 
 resolved = reducer(resolved, { type: 'SET_HOC', surface: 'greens', hoc: 4.0 });
@@ -104,18 +106,18 @@ resolved = reducer(resolved, { type: 'SET_ANGLE', surface: 'greens', angle: 0 })
 resolved = reducer(resolved, { type: 'PLAN_TASK', taskId: 'rakeBunkers' });
 const plannedCount = resolved.plannedTasks.length;
 const matched = reducer(resolved, { type: 'MATCH_LAST_MOWING' });
-assert.equal(matched.surfaces.greens.hoc, 2.8);
-assert.equal(matched.surfaces.greens.pattern, PATTERN_RINGS);
-assert.equal(matched.surfaces.greens.angle, 45);
+assert.equal(courseSettings(matched, 'greens').hoc, 2.8);
+assert.equal(courseSettings(matched, 'greens').pattern, PATTERN_RINGS);
+assert.equal(courseSettings(matched, 'greens').angle, 45);
 assert.equal(matched.plannedTasks.length, plannedCount, 'Match last mowing does not plan tasks');
 assert.equal(matched.plannedTasks[0]?.taskId, 'rakeBunkers');
 
 let neverCut = reducer(start, { type: 'SET_HOC', surface: 'tees', hoc: 12 });
 neverCut = reducer(neverCut, { type: 'SET_PATTERN', surface: 'tees', pattern: PATTERN_RINGS });
 neverCut = reducer(neverCut, { type: 'MATCH_LAST_MOWING' });
-assert.equal(neverCut.surfaces.tees.hoc, 12);
-assert.equal(neverCut.surfaces.tees.pattern, PATTERN_RINGS);
-assert.equal(neverCut.surfaces.greens.hoc, start.surfaces.greens.hoc);
+assert.equal(courseSettings(neverCut, 'tees').hoc, 12);
+assert.equal(courseSettings(neverCut, 'tees').pattern, PATTERN_RINGS);
+assert.equal(courseSettings(neverCut, 'greens').hoc, courseSettings(start, 'greens').hoc);
 
 const autoGreens = pickMachine(start, getTask('cutGreens'));
 assert.ok(autoGreens);
@@ -161,12 +163,13 @@ const migrated = migrateSave({
   },
 });
 assert.equal(migrated.tabs[SECTION_TURF], TURF_TAB_OTHER);
-assert.equal(migrated.surfaces.greens.heightAtLastCut, null);
+assert.equal(holeSurface(migrated, 1, 'greens').heightAtLastCut, null);
 assert.equal(migrated.machineOverride.greens, null);
 const pondSave = migrateSave({
   day: 12,
   tabs: { [SECTION_TURF]: TURF_TAB_LEGACY_POND },
-  surfaces: migrated.surfaces,
+  holes: migrated.holes,
+  surfaceDefaults: migrated.surfaceDefaults,
 });
 assert.equal(pondSave.tabs[SECTION_TURF], TURF_TAB_OTHER);
 

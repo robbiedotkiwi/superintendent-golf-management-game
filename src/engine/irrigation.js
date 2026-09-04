@@ -30,7 +30,7 @@ export function irrigationDemand(state) {
     const policy = state.irrigation[surface];
     let amount = 0;
     if (policy === 'light' || policy === 'full') {
-      const factor = hocFactor(surface, state.surfaces?.[surface]?.hoc);
+      const factor = hocFactor(surface, state.surfaceDefaults?.[surface]?.hoc);
       amount = IRRIGATION_M3[surface][policy] * seasonMult * HOC_WATER_MULT(factor);
     }
     demand[surface] = amount;

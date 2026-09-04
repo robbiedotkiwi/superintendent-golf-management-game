@@ -32,20 +32,31 @@ import { emptyDisease, emptyUntil } from './disease.js';
 import { migrateMachineMaps, normalizeMachineOverride } from './equipment.js';
 import { emptyYearRecord } from './history.js';
 import { emptyDaysSinceWorked } from './mail.js';
-import { mergeSurfaceFields } from './mowing.js';
+import { createInitialHoles, createSurfaceDefaults, fanGroupedToHoles, isHoleModel } from './holes.js';
 import { migrateMoisture } from './moisture.js';
 import { createRng } from './rng.js';
 import { buildForecast } from './weather.js';
 import { normalizeSection, normalizeTabs } from './section.js';
 import { migrateVolunteerWeekday } from './staff.js';
 
+function migrateHoleState(state) {
+  if (isHoleModel(state.holes)) {
+    return {
+      holes: state.holes,
+      surfaceDefaults: state.surfaceDefaults ?? createSurfaceDefaults(),
+    };
+  }
+  if (state.surfaces?.greens) {
+    return {
+      holes: fanGroupedToHoles(state),
+      surfaceDefaults: createSurfaceDefaults(state.surfaces),
+    };
+  }
+  return { holes: null, surfaceDefaults: null };
+}
+
 export function withDefaults(state) {
-  const surfaces = state.surfaces?.greens
-    ? SURFACE_KEYS.reduce((next, key) => {
-        next[key] = mergeSurfaceFields(key, state.surfaces?.[key] ?? {});
-        return next;
-      }, {})
-    : state.surfaces;
+  const holeState = migrateHoleState(state);
   const plannedTasks = (state.plannedTasks ?? []).map((item) => {
     const rest = { ...item };
     delete rest.level;
@@ -78,7 +89,9 @@ export function withDefaults(state) {
   });
   return {
     ...state,
-    surfaces,
+    holes: holeState.holes,
+    surfaceDefaults: holeState.surfaceDefaults,
+    saveVersion: SAVE_VERSION,
     plannedTasks,
     forecast,
     weatherQueue,
@@ -151,8 +164,7 @@ export function withDefaults(state) {
     hasAutoPicker: Boolean(state.hasAutoPicker),
     hasExtraBunkers: Boolean(state.hasExtraBunkers),
     hasNewTees: Boolean(state.hasNewTees),
-    holes: state.holes ?? HOLE_COUNT,
-    saveVersion: state.saveVersion ?? SAVE_VERSION,
+    saveVersion: SAVE_VERSION,
     soundEnabled: state.soundEnabled ?? SOUND_DEFAULT_ON,
     tutorialDone: Boolean(state.tutorialDone),
     pendingYearReview: Boolean(state.pendingYearReview),
@@ -171,13 +183,18 @@ export function withDefaults(state) {
 }
 
 function isUsable(state) {
-  return Boolean(state && typeof state.day === 'number' && state.surfaces?.greens);
+  return Boolean(state && typeof state.day === 'number' && isHoleModel(state.holes));
 }
 
 export function migrateSave(raw) {
   if (!raw || typeof raw !== 'object') return null;
-  const migrated = withDefaults(raw);
-  return isUsable(migrated) ? migrated : null;
+  if (typeof raw.day !== 'number') return null;
+  try {
+    const migrated = withDefaults(raw);
+    return isUsable(migrated) ? migrated : null;
+  } catch {
+    return null;
+  }
 }
 
 export function saveGame(state) {

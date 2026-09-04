@@ -4,20 +4,13 @@ import {
   PLAYOUT_MIN_EVENT_MS,
   PLAYOUT_MS_PER_MINUTE,
   PLAYOUT_SPEEDS,
-  SURFACE_KEYS,
 } from '../data/constants.js';
 import { getTask } from '../data/tasks.js';
+import { cloneHoles, mapHoleSurfaces } from './holes.js';
 
 export const PLAYOUT_PLAYING = 'playing';
 export const PLAYOUT_DONE = 'done';
 export const PLAYOUT_SKIPPED = 'skipped';
-
-function cloneSurfaces(surfaces) {
-  return SURFACE_KEYS.reduce((next, key) => {
-    next[key] = { ...(surfaces?.[key] ?? {}) };
-    return next;
-  }, {});
-}
 
 function isMowingEvent(taskId) {
   if (taskId === 'autonomousMower') return true;
@@ -108,17 +101,21 @@ export function currentPlayoutEvent(playout) {
   return playout.events[playout.cursor] ?? null;
 }
 
-export function playoutSurfaces(summary, playout) {
-  const surfaces = cloneSurfaces(summary?.before);
-  if (!playout) return surfaces;
+export function playoutHoles(summary, playout) {
+  let holes = cloneHoles(summary?.before ?? []);
+  if (!playout) return holes;
   const applied = playout.status === PLAYOUT_PLAYING ? playout.cursor : playout.events.length;
   for (let i = 0; i < applied; i += 1) {
     const event = playout.events[i];
-    if (event?.surface && event.after != null && surfaces[event.surface]) {
-      surfaces[event.surface] = { ...surfaces[event.surface], quality: event.after };
+    if (event?.surface && event.after != null) {
+      holes = mapHoleSurfaces(holes, event.surface, (record) => ({ ...record, quality: event.after }));
     }
   }
-  return surfaces;
+  return holes;
+}
+
+export function playoutSurfaces(summary, playout) {
+  return playoutHoles(summary, playout);
 }
 
 export function shouldSkipPlayout(skipPref, reducedMotion) {

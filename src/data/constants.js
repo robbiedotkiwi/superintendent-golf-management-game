@@ -39,6 +39,37 @@ export const STARTING_DAYS_WORKED_RUNNING = 0;
 export const SAVE_KEY = 'greenkeeper.save.v1';
 
 export const SURFACE_KEYS = ['greens', 'tees', 'fairways', 'rough', 'bunkers'];
+export const HOLE_KIND_BY_TYPE = {
+  greens: 'green',
+  tees: 'tee',
+  fairways: 'fairway',
+  rough: 'rough',
+  bunkers: 'bunker',
+};
+export const TYPE_BY_HOLE_KIND = {
+  green: 'greens',
+  tee: 'tees',
+  fairway: 'fairways',
+  rough: 'rough',
+  bunker: 'bunkers',
+};
+export const SURFACE_SINGULAR = {
+  greens: 'green',
+  tees: 'tee',
+  fairways: 'fairway',
+  rough: 'rough',
+  bunkers: 'bunker',
+};
+export const TRACKED_SURFACES_NINE = HOLE_COUNT * SURFACE_KEYS.length;
+export const DRYING_FACTOR_DEFAULT = 1;
+export const COMPLAINT_HOLE_CUT_BODY = (singular, holeId, days) =>
+  `The ${singular} on ${holeId} hasn't been cut in ${days} days.`;
+export const COMPLAINT_HOLE_RAKE_BODY = (singular, holeId, days) =>
+  `The ${singular} on ${holeId} hasn't been raked in ${days} days.`;
+export const COMPLAINT_HOLE_QUALITY_BODY = (singular, holeId) =>
+  `The ${singular} on ${holeId} is slow and bumpy. Something needs to happen.`;
+export const COMPLAINT_HOLE_CUT_SUBJECT = (label, holeId) => `${label} on ${holeId} left too long`;
+export const COMPLAINT_HOLE_QUALITY_SUBJECT = (label, holeId) => `${label} on ${holeId} is slow`;
 
 export const HAND_WATER_MINUTES_PER_GREEN = 15;
 export const HAND_WATER_MINUTES = HAND_WATER_MINUTES_PER_GREEN * HOLE_COUNT;
@@ -752,7 +783,7 @@ export const RANGE_X = 40;
 export const RANGE_Y = 1080;
 export const RANGE_WIDTH = 100;
 export const RANGE_HEIGHT = 48;
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 export const SOUND_DEFAULT_ON = false;
 export const SOUND_MOWER_FREQ = 90;
 export const SOUND_BIRD_FREQ = 1800;

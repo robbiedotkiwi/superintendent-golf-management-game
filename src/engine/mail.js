@@ -1,9 +1,13 @@
 import {
   DAYS_PER_WEEK,
   COMPLAINT_GREENS_QUALITY,
+  COMPLAINT_HOLE_QUALITY_BODY,
+  COMPLAINT_HOLE_QUALITY_SUBJECT,
   SURFACE_KEYS,
+  SURFACE_SINGULAR,
 } from '../data/constants.js';
 import { formatMoney } from './format.js';
+import { holeKind, presentHoles } from './holes.js';
 
 export function emptyDaysSinceWorked() {
   return SURFACE_KEYS.reduce((next, key) => {
@@ -53,12 +57,20 @@ export function markMailRead(state, id) {
 
 export function golferMail(state) {
   const mail = [];
-  if (state.surfaces.greens.quality < COMPLAINT_GREENS_QUALITY && meetingDue(state.day)) {
+  if (!meetingDue(state.day)) return mail;
+  let worst = null;
+  for (const hole of presentHoles(state, 'greens')) {
+    const quality = hole[holeKind('greens')].quality;
+    if (quality < COMPLAINT_GREENS_QUALITY && (!worst || quality < worst.quality)) {
+      worst = { hole, quality };
+    }
+  }
+  if (worst) {
     mail.push({
       from: 'golfer',
       kind: 'greensQuality',
-      subject: 'Greens are slow',
-      body: 'The greens are slow and bumpy. Something needs to happen.',
+      subject: COMPLAINT_HOLE_QUALITY_SUBJECT('Green', worst.hole.id),
+      body: COMPLAINT_HOLE_QUALITY_BODY(SURFACE_SINGULAR.greens, worst.hole.id),
     });
   }
   return mail;

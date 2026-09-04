@@ -8,6 +8,8 @@ import { PRESET_MAX, PRESET_NAME_MAX } from '../src/data/constants.js';
 import { createInitialState, reducer } from '../src/engine/gameState.js';
 import { presetsForSurface } from '../src/engine/presets.js';
 import { migrateSave } from '../src/engine/save.js';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+
 
 assert.equal(PRESET_MAX, 8);
 assert.equal(PRESET_NAME_MAX, 24);
@@ -43,9 +45,9 @@ assert.equal(presetsForSurface(state, 'tees').length, 0);
 state = reducer(state, { type: 'SET_HOC', surface: 'greens', hoc: 3.5 });
 state = reducer(state, { type: 'SET_PATTERN', surface: 'greens', pattern: 'stripes' });
 state = reducer(state, { type: 'APPLY_PRESET', id: 1 });
-assert.equal(state.surfaces.greens.hoc, 2.8);
-assert.equal(state.surfaces.greens.pattern, 'rings');
-assert.equal(state.surfaces.greens.angle, 45);
+assert.equal(courseSettings(state, 'greens').hoc, 2.8);
+assert.equal(courseSettings(state, 'greens').pattern, 'rings');
+assert.equal(courseSettings(state, 'greens').angle, 45);
 
 const long = reducer(start, { type: 'SAVE_PRESET', surface: 'fairways', name: 'x'.repeat(40) });
 assert.equal(long.customPresets[0].name.length, PRESET_NAME_MAX);
@@ -58,7 +60,7 @@ assert.equal(filled.customPresets.length, PRESET_MAX);
 
 const removed = reducer(state, { type: 'DELETE_PRESET', id: 1 });
 assert.equal(removed.customPresets.length, 0);
-assert.equal(removed.surfaces.greens.hoc, 2.8);
+assert.equal(courseSettings(removed, 'greens').hoc, 2.8);
 
 const turf = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
 assert.match(turf, /onSavePreset/);

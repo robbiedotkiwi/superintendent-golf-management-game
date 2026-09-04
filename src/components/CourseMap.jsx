@@ -172,7 +172,8 @@ function MowPattern({ id, pattern, angle, color }) {
 }
 
 export default function CourseMap({
-  surfaces,
+  holesData = [],
+  surfaceDefaults = {},
   pond,
   hasAerator,
   holes = HOLE_COUNT,
@@ -190,20 +191,23 @@ export default function CourseMap({
   const svgRef = useRef(null);
   const dragRef = useRef(null);
   const viewRef = useRef(view);
-  const fills = {
-    greens: surfaceFill('greens', surfaces.greens.quality),
-    tees: surfaceFill('tees', surfaces.tees.quality),
-    fairways: surfaceFill('fairways', surfaces.fairways.quality),
-    rough: surfaceFill('rough', surfaces.rough.quality),
-    bunkers: surfaceFill('bunkers', surfaces.bunkers.quality),
+  const holeRecord = (id) => (holesData ?? []).find((item) => item.id === id);
+  const fillFor = (id, type) => {
+    const kind = type === 'greens' ? 'green' : type === 'tees' ? 'tee' : type === 'fairways' ? 'fairway' : type === 'bunkers' ? 'bunker' : type;
+    const quality = holeRecord(id)?.[kind]?.quality ?? 50;
+    if (type === 'bunkers') return surfaceFill('bunkers', quality);
+    if (type === 'greens') return surfaceFill('greens', quality);
+    if (type === 'tees') return surfaceFill('tees', quality);
+    if (type === 'fairways') return surfaceFill('fairways', quality);
+    return surfaceFill('rough', quality);
   };
   const layout = holesForCount(holes);
   const bounds = courseBounds(layout);
   const camera = clampView(view, bounds);
   viewRef.current = camera;
-  const patternState = { day, surfaces };
+  const patternState = { day, holes: holesData, surfaceDefaults };
   const patterned = ['greens', 'tees', 'fairways'].filter((surface) =>
-    showsMowOverlay(surfaces[surface]?.pattern),
+    showsMowOverlay(surfaceDefaults?.[surface]?.pattern),
   );
   const active = highlight ?? selected;
 
@@ -319,9 +323,9 @@ export default function CourseMap({
           <MowPattern
             key={surface}
             id={`mow-${surface}`}
-            pattern={surfaces[surface].pattern}
-            angle={surfaces[surface].angle}
-            color={patternStripeColor(fills[surface], paint)}
+            pattern={surfaceDefaults?.[surface]?.pattern}
+            angle={surfaceDefaults?.[surface]?.angle ?? 0}
+            color={patternStripeColor(fillFor(1, surface), paint)}
           />
         ))}
         <pattern
@@ -394,8 +398,8 @@ export default function CourseMap({
         <path
           key={`rough-${hole.id}`}
           d={holePath(hole.rough)}
-          fill={fills.rough}
-          stroke={surfaceStroke('rough', active, surfaces.greens.quality)}
+          fill={fillFor(hole.id, 'rough')}
+          stroke={surfaceStroke('rough', active, holeRecord(hole.id)?.green?.quality ?? 50)}
           strokeWidth={surfaceStrokeWidth('rough', active)}
           className="course-surface cursor-pointer outline-none"
           tabIndex={0}
@@ -415,8 +419,8 @@ export default function CourseMap({
           <g key={`tee-${hole.id}`}>
             <path
               d={teeD}
-              fill={fills.tees}
-              stroke={surfaceStroke('tees', active, surfaces.greens.quality)}
+              fill={fillFor(hole.id, 'tees')}
+              stroke={surfaceStroke('tees', active, holeRecord(hole.id)?.green?.quality ?? 50)}
               strokeWidth={surfaceStrokeWidth('tees', active)}
               className="course-surface cursor-pointer outline-none"
               tabIndex={0}
@@ -438,8 +442,8 @@ export default function CourseMap({
         <g key={`fairway-${hole.id}`}>
           <path
             d={holePath(hole.fairway)}
-            fill={fills.fairways}
-            stroke={surfaceStroke('fairways', active, surfaces.greens.quality)}
+            fill={fillFor(hole.id, 'fairways')}
+            stroke={surfaceStroke('fairways', active, holeRecord(hole.id)?.green?.quality ?? 50)}
             strokeWidth={surfaceStrokeWidth('fairways', active)}
             className="course-surface cursor-pointer outline-none"
             tabIndex={0}
@@ -452,7 +456,7 @@ export default function CourseMap({
             }}
             onKeyDown={(event) => activate(event, 'fairways', onSelect)}
           />
-          {showsMowOverlay(surfaces.fairways.pattern) ? (
+          {showsMowOverlay(surfaceDefaults?.fairways?.pattern) ? (
           <path
             d={holePath(hole.fairway)}
             fill="url(#mow-fairways)"
@@ -469,8 +473,8 @@ export default function CourseMap({
           <g key={`green-${hole.id}`}>
             <path
               d={greenD}
-              fill={fills.greens}
-              stroke={surfaceStroke('greens', active, surfaces.greens.quality)}
+              fill={fillFor(hole.id, 'greens')}
+              stroke={surfaceStroke('greens', active, holeRecord(hole.id)?.green?.quality ?? 50)}
               strokeWidth={surfaceStrokeWidth('greens', active)}
               className="course-surface cursor-pointer outline-none"
               tabIndex={0}
@@ -499,8 +503,8 @@ export default function CourseMap({
           <path
             key={`bunker-${hole.id}-${index}`}
             d={holePath(bunker)}
-            fill={fills.bunkers}
-            stroke={surfaceStroke('bunkers', active, surfaces.greens.quality)}
+            fill={fillFor(hole.id, 'bunkers')}
+            stroke={surfaceStroke('bunkers', active, holeRecord(hole.id)?.green?.quality ?? 50)}
             strokeWidth={surfaceStrokeWidth('bunkers', active)}
             className="course-surface cursor-pointer outline-none"
             tabIndex={0}
@@ -527,7 +531,23 @@ export default function CourseMap({
         />
       ))}
       {layout.map((hole) => (
-        <g key={`marker-${hole.id}`} pointerEvents="none">
+        <g
+          key={`marker-${hole.id}`}
+          className="cursor-pointer"
+          role="button"
+          tabIndex={0}
+          aria-label={`Hole ${hole.id} detail`}
+          onClick={(event) => {
+            event.stopPropagation();
+            onSelect({ holeId: hole.id });
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault();
+              onSelect({ holeId: hole.id });
+            }
+          }}
+        >
           <circle
             cx={hole.marker.cx}
             cy={hole.marker.cy}

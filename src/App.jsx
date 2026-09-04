@@ -40,13 +40,15 @@ import {
   reducer,
 } from './engine/gameState.js';
 import { courseCondition } from './engine/simulation.js';
+import { holeCount } from './engine/holes.js';
+import HoleDetail from './components/HoleDetail.jsx';
 import {
   PLAYOUT_DONE,
   PLAYOUT_PLAYING,
   PLAYOUT_SKIPPED,
   buildPlayout,
   currentPlayoutEvent,
-  playoutSurfaces,
+  playoutHoles,
   shouldSkipPlayout,
   skipPlayout,
   tickPlayout,
@@ -123,7 +125,7 @@ export default function App() {
   const minutesRemaining = useMemo(() => combinedMinutesRemaining(state), [state]);
   const minutesUsed = useMemo(() => combinedMinutesUsed(state), [state]);
   const minutesCapacity = useMemo(() => combinedMinutesCapacity(state), [state]);
-  const condition = useMemo(() => Math.round(courseCondition(state.surfaces)), [state.surfaces]);
+  const condition = useMemo(() => Math.round(courseCondition(state)), [state]);
 
   function handleNewGame() {
     clearSave();
@@ -207,6 +209,9 @@ export default function App() {
           onMatchLastMowing={() => dispatch({ type: 'MATCH_LAST_MOWING' })}
           onSetMachineOverride={(surface, machineId) =>
             dispatch({ type: 'SET_MACHINE_OVERRIDE', surface, machineId })
+          }
+          onSetHoleOverride={(holeId, surface, override) =>
+            dispatch({ type: 'SET_HOLE_OVERRIDE', holeId, surface, override })
           }
           onTab={(section, tab) => dispatch({ type: 'SET_TAB', section, tab })}
           onLease={(machineId) => dispatch({ type: 'LEASE_MACHINE', machineId })}
@@ -311,6 +316,7 @@ function GameScreen({
   onDeletePreset,
   onMatchLastMowing,
   onSetMachineOverride,
+  onSetHoleOverride,
   onLease,
   onStopLease,
   onBuyUsed,
@@ -361,10 +367,10 @@ function GameScreen({
 
   const event = currentPlayoutEvent(playout);
   const latestSummary = state.log[state.log.length - 1];
-  const mapSurfaces =
+  const mapHoles =
     playout?.status === PLAYOUT_PLAYING && latestSummary?.before
-      ? playoutSurfaces(latestSummary, playout)
-      : state.surfaces;
+      ? playoutHoles(latestSummary, playout)
+      : state.holes;
   const showMower = Boolean(event?.mowing);
   const watching = playout?.status === PLAYOUT_PLAYING;
 
@@ -484,10 +490,11 @@ function GameScreen({
         ) : (
           <>
             <CourseMap
-              surfaces={mapSurfaces}
+              holesData={mapHoles}
+              surfaceDefaults={state.surfaceDefaults}
               pond={state.pond}
               hasAerator={state.hasAerator}
-              holes={state.holes}
+              holes={holeCount(state)}
               hasDrivingRange={state.hasDrivingRange}
               showMower={showMower}
               selected={selected}
@@ -506,6 +513,14 @@ function GameScreen({
                 onPlan={onPlan}
                 onRemove={onRemove}
                 onSetWorker={onSetWorker}
+                onClose={() => onSelect(null)}
+              />
+            ) : null}
+            {selected?.holeId && !watching ? (
+              <HoleDetail
+                state={state}
+                holeId={selected.holeId}
+                onSetOverride={onSetHoleOverride}
                 onClose={() => onSelect(null)}
               />
             ) : null}

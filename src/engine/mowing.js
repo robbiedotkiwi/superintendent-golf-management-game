@@ -60,7 +60,7 @@ export function inHocStressBand(surface, height) {
 }
 
 export function hocStressApplies(state, surface, dry) {
-  if (!inHocStressBand(surface, state.surfaces[surface]?.hoc)) return false;
+  if (!inHocStressBand(surface, state.surfaceDefaults?.[surface]?.hoc)) return false;
   if (state.season === 'summer') return true;
   if (MOISTURE_SURFACES.includes(surface) && dry) return true;
   return false;
@@ -80,8 +80,8 @@ export function mowingMinutes(state, taskId) {
   const task = getTask(taskId);
   const surface = task?.surface;
   if (!task?.mowing || !surface) return TASK_MINUTES[taskId];
-  const height = state.surfaces[surface]?.hoc ?? HOC_RANGE[surface]?.default;
-  const pattern = state.surfaces[surface]?.pattern ?? PATTERN_DEFAULT;
+  const height = state.surfaceDefaults?.[surface]?.hoc ?? HOC_RANGE[surface]?.default;
+  const pattern = state.surfaceDefaults?.[surface]?.pattern ?? PATTERN_DEFAULT;
   const factor = hocFactor(surface, height);
   return Math.round(mowingBaseMinutes(taskId, surface) * HOC_TIME_MULT(factor) * patternTimeMult(surface, pattern));
 }
@@ -89,7 +89,7 @@ export function mowingMinutes(state, taskId) {
 export function mowingGain(state, taskId, workerQualityFactor = 1) {
   const task = getTask(taskId);
   const surface = task?.surface;
-  const height = state.surfaces[surface]?.hoc ?? HOC_RANGE[surface]?.default;
+  const height = state.surfaceDefaults?.[surface]?.hoc ?? HOC_RANGE[surface]?.default;
   return BASE_GAIN * HOC_GAIN_MULT(hocFactor(surface, height)) * workerQualityFactor;
 }
 
@@ -98,8 +98,14 @@ export function presentationOf(surfaceState) {
   return PATTERN_PRESENTATION[surfaceState.pattern] ?? 0;
 }
 
-export function presentationScore(surfaces) {
-  return PATTERNED_SURFACES.reduce((total, key) => total + presentationOf(surfaces?.[key]), 0);
+export function presentationScore(stateOrSurfaces) {
+  if (stateOrSurfaces && Array.isArray(stateOrSurfaces.holes)) {
+    return PATTERNED_SURFACES.reduce((total, type) => {
+      const defaults = stateOrSurfaces.surfaceDefaults?.[type];
+      return total + presentationOf(defaults);
+    }, 0);
+  }
+  return PATTERNED_SURFACES.reduce((total, key) => total + presentationOf(stateOrSurfaces?.[key]), 0);
 }
 
 export function angleDelta(a, b) {
@@ -166,20 +172,24 @@ export function mergeSurfaceFields(kind, surface = {}) {
   return next;
 }
 
-export function applyMowingAftermath(surface, kind, day, wearIncremented) {
+export function applyMowingAftermath(surface, kind, day, wearIncremented, settings = {}) {
   const next = { ...surface };
-  if (HOC_RANGE[kind] && next.hocAtLastCut != null && next.hoc !== next.hocAtLastCut) {
+  const hoc = settings.hoc ?? next.hoc;
+  const pattern = settings.pattern ?? next.pattern;
+  const angle = settings.angle ?? next.angle;
+  const autoRotate = settings.autoRotate ?? next.autoRotate;
+  if (HOC_RANGE[kind] && next.hocAtLastCut != null && hoc !== next.hocAtLastCut) {
     next.quality = Math.max(QUALITY_MIN, next.quality - HOC_CHANGE_PENALTY);
   }
   if (HOC_RANGE[kind]) {
-    next.hocAtLastCut = next.hoc;
-    next.heightAtLastCut = next.hoc;
+    next.hocAtLastCut = hoc;
+    next.heightAtLastCut = hoc;
     next.lastMownDay = day;
   }
   if (hasPattern(kind)) {
-    const cutAngle = next.angle;
-    const cutPattern = next.pattern;
-    if (next.autoRotate) {
+    const cutAngle = angle;
+    const cutPattern = pattern;
+    if (autoRotate) {
       next.patternWear = PATTERN_WEAR_DEFAULT;
     } else if (
       next.lastPattern != null &&
@@ -196,8 +206,8 @@ export function applyMowingAftermath(surface, kind, day, wearIncremented) {
     next.lastAngle = cutAngle;
     next.patternAtLastCut = cutPattern;
     next.angleAtLastCut = cutAngle;
-    if (next.autoRotate) {
-      next.angle = rotatePatternAngle(cutAngle);
+    if (autoRotate && next.override) {
+      next.override = { ...next.override, angle: rotatePatternAngle(cutAngle) };
     }
   }
   return next;

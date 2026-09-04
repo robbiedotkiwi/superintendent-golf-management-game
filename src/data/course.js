@@ -179,7 +179,8 @@ function offsetHole(hole, dx, id) {
 export const BACK_NINE = HOLES.map((hole) => offsetHole(hole, BACK_NINE_OFFSET_X, hole.id + HOLE_COUNT));
 
 export function holesForCount(count) {
-  return count >= EXPANDED_HOLE_COUNT ? HOLES.concat(BACK_NINE) : HOLES;
+  const n = Array.isArray(count) ? count.length : count;
+  return n >= EXPANDED_HOLE_COUNT ? HOLES.concat(BACK_NINE) : HOLES;
 }
 
 export function mapWidthForHoles(count) {

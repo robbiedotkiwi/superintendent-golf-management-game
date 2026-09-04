@@ -16,6 +16,8 @@ import {
 import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
 import { migrateSave } from '../src/engine/save.js';
 import { playBirds, playMower, prefersReducedMotion } from '../src/engine/sound.js';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+
 
 assert.equal(SOUND_DEFAULT_ON, false);
 assert.equal(createInitialState().soundEnabled, false);
@@ -54,7 +56,7 @@ const old = migrateSave({
 });
 assert.equal(old.day, 9);
 assert.equal(old.cash, 1234);
-assert.equal(old.surfaces.greens.quality, 41);
+assert.equal(meanQuality(old, 'greens'), 41);
 assert.equal(old.saveVersion, SAVE_VERSION);
 assert.equal(old.soundEnabled, SOUND_DEFAULT_ON);
 assert.equal(migrateSave({ day: 2, cash: STARTING_CASH }), null);

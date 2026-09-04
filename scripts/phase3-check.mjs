@@ -36,6 +36,8 @@ import {
 } from '../src/engine/gameState.js';
 import { mowingMinutes } from '../src/engine/mowing.js';
 import { applyWeatherToWorkers } from '../src/engine/weather.js';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+
 
 function plan(state, taskId) {
   return reducer(state, { type: 'PLAN_TASK', taskId });
@@ -79,7 +81,7 @@ for (let i = 0; i < 10; i += 1) {
   capped = plan(capped, 'cutGreens');
   capped = end(capped);
 }
-assert.equal(capped.surfaces.greens.quality, surfaceCeiling(capped, 'greens'));
+assert.equal(meanQuality(capped, 'greens'), surfaceCeiling(capped, 'greens'));
 
 let worn = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
 worn = plan(worn, 'cutGreens');
@@ -90,16 +92,16 @@ assert.equal(wearMultiplier({ machineWear: { walkBehindReel: 0 } }, 'walkBehindR
 assert.ok(wearMultiplier({ machineWear: { walkBehindReel: WEAR_THRESHOLD + 1 } }, 'walkBehindReel') < 1);
 
 let dull = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
-const sharpStart = dull.surfaces.greens.quality;
+const sharpStart = meanQuality(dull, 'greens');
 dull.machineWear = { ...dull.machineWear, walkBehindReel: 0 };
 let sharp = plan({ ...dull }, 'cutGreens');
 sharp = end(sharp);
-const sharpGain = sharp.surfaces.greens.quality - sharpStart;
+const sharpGain = meanQuality(sharp, 'greens') - sharpStart;
 
 dull.machineWear = { ...dull.machineWear, walkBehindReel: WEAR_THRESHOLD + 1 };
 let blunt = plan({ ...dull }, 'cutGreens');
 blunt = end(blunt);
-const bluntGain = blunt.surfaces.greens.quality - sharpStart;
+const bluntGain = meanQuality(blunt, 'greens') - sharpStart;
 assert.ok(bluntGain < sharpGain);
 
 let away = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });

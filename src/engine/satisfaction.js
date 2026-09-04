@@ -13,6 +13,7 @@ import {
   SURFACE_KEYS,
 } from '../data/constants.js';
 import { presentationScore } from './mowing.js';
+import { courseCondition } from './holes.js';
 
 export function clampRange(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -22,13 +23,13 @@ export function unreadComplaints(state) {
   return (state.inbox ?? []).filter((item) => item.from === 'golfer' && !item.read).length;
 }
 
-export function conditionForSatisfaction(surfaces) {
-  return SURFACE_KEYS.reduce((total, key) => total + surfaces[key].quality * CONDITION_WEIGHTS[key], 0);
+export function conditionForSatisfaction(state) {
+  return courseCondition(state);
 }
 
 export function satisfactionTarget(state) {
-  let target = conditionForSatisfaction(state.surfaces);
-  target += presentationScore(state.surfaces);
+  let target = conditionForSatisfaction(state);
+  target += presentationScore(state);
   target += ((state.pond?.health ?? POND_HEALTH_START) - POND_HEALTH_START) * SATISFACTION_POND_WEIGHT;
   target -= unreadComplaints(state) * SATISFACTION_COMPLAINT_PENALTY;
   return clampRange(target, SATISFACTION_MIN, SATISFACTION_MAX);

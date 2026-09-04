@@ -96,6 +96,14 @@ import {
   SECTION_MAP,
 } from '../data/constants.js';
 import { clampAngle, clampHoc, hasHoc, hasPattern, mergeSurfaceFields, angleDelta } from './mowing.js';
+import {
+  createInitialHoles,
+  createSurfaceDefaults,
+  holeCount,
+  holeSurface,
+  mapHoleSurfaces,
+  mostRecentCut,
+} from './holes.js';
 import { courseBounds, holesForCount } from '../data/course.js';
 import { clampView, defaultView } from './view.js';
 import { defaultSectionTabs, normalizeSection, normalizeTabs, tabListForSection } from './section.js';
@@ -124,7 +132,8 @@ export function createInitialState() {
     season: calendar.season,
     year: calendar.year,
     cash: STARTING_CASH,
-    holes: HOLE_COUNT,
+    holes: createInitialHoles(HOLE_COUNT),
+    surfaceDefaults: createSurfaceDefaults(),
     weather: STARTING_WEATHER,
     ...forecast,
     rngSeed,
@@ -162,13 +171,6 @@ export function createInitialState() {
         daysWorkedRunning: STARTING_DAYS_WORKED_RUNNING,
       },
     ],
-    surfaces: {
-      greens: mergeSurfaceFields('greens', { quality: STARTING_QUALITY_GREENS }),
-      tees: mergeSurfaceFields('tees', { quality: STARTING_QUALITY_TEES }),
-      fairways: mergeSurfaceFields('fairways', { quality: STARTING_QUALITY_FAIRWAYS }),
-      rough: mergeSurfaceFields('rough', { quality: STARTING_QUALITY_ROUGH }),
-      bunkers: mergeSurfaceFields('bunkers', { quality: STARTING_QUALITY_BUNKERS }),
-    },
     view: {
       zoom: VIEW_ZOOM_DEFAULT,
       panX: VIEW_PAN_X_DEFAULT,
@@ -405,11 +407,12 @@ function dropUnfittableMowing(state, surface) {
 }
 
 function applySurfacePatch(state, surface, patch) {
+  const current = state.surfaceDefaults?.[surface] ?? {};
   const next = {
     ...state,
-    surfaces: {
-      ...state.surfaces,
-      [surface]: { ...state.surfaces[surface], ...patch },
+    surfaceDefaults: {
+      ...state.surfaceDefaults,
+      [surface]: { ...current, ...patch },
     },
   };
   return dropUnfittableMowing(recomputePlannedMinutes(next), surface);
@@ -584,7 +587,7 @@ export function reducer(state, action) {
       return next;
     }
     case 'SET_HOC': {
-      if (!hasHoc(action.surface) || !state.surfaces[action.surface]) return state;
+      if (!hasHoc(action.surface)) return state;
       return applySurfacePatch(state, action.surface, { hoc: clampHoc(action.surface, action.hoc) });
     }
     case 'SET_PATTERN': {
@@ -592,9 +595,9 @@ export function reducer(state, action) {
       return applySurfacePatch(state, action.surface, { pattern: action.pattern });
     }
     case 'SET_ANGLE': {
-      if (!hasPattern(action.surface) || !state.surfaces[action.surface]) return state;
+      if (!hasPattern(action.surface)) return state;
       const angle = clampAngle(action.angle);
-      const prev = state.surfaces[action.surface].angle ?? 0;
+      const prev = state.surfaceDefaults?.[action.surface]?.angle ?? 0;
       const patch = { angle };
       if (angleDelta(angle, prev) >= PATTERN_ANGLE_RESET_DELTA) {
         patch.patternWear = 0;
@@ -602,14 +605,15 @@ export function reducer(state, action) {
       return applySurfacePatch(state, action.surface, patch);
     }
     case 'SET_AUTO_ROTATE': {
-      if (!hasPattern(action.surface) || !state.surfaces[action.surface]) return state;
+      if (!hasPattern(action.surface)) return state;
       return applySurfacePatch(state, action.surface, { autoRotate: Boolean(action.value) });
     }
     case 'MATCH_LAST_MOWING': {
       let next = state;
       for (const surface of HOC_SURFACES) {
-        const record = next.surfaces?.[surface];
-        if (record?.heightAtLastCut == null) continue;
+        const recent = mostRecentCut(next, surface);
+        if (!recent) continue;
+        const record = recent.record;
         const patch = { hoc: clampHoc(surface, record.heightAtLastCut) };
         if (hasPattern(surface) && record.patternAtLastCut != null && PATTERN_KEYS.includes(record.patternAtLastCut)) {
           patch.pattern = record.patternAtLastCut;
@@ -617,7 +621,7 @@ export function reducer(state, action) {
         if (hasPattern(surface) && record.angleAtLastCut != null) {
           const angle = clampAngle(record.angleAtLastCut);
           patch.angle = angle;
-          const prev = record.angle ?? 0;
+          const prev = next.surfaceDefaults?.[surface]?.angle ?? 0;
           if (angleDelta(angle, prev) >= PATTERN_ANGLE_RESET_DELTA) {
             patch.patternWear = 0;
           }
@@ -625,6 +629,19 @@ export function reducer(state, action) {
         next = applySurfacePatch(next, surface, patch);
       }
       return next;
+    }
+    case 'SET_HOLE_OVERRIDE': {
+      const surface = action.surface;
+      const holeId = action.holeId;
+      if (!hasHoc(surface) && !hasPattern(surface)) return state;
+      if (!holeSurface(state, holeId, surface)) return state;
+      const override = action.override == null ? null : { ...action.override };
+      return {
+        ...state,
+        holes: mapHoleSurfaces(state.holes, surface, (record, hole) =>
+          hole.id === holeId ? { ...record, override } : record,
+        ),
+      };
     }
     case 'SET_MACHINE_OVERRIDE': {
       const surface = action.surface;
@@ -675,7 +692,7 @@ export function reducer(state, action) {
     case 'TOGGLE_MOISTURE_OVERLAY':
       return { ...state, moistureOverlay: !state.moistureOverlay };
     case 'SET_HAND_WATER_TARGETS': {
-      const holes = state.holes ?? HOLE_COUNT;
+      const holes = holeCount(state);
       const allowed = new Set(allGreenIds(holes));
       const targets = [...new Set((action.targets ?? []).filter((id) => allowed.has(id)))].sort((a, b) => a - b);
       let next = { ...state, handWaterTargets: targets };
@@ -697,7 +714,7 @@ export function reducer(state, action) {
       return next;
     }
     case 'SET_VIEW': {
-      const layout = holesForCount(state.holes ?? HOLE_COUNT);
+      const layout = holesForCount(holeCount(state));
       return { ...state, view: clampView({ ...defaultView(), ...action.view }, courseBounds(layout)) };
     }
     case 'TOGGLE_SOUND':
@@ -726,7 +743,7 @@ export function reducer(state, action) {
       return { ...state, skipPlayout: Boolean(action.value) };
     case 'SAVE_PRESET': {
       const surface = action.surface;
-      const record = state.surfaces?.[surface];
+      const record = state.surfaceDefaults?.[surface];
       if (!record || (!hasHoc(surface) && !hasPattern(surface))) return state;
       const list = state.customPresets ?? [];
       if (list.length >= PRESET_MAX) return state;
@@ -753,7 +770,7 @@ export function reducer(state, action) {
     }
     case 'APPLY_PRESET': {
       const preset = (state.customPresets ?? []).find((item) => item.id === action.id);
-      if (!preset || !state.surfaces?.[preset.surface]) return state;
+      if (!preset || !state.surfaceDefaults?.[preset.surface]) return state;
       let next = state;
       if (hasHoc(preset.surface) && preset.hoc != null) {
         next = applySurfacePatch(next, preset.surface, { hoc: clampHoc(preset.surface, preset.hoc) });
@@ -772,7 +789,7 @@ export function reducer(state, action) {
       if (!preset) return state;
       let next = state;
       for (const [surface, settings] of Object.entries(preset.surfaces)) {
-        if (!next.surfaces?.[surface]) continue;
+        if (!next.surfaceDefaults?.[surface] && !hasHoc(surface) && !hasPattern(surface)) continue;
         if (hasHoc(surface) && settings.hoc != null) {
           next = applySurfacePatch(next, surface, { hoc: clampHoc(surface, settings.hoc) });
         }
