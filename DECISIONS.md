@@ -225,4 +225,13 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - `state.moisture` arrays stay in parallel for the overlay and ET tick; hole records are the spec home. Phase F may drop the arrays.
 - Neglect mail is one message per neglected hole when the day count equals the threshold (existing equality, not ≥).
 
+### Phase B
+
+- A planned job stores `holes` (sorted ids) and a `planId`. Same task on a different hole set is a second job. Turf still plans every hole of that type.
+- `jobMinutes = SETUP + PER_HOLE × n × height/pattern`. Setup is not multiplied by machine, height, pattern or worker. `PER_HOLE_MINUTES` is `BASE_MINUTES / 9` until Phase D retunes the day.
+- 18-hole time is the selected hole count, not `TASK_TIME_MULT_18` on top. Extra-bunker and new-tee multipliers still apply to the variable part.
+- Empty map selection plans the whole course. Click a hole surface to toggle it; drag across holes to add. The number disc still opens hole detail.
+- Repeat last snapshots the plan at day start (`lastDayJobs`) and replays it the next morning. Anything that no longer fits is skipped and listed in `lastRepeatDropped`.
+- Spray and fertiliser jobs take time for the selected holes but still apply type-wide until Phase F.
+
 
