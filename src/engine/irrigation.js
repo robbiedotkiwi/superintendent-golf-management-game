@@ -9,6 +9,8 @@ import {
   POND_HEALTH_MAX,
   POND_HEALTH_SUMMER_DROP,
   POND_LOW_FRACTION,
+  POND_DOSE_COST,
+  POND_DOSE_MINUTES,
   RAIN_POND_M3,
   SEASON_WATER,
   STORM_POND_M3,
@@ -56,7 +58,17 @@ export function resolveIrrigation(state) {
 
   let health = state.pond.health;
   const low = volume / POND_CAPACITY < POND_LOW_FRACTION;
-  if (!state.hasAerator) {
+  let doseCost = 0;
+  let dosed = false;
+  if (state.pondDosing) {
+    const doseCash = needsCash(state, POND_DOSE_COST);
+    if (doseCash.ok) {
+      doseCost = POND_DOSE_COST;
+      dosed = true;
+    }
+  }
+  const held = Boolean(state.hasAerator) || dosed;
+  if (!held) {
     if (state.season === 'summer') health -= POND_HEALTH_SUMMER_DROP;
     if (low) health -= POND_HEALTH_LOW_DROP;
   }
@@ -67,7 +79,13 @@ export function resolveIrrigation(state) {
     mainsCost,
     shortfall,
     demand,
+    doseCost,
+    dosed,
   };
+}
+
+export function pondDoseMinutes(state) {
+  return state.pondDosing ? POND_DOSE_MINUTES : 0;
 }
 
 export function canBuyAerator(state) {

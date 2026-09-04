@@ -1,13 +1,21 @@
 import { useState } from 'react';
 import {
   AERATOR_COST,
+  CHECK_MOISTURE_BY_SURFACE,
+  CHECK_MOISTURE_LABEL,
   CUT_TASK_BY_SURFACE,
+  DISEASE_OUTBREAK_THRESHOLD,
+  FERTILISE_BY_SURFACE,
+  FERTILISER_BRAND,
+  FERTILISER_DAYS,
+  FERTILISER_MATERIALS_COST,
   GREENS_SENSORS_COST,
   HOC_RANGE,
   HOC_STEP,
   HOC_STRESS_DAMAGE,
   HOC_STRESS_THRESHOLD,
   HOC_SURFACES,
+  INPUTS_SURFACES,
   IRRIGATION_POLICIES,
   MACHINE_OVERRIDE_AUTO,
   MATCH_LAST_MOWING_LABEL,
@@ -16,16 +24,30 @@ import {
   PATTERN_KEYS,
   PATTERN_LABELS,
   PLAN_THIS_CUT_LABEL,
-  SUITABILITY_LABELS,
-  SUITABILITY_PENALTY_COPY,
   POND_CAPACITY,
+  POND_DOSE_COST,
+  POND_DOSE_MINUTES,
+  POND_DOSING_LABEL,
+  POND_RESCUE_COST,
+  POND_RESCUE_HEALTH,
+  POND_RESCUE_LABEL,
+  POND_RESCUE_MINUTES,
+  POND_RESCUE_TASK,
   PRESET_MAX,
   PRESET_NAME_MAX,
+  ROLL_GREENS_LABEL,
+  ROLL_GREENS_TASK,
   SHIPPED_PRESETS,
+  SPRAY_BY_SURFACE,
+  SPRAY_MATERIALS_COST,
+  SPRAY_SUPPRESS_DAYS,
+  SUITABILITY_LABELS,
+  SUITABILITY_PENALTY_COPY,
   SURFACE_KEYS,
   TASK_MINUTES,
   TURF_TAB_BUNKERS,
   TURF_TAB_DEFAULT,
+  TURF_TAB_INPUTS,
   TURF_TAB_IRRIGATION,
   TURF_TAB_LABELS,
   TURF_TAB_MOWING,
@@ -38,8 +60,14 @@ import {
   WEATHER_STORM,
 } from '../data/constants.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
-import { durationForTask } from '../engine/assignment.js';
+import { certifiedPresent, durationForTask } from '../engine/assignment.js';
 import { findPlannedJob } from '../engine/jobs.js';
+import {
+  approachingOutbreak,
+  holeDiseasePressure,
+  holeSprayUntil,
+  holeTreatmentUntil,
+} from '../engine/disease.js';
 import {
   machineAssignment,
   machineMinutesRemaining,
@@ -54,7 +82,7 @@ import { formatMoney } from '../engine/format.js';
 import { canBuyAerator, irrigationDemand, IRRIGATED_SURFACES, pondPercent } from '../engine/irrigation.js';
 import { canBuyGreensSensors, canBuyTurfRad } from '../engine/moisture.js';
 import { daysSinceLastWorked, isNeglected } from '../engine/neglect.js';
-import { courseSettings, holeCount, meanQuality } from '../engine/holes.js';
+import { courseSettings, holeCount, holeKind, meanQuality, presentHoles } from '../engine/holes.js';
 import { hasHoc, hasPattern, inHocStressBand } from '../engine/mowing.js';
 import { presetsForSurface } from '../engine/presets.js';
 import ForecastStrip from './ForecastStrip.jsx';
@@ -70,6 +98,39 @@ const POLICY_LABELS = {
 
 function formatQuality(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+function jobHolesFromSelection(state) {
+  return state.selectedHoles?.length ? state.selectedHoles : undefined;
+}
+
+function formatExpiry(until, day) {
+  if (!until || until <= day) return 'Not treated';
+  return `Expires day ${until} · ${until - day}d left`;
+}
+
+function PlanJob({ state, taskId, onPlan, onRemove, label, extra, className }) {
+  const holes = jobHolesFromSelection(state);
+  const planned = findPlannedJob(state, taskId, holes);
+  const minutes = planned?.minutes ?? durationForTask(state, taskId, undefined, undefined, holes);
+  if (planned) {
+    return (
+      <button type="button" onClick={() => onRemove(taskId, planned.planId)} className={className ?? 'mt-3 border border-[var(--sand)] px-3 py-2'}>
+        {label} planned · {planned.minutes} min
+      </button>
+    );
+  }
+  return (
+    <PlanConfirmButton
+      state={state}
+      taskId={taskId}
+      holes={holes}
+      onPlan={onPlan}
+      className={className ?? 'mt-3 bg-[var(--machine-orange)] px-3 py-2 font-semibold disabled:opacity-40'}
+    >
+      {label} · {minutes} min{extra ? ` · ${extra}` : ''}
+    </PlanConfirmButton>
+  );
 }
 
 function stressThresholdHeight(surface) {
@@ -107,6 +168,7 @@ export default function Turf({
   onDeletePreset,
   onMatchLastMowing,
   onSetMachineOverride,
+  onSetPondDosing,
 }) {
   const debris = state.plannedTasks.find((item) => item.taskId === 'clearDebris');
   const debrisCheck = canPlanTask(state, 'clearDebris');
@@ -245,6 +307,13 @@ export default function Turf({
                   </button>
                 ))}
               </div>
+              <PlanJob
+                state={state}
+                taskId={CHECK_MOISTURE_BY_SURFACE[surface]}
+                onPlan={onPlan}
+                onRemove={onRemove}
+                label={CHECK_MOISTURE_LABEL}
+              />
             </section>
           ))}
           <section className="border border-[var(--sand)] p-3">
@@ -278,7 +347,7 @@ export default function Turf({
               <p className="mt-2">Live greens moisture. Never stale.</p>
             ) : (
               <>
-                <p className="mt-2 text-sm text-[var(--sand)]">Continuous greens readings. {formatMoney(GREENS_SENSORS_COST)} from capital.</p>
+                <p className="mt-2 text-sm text-[var(--sand)]">Continuous greens readings. {formatMoney(GREENS_SENSORS_COST)} from cash.</p>
                 <button
                   type="button"
                   disabled={!sensors.ok}
@@ -297,7 +366,7 @@ export default function Turf({
               <p className="mt-2">Mowers report moisture on anything cut today.</p>
             ) : (
               <>
-                <p className="mt-2 text-sm text-[var(--sand)]">Readings when you mow. {formatMoney(TURFRAD_COST)} from capital.</p>
+                <p className="mt-2 text-sm text-[var(--sand)]">Readings when you mow. {formatMoney(TURFRAD_COST)} from cash.</p>
                 <button
                   type="button"
                   disabled={!turfrad.ok}
@@ -313,10 +382,22 @@ export default function Turf({
         </div>
       ) : null}
 
-      {tab === TURF_TAB_OTHER || tab === TURF_TAB_BUNKERS || tab === TURF_TAB_POND ? (
+      {tab === TURF_TAB_INPUTS ? (
+        <InputsTab state={state} onPlan={onPlan} onRemove={onRemove} />
+      ) : null}
+
+      {tab === TURF_TAB_OTHER ? (
         <div className="space-y-4">
           <BunkerTab state={state} onPlan={onPlan} onRemove={onRemove} />
-          <PondPanel state={state} percent={percent} aerator={aerator} onBuyAerator={onBuyAerator} />
+          <PondPanel
+            state={state}
+            percent={percent}
+            aerator={aerator}
+            onBuyAerator={onBuyAerator}
+            onPlan={onPlan}
+            onRemove={onRemove}
+            onSetPondDosing={onSetPondDosing}
+          />
         </div>
       ) : null}
 
@@ -397,7 +478,7 @@ function MachinePicker({ state, surface, onSetMachineOverride }) {
   );
 }
 
-function PondPanel({ state, percent, aerator, onBuyAerator }) {
+function PondPanel({ state, percent, aerator, onBuyAerator, onPlan, onRemove, onSetPondDosing }) {
   return (
     <section className="border border-[var(--sand)] p-3 space-y-3">
       <h3 className="text-lg font-semibold">Pond</h3>
@@ -414,7 +495,7 @@ function PondPanel({ state, percent, aerator, onBuyAerator }) {
         <p>In the pond. Holds health up.</p>
       ) : (
         <>
-          <p className="text-sm text-[var(--sand)]">Keeps pond health from falling. {formatMoney(AERATOR_COST)} from capital.</p>
+          <p className="text-sm text-[var(--sand)]">Keeps pond health from falling. {formatMoney(AERATOR_COST)} from cash.</p>
           <button
             type="button"
             disabled={!aerator.ok}
@@ -426,6 +507,33 @@ function PondPanel({ state, percent, aerator, onBuyAerator }) {
           </button>
         </>
       )}
+      <section className="border border-[var(--sand)] p-3 space-y-2">
+        <h4 className="font-semibold">{POND_DOSING_LABEL}</h4>
+        <p className="text-sm text-[var(--sand)]">
+          Set-and-forget. {formatMoney(POND_DOSE_COST)} and {POND_DOSE_MINUTES} min each night. Holds health steady.
+        </p>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={Boolean(state.pondDosing)}
+            onChange={(event) => onSetPondDosing(event.target.checked)}
+          />
+          Dosing on
+        </label>
+      </section>
+      <section className="border border-[var(--sand)] p-3 space-y-2">
+        <h4 className="font-semibold">{POND_RESCUE_LABEL}</h4>
+        <p className="text-sm text-[var(--sand)]">
+          One-off. {formatMoney(POND_RESCUE_COST)} · {POND_RESCUE_MINUTES} min · recovers {POND_RESCUE_HEALTH} health.
+        </p>
+        <PlanJob
+          state={state}
+          taskId={POND_RESCUE_TASK}
+          onPlan={onPlan}
+          onRemove={onRemove}
+          label={POND_RESCUE_LABEL}
+        />
+      </section>
     </section>
   );
 }
@@ -527,6 +635,84 @@ function MowingSurface({
       ) : null}
       <MachinePicker state={state} surface={surface} onSetMachineOverride={onSetMachineOverride} />
       <PlanThisCut state={state} surface={surface} onPlan={onPlan} onRemove={onRemove} />
+      {surface === 'greens' ? (
+        <PlanJob
+          state={state}
+          taskId={ROLL_GREENS_TASK}
+          onPlan={onPlan}
+          onRemove={onRemove}
+          label={ROLL_GREENS_LABEL}
+        />
+      ) : null}
+    </section>
+  );
+}
+
+function InputsTab({ state, onPlan, onRemove }) {
+  return (
+    <div className="space-y-4">
+      {INPUTS_SURFACES.map((surface) => (
+        <InputsSurface key={surface} state={state} surface={surface} onPlan={onPlan} onRemove={onRemove} />
+      ))}
+    </div>
+  );
+}
+
+function InputsSurface({ state, surface, onPlan, onRemove }) {
+  const certified = certifiedPresent(state, surface);
+  const fertId = FERTILISE_BY_SURFACE[surface];
+  const sprayId = SPRAY_BY_SURFACE[surface];
+  const holes = presentHoles(state, surface);
+  const kind = holeKind(surface);
+  return (
+    <section className="border border-[var(--sand)] p-3 space-y-3">
+      <h3 className="text-lg font-semibold">{SURFACE_LABELS[surface]}</h3>
+      <p className="text-sm text-[var(--sand)]">
+        {FERTILISER_BRAND} raises the ceiling for {FERTILISER_DAYS} days. Spray suppresses disease for {SPRAY_SUPPRESS_DAYS} days.
+      </p>
+      {!certified ? (
+        <p className="text-sm text-[var(--machine-orange)]">Needs a spray-certified worker.</p>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        <PlanJob
+          state={state}
+          taskId={fertId}
+          onPlan={onPlan}
+          onRemove={onRemove}
+          label={FERTILISER_BRAND}
+          extra={formatMoney(FERTILISER_MATERIALS_COST)}
+        />
+        <PlanJob
+          state={state}
+          taskId={sprayId}
+          onPlan={onPlan}
+          onRemove={onRemove}
+          label="Spray fungicide"
+          extra={formatMoney(SPRAY_MATERIALS_COST)}
+        />
+      </div>
+      <ul className="space-y-1 text-sm">
+        {holes.map((hole) => {
+          const record = hole[kind];
+          const fertUntil = holeTreatmentUntil(record, state.fertiliserUntil?.[surface]);
+          const sprayUntil = holeSprayUntil(record, state.sprayedUntil?.[surface]);
+          const pressure = holeDiseasePressure(state, record, surface);
+          const approaching = approachingOutbreak(pressure);
+          const outbreak = pressure >= DISEASE_OUTBREAK_THRESHOLD || Boolean(state.disease?.[surface]?.outbreak && sprayUntil <= state.day);
+          return (
+            <li key={hole.id} className="border border-[var(--sand)] px-2 py-1">
+              <span className="font-semibold">Hole {hole.id}</span>
+              {' · '}
+              Fert {formatExpiry(fertUntil, state.day)}
+              {' · '}
+              Spray {formatExpiry(sprayUntil, state.day)}
+              {' · '}
+              Pressure {Math.round(pressure)}
+              {outbreak ? ' · outbreak' : approaching ? ' · approaching outbreak' : ''}
+            </li>
+          );
+        })}
+      </ul>
     </section>
   );
 }

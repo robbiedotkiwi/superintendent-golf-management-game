@@ -76,6 +76,9 @@ export const HAND_WATER_MINUTES = HAND_WATER_MINUTES_PER_GREEN * HOLE_COUNT;
 export const MOISTURE_CHECK_MINUTES = { greens: 40, tees: 25, fairways: 45 };
 export const SPRAY_MINUTES = 90;
 export const FERTILISER_MINUTES = 75;
+export const POND_DOSE_MINUTES = 20;
+export const POND_RESCUE_MINUTES = 90;
+export const POND_RESCUE_HEALTH = 28;
 export const GM_MEETING_MINUTES = 60;
 export const DOUBLE_CUT_MINUTES = 160;
 export const EXTRA_ROLL_MINUTES = 90;
@@ -98,6 +101,7 @@ export const TASK_MINUTES = {
   fertiliseGreens: FERTILISER_MINUTES,
   fertiliseTees: FERTILISER_MINUTES,
   fertiliseFairways: FERTILISER_MINUTES,
+  pondRescue: POND_RESCUE_MINUTES,
   gmMeeting: GM_MEETING_MINUTES,
   doubleCutGreens: DOUBLE_CUT_MINUTES,
   extraRoll: EXTRA_ROLL_MINUTES,
@@ -806,6 +810,33 @@ export const POND_HEALTH_STRESSED = 40;
 export const POND_LOW_FRACTION = 0.35;
 export const POND_HEALTH_SUMMER_DROP = 5;
 export const POND_HEALTH_LOW_DROP = 6;
+export const POND_DOSE_COST = nzPrice(40, 10);
+export const POND_RESCUE_COST = nzPrice(400, 50);
+export const POND_DOSE_WEEK_DAYS = DAYS_PER_WEEK;
+export const POND_DOSE_WEEKLY_COST = POND_DOSE_COST * POND_DOSE_WEEK_DAYS;
+export const HEALTHY_PONDS_BRAND = 'Healthy Ponds';
+export const POND_DOSING_LABEL = 'Healthy Ponds dosing';
+export const POND_RESCUE_LABEL = 'Pond rescue treatment';
+export const POND_RESCUE_TASK = 'pondRescue';
+export const CHECK_MOISTURE_LABEL = 'Check moisture';
+export const ROLL_GREENS_LABEL = 'Roll';
+export const ROLL_GREENS_TASK = 'rollGreens';
+export const CHECK_MOISTURE_BY_SURFACE = {
+  greens: 'checkMoistureGreens',
+  tees: 'checkMoistureTees',
+  fairways: 'checkMoistureFairways',
+};
+export const FERTILISE_BY_SURFACE = {
+  greens: 'fertiliseGreens',
+  tees: 'fertiliseTees',
+  fairways: 'fertiliseFairways',
+};
+export const SPRAY_BY_SURFACE = {
+  greens: 'sprayGreens',
+  tees: 'sprayTees',
+  fairways: 'sprayFairways',
+};
+export const INPUTS_SURFACES = ['greens', 'tees', 'fairways'];
 export const GROUNDWATER_M3 = 20;
 export const RAIN_POND_M3 = 150;
 export const STORM_POND_M3 = 400;
@@ -843,6 +874,7 @@ export const FERTILISER_BRAND = 'Plant Fitness';
 export const DISEASE_PRESSURE_MAX = 100;
 export const DISEASE_PRESSURE_MIN = 0;
 export const DISEASE_PRESSURE_BASE = 6;
+export const DISEASE_OUTBREAK_WARN = 45;
 export const DISEASE_OUTBREAK_THRESHOLD = 60;
 export const DISEASE_OUTBREAK_DROP = 25;
 export const DISEASE_OUTBREAK_DAILY = 5;
@@ -989,6 +1021,7 @@ export const SECTIONS = [SECTION_MAP, SECTION_TURF, SECTION_OFFICE, SECTION_CREW
 export const TURF_TAB_SUMMARY = 'summary';
 export const TURF_TAB_MOWING = 'mowing';
 export const TURF_TAB_IRRIGATION = 'irrigation';
+export const TURF_TAB_INPUTS = 'inputs';
 export const TURF_TAB_OTHER = 'other';
 export const TURF_TAB_LEGACY_BUNKERS = 'bunkers';
 export const TURF_TAB_LEGACY_POND = 'pond';
@@ -999,6 +1032,7 @@ export const TURF_TABS = [
   TURF_TAB_SUMMARY,
   TURF_TAB_MOWING,
   TURF_TAB_IRRIGATION,
+  TURF_TAB_INPUTS,
   TURF_TAB_OTHER,
   TURF_TAB_PRESETS,
 ];
@@ -1007,6 +1041,7 @@ export const TURF_TAB_LABELS = {
   [TURF_TAB_SUMMARY]: 'Summary',
   [TURF_TAB_MOWING]: 'Mowing',
   [TURF_TAB_IRRIGATION]: 'Irrigation',
+  [TURF_TAB_INPUTS]: 'Inputs',
   [TURF_TAB_OTHER]: 'Other',
   [TURF_TAB_BUNKERS]: 'Other',
   [TURF_TAB_POND]: 'Other',

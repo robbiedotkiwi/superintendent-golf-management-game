@@ -16,6 +16,9 @@ import {
   PATTERN_WEAR_DEFAULT,
   PATTERN_WEAR_THRESHOLD,
   PATTERNED_SURFACES,
+  POND_HEALTH_MAX,
+  POND_RESCUE_HEALTH,
+  POND_RESCUE_TASK,
   QUALITY_MAX,
   QUALITY_MIN,
   ROLLER_GAIN_BONUS,
@@ -62,7 +65,7 @@ import {
 } from './equipment.js';
 import { applyEarlyStartComplaints, applyMorale, prepareMorningWorkers, wageBill } from './staff.js';
 import { createRng } from './rng.js';
-import { applyFertiliser, applySpray, emptyDisease, resolveDisease } from './disease.js';
+import { applyFertiliser, applySpray, emptyDisease, resolveDisease, syncHoleDisease } from './disease.js';
 import { resolveIrrigation } from './irrigation.js';
 import {
   applyHandWater,
@@ -143,6 +146,9 @@ function capacityOf(state) {
 export function resolveDay(state) {
   const rng = createRng(state.rngSeed);
   const irrigation = resolveIrrigation(state);
+  let pond = { ...irrigation.pond };
+  let cash = state.cash ?? 0;
+  cash -= irrigation.doseCost ?? 0;
   let holes = cloneHoles(state.holes);
   const before = cloneHoles(state.holes);
   const conditionBefore = courseCondition(state);
@@ -160,8 +166,7 @@ export function resolveDay(state) {
   }
   let sprayedUntil = { ...(state.sprayedUntil ?? {}) };
   let fertiliserUntil = { ...(state.fertiliserUntil ?? {}) };
-  let cash = state.cash ?? 0;
-  let materialsSpent = 0;
+  let materialsSpent = irrigation.doseCost ?? 0;
   let tournamentPrepScore = state.tournamentPrepScore ?? 0;
 
   let planned = [...state.plannedTasks];
@@ -184,19 +189,28 @@ export function resolveDay(state) {
 
   for (const plannedTask of planned) {
     const task = getTask(plannedTask.taskId);
+    const jobHoles = jobHolesFor(state, task, plannedTask.holes);
     if (task.kind === 'spray' && task.surface) {
-      const sprayed = applySpray({ ...state, disease, sprayedUntil }, task.surface);
+      const sprayed = applySpray({ ...state, disease, sprayedUntil, holes }, task.surface, jobHoles);
       disease = sprayed.disease;
       sprayedUntil = sprayed.sprayedUntil;
+      holes = sprayed.holes ?? holes;
     }
     if (task.kind === 'fertiliser' && task.surface) {
-      fertiliserUntil = applyFertiliser({ ...state, fertiliserUntil }, task.surface).fertiliserUntil;
+      const fed = applyFertiliser({ ...state, fertiliserUntil, holes }, task.surface, jobHoles);
+      fertiliserUntil = fed.fertiliserUntil;
+      holes = fed.holes ?? holes;
+    }
+    if (task.id === POND_RESCUE_TASK) {
+      pond = {
+        ...pond,
+        health: Math.max(0, Math.min(POND_HEALTH_MAX, pond.health + POND_RESCUE_HEALTH)),
+      };
     }
     if (task.materialsCost) {
       cash -= task.materialsCost;
       materialsSpent += task.materialsCost;
     }
-    const jobHoles = jobHolesFor(state, task, plannedTask.holes);
     if (task.surface && (taskAppliesQuality(task) || task.kind === 'prep')) {
       for (const id of jobHoles) workedHolesByType[task.surface].add(id);
       if (jobHoles.length) worked.add(task.surface);
@@ -205,7 +219,7 @@ export function resolveDay(state) {
       tournamentPrepScore += task.prepBonus ?? 0;
     }
     if (task.kind === 'moistureCheck' && task.surface) {
-      moistureReadDay = revealMoisture(moistureReadDay, task.surface, state.day, holeN);
+      moistureReadDay = revealMoisture(moistureReadDay, task.surface, state.day, holeN, jobHoles);
     }
     if (task.id === 'handWater') {
       moisture = applyHandWater(moisture, plannedTask.greens ?? state.handWaterTargets, holeN);
@@ -249,12 +263,12 @@ export function resolveDay(state) {
     if (isAboveBand(moisture, task.surface)) gain *= WET_GAIN_MULT;
 
     const qualityBefore = meanQuality(live, task.surface);
-    const ceiling = machine
-      ? jobCeiling({ ...live, fertiliserUntil }, task.surface, machine.id)
-      : surfaceCeiling({ ...live, fertiliserUntil }, task.surface);
     const suitability = machineSuitability(machine, task.surface);
     holes = mapHoleSurfaces(holes, task.surface, (record, hole) => {
       if (jobHoles.length && !jobHoles.includes(hole.id)) return record;
+      const ceiling = machine
+        ? jobCeiling({ ...live, fertiliserUntil, holes }, task.surface, machine.id, record)
+        : surfaceCeiling({ ...live, fertiliserUntil, holes }, task.surface, record);
       let qualityAfter = applyGain(record.quality, gain, ceiling);
       if (task.mowing && suitability === SUITABILITY_DAMAGING) {
         qualityAfter = clampQuality(qualityAfter - SUITABILITY_DAMAGING_QUALITY_HIT);
@@ -396,6 +410,7 @@ export function resolveDay(state) {
 
   const diseaseTick = resolveDisease({ ...state, disease, sprayedUntil, moisture, holes, surfaceDefaults });
   disease = diseaseTick.disease;
+  holes = syncHoleDisease(holes, { ...state, sprayedUntil, disease }, disease);
   for (const item of diseaseTick.ongoing) {
     holes = mapHoleSurfaces(holes, item.surface, (record) => ({
       ...record,
@@ -447,7 +462,7 @@ export function resolveDay(state) {
     gmStanding,
     inbox: state.inbox ?? [],
     nextMailId: state.nextMailId ?? 1,
-    pond: irrigation.pond,
+    pond,
   };
   for (const mail of golferMail(mailed)) {
     mailed = pushMail(mailed, mail);
@@ -487,7 +502,7 @@ export function resolveDay(state) {
     surfaceDefaults,
     moisture,
     moistureReadDay,
-    pond: irrigation.pond,
+    pond,
     lastMainsCost: irrigation.mainsCost,
     disease,
     sprayedUntil,
@@ -620,7 +635,7 @@ export function resolveDay(state) {
     neighbourFine: complaint.fine,
     mainsCost: irrigation.mainsCost,
     mainsM3: irrigation.shortfall,
-    pond: irrigation.pond,
+    pond,
     materialsSpent,
     outbreaks: diseaseTick.outbreaks,
     diseaseOngoing: diseaseTick.ongoing,

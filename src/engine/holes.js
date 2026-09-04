@@ -92,6 +92,8 @@ function createMowRecord({
   hocAtLastCut = null,
   lastPattern = null,
   lastAngle = null,
+  fertiliserUntil = 0,
+  sprayedUntil = 0,
 } = {}) {
   return {
     quality,
@@ -108,6 +110,8 @@ function createMowRecord({
     hocAtLastCut,
     lastPattern,
     lastAngle,
+    fertiliserUntil,
+    sprayedUntil,
   };
 }
 
@@ -153,6 +157,8 @@ function fanMowFromGrouped(type, grouped, extras, index, holeId) {
     hocAtLastCut: src.hocAtLastCut ?? src.hoc ?? HOC_RANGE[type]?.default ?? null,
     lastPattern: src.lastPattern ?? null,
     lastAngle: src.lastAngle ?? null,
+    fertiliserUntil: extras.fertiliserUntil?.[type] ?? 0,
+    sprayedUntil: extras.sprayedUntil?.[type] ?? 0,
   });
 }
 
@@ -196,7 +202,29 @@ export function fanGroupedToHoles(state) {
     moisture: state.moisture,
     moistureReadDay: state.moistureReadDay,
     disease: state.disease,
+    fertiliserUntil: state.fertiliserUntil,
+    sprayedUntil: state.sprayedUntil,
   });
+}
+
+function stampTreatment(record, sprayedUntil, fertiliserUntil) {
+  if (!record) return record;
+  return {
+    ...record,
+    sprayedUntil: record.sprayedUntil ?? sprayedUntil ?? 0,
+    fertiliserUntil: record.fertiliserUntil ?? fertiliserUntil ?? 0,
+  };
+}
+
+export function stampTreatmentsFromTypeWide(holes, sprayedUntil = {}, fertiliserUntil = {}) {
+  if (!Array.isArray(holes)) return holes;
+  return holes.map((hole) => ({
+    ...hole,
+    green: stampTreatment(hole.green, sprayedUntil.greens, fertiliserUntil.greens),
+    tee: stampTreatment(hole.tee, sprayedUntil.tees, fertiliserUntil.tees),
+    fairway: stampTreatment(hole.fairway, sprayedUntil.fairways, fertiliserUntil.fairways),
+    rough: stampTreatment(hole.rough, sprayedUntil.rough, fertiliserUntil.rough),
+  }));
 }
 
 export function holeById(state, holeId) {

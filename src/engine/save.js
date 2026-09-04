@@ -32,7 +32,7 @@ import { emptyDisease, emptyUntil } from './disease.js';
 import { migrateMachineMaps, normalizeMachineOverride } from './equipment.js';
 import { emptyYearRecord } from './history.js';
 import { emptyDaysSinceWorked } from './mail.js';
-import { createInitialHoles, createSurfaceDefaults, fanGroupedToHoles, isHoleModel } from './holes.js';
+import { createInitialHoles, createSurfaceDefaults, fanGroupedToHoles, isHoleModel, stampTreatmentsFromTypeWide } from './holes.js';
 import { migrateMoisture } from './moisture.js';
 import { createRng } from './rng.js';
 import { buildForecast } from './weather.js';
@@ -107,7 +107,9 @@ export function withDefaults(state) {
   });
   return {
     ...state,
-    holes: holeState.holes,
+    holes: holeState.holes
+      ? stampTreatmentsFromTypeWide(holeState.holes, state.sprayedUntil, state.fertiliserUntil)
+      : holeState.holes,
     surfaceDefaults: holeState.surfaceDefaults,
     saveVersion: SAVE_VERSION,
     plannedTasks,
@@ -164,6 +166,7 @@ export function withDefaults(state) {
     pond: state.pond ?? { volume: POND_START_VOLUME, health: POND_HEALTH_START },
     irrigation: state.irrigation ?? { ...STARTING_IRRIGATION },
     hasAerator: Boolean(state.hasAerator),
+    pondDosing: Boolean(state.pondDosing),
     ...migrateMoisture(state),
     cash: migrateCash(state),
     grantForecast: state.grantForecast ?? null,

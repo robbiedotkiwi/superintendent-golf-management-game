@@ -2,13 +2,14 @@ import {
   DISEASE_OUTBREAK_DAILY,
   DISEASE_OUTBREAK_DROP,
   DISEASE_OUTBREAK_THRESHOLD,
+  DISEASE_OUTBREAK_WARN,
   DISEASE_PRESSURE_BASE,
   DISEASE_PRESSURE_MAX,
   DISEASE_PRESSURE_MIN,
   DISEASE_SEASON,
   DISEASE_SUSCEPTIBILITY,
   DISEASE_WET_MULT,
-  HOC_FERT_INTERVAL,
+  FERTILISER_DAYS,
   SPRAY_SUPPRESS_DAYS,
   STARTING_DISEASE_PRESSURE,
   WET_DISEASE_MULT,
@@ -17,7 +18,7 @@ import {
   WEATHER_STORM,
 } from '../data/constants.js';
 import { inDiseaseGrace } from './calendar.js';
-import { hocFactor } from './mowing.js';
+import { defaultJobHoles, isHoleModel, mapHoleSurfaces } from './holes.js';
 import { isAboveBand } from './moisture.js';
 
 export const DISEASE_SURFACES = ['greens', 'tees', 'fairways', 'rough'];
@@ -39,6 +40,40 @@ export function isSuppressed(state, surface) {
   return state.day < (state.sprayedUntil?.[surface] ?? 0);
 }
 
+export function holeIsSuppressed(state, record, surface) {
+  if ((record?.sprayedUntil ?? 0) > state.day) return true;
+  return isSuppressed(state, surface);
+}
+
+export function approachingOutbreak(pressure) {
+  return pressure >= DISEASE_OUTBREAK_WARN && pressure < DISEASE_OUTBREAK_THRESHOLD;
+}
+
+export function holeDiseasePressure(state, record, surface) {
+  if (record?.diseasePressure != null) return record.diseasePressure;
+  return state.disease?.[surface]?.pressure ?? STARTING_DISEASE_PRESSURE;
+}
+
+export function holeTreatmentUntil(record, typeUntil) {
+  return record?.fertiliserUntil || typeUntil || 0;
+}
+
+export function holeSprayUntil(record, typeUntil) {
+  return record?.sprayedUntil || typeUntil || 0;
+}
+
+function targetsFor(state, surface, holeIds) {
+  if (Array.isArray(holeIds) && holeIds.length) return holeIds;
+  if (isHoleModel(state.holes)) return defaultJobHoles(state, surface);
+  return [];
+}
+
+function coversType(state, surface, targets) {
+  if (!isHoleModel(state.holes)) return true;
+  const all = defaultJobHoles(state, surface);
+  return all.length > 0 && all.every((id) => targets.includes(id));
+}
+
 export function pressureGain(state, surface) {
   if (inDiseaseGrace(state.day)) return 0;
   const susceptibility = DISEASE_SUSCEPTIBILITY[surface] ?? 0;
@@ -50,23 +85,53 @@ export function pressureGain(state, surface) {
   return gain;
 }
 
-export function applySpray(state, surface) {
+export function applySpray(state, surface, holeIds) {
+  const until = state.day + SPRAY_SUPPRESS_DAYS;
+  const targets = targetsFor(state, surface, holeIds);
+  let holes = state.holes;
+  if (isHoleModel(holes)) {
+    holes = mapHoleSurfaces(holes, surface, (record, hole) => {
+      if (targets.length && !targets.includes(hole.id)) return record;
+      return { ...record, sprayedUntil: until, diseasePressure: STARTING_DISEASE_PRESSURE };
+    });
+  }
+  const live = { ...state, holes };
+  const allTreated = coversType(live, surface, targets);
   return {
     ...state,
-    sprayedUntil: { ...state.sprayedUntil, [surface]: state.day + SPRAY_SUPPRESS_DAYS },
-    disease: {
-      ...state.disease,
-      [surface]: { pressure: STARTING_DISEASE_PRESSURE, outbreak: false },
+    holes,
+    sprayedUntil: {
+      ...state.sprayedUntil,
+      [surface]: allTreated ? until : (state.sprayedUntil?.[surface] ?? 0),
     },
+    disease: allTreated
+      ? {
+          ...state.disease,
+          [surface]: { pressure: STARTING_DISEASE_PRESSURE, outbreak: false },
+        }
+      : state.disease,
   };
 }
 
-export function applyFertiliser(state, surface) {
-  const factor = hocFactor(surface, state.surfaceDefaults?.[surface]?.hoc);
-  const days = Math.round(HOC_FERT_INTERVAL(factor));
+export function applyFertiliser(state, surface, holeIds) {
+  const until = state.day + FERTILISER_DAYS;
+  const targets = targetsFor(state, surface, holeIds);
+  let holes = state.holes;
+  if (isHoleModel(holes)) {
+    holes = mapHoleSurfaces(holes, surface, (record, hole) => {
+      if (targets.length && !targets.includes(hole.id)) return record;
+      return { ...record, fertiliserUntil: until };
+    });
+  }
+  const live = { ...state, holes };
+  const allTreated = coversType(live, surface, targets);
   return {
     ...state,
-    fertiliserUntil: { ...state.fertiliserUntil, [surface]: state.day + days },
+    holes,
+    fertiliserUntil: {
+      ...state.fertiliserUntil,
+      [surface]: allTreated ? until : (state.fertiliserUntil?.[surface] ?? 0),
+    },
   };
 }
 
@@ -98,6 +163,27 @@ export function resolveDisease(state) {
     disease[surface] = { pressure, outbreak };
   }
   return { disease, outbreaks, ongoing };
+}
+
+export function syncHoleDisease(holes, state, disease) {
+  if (!isHoleModel(holes)) return holes;
+  let next = holes;
+  for (const surface of DISEASE_SURFACES) {
+    if (surface === 'rough') {
+      next = mapHoleSurfaces(next, surface, (record) => ({
+        ...record,
+        diseasePressure: STARTING_DISEASE_PRESSURE,
+      }));
+      continue;
+    }
+    next = mapHoleSurfaces(next, surface, (record) => {
+      if (holeIsSuppressed(state, record, surface)) {
+        return { ...record, diseasePressure: STARTING_DISEASE_PRESSURE };
+      }
+      return { ...record, diseasePressure: disease[surface]?.pressure ?? record.diseasePressure };
+    });
+  }
+  return next;
 }
 
 export function diseaseSurfacesVisible(state) {

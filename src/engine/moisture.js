@@ -184,10 +184,17 @@ export function applyHandWater(moisture, targets, holes = HOLE_COUNT) {
   return next;
 }
 
-export function revealMoisture(readDay, surface, day, holes = HOLE_COUNT) {
+export function revealMoisture(readDay, surface, day, holes = HOLE_COUNT, holeIds) {
   const next = cloneReadDay(readDay, holes);
   if (surface === 'greens') {
-    next.greens = Array.from({ length: holes }, () => day);
+    if (!holeIds?.length) {
+      next.greens = Array.from({ length: holes }, () => day);
+    } else {
+      for (const id of holeIds) {
+        const index = id - 1;
+        if (index >= 0 && index < next.greens.length) next.greens[index] = day;
+      }
+    }
   } else if (surface === 'tees' || surface === 'fairways') {
     next[surface] = day;
   }
@@ -213,7 +220,7 @@ export function moistureStatus(state, surface, greenIndex = null) {
   if (surface === 'greens') {
     const index = greenIndex ?? 0;
     const value = greenIndex == null ? meanGreenMoisture(moisture) : (moisture.greens[index] ?? MOISTURE_START.greens);
-    const age = readAge(readDay.greens[index] ?? readDay.greens[0], state.day);
+    const age = readAge(readDay.greens[index], state.day);
     const kind = readingKind(age, Boolean(state.hasGreensSensors));
     if (kind === 'hidden') return { kind, value: MOISTURE_HIDDEN };
     return { kind, value };

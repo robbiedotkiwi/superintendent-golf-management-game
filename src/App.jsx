@@ -211,6 +211,7 @@ export default function App() {
           onSetAngle={(surface, angle) => dispatch({ type: 'SET_ANGLE', surface, angle })}
           onSetAutoRotate={(surface, value) => dispatch({ type: 'SET_AUTO_ROTATE', surface, value })}
           onSetIrrigation={(surface, policy) => dispatch({ type: 'SET_IRRIGATION', surface, policy })}
+          onSetPondDosing={(on) => dispatch({ type: 'SET_POND_DOSING', on })}
           onSetView={(view) => dispatch({ type: 'SET_VIEW', view })}
           onBuyAerator={() => dispatch({ type: 'BUY_AERATOR' })}
           onBuyGreensSensors={() => dispatch({ type: 'BUY_GREENS_SENSORS' })}
@@ -325,6 +326,7 @@ function GameScreen({
   onSetAngle,
   onSetAutoRotate,
   onSetIrrigation,
+  onSetPondDosing,
   onSetView,
   onBuyAerator,
   onBuyGreensSensors,
@@ -497,6 +499,7 @@ function GameScreen({
             onSetAngle={onSetAngle}
             onSetAutoRotate={onSetAutoRotate}
             onSetIrrigation={onSetIrrigation}
+            onSetPondDosing={onSetPondDosing}
             onBuyAerator={onBuyAerator}
             onBuyGreensSensors={onBuyGreensSensors}
             onBuyTurfRad={onBuyTurfRad}
@@ -539,6 +542,8 @@ function GameScreen({
                 onSaveRoute={onSaveRoute}
                 onApplyRoute={onApplyRoute}
                 onRepeatLast={onRepeatLast}
+                onPlan={onPlan}
+                onRemove={onRemove}
               />
             ) : null}
             {SURFACE_KEYS.includes(selected) && !watching ? (

@@ -259,4 +259,12 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Forecast snapshots satisfaction seven days before season end (inclusive). Bonus/penalty is ±5 satisfaction against that snapshot, applied on top of the live grant formula at close. Leases still charge before the grant; loan repayment after the grant, before solvency.
 - Old saves with `maintenanceBudget` / `capitalBudget` add those remaining pots into `cash` once. A save with no cash and no pots is refused. Save version is 3.
 
+### Phase F
+
+- Moisture checking and rolling were already in the model (`checkMoisture*`, `rollGreens`, Salsco `greensRoller`). They were missing from Turf UI (Irrigation / map selection, and Mowing). Restored those surfaces; did not rebuild the tasks or catalogue.
+- Healthy Ponds dosing and rescue were missing from the model. Dosing is `pondDosing` (nightly `POND_DOSE_COST` + `POND_DOSE_MINUTES` off the player's morning, holds health like the aerator). Rescue is task `pondRescue`. A week of dosing is cheaper than one rescue. The aerator still stacks with both.
+- Fertiliser uses `FERTILISER_DAYS` (21), not the HOC interval. Spray/fert on a hole subset stamps that hole's `fertiliserUntil` / `sprayedUntil`; type-wide until is set only when every hole of the type is treated. Old type-wide untils fan onto every hole on load. Save version stays 3 — new fields default.
+- Approaching-outbreak flag is `DISEASE_OUTBREAK_WARN` (45), below the outbreak threshold of 60.
+- Greens moisture status uses that hole's own read day. An unread green no longer inherits hole 1's reading, so a partial moisture check can leave other greens hidden.
+
 

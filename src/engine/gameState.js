@@ -218,6 +218,7 @@ export function createInitialState() {
     pond: { volume: POND_START_VOLUME, health: POND_HEALTH_START },
     irrigation: { ...STARTING_IRRIGATION },
     hasAerator: false,
+    pondDosing: false,
     moisture: emptyMoisture(HOLE_COUNT),
     moistureReadDay: emptyMoistureReadDay(HOLE_COUNT),
     handWaterTargets: allGreenIds(HOLE_COUNT),
@@ -760,6 +761,8 @@ export function reducer(state, action) {
         machineOverride: { ...normalizeMachineOverride(state.machineOverride), [surface]: machineId },
       });
     }
+    case 'SET_POND_DOSING':
+      return { ...state, pondDosing: Boolean(action.on) };
     case 'SET_IRRIGATION': {
       if (!IRRIGATED_SURFACES.includes(action.surface) || !isIrrigationPolicy(action.policy)) return state;
       return {

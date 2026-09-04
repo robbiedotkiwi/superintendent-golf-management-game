@@ -15,6 +15,7 @@ import {
   SECTION_TURF,
   TURF_TAB_BUNKERS,
   TURF_TAB_IRRIGATION,
+  TURF_TAB_INPUTS,
   TURF_TAB_LEGACY_BUNKERS,
   TURF_TAB_LEGACY_POND,
   TURF_TAB_MOWING,
@@ -42,10 +43,11 @@ assert.deepEqual(TURF_TABS, [
   TURF_TAB_SUMMARY,
   TURF_TAB_MOWING,
   TURF_TAB_IRRIGATION,
+  TURF_TAB_INPUTS,
   TURF_TAB_OTHER,
   TURF_TAB_PRESETS,
 ]);
-assert.equal(TURF_TABS.length, 5);
+assert.equal(TURF_TABS.length, 6);
 assert.equal(TURF_TAB_BUNKERS, TURF_TAB_OTHER);
 assert.equal(TURF_TAB_POND, TURF_TAB_OTHER);
 assert.equal(PLAN_THIS_CUT_LABEL, 'Plan this cut');
@@ -61,6 +63,7 @@ assert.match(turfSrc, /MATCH_LAST_MOWING_LABEL/);
 assert.match(turfSrc, /MachinePicker/);
 assert.match(turfSrc, /overrideCandidates/);
 assert.match(turfSrc, /TURF_TAB_OTHER/);
+assert.match(turfSrc, /TURF_TAB_INPUTS/);
 assert.match(turfSrc, /BunkerTab/);
 assert.match(turfSrc, /PondPanel/);
 assert.match(turfSrc, /TURF_TAB_BUNKERS/);
@@ -181,5 +184,5 @@ console.log('GATE B3 PASS never-cut surfaces are skipped by Match last mowing');
 console.log('GATE B4 PASS auto-pick ranks highest ceiling then lowest time multiplier');
 console.log('GATE B5 PASS override lists every mower, including damaging units, and persists across days');
 console.log('GATE B6 PASS unavailable override falls back to auto with MACHINE_OVERRIDE_FALLBACK');
-console.log('GATE B7 PASS Turf has five tabs; Bunkers and Pond live on Other');
+console.log('GATE B7 PASS Turf has six tabs; Bunkers and Pond live on Other');
 console.log('round 6 phase B checks passed');

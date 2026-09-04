@@ -364,13 +364,13 @@ export function suitabilityCeilingPenalty(suitability) {
   return 0;
 }
 
-export function jobCeiling(state, surface, machineId) {
+export function jobCeiling(state, surface, machineId, record) {
   const machine = getMachine(machineId);
-  if (!machine) return surfaceCeiling(state, surface);
+  if (!machine) return surfaceCeiling(state, surface, record);
   const native = machineNativeCeiling(machine, surface);
   const penalty = suitabilityCeilingPenalty(machineSuitability(machine, surface));
   const cap = Math.max(0, Math.min(QUALITY_MAX, native - penalty));
-  return cap + fertiliserBonus(state, surface) + projectCeilingBonus(state, surface) + hocCeilingBonus(state, surface);
+  return cap + fertiliserBonus(state, surface, record) + projectCeilingBonus(state, surface) + hocCeilingBonus(state, surface);
 }
 
 export function machineTimeMultiplier(state, task) {
@@ -379,7 +379,7 @@ export function machineTimeMultiplier(state, task) {
   return machineMultiplierFor(state, machine.id);
 }
 
-export function surfaceCeiling(state, surface) {
+export function surfaceCeiling(state, surface, record) {
   let best = 0;
   for (const machine of ownedMachineList(state)) {
     if (machine.rollOnly || machine.autonomous) continue;
@@ -389,7 +389,7 @@ export function surfaceCeiling(state, surface) {
     if (value == null) continue;
     if (value > best) best = value;
   }
-  return (best || QUALITY_MAX) + fertiliserBonus(state, surface) + projectCeilingBonus(state, surface) + hocCeilingBonus(state, surface);
+  return (best || QUALITY_MAX) + fertiliserBonus(state, surface, record) + projectCeilingBonus(state, surface) + hocCeilingBonus(state, surface);
 }
 
 function hocCeilingBonus(state, surface) {
@@ -398,7 +398,10 @@ function hocCeilingBonus(state, surface) {
   return HOC_CEILING_BONUS(hocFactor(surface, height));
 }
 
-function fertiliserBonus(state, surface) {
+function fertiliserBonus(state, surface, record) {
+  if (record) {
+    return (record.fertiliserUntil ?? 0) > state.day ? FERTILISER_CEILING_BONUS : 0;
+  }
   if ((state.fertiliserUntil?.[surface] ?? 0) > state.day) return FERTILISER_CEILING_BONUS;
   return 0;
 }

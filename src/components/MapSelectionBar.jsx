@@ -1,4 +1,6 @@
 import {
+  CHECK_MOISTURE_BY_SURFACE,
+  CHECK_MOISTURE_LABEL,
   REPEAT_LAST_LABEL,
   SAVE_ROUTE_LABEL,
   SAVED_ROUTE_CAP,
@@ -7,8 +9,11 @@ import {
   SELECT_FRONT_NINE_LABEL,
 } from '../data/constants.js';
 import { useState } from 'react';
-import { describeJob, formatHoleSet } from '../engine/jobs.js';
+import { describeJob, findPlannedJob, formatHoleSet } from '../engine/jobs.js';
 import { defaultJobHoles, frontNineIds } from '../engine/holes.js';
+import { SURFACE_LABELS } from '../data/tasks.js';
+import PlanConfirmButton from './PlanConfirmButton.jsx';
+import { durationForTask } from '../engine/assignment.js';
 
 export default function MapSelectionBar({
   state,
@@ -18,6 +23,8 @@ export default function MapSelectionBar({
   onSaveRoute,
   onApplyRoute,
   onRepeatLast,
+  onPlan,
+  onRemove,
 }) {
   const [routeName, setRouteName] = useState('');
   const selected = state.selectedHoles ?? [];
@@ -98,6 +105,38 @@ export default function MapSelectionBar({
           </ul>
         </div>
       ) : null}
+      <div className="mt-2 space-y-1">
+        <p className="text-sm text-[var(--sand)]">{CHECK_MOISTURE_LABEL}</p>
+        {Object.entries(CHECK_MOISTURE_BY_SURFACE).map(([surface, taskId]) => {
+          const holes = selected.length ? selected : undefined;
+          const planned = findPlannedJob(state, taskId, holes);
+          const minutes = planned?.minutes ?? durationForTask(state, taskId, undefined, undefined, holes);
+          if (planned) {
+            return (
+              <button
+                key={taskId}
+                type="button"
+                className="w-full border border-[var(--sand)] px-2 py-1 text-left text-sm"
+                onClick={() => onRemove(taskId, planned.planId)}
+              >
+                {SURFACE_LABELS[surface]} planned · {planned.minutes} min
+              </button>
+            );
+          }
+          return (
+            <PlanConfirmButton
+              key={taskId}
+              state={state}
+              taskId={taskId}
+              holes={holes}
+              onPlan={onPlan}
+              className="w-full border border-[var(--sand)] px-2 py-1 text-left text-sm disabled:opacity-40"
+            >
+              {SURFACE_LABELS[surface]} · {minutes} min
+            </PlanConfirmButton>
+          );
+        })}
+      </div>
     </div>
   );
 }

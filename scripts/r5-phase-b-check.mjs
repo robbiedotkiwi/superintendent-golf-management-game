@@ -11,6 +11,7 @@ import {
   SHIPPED_PRESETS,
   SIDEBAR_FIT_HEIGHT,
   TURF_TAB_BUNKERS,
+  TURF_TAB_INPUTS,
   TURF_TAB_IRRIGATION,
   TURF_TAB_MOWING,
   TURF_TAB_OTHER,
@@ -40,6 +41,7 @@ assert.deepEqual(TURF_TABS, [
   TURF_TAB_SUMMARY,
   TURF_TAB_MOWING,
   TURF_TAB_IRRIGATION,
+  TURF_TAB_INPUTS,
   TURF_TAB_OTHER,
   TURF_TAB_PRESETS,
 ]);
@@ -164,6 +166,7 @@ const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.u
 assert.match(turfSrc, /TURF_TAB_SUMMARY/);
 assert.match(turfSrc, /TURF_TAB_MOWING/);
 assert.match(turfSrc, /TURF_TAB_IRRIGATION/);
+assert.match(turfSrc, /TURF_TAB_INPUTS/);
 assert.match(turfSrc, /TURF_TAB_BUNKERS/);
 assert.match(turfSrc, /TURF_TAB_POND/);
 assert.match(turfSrc, /TURF_TAB_PRESETS/);
@@ -178,7 +181,7 @@ assert.match(app, /<MapJobPopover/);
 assert.match(app, /SURFACE_KEYS\.includes\(selected\)/);
 
 console.log('GATE B1 PASS sidebar is day, weather, condition, four buttons, pinned footer');
-console.log('GATE B2 PASS Turf section has five named tabs');
+console.log('GATE B2 PASS Turf section has six named tabs');
 console.log('GATE B3 PASS sidebar has no turf, pond, money or surface content');
 console.log('GATE B4 PASS turf/office/crew/shed badges and dots fire on constructed state');
 console.log('GATE B5 PASS map quick-job popover mounts without opening Turf');

@@ -57,7 +57,7 @@ export default function IrrigationPanel({
           <p className="mt-2">In the pond. Holds health up.</p>
         ) : (
           <>
-            <p className="mt-2 text-sm text-[var(--sand)]">Keeps pond health from falling. {formatMoney(AERATOR_COST)} from capital.</p>
+            <p className="mt-2 text-sm text-[var(--sand)]">Keeps pond health from falling. {formatMoney(AERATOR_COST)} from cash.</p>
             <button
               type="button"
               disabled={!aerator.ok}
@@ -77,7 +77,7 @@ export default function IrrigationPanel({
           <p className="mt-2">Live greens moisture. Never stale.</p>
         ) : (
           <>
-            <p className="mt-2 text-sm text-[var(--sand)]">Continuous greens readings. {formatMoney(GREENS_SENSORS_COST)} from capital.</p>
+            <p className="mt-2 text-sm text-[var(--sand)]">Continuous greens readings. {formatMoney(GREENS_SENSORS_COST)} from cash.</p>
             <button
               type="button"
               disabled={!sensors.ok}
@@ -97,7 +97,7 @@ export default function IrrigationPanel({
           <p className="mt-2">Mowers report moisture on anything cut today.</p>
         ) : (
           <>
-            <p className="mt-2 text-sm text-[var(--sand)]">Readings when you mow. {formatMoney(TURFRAD_COST)} from capital.</p>
+            <p className="mt-2 text-sm text-[var(--sand)]">Readings when you mow. {formatMoney(TURFRAD_COST)} from cash.</p>
             <button
               type="button"
               disabled={!turfrad.ok}
