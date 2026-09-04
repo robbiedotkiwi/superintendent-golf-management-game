@@ -313,3 +313,9 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Match last mowing, shipped packs, custom presets, `PRESET_MAX`, and the preset actions are gone. Old saves drop `customPresets` / `nextPresetId` on load (`delete` in `withDefaults`). `heightAtLastCut` fields stay for Phase B grass length.
 - Storm debris (was on Summary) moves to Other. Per-surface status and disease wait for the two-column tabs. Forecast stays in the Start day dialog only.
 
+### Phase B
+
+- Grass length is display-only: `heightAtLastCut` (or current HOC if never cut) plus `days × GRASS_GROWTH_MM_PER_DAY[surface] × SEASON_GROWTH`. The mowing model is unchanged.
+- Lagging holes are those with a strictly older `lastMownDay` than the most recently cut hole of that type.
+- Pattern wear shows in the right column only when it is above `PATTERN_WEAR_DEFAULT`. The right column is `pointer-events-none`.
+

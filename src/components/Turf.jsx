@@ -74,6 +74,7 @@ import { canBuyGreensSensors, canBuyTurfRad } from '../engine/moisture.js';
 import { daysSinceLastWorked, isNeglected } from '../engine/neglect.js';
 import { courseSettings, holeCount, holeKind, meanQuality, presentHoles } from '../engine/holes.js';
 import { hasHoc, hasPattern, inHocStressBand } from '../engine/mowing.js';
+import { mowingStatus } from '../engine/mowingStatus.js';
 import { GreensMoistureList, MoistureLine } from './MoistureReadout.jsx';
 import SectionTabs from './SectionTabs.jsx';
 import HoleSelector from './HoleSelector.jsx';
@@ -86,6 +87,20 @@ const POLICY_LABELS = {
 
 function formatQuality(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
+}
+
+function formatMm(value) {
+  if (value == null || !Number.isFinite(value)) return '—';
+  return Number.isInteger(value) ? `${value} mm` : `${value.toFixed(1)} mm`;
+}
+
+function TwoColumn({ left, right }) {
+  return (
+    <div className="mt-2 grid grid-cols-2 gap-4">
+      <div>{left}</div>
+      <div className="pointer-events-none text-sm">{right}</div>
+    </div>
+  );
 }
 
 function jobHolesFromSelection(state) {
@@ -175,7 +190,6 @@ export default function Turf({
 
       {tab === TURF_TAB_MOWING ? (
         <div className="space-y-4">
-          <HoleSelector state={state} onToggleHole={onToggleHole} onSelectHoles={onSelectHoles} />
           {HOC_SURFACES.map((surface) => (
             <MowingSurface
               key={surface}
@@ -188,6 +202,8 @@ export default function Turf({
               onPlan={onPlan}
               onRemove={onRemove}
               onSetMachineOverride={onSetMachineOverride}
+              onToggleHole={onToggleHole}
+              onSelectHoles={onSelectHoles}
             />
           ))}
         </div>
@@ -464,6 +480,30 @@ function PondPanel({ state, percent, aerator, onBuyAerator, onPlan, onRemove, on
   );
 }
 
+function MowingStatus({ state, surface }) {
+  const status = mowingStatus(state, surface);
+  return (
+    <div data-mowing-status={surface}>
+      <p>Height {formatMm(status.heightMm)}</p>
+      <p>Grass {formatMm(status.grassMm)}</p>
+      <p className={status.overdue ? 'text-[var(--machine-orange)]' : ''}>
+        {status.daysSinceCut}d since cut
+        {status.overdue ? ' · overdue' : ''}
+      </p>
+      <p>
+        Quality {formatQuality(status.quality)} · ceiling {formatQuality(status.ceiling)}
+      </p>
+      {hasPattern(surface) ? (
+        <p>
+          Pattern wear {Math.round(status.wear)}
+          {status.wearClimbing ? ' · climbing' : ''}
+        </p>
+      ) : null}
+      {status.lagging.length ? <p>Holes {status.lagging.join(', ')} lagging</p> : null}
+    </div>
+  );
+}
+
 function MowingSurface({
   surface,
   state,
@@ -474,6 +514,8 @@ function MowingSurface({
   onPlan,
   onRemove,
   onSetMachineOverride,
+  onToggleHole,
+  onSelectHoles,
 }) {
   const record = courseSettings(state, surface) ?? {};
   const showHoc = hasHoc(surface);
@@ -485,91 +527,98 @@ function MowingSurface({
   return (
     <section className="border border-[var(--sand)] p-3">
       <h3 className="text-lg font-semibold">{SURFACE_LABELS[surface]}</h3>
-      {showHoc ? (
-        <label className="mt-2 block">
-          <span className="text-sm text-[var(--sand)]">Height of cut</span>
-          <div className="font-condensed text-3xl font-bold leading-none">{record.hoc} mm</div>
-          <div className="relative mt-2">
-            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 bg-[var(--sand)]/30">
-              <div className="h-full bg-[var(--machine-orange)]/50" style={{ width: `${stressBandWidth(surface)}%` }} />
-            </div>
-            <input
-              type="range"
-              min={HOC_RANGE[surface].min}
-              max={HOC_RANGE[surface].max}
-              step={HOC_STEP[surface]}
-              value={record.hoc}
-              onChange={(event) => onSetHoc(surface, Number(event.target.value))}
-              className="relative w-full"
-            />
-          </div>
-          <p className="mt-1 text-xs text-[var(--sand)]">Stress band below {threshold} mm</p>
-          {stress ? (
-            <p className="mt-1 text-sm text-[var(--machine-orange)]">
-              Low cut — {HOC_STRESS_DAMAGE} quality/day in summer or when dry
-            </p>
-          ) : null}
-        </label>
-      ) : null}
-      {showPattern ? (
-        <>
-          <div className="mt-3 text-sm text-[var(--sand)]">Pattern</div>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            {PATTERN_KEYS.map((pattern) => (
-              <button
-                key={pattern}
-                type="button"
-                onClick={() => onSetPattern(surface, pattern)}
-                className={`border px-2 py-2 text-left ${
-                  record.pattern === pattern
-                    ? 'border-[var(--machine-orange)] bg-[var(--machine-orange)] text-[var(--paint)]'
-                    : 'border-[var(--sand)]'
-                }`}
-              >
-                {PATTERN_LABELS[pattern]}
-              </button>
-            ))}
-          </div>
-          <label className="mt-3 block">
-            <span className="text-sm text-[var(--sand)]">Angle {record.angle}°</span>
-            <input
-              type="range"
-              min={PATTERN_ANGLE_MIN}
-              max={PATTERN_ANGLE_MAX}
-              step={1}
-              value={record.angle}
-              onChange={(event) => onSetAngle(surface, Number(event.target.value))}
-              className="mt-1 w-full"
-            />
-          </label>
-          <label className="mt-2 flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={Boolean(record.autoRotate)}
-              onChange={(event) => onSetAutoRotate(surface, event.target.checked)}
-            />
-            Auto-rotate each cut
-          </label>
-          <p className="mt-2 text-sm text-[var(--sand)]">Pattern wear {Math.round(record.patternWear ?? 0)}</p>
-        </>
-      ) : null}
-      {minutes != null ? (
-        <p className="mt-2 font-condensed text-2xl font-bold leading-none">
-          {minutes}
-          <span className="ml-2 text-sm font-semibold text-[var(--sand)]">min at these settings</span>
-        </p>
-      ) : null}
-      <MachinePicker state={state} surface={surface} onSetMachineOverride={onSetMachineOverride} />
-      <PlanThisCut state={state} surface={surface} onPlan={onPlan} onRemove={onRemove} />
-      {surface === 'greens' ? (
-        <PlanJob
-          state={state}
-          taskId={ROLL_GREENS_TASK}
-          onPlan={onPlan}
-          onRemove={onRemove}
-          label={ROLL_GREENS_LABEL}
-        />
-      ) : null}
+      <TwoColumn
+        left={
+          <>
+            {showHoc ? (
+              <label className="mt-2 block">
+                <span className="text-sm text-[var(--sand)]">Height of cut</span>
+                <div className="font-condensed text-3xl font-bold leading-none">{record.hoc} mm</div>
+                <div className="relative mt-2">
+                  <div className="pointer-events-none absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 bg-[var(--sand)]/30">
+                    <div className="h-full bg-[var(--machine-orange)]/50" style={{ width: `${stressBandWidth(surface)}%` }} />
+                  </div>
+                  <input
+                    type="range"
+                    min={HOC_RANGE[surface].min}
+                    max={HOC_RANGE[surface].max}
+                    step={HOC_STEP[surface]}
+                    value={record.hoc}
+                    onChange={(event) => onSetHoc(surface, Number(event.target.value))}
+                    className="relative w-full"
+                  />
+                </div>
+                <p className="mt-1 text-xs text-[var(--sand)]">Stress band below {threshold} mm</p>
+                {stress ? (
+                  <p className="mt-1 text-sm text-[var(--machine-orange)]">
+                    Low cut — {HOC_STRESS_DAMAGE} quality/day in summer or when dry
+                  </p>
+                ) : null}
+              </label>
+            ) : null}
+            {showPattern ? (
+              <>
+                <div className="mt-3 text-sm text-[var(--sand)]">Pattern</div>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {PATTERN_KEYS.map((pattern) => (
+                    <button
+                      key={pattern}
+                      type="button"
+                      onClick={() => onSetPattern(surface, pattern)}
+                      className={`border px-2 py-2 text-left ${
+                        record.pattern === pattern
+                          ? 'border-[var(--machine-orange)] bg-[var(--machine-orange)] text-[var(--paint)]'
+                          : 'border-[var(--sand)]'
+                      }`}
+                    >
+                      {PATTERN_LABELS[pattern]}
+                    </button>
+                  ))}
+                </div>
+                <label className="mt-3 block">
+                  <span className="text-sm text-[var(--sand)]">Angle {record.angle}°</span>
+                  <input
+                    type="range"
+                    min={PATTERN_ANGLE_MIN}
+                    max={PATTERN_ANGLE_MAX}
+                    step={1}
+                    value={record.angle}
+                    onChange={(event) => onSetAngle(surface, Number(event.target.value))}
+                    className="mt-1 w-full"
+                  />
+                </label>
+                <label className="mt-2 flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(record.autoRotate)}
+                    onChange={(event) => onSetAutoRotate(surface, event.target.checked)}
+                  />
+                  Auto-rotate each cut
+                </label>
+              </>
+            ) : null}
+            {minutes != null ? (
+              <p className="mt-2 font-condensed text-2xl font-bold leading-none">
+                {minutes}
+                <span className="ml-2 text-sm font-semibold text-[var(--sand)]">min at these settings</span>
+              </p>
+            ) : null}
+            <MachinePicker state={state} surface={surface} onSetMachineOverride={onSetMachineOverride} />
+            <HoleSelector state={state} onToggleHole={onToggleHole} onSelectHoles={onSelectHoles} />
+            <PlanThisCut state={state} surface={surface} onPlan={onPlan} onRemove={onRemove} />
+            {surface === 'greens' ? (
+              <PlanJob
+                state={state}
+                taskId={ROLL_GREENS_TASK}
+                onPlan={onPlan}
+                onRemove={onRemove}
+                label={ROLL_GREENS_LABEL}
+              />
+            ) : null}
+          </>
+        }
+        right={<MowingStatus state={state} surface={surface} />}
+      />
     </section>
   );
 }

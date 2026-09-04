@@ -456,6 +456,12 @@ export const SEASON_GROWTH = {
   autumn: 1.0,
   winter: 0.5,
 };
+export const GRASS_GROWTH_MM_PER_DAY = {
+  greens: 0.4,
+  tees: 0.7,
+  fairways: 1.0,
+  rough: 2.5,
+};
 
 export const WEATHER_FINE = 'fine';
 export const WEATHER_OVERCAST = 'overcast';
