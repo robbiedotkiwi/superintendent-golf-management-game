@@ -285,15 +285,15 @@ export function workerMinutesRemaining(worker) {
 }
 
 export function combinedMinutesRemaining(state) {
-  return state.workers.reduce((total, worker) => total + workerMinutesRemaining(worker), 0);
+  return (state.workers ?? []).reduce((total, worker) => total + workerMinutesRemaining(worker), 0);
 }
 
 export function combinedMinutesCapacity(state) {
-  return state.workers.reduce((total, worker) => total + worker.minutesToday, 0);
+  return (state.workers ?? []).reduce((total, worker) => total + worker.minutesToday, 0);
 }
 
 export function combinedMinutesUsed(state) {
-  return state.workers.reduce((total, worker) => total + worker.minutesUsed, 0);
+  return (state.workers ?? []).reduce((total, worker) => total + worker.minutesUsed, 0);
 }
 
 export function canPlanTask(state, taskId, workerId, options = {}) {

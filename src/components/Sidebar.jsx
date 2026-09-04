@@ -161,7 +161,7 @@ export default function Sidebar({
           remaining={minutesRemaining}
           used={minutesUsed}
           capacity={minutesCapacity}
-          plannedTasks={state.plannedTasks}
+          plannedTasks={state.plannedTasks ?? []}
           onRemove={onRemove}
         />
         <button

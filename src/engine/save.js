@@ -245,6 +245,8 @@ export function withDefaults(state) {
     volunteerWeekday: migrateVolunteerWeekday(state.volunteerWeekday),
     section: normalizeSection(state.section),
     tabs: normalizeTabs(state.tabs),
+    log: Array.isArray(state.log) ? state.log : [],
+    workers: Array.isArray(state.workers) ? state.workers : [],
   };
   delete next.customPresets;
   delete next.nextPresetId;
@@ -275,14 +277,32 @@ export function migrateSave(raw) {
   }
 }
 
+function storage() {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    return localStorage;
+  } catch {
+    return null;
+  }
+}
+
 export function saveGame(state) {
-  localStorage.setItem(SAVE_KEY, JSON.stringify(state));
+  const store = storage();
+  if (!store) return false;
+  try {
+    store.setItem(SAVE_KEY, JSON.stringify(state));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function loadGame() {
-  const raw = localStorage.getItem(SAVE_KEY);
-  if (raw === null) return null;
+  const store = storage();
+  if (!store) return null;
   try {
+    const raw = store.getItem(SAVE_KEY);
+    if (raw === null) return null;
     return migrateSave(JSON.parse(raw));
   } catch {
     return null;
@@ -294,5 +314,11 @@ export function hasSave() {
 }
 
 export function clearSave() {
-  localStorage.removeItem(SAVE_KEY);
+  const store = storage();
+  if (!store) return;
+  try {
+    store.removeItem(SAVE_KEY);
+  } catch {
+    /* ignore quota / blocked storage */
+  }
 }

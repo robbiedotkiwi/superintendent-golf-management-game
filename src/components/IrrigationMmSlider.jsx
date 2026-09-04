@@ -15,6 +15,7 @@ function formatIrrigationMm(value) {
 
 export default function IrrigationMmSlider({ state, surface, onSetIrrigation }) {
   const range = irrigationMmRange(surface);
+  if (!range) return null;
   const mm = migrateIrrigationValue(surface, state.irrigation?.[surface]);
   const holes = holeCount(state);
   const draw = irrigationMmToM3(surface, mm, holes);

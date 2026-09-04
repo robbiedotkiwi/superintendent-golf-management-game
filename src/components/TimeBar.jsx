@@ -7,10 +7,10 @@ export function timeFillPercent(minutes, capacity) {
 
 function plannedLabel(planned) {
   const task = getTask(planned.taskId);
-  return `${task.name} · ${planned.minutes} min${planned.needsReassignment ? ' · needs reassignment' : ''}`;
+  return `${task?.name ?? planned.taskId} · ${planned.minutes} min${planned.needsReassignment ? ' · needs reassignment' : ''}`;
 }
 
-export default function TimeBar({ remaining, used, capacity, plannedTasks, onRemove }) {
+export default function TimeBar({ remaining, used, capacity, plannedTasks = [], onRemove }) {
   return (
     <div
       className="relative h-14 w-full overflow-hidden border border-[var(--sand)] bg-[var(--paint)]/20"
@@ -18,7 +18,7 @@ export default function TimeBar({ remaining, used, capacity, plannedTasks, onRem
       aria-label={`${used} of ${capacity} minutes planned`}
     >
       <div className="absolute inset-0 flex">
-        {plannedTasks.map((planned, index) => {
+        {(plannedTasks ?? []).map((planned, index) => {
           const label = plannedLabel(planned);
           return (
             <button

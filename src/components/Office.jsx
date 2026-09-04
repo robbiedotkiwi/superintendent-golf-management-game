@@ -58,9 +58,9 @@ export default function Office({
   const unread = unreadCount(state);
   const cap = maxLoan(state.lastSeasonRevenue);
   const loanCheck = canTakeLoan(state, cap);
-  const meeting = state.plannedTasks.find((item) => item.taskId === 'gmMeeting');
+  const meeting = (state.plannedTasks ?? []).find((item) => item.taskId === 'gmMeeting');
   const meetingCheck = canPlanTask(state, 'gmMeeting');
-  const balls = state.plannedTasks.find((item) => item.taskId === 'pickBalls');
+  const balls = (state.plannedTasks ?? []).find((item) => item.taskId === 'pickBalls');
   const ballsCheck = canPlanTask(state, 'pickBalls');
   const until = daysUntilNextTournament(state);
   const upcoming = nextTournament(state);

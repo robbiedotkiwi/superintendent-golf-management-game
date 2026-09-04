@@ -159,7 +159,7 @@ export default function Turf({
   onToggleHole,
   onSelectHoles,
 }) {
-  const debris = state.plannedTasks.find((item) => item.taskId === 'clearDebris');
+  const debris = (state.plannedTasks ?? []).find((item) => item.taskId === 'clearDebris');
   const debrisCheck = canPlanTask(state, 'clearDebris');
   const demand = irrigationDemand(state);
   const capacity = pondCapacity(state);

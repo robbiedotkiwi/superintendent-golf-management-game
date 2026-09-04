@@ -79,18 +79,18 @@ export default function App() {
   const [selected, setSelected] = useState(null);
   const [summary, setSummary] = useState(null);
   const [playout, setPlayout] = useState(null);
-  const seenLog = useRef(state.log.length);
+  const seenLog = useRef(state.log?.length ?? 0);
 
   useEffect(() => {
     if (screen !== 'game') return;
-    saveGame(state);
-    setSavePresent(true);
+    if (saveGame(state)) setSavePresent(true);
   }, [state, screen]);
 
   useEffect(() => {
-    if (state.log.length <= seenLog.current) return;
-    const latest = state.log[state.log.length - 1];
-    seenLog.current = state.log.length;
+    const log = state.log ?? [];
+    if (log.length <= seenLog.current) return;
+    const latest = log[log.length - 1];
+    seenLog.current = log.length;
     if (shouldSkipPlayout(state.skipPlayout, prefersReducedMotion())) {
       setPlayout(null);
       setSummary(latest);
@@ -119,7 +119,8 @@ export default function App() {
 
   useEffect(() => {
     if (playout?.status === PLAYOUT_DONE || playout?.status === PLAYOUT_SKIPPED) {
-      const latest = state.log[state.log.length - 1] ?? null;
+      const log = state.log ?? [];
+      const latest = log[log.length - 1] ?? null;
       setSummary(latest);
       setPlayout(null);
     }
@@ -389,7 +390,8 @@ function GameScreen({
   }, [playout?.cursor, playout?.status, state.soundEnabled]);
 
   const event = currentPlayoutEvent(playout);
-  const latestSummary = state.log[state.log.length - 1];
+  const dayLog = state.log ?? [];
+  const latestSummary = dayLog[dayLog.length - 1];
   const mapHoles =
     playout?.status === PLAYOUT_PLAYING && latestSummary?.before
       ? playoutHoles(latestSummary, playout)
