@@ -1042,7 +1042,6 @@ export const SECTION_OFFICE = 'office';
 export const SECTION_CREW = 'crew';
 export const SECTION_SHED = 'shed';
 export const SECTIONS = [SECTION_MAP, SECTION_TURF, SECTION_OFFICE, SECTION_CREW, SECTION_SHED];
-export const TURF_TAB_SUMMARY = 'summary';
 export const TURF_TAB_MOWING = 'mowing';
 export const TURF_TAB_IRRIGATION = 'irrigation';
 export const TURF_TAB_INPUTS = 'inputs';
@@ -1051,28 +1050,20 @@ export const TURF_TAB_LEGACY_BUNKERS = 'bunkers';
 export const TURF_TAB_LEGACY_POND = 'pond';
 export const TURF_TAB_BUNKERS = TURF_TAB_OTHER;
 export const TURF_TAB_POND = TURF_TAB_OTHER;
-export const TURF_TAB_PRESETS = 'presets';
 export const TURF_TABS = [
-  TURF_TAB_SUMMARY,
   TURF_TAB_MOWING,
   TURF_TAB_IRRIGATION,
   TURF_TAB_INPUTS,
   TURF_TAB_OTHER,
-  TURF_TAB_PRESETS,
 ];
-export const TURF_TAB_DEFAULT = TURF_TAB_SUMMARY;
+export const TURF_TAB_DEFAULT = TURF_TAB_MOWING;
 export const TURF_TAB_LABELS = {
-  [TURF_TAB_SUMMARY]: 'Summary',
   [TURF_TAB_MOWING]: 'Mowing',
   [TURF_TAB_IRRIGATION]: 'Irrigation',
   [TURF_TAB_INPUTS]: 'Inputs',
   [TURF_TAB_OTHER]: 'Other',
-  [TURF_TAB_BUNKERS]: 'Other',
-  [TURF_TAB_POND]: 'Other',
-  [TURF_TAB_PRESETS]: 'Presets',
 };
 export const PLAN_THIS_CUT_LABEL = 'Plan this cut';
-export const MATCH_LAST_MOWING_LABEL = 'Match last mowing';
 export const MACHINE_OVERRIDE_AUTO = 'auto';
 export const MACHINE_OVERRIDE_FALLBACK = (name) => `${name} unavailable — auto`;
 export const CUT_TASK_GREENS = 'cutGreens';
@@ -1104,41 +1095,6 @@ export const SECTION_TURF_DESCRIPTION = 'Surfaces, mowing, irrigation';
 export const SECTION_OFFICE_DESCRIPTION = 'Mail, money, tournaments';
 export const SECTION_CREW_DESCRIPTION = 'Roster, hiring, training';
 export const SECTION_SHED_DESCRIPTION = 'Fleet, service, buying';
-export const SHIPPED_PRESET_DAILY = 'daily';
-export const SHIPPED_PRESET_TOURNAMENT = 'tournament';
-export const SHIPPED_PRESET_RECOVERY = 'recovery';
-export const SHIPPED_PRESETS = [
-  {
-    id: SHIPPED_PRESET_DAILY,
-    name: 'Daily',
-    surfaces: {
-      greens: { hoc: 3.5, pattern: PATTERN_STRIPES, angle: 0, autoRotate: false },
-      tees: { hoc: 9, pattern: PATTERN_STRIPES, angle: 0, autoRotate: false },
-      fairways: { hoc: 14, pattern: PATTERN_BLOCK, angle: 0, autoRotate: false },
-      rough: { hoc: 45, pattern: PATTERN_BLOCK, angle: 0, autoRotate: false },
-    },
-  },
-  {
-    id: SHIPPED_PRESET_TOURNAMENT,
-    name: 'Tournament',
-    surfaces: {
-      greens: { hoc: 2.8, pattern: PATTERN_STRIPES, angle: 45, autoRotate: false },
-      tees: { hoc: 7, pattern: PATTERN_STRIPES, angle: 45, autoRotate: false },
-      fairways: { hoc: 11, pattern: PATTERN_STRIPES, angle: 45, autoRotate: false },
-      rough: { hoc: 40, pattern: PATTERN_STRIPES, angle: 0, autoRotate: false },
-    },
-  },
-  {
-    id: SHIPPED_PRESET_RECOVERY,
-    name: 'Recovery',
-    surfaces: {
-      greens: { hoc: 4.5, pattern: PATTERN_BLOCK, angle: 0, autoRotate: true },
-      tees: { hoc: 11, pattern: PATTERN_BLOCK, angle: 0, autoRotate: true },
-      fairways: { hoc: 16, pattern: PATTERN_BLOCK, angle: 0, autoRotate: true },
-      rough: { hoc: 55, pattern: PATTERN_BLOCK, angle: 0, autoRotate: true },
-    },
-  },
-];
 export const OFFICE_TAB_INBOX = 'inbox';
 export const OFFICE_TAB_MONEY = 'money';
 export const OFFICE_TAB_PROJECTS = 'projects';
@@ -1165,5 +1121,3 @@ export const SHED_TAB_LABELS = {
   [SHED_TAB_YARD]: 'Yard',
   [SHED_TAB_BUY]: 'Buy',
 };
-export const PRESET_MAX = 8;
-export const PRESET_NAME_MAX = 24;

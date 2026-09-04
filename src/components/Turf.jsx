@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import {
   AERATOR_COST,
   CHECK_MOISTURE_BY_SURFACE,
@@ -18,7 +17,6 @@ import {
   INPUTS_SURFACES,
   IRRIGATION_POLICIES,
   MACHINE_OVERRIDE_AUTO,
-  MATCH_LAST_MOWING_LABEL,
   PATTERN_ANGLE_MAX,
   PATTERN_ANGLE_MIN,
   PATTERN_KEYS,
@@ -33,28 +31,20 @@ import {
   POND_RESCUE_LABEL,
   POND_RESCUE_MINUTES,
   POND_RESCUE_TASK,
-  PRESET_MAX,
-  PRESET_NAME_MAX,
   ROLL_GREENS_LABEL,
   ROLL_GREENS_TASK,
-  SHIPPED_PRESETS,
   SPRAY_BY_SURFACE,
   SPRAY_MATERIALS_COST,
   SPRAY_SUPPRESS_DAYS,
   SUITABILITY_LABELS,
   SUITABILITY_PENALTY_COPY,
-  SURFACE_KEYS,
   TASK_MINUTES,
-  TURF_TAB_BUNKERS,
   TURF_TAB_DEFAULT,
   TURF_TAB_INPUTS,
   TURF_TAB_IRRIGATION,
   TURF_TAB_LABELS,
   TURF_TAB_MOWING,
   TURF_TAB_OTHER,
-  TURF_TAB_POND,
-  TURF_TAB_PRESETS,
-  TURF_TAB_SUMMARY,
   TURF_TABS,
   TURFRAD_COST,
   WEATHER_STORM,
@@ -84,12 +74,9 @@ import { canBuyGreensSensors, canBuyTurfRad } from '../engine/moisture.js';
 import { daysSinceLastWorked, isNeglected } from '../engine/neglect.js';
 import { courseSettings, holeCount, holeKind, meanQuality, presentHoles } from '../engine/holes.js';
 import { hasHoc, hasPattern, inHocStressBand } from '../engine/mowing.js';
-import { presetsForSurface } from '../engine/presets.js';
-import ForecastStrip from './ForecastStrip.jsx';
 import { GreensMoistureList, MoistureLine } from './MoistureReadout.jsx';
 import SectionTabs from './SectionTabs.jsx';
 import HoleSelector from './HoleSelector.jsx';
-import { DiseaseReadout } from './WeatherStrip.jsx';
 
 const POLICY_LABELS = {
   off: 'Off',
@@ -163,11 +150,6 @@ export default function Turf({
   onBuyGreensSensors,
   onBuyTurfRad,
   onSetHandWaterTargets,
-  onSavePreset,
-  onApplyPreset,
-  onApplyShippedPreset,
-  onDeletePreset,
-  onMatchLastMowing,
   onSetMachineOverride,
   onSetPondDosing,
   onToggleHole,
@@ -190,81 +172,6 @@ export default function Turf({
         </button>
       </div>
       <SectionTabs tabs={TURF_TABS} labels={TURF_TAB_LABELS} value={tab} onChange={onTab} />
-
-      {tab === TURF_TAB_SUMMARY ? (
-        <>
-          <ForecastStrip state={state} />
-          <div className="mt-4">
-            <DiseaseReadout state={state} />
-          </div>
-          {state.weather === WEATHER_STORM ? (
-            debris ? (
-              <button type="button" onClick={() => onRemove('clearDebris')} className="mt-4 border border-[var(--sand)] px-3 py-2">
-                Debris planned · {debris.minutes} min
-              </button>
-            ) : (
-              <button
-                type="button"
-                disabled={!debrisCheck.ok}
-                onClick={() => onPlan('clearDebris')}
-                className="mt-4 bg-[var(--machine-orange)] px-3 py-2 font-semibold disabled:opacity-40"
-                title={debrisCheck.ok ? undefined : debrisCheck.reason}
-              >
-                Clear debris · {TASK_MINUTES.clearDebris} min
-              </button>
-            )
-          ) : null}
-          <div className="mt-4 space-y-2">
-            <button
-              type="button"
-              onClick={onMatchLastMowing}
-              className="border border-[var(--sand)] px-3 py-2 font-semibold"
-            >
-              {MATCH_LAST_MOWING_LABEL}
-            </button>
-            {SURFACE_KEYS.map((surface) => {
-              const record = courseSettings(state, surface) ?? {};
-              const days = daysSinceLastWorked(state, surface);
-              const neglected = isNeglected(state, surface);
-              const disease = state.disease?.[surface];
-              const cuttable = Boolean(CUT_TASK_BY_SURFACE[surface]);
-              return (
-                <section key={surface} className={`border p-3 ${neglected ? 'border-[var(--machine-orange)]' : 'border-[var(--sand)]'}`}>
-                  <div className="flex items-baseline justify-between gap-2">
-                    <h2 className="text-lg font-semibold">{SURFACE_LABELS[surface]}</h2>
-                    <span className="text-sm text-[var(--sand)]">
-                      {formatQuality(meanQuality(state, surface))}
-                      {neglected ? ' · overdue' : ''}
-                    </span>
-                  </div>
-                  <p className="mt-1 text-sm text-[var(--sand)]">
-                    {days}d since {surface === 'bunkers' ? 'raked' : 'worked'}
-                    {record.hoc != null ? ` · ${record.hoc} mm` : ''}
-                    {record.pattern ? ` · ${PATTERN_LABELS[record.pattern] ?? record.pattern}` : ''}
-                  </p>
-                  {['greens', 'tees', 'fairways'].includes(surface) ? (
-                    <p className="mt-1 text-sm">
-                      Moisture <MoistureLine state={state} surface={surface} />
-                    </p>
-                  ) : null}
-                  {disease ? (
-                    <p className="mt-1 text-sm">
-                      Disease {Math.round(disease.pressure)}
-                      {disease.outbreak ? ' · outbreak' : ''}
-                    </p>
-                  ) : null}
-                  {cuttable ? (
-                    <>
-                      <MachinePicker state={state} surface={surface} onSetMachineOverride={onSetMachineOverride} />
-                      <PlanThisCut state={state} surface={surface} onPlan={onPlan} onRemove={onRemove} />
-                    </>
-                  ) : null}
-                </section>
-              );
-            })}
-          </div>
-        </>
-      ) : null}
 
       {tab === TURF_TAB_MOWING ? (
         <div className="space-y-4">
@@ -398,6 +305,23 @@ export default function Turf({
 
       {tab === TURF_TAB_OTHER ? (
         <div className="space-y-4">
+          {state.weather === WEATHER_STORM ? (
+            debris ? (
+              <button type="button" onClick={() => onRemove('clearDebris')} className="border border-[var(--sand)] px-3 py-2">
+                Debris planned · {debris.minutes} min
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={!debrisCheck.ok}
+                onClick={() => onPlan('clearDebris')}
+                className="bg-[var(--machine-orange)] px-3 py-2 font-semibold disabled:opacity-40"
+                title={debrisCheck.ok ? undefined : debrisCheck.reason}
+              >
+                Clear debris · {TASK_MINUTES.clearDebris} min
+              </button>
+            )
+          ) : null}
           <BunkerTab state={state} onPlan={onPlan} onRemove={onRemove} />
           <PondPanel
             state={state}
@@ -409,16 +333,6 @@ export default function Turf({
             onSetPondDosing={onSetPondDosing}
           />
         </div>
-      ) : null}
-
-      {tab === TURF_TAB_PRESETS ? (
-        <PresetsTab
-          state={state}
-          onSavePreset={onSavePreset}
-          onApplyPreset={onApplyPreset}
-          onApplyShippedPreset={onApplyShippedPreset}
-          onDeletePreset={onDeletePreset}
-        />
       ) : null}
     </div>
   );
@@ -757,90 +671,5 @@ function BunkerTab({ state, onPlan, onRemove }) {
         </button>
       )}
     </section>
-  );
-}
-
-function PresetsTab({ state, onSavePreset, onApplyPreset, onApplyShippedPreset, onDeletePreset }) {
-  const [presetName, setPresetName] = useState('');
-  const [saveSurface, setSaveSurface] = useState('greens');
-  const presetFull = (state.customPresets ?? []).length >= PRESET_MAX;
-  return (
-    <div className="space-y-4">
-      <section className="border border-[var(--sand)] p-3">
-        <h3 className="text-lg font-semibold">Shipped</h3>
-        <div className="mt-2 space-y-2">
-          {SHIPPED_PRESETS.map((preset) => (
-            <div key={preset.id} className="flex items-center justify-between gap-2">
-              <span>{preset.name}</span>
-              <button
-                type="button"
-                onClick={() => onApplyShippedPreset(preset.id)}
-                className="border border-[var(--sand)] px-2 py-1 text-sm"
-              >
-                Apply
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
-      <section className="border border-[var(--sand)] p-3">
-        <h3 className="text-lg font-semibold">Saved</h3>
-        {HOC_SURFACES.map((surface) => {
-          const presets = presetsForSurface(state, surface);
-          return (
-            <div key={surface} className="mt-3">
-              <div className="text-sm text-[var(--sand)]">{SURFACE_LABELS[surface]}</div>
-              {presets.length === 0 ? <p className="text-sm text-[var(--sand)]">None saved.</p> : null}
-              <ul className="mt-1 space-y-2">
-                {presets.map((preset) => (
-                  <li key={preset.id} className="flex flex-wrap items-center gap-2">
-                    <span className="flex-1">{preset.name}</span>
-                    <button type="button" onClick={() => onApplyPreset(preset.id)} className="border border-[var(--sand)] px-2 py-1 text-sm">
-                      Apply
-                    </button>
-                    <button type="button" onClick={() => onDeletePreset(preset.id)} className="border border-[var(--sand)] px-2 py-1 text-sm">
-                      Delete
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
-        <div className="mt-3 flex flex-wrap gap-2">
-          <select
-            value={saveSurface}
-            onChange={(event) => setSaveSurface(event.target.value)}
-            className="border border-[var(--sand)] bg-[var(--soil)] px-2 py-1 text-[var(--paint)]"
-          >
-            {HOC_SURFACES.map((surface) => (
-              <option key={surface} value={surface}>
-                {SURFACE_LABELS[surface]}
-              </option>
-            ))}
-          </select>
-          <input
-            type="text"
-            maxLength={PRESET_NAME_MAX}
-            value={presetName}
-            onChange={(event) => setPresetName(event.target.value)}
-            placeholder="Name"
-            className="min-w-0 flex-1 border border-[var(--sand)] bg-[var(--soil)] px-2 py-1 text-[var(--paint)]"
-          />
-          <button
-            type="button"
-            disabled={presetFull}
-            title={presetFull ? `Max ${PRESET_MAX} presets` : undefined}
-            onClick={() => {
-              onSavePreset(saveSurface, presetName);
-              setPresetName('');
-            }}
-            className="border border-[var(--sand)] px-2 py-1 text-sm disabled:opacity-40"
-          >
-            Save
-          </button>
-        </div>
-      </section>
-    </div>
   );
 }

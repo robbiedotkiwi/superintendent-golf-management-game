@@ -32,8 +32,10 @@ assert.doesNotMatch(sidebar, /Satisfaction/);
 assert.doesNotMatch(sidebar, /Budgets/);
 assert.doesNotMatch(sidebar, /SURFACE_KEYS/);
 
+const dialog = readFileSync(new URL('../src/components/StartDayDialog.jsx', import.meta.url), 'utf8');
+assert.match(dialog, /ForecastStrip|forecast-strip/);
 const turf = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
-assert.match(turf, /ForecastStrip|forecast-strip/);
+assert.doesNotMatch(turf, /ForecastStrip|forecast-strip/);
 
 const timebar = readFileSync(new URL('../src/components/TimeBar.jsx', import.meta.url), 'utf8');
 assert.match(timebar, /bg-\[var\(--paint\)\]\/20/);

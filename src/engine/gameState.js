@@ -101,8 +101,6 @@ import {
   PLAYOUT_SPEED_DEFAULT,
   PLAYOUT_SKIP_DEFAULT,
   PLAYOUT_SPEEDS,
-  PRESET_MAX,
-  PRESET_NAME_MAX,
   SECTION_MAP,
 } from '../data/constants.js';
 import { clampAngle, clampHoc, hasHoc, hasPattern, mergeSurfaceFields, angleDelta } from './mowing.js';
@@ -112,12 +110,10 @@ import {
   holeCount,
   holeSurface,
   mapHoleSurfaces,
-  mostRecentCut,
 } from './holes.js';
 import { courseBounds, holesForCount } from '../data/course.js';
 import { clampView, defaultView } from './view.js';
 import { defaultSectionTabs, normalizeSection, normalizeTabs, tabListForSection } from './section.js';
-import { shippedPresetById } from './presets.js';
 import { formatMoney } from './format.js';
 import { buyUsed, rollUsedListings, sellMachine } from './market.js';
 import { acceptEvent, declineEvent } from './events.js';
@@ -272,8 +268,6 @@ export function createInitialState() {
     nextMailId: 1,
     playoutSpeed: PLAYOUT_SPEED_DEFAULT,
     skipPlayout: PLAYOUT_SKIP_DEFAULT,
-    customPresets: [],
-    nextPresetId: 1,
     lastMainsCost: 0,
     lastDeliveryDay: null,
     firingHistory: [],
@@ -730,28 +724,6 @@ export function reducer(state, action) {
       if (!hasPattern(action.surface)) return state;
       return applySurfacePatch(state, action.surface, { autoRotate: Boolean(action.value) });
     }
-    case 'MATCH_LAST_MOWING': {
-      let next = state;
-      for (const surface of HOC_SURFACES) {
-        const recent = mostRecentCut(next, surface);
-        if (!recent) continue;
-        const record = recent.record;
-        const patch = { hoc: clampHoc(surface, record.heightAtLastCut) };
-        if (hasPattern(surface) && record.patternAtLastCut != null && PATTERN_KEYS.includes(record.patternAtLastCut)) {
-          patch.pattern = record.patternAtLastCut;
-        }
-        if (hasPattern(surface) && record.angleAtLastCut != null) {
-          const angle = clampAngle(record.angleAtLastCut);
-          patch.angle = angle;
-          const prev = next.surfaceDefaults?.[surface]?.angle ?? 0;
-          if (angleDelta(angle, prev) >= PATTERN_ANGLE_RESET_DELTA) {
-            patch.patternWear = 0;
-          }
-        }
-        next = applySurfacePatch(next, surface, patch);
-      }
-      return next;
-    }
     case 'SET_HOLE_OVERRIDE': {
       const surface = action.surface;
       const holeId = action.holeId;
@@ -860,73 +832,6 @@ export function reducer(state, action) {
       return PLAYOUT_SPEEDS.includes(action.speed) ? { ...state, playoutSpeed: action.speed } : state;
     case 'SET_SKIP_PLAYOUT':
       return { ...state, skipPlayout: Boolean(action.value) };
-    case 'SAVE_PRESET': {
-      const surface = action.surface;
-      const record = state.surfaceDefaults?.[surface];
-      if (!record || (!hasHoc(surface) && !hasPattern(surface))) return state;
-      const list = state.customPresets ?? [];
-      if (list.length >= PRESET_MAX) return state;
-      const trimmed = String(action.name ?? '')
-        .trim()
-        .slice(0, PRESET_NAME_MAX);
-      const id = state.nextPresetId ?? 1;
-      return {
-        ...state,
-        nextPresetId: id + 1,
-        customPresets: [
-          ...list,
-          {
-            id,
-            name: trimmed || `Preset ${id}`,
-            surface,
-            hoc: record.hoc,
-            pattern: record.pattern,
-            angle: record.angle,
-            autoRotate: Boolean(record.autoRotate),
-          },
-        ],
-      };
-    }
-    case 'APPLY_PRESET': {
-      const preset = (state.customPresets ?? []).find((item) => item.id === action.id);
-      if (!preset || !state.surfaceDefaults?.[preset.surface]) return state;
-      let next = state;
-      if (hasHoc(preset.surface) && preset.hoc != null) {
-        next = applySurfacePatch(next, preset.surface, { hoc: clampHoc(preset.surface, preset.hoc) });
-      }
-      if (hasPattern(preset.surface)) {
-        next = applySurfacePatch(next, preset.surface, {
-          ...(PATTERN_KEYS.includes(preset.pattern) ? { pattern: preset.pattern } : {}),
-          angle: clampAngle(preset.angle ?? 0),
-          autoRotate: Boolean(preset.autoRotate),
-        });
-      }
-      return next;
-    }
-    case 'APPLY_SHIPPED_PRESET': {
-      const preset = shippedPresetById(action.id);
-      if (!preset) return state;
-      let next = state;
-      for (const [surface, settings] of Object.entries(preset.surfaces)) {
-        if (!next.surfaceDefaults?.[surface] && !hasHoc(surface) && !hasPattern(surface)) continue;
-        if (hasHoc(surface) && settings.hoc != null) {
-          next = applySurfacePatch(next, surface, { hoc: clampHoc(surface, settings.hoc) });
-        }
-        if (hasPattern(surface)) {
-          next = applySurfacePatch(next, surface, {
-            ...(PATTERN_KEYS.includes(settings.pattern) ? { pattern: settings.pattern } : {}),
-            angle: clampAngle(settings.angle ?? 0),
-            autoRotate: Boolean(settings.autoRotate),
-          });
-        }
-      }
-      return next;
-    }
-    case 'DELETE_PRESET':
-      return {
-        ...state,
-        customPresets: (state.customPresets ?? []).filter((item) => item.id !== action.id),
-      };
     case 'SET_SECTION': {
       const section = normalizeSection(action.section);
       if (isSectionLocked(state, section)) {

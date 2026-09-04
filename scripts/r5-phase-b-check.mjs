@@ -8,7 +8,6 @@ import {
   GM_MEETING_LEAD_DAYS,
   MORALE_BADGE_BELOW,
   SECTION_TURF,
-  SHIPPED_PRESETS,
   SIDEBAR_FIT_HEIGHT,
   TURF_TAB_BUNKERS,
   TURF_TAB_INPUTS,
@@ -16,8 +15,6 @@ import {
   TURF_TAB_MOWING,
   TURF_TAB_OTHER,
   TURF_TAB_POND,
-  TURF_TAB_PRESETS,
-  TURF_TAB_SUMMARY,
   TURF_TABS,
 } from '../src/data/constants.js';
 import {
@@ -38,23 +35,21 @@ import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, se
 
 assert.equal(SECTION_TURF, 'turf');
 assert.deepEqual(TURF_TABS, [
-  TURF_TAB_SUMMARY,
   TURF_TAB_MOWING,
   TURF_TAB_IRRIGATION,
   TURF_TAB_INPUTS,
   TURF_TAB_OTHER,
-  TURF_TAB_PRESETS,
 ]);
 assert.equal(TURF_TAB_BUNKERS, TURF_TAB_OTHER);
 assert.equal(TURF_TAB_POND, TURF_TAB_OTHER);
-assert.equal(SHIPPED_PRESETS.length, 3);
+assert.equal(TURF_TABS.length, 4);
 assert.equal(SIDEBAR_FIT_HEIGHT, 720);
 assert.equal(GM_MEETING_LEAD_DAYS, 2);
 assert.equal(daysUntilGmMeeting(5), 2);
 assert.equal(daysUntilGmMeeting(7), 0);
 
 const start = createInitialState();
-assert.equal(start.tabs[SECTION_TURF], TURF_TAB_SUMMARY);
+assert.equal(start.tabs[SECTION_TURF], TURF_TAB_MOWING);
 assert.equal(start.lastMainsCost, 0);
 
 const old = migrateSave({
@@ -67,7 +62,7 @@ const old = migrateSave({
     bunkers: { quality: 40, lastRakedDay: 1 },
   },
 });
-assert.equal(old.tabs[SECTION_TURF], TURF_TAB_SUMMARY);
+assert.equal(old.tabs[SECTION_TURF], TURF_TAB_MOWING);
 assert.ok(turfBadgeCount(old) >= 1, 'overdue surfaces badge on a neglected day-40 save');
 
 const outbreak = {
@@ -127,10 +122,6 @@ assert.equal(shedDot({ ...start, usedListings: [{ id: 'used-x' }] }), true);
 assert.equal(shedDot({ ...start, activeSales: [{ id: 'sale-x' }] }), true);
 assert.equal(shedDot({ ...start, lastDeliveryDay: start.day }), true);
 
-let shipped = reducer(start, { type: 'APPLY_SHIPPED_PRESET', id: 'tournament' });
-assert.equal(courseSettings(shipped, 'greens').hoc, 2.8);
-assert.equal(courseSettings(shipped, 'fairways').pattern, 'stripes');
-
 let mid = start;
 for (let i = 0; i < 39; i += 1) mid = reducer(mid, { type: 'END_DAY' });
 assert.equal(mid.day, 40);
@@ -163,17 +154,15 @@ assert.doesNotMatch(sidebar, /pond\.volume/);
 assert.doesNotMatch(sidebar, /<TaskPanel/);
 
 const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
-assert.match(turfSrc, /TURF_TAB_SUMMARY/);
 assert.match(turfSrc, /TURF_TAB_MOWING/);
 assert.match(turfSrc, /TURF_TAB_IRRIGATION/);
 assert.match(turfSrc, /TURF_TAB_INPUTS/);
-assert.match(turfSrc, /TURF_TAB_BUNKERS/);
-assert.match(turfSrc, /TURF_TAB_POND/);
-assert.match(turfSrc, /TURF_TAB_PRESETS/);
-assert.match(turfSrc, /<ForecastStrip/);
-assert.match(turfSrc, /onSavePreset/);
-assert.match(turfSrc, /onApplyPreset/);
-assert.match(turfSrc, /SHIPPED_PRESETS/);
+assert.match(turfSrc, /TURF_TAB_OTHER/);
+assert.doesNotMatch(turfSrc, /TURF_TAB_SUMMARY/);
+assert.doesNotMatch(turfSrc, /TURF_TAB_PRESETS/);
+assert.doesNotMatch(turfSrc, /<ForecastStrip/);
+assert.doesNotMatch(turfSrc, /onSavePreset/);
+assert.doesNotMatch(turfSrc, /SHIPPED_PRESETS/);
 
 const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
 assert.match(app, /<Turf/);
@@ -181,7 +170,7 @@ assert.match(app, /<MapJobPopover/);
 assert.match(app, /SURFACE_KEYS\.includes\(selected\)/);
 
 console.log('GATE B1 PASS sidebar is day, weather, condition, four buttons, pinned footer');
-console.log('GATE B2 PASS Turf section has six named tabs');
+console.log('GATE B2 PASS Turf section has four named tabs');
 console.log('GATE B3 PASS sidebar has no turf, pond, budgets or surface content');
 console.log('GATE B4 PASS turf/office/crew/shed badges and dots fire on constructed state');
 console.log('GATE B5 PASS map quick-job popover mounts without opening Turf');

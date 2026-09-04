@@ -108,7 +108,7 @@ export function withDefaults(state) {
     ...state,
     ownedMachines: state.ownedMachines ?? [...STARTING_MACHINE_IDS],
   });
-  return {
+  const next = {
     ...state,
     holes: holeState.holes
       ? stampTreatmentsFromTypeWide(holeState.holes, state.sprayedUntil, state.fertiliserUntil)
@@ -217,8 +217,6 @@ export function withDefaults(state) {
     yearRecord: state.yearRecord ?? emptyYearRecord(state.year ?? 1, []),
     playoutSpeed: PLAYOUT_SPEEDS.includes(state.playoutSpeed) ? state.playoutSpeed : PLAYOUT_SPEED_DEFAULT,
     skipPlayout: Boolean(state.skipPlayout ?? PLAYOUT_SKIP_DEFAULT),
-    customPresets: Array.isArray(state.customPresets) ? state.customPresets : [],
-    nextPresetId: Number.isInteger(state.nextPresetId) && state.nextPresetId > 0 ? state.nextPresetId : 1,
     lastMainsCost: Number.isFinite(Number(state.lastMainsCost)) ? Number(state.lastMainsCost) : 0,
     lastDeliveryDay: Number.isInteger(state.lastDeliveryDay) ? state.lastDeliveryDay : null,
     fuelLitres: (() => {
@@ -241,6 +239,9 @@ export function withDefaults(state) {
     section: normalizeSection(state.section),
     tabs: normalizeTabs(state.tabs),
   };
+  delete next.customPresets;
+  delete next.nextPresetId;
+  return next;
 }
 
 function isUsable(state) {

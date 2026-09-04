@@ -9,7 +9,6 @@ import {
   HOC_SURFACES,
   MACHINE_OVERRIDE_AUTO,
   MACHINE_OVERRIDE_FALLBACK,
-  MATCH_LAST_MOWING_LABEL,
   PATTERN_RINGS,
   PLAN_THIS_CUT_LABEL,
   SECTION_TURF,
@@ -21,8 +20,6 @@ import {
   TURF_TAB_MOWING,
   TURF_TAB_OTHER,
   TURF_TAB_POND,
-  TURF_TAB_PRESETS,
-  TURF_TAB_SUMMARY,
   TURF_TABS,
 } from '../src/data/constants.js';
 import { getMachine } from '../src/data/equipment.js';
@@ -40,41 +37,35 @@ import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, se
 
 
 assert.deepEqual(TURF_TABS, [
-  TURF_TAB_SUMMARY,
   TURF_TAB_MOWING,
   TURF_TAB_IRRIGATION,
   TURF_TAB_INPUTS,
   TURF_TAB_OTHER,
-  TURF_TAB_PRESETS,
 ]);
-assert.equal(TURF_TABS.length, 6);
+assert.equal(TURF_TABS.length, 4);
 assert.equal(TURF_TAB_BUNKERS, TURF_TAB_OTHER);
 assert.equal(TURF_TAB_POND, TURF_TAB_OTHER);
 assert.equal(PLAN_THIS_CUT_LABEL, 'Plan this cut');
-assert.equal(MATCH_LAST_MOWING_LABEL, 'Match last mowing');
 assert.equal(MACHINE_OVERRIDE_AUTO, 'auto');
 assert.equal(MACHINE_OVERRIDE_FALLBACK('Walk-behind reel'), 'Walk-behind reel unavailable — auto');
 
 const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
 assert.match(turfSrc, /PLAN_THIS_CUT_LABEL/);
-assert.match(turfSrc, /TURF_TAB_SUMMARY/);
 assert.match(turfSrc, /TURF_TAB_MOWING/);
-assert.match(turfSrc, /MATCH_LAST_MOWING_LABEL/);
+assert.doesNotMatch(turfSrc, /MATCH_LAST_MOWING/);
 assert.match(turfSrc, /MachinePicker/);
 assert.match(turfSrc, /overrideCandidates/);
 assert.match(turfSrc, /TURF_TAB_OTHER/);
 assert.match(turfSrc, /TURF_TAB_INPUTS/);
 assert.match(turfSrc, /BunkerTab/);
 assert.match(turfSrc, /PondPanel/);
-assert.match(turfSrc, /TURF_TAB_BUNKERS/);
-assert.match(turfSrc, /TURF_TAB_POND/);
 assert.doesNotMatch(turfSrc, /tab === TURF_TAB_BUNKERS \?/);
 
 const planSrc = readFileSync(new URL('../src/components/PlanList.jsx', import.meta.url), 'utf8');
 assert.match(planSrc, /machineTitle/);
 
 const start = createInitialState();
-assert.equal(start.tabs[SECTION_TURF], TURF_TAB_SUMMARY);
+assert.equal(start.tabs[SECTION_TURF], TURF_TAB_MOWING);
 assert.deepEqual(start.machineOverride, {
   greens: null,
   tees: null,
@@ -107,20 +98,8 @@ resolved = reducer(resolved, { type: 'SET_HOC', surface: 'greens', hoc: 4.0 });
 resolved = reducer(resolved, { type: 'SET_PATTERN', surface: 'greens', pattern: 'stripes' });
 resolved = reducer(resolved, { type: 'SET_ANGLE', surface: 'greens', angle: 0 });
 resolved = reducer(resolved, { type: 'PLAN_TASK', taskId: 'rakeBunkers' });
-const plannedCount = resolved.plannedTasks.length;
-const matched = reducer(resolved, { type: 'MATCH_LAST_MOWING' });
-assert.equal(courseSettings(matched, 'greens').hoc, 2.8);
-assert.equal(courseSettings(matched, 'greens').pattern, PATTERN_RINGS);
-assert.equal(courseSettings(matched, 'greens').angle, 45);
-assert.equal(matched.plannedTasks.length, plannedCount, 'Match last mowing does not plan tasks');
-assert.equal(matched.plannedTasks[0]?.taskId, 'rakeBunkers');
-
-let neverCut = reducer(start, { type: 'SET_HOC', surface: 'tees', hoc: 12 });
-neverCut = reducer(neverCut, { type: 'SET_PATTERN', surface: 'tees', pattern: PATTERN_RINGS });
-neverCut = reducer(neverCut, { type: 'MATCH_LAST_MOWING' });
-assert.equal(courseSettings(neverCut, 'tees').hoc, 12);
-assert.equal(courseSettings(neverCut, 'tees').pattern, PATTERN_RINGS);
-assert.equal(courseSettings(neverCut, 'greens').hoc, courseSettings(start, 'greens').hoc);
+assert.equal(holeSurface(resolved, 1, 'greens').heightAtLastCut, 2.8, 'last-cut fields persist after settings change');
+assert.equal(courseSettings(resolved, 'greens').hoc, 4.0);
 
 const autoGreens = pickMachine(start, getTask('cutGreens'));
 assert.ok(autoGreens);
@@ -178,11 +157,11 @@ const pondSave = migrateSave({
 });
 assert.equal(pondSave.tabs[SECTION_TURF], TURF_TAB_OTHER);
 
-console.log('GATE B1 PASS Plan this cut exists on Summary and Mowing; PLAN_TASK works without the map');
-console.log('GATE B2 PASS Match last mowing restores last-cut settings and does not plan');
-console.log('GATE B3 PASS never-cut surfaces are skipped by Match last mowing');
+console.log('GATE B1 PASS Plan this cut exists on Mowing; PLAN_TASK works without the map');
+console.log('GATE B2 PASS last-cut fields are written at resolve, not at plan time');
+console.log('GATE B3 PASS last-cut fields persist when HOC settings change');
 console.log('GATE B4 PASS auto-pick ranks highest ceiling then lowest time multiplier');
 console.log('GATE B5 PASS override lists every mower, including damaging units, and persists across days');
 console.log('GATE B6 PASS unavailable override falls back to auto with MACHINE_OVERRIDE_FALLBACK');
-console.log('GATE B7 PASS Turf has six tabs; Bunkers and Pond live on Other');
+console.log('GATE B7 PASS Turf has four tabs; Bunkers and Pond live on Other');
 console.log('round 6 phase B checks passed');

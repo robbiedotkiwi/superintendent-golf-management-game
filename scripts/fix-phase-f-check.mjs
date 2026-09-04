@@ -49,8 +49,10 @@ rolling = reducer(rolling, { type: 'END_DAY' });
 assert.notEqual(JSON.stringify(rolling.forecastStrip), firstStrip);
 assert.equal(rolling.forecastStrip.length, 7);
 
+const dialog = readFileSync(new URL('../src/components/StartDayDialog.jsx', import.meta.url), 'utf8');
+assert.match(dialog, /<ForecastStrip/);
 const turf = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
-assert.match(turf, /<ForecastStrip/);
+assert.doesNotMatch(turf, /<ForecastStrip/);
 const stripSrc = readFileSync(new URL('../src/components/ForecastStrip.jsx', import.meta.url), 'utf8');
 assert.match(stripSrc, /id="forecast-strip"/);
 assert.match(stripSrc, /forecastOpacity/);

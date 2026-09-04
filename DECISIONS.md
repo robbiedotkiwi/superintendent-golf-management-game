@@ -303,4 +303,13 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Satisfaction trigger is the first time live satisfaction is 10 points from `SATISFACTION_START`. Cash trigger needs a non-zero weekly wage bill.
 - Locked clicks set `lockHint` and do not change section. Hint copy names the unlock in outline, not the day.
 
+## Fixes Round 9
+
+- `FIXES_ROUND_9.md` is in the repo root and is the source of truth for this round.
+
+### Phase A
+
+- Turf tabs are Mowing · Irrigation · Inputs · Other. Default is Mowing. Legacy `summary` / `presets` / bunkers / pond tabs migrate to Mowing or Other via `normalizeTurfTab`.
+- Match last mowing, shipped packs, custom presets, `PRESET_MAX`, and the preset actions are gone. Old saves drop `customPresets` / `nextPresetId` on load (`delete` in `withDefaults`). `heightAtLastCut` fields stay for Phase B grass length.
+- Storm debris (was on Summary) moves to Other. Per-surface status and disease wait for the two-column tabs. Forecast stays in the Start day dialog only.
 

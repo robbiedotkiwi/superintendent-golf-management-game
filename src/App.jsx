@@ -223,11 +223,6 @@ export default function App() {
           onBuyTurfRad={() => dispatch({ type: 'BUY_TURFRAD' })}
           onToggleMoistureOverlay={() => dispatch({ type: 'TOGGLE_MOISTURE_OVERLAY' })}
           onSetHandWaterTargets={(targets) => dispatch({ type: 'SET_HAND_WATER_TARGETS', targets })}
-          onSavePreset={(surface, name) => dispatch({ type: 'SAVE_PRESET', surface, name })}
-          onApplyPreset={(id) => dispatch({ type: 'APPLY_PRESET', id })}
-          onApplyShippedPreset={(id) => dispatch({ type: 'APPLY_SHIPPED_PRESET', id })}
-          onDeletePreset={(id) => dispatch({ type: 'DELETE_PRESET', id })}
-          onMatchLastMowing={() => dispatch({ type: 'MATCH_LAST_MOWING' })}
           onSetMachineOverride={(surface, machineId) =>
             dispatch({ type: 'SET_MACHINE_OVERRIDE', surface, machineId })
           }
@@ -343,11 +338,6 @@ function GameScreen({
   onBuyTurfRad,
   onToggleMoistureOverlay,
   onSetHandWaterTargets,
-  onSavePreset,
-  onApplyPreset,
-  onApplyShippedPreset,
-  onDeletePreset,
-  onMatchLastMowing,
   onSetMachineOverride,
   onSetHoleOverride,
   onLease,
@@ -523,11 +513,6 @@ function GameScreen({
             onBuyGreensSensors={onBuyGreensSensors}
             onBuyTurfRad={onBuyTurfRad}
             onSetHandWaterTargets={onSetHandWaterTargets}
-            onSavePreset={onSavePreset}
-            onApplyPreset={onApplyPreset}
-            onApplyShippedPreset={onApplyShippedPreset}
-            onDeletePreset={onDeletePreset}
-            onMatchLastMowing={onMatchLastMowing}
             onSetMachineOverride={onSetMachineOverride}
             onToggleHole={onToggleHole}
             onSelectHoles={onSelectHoles}

@@ -68,12 +68,10 @@ assert.equal(ROLL_GREENS_LABEL, 'Roll');
 assert.equal(FERTILISER_BRAND, 'Plant Fitness');
 assert.ok(TURF_TABS.includes(TURF_TAB_INPUTS));
 assert.deepEqual(TURF_TABS, [
-  'summary',
-  'mowing',
-  'irrigation',
-  'inputs',
-  'other',
-  'presets',
+  TURF_TAB_MOWING,
+  TURF_TAB_IRRIGATION,
+  TURF_TAB_INPUTS,
+  TURF_TAB_OTHER,
 ]);
 assert.deepEqual(INPUTS_SURFACES, ['greens', 'tees', 'fairways']);
 assert.equal(CHECK_MOISTURE_BY_SURFACE.greens, 'checkMoistureGreens');

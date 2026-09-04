@@ -14,6 +14,7 @@ import {
   TURF_TAB_DEFAULT,
   TURF_TAB_LEGACY_BUNKERS,
   TURF_TAB_LEGACY_POND,
+  TURF_TAB_MOWING,
   TURF_TAB_OTHER,
   TURF_TABS,
 } from '../data/constants.js';
@@ -33,6 +34,7 @@ export function normalizeSection(section) {
 
 function normalizeTurfTab(tab) {
   if (tab === TURF_TAB_LEGACY_BUNKERS || tab === TURF_TAB_LEGACY_POND) return TURF_TAB_OTHER;
+  if (tab === 'summary' || tab === 'presets') return TURF_TAB_MOWING;
   return TURF_TABS.includes(tab) ? tab : TURF_TAB_DEFAULT;
 }
 
