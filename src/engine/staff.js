@@ -4,6 +4,8 @@ import {
   EARLY_START_FINE_COUNT,
   EARLY_START_MINUTES,
   EARLY_START_WARNING_COUNT,
+  FIRING_MORALE_HIT,
+  FIRING_SEVERANCE_DAYS,
   MORALE_MAX,
   MORALE_NOSHOW_BELOW,
   MORALE_NOSHOW_CHANCE,
@@ -22,6 +24,7 @@ import {
   VOLUNTEER_LEGACY_WEEKDAY,
   VOLUNTEER_MINUTES,
 } from '../data/constants.js';
+import { cashOnHand } from './cash.js';
 import { minutesTodayForWeather } from './weather.js';
 import { constructionMinutes } from './projects.js';
 import { pondDoseMinutes } from './irrigation.js';
@@ -144,6 +147,61 @@ export function trainWorker(state, workerId, axis) {
 export function setVolunteerWeekday(state, weekday) {
   if (state.volunteerDayChangedThisSeason) return state;
   return { ...state, volunteerWeekday: weekday, volunteerDayChangedThisSeason: true };
+}
+
+export function severanceCost(worker) {
+  return (worker?.wage ?? 0) * FIRING_SEVERANCE_DAYS;
+}
+
+function flagWorkerJobs(plannedTasks, workerId) {
+  return (plannedTasks ?? []).map((item) =>
+    item.workerId === workerId ? { ...item, workerId: null, needsReassignment: true } : item,
+  );
+}
+
+export function canFireWorker(state, workerId) {
+  if (workerId === PLAYER_ID) return { ok: false, reason: 'You cannot fire yourself.' };
+  const worker = (state.workers ?? []).find((item) => item.id === workerId);
+  if (!worker) return { ok: false, reason: 'Not on the books.' };
+  if (worker.isVolunteer) return { ok: false, reason: 'The volunteer cannot be fired.' };
+  return { ok: true, worker, severance: severanceCost(worker) };
+}
+
+export function fireWorker(state, workerId) {
+  const check = canFireWorker(state, workerId);
+  if (!check.ok) return state;
+  const worker = check.worker;
+  const severance = check.severance;
+  return {
+    ...state,
+    cash: cashOnHand(state) - severance,
+    workers: state.workers
+      .filter((item) => item.id !== workerId)
+      .map((item) => ({
+        ...item,
+        morale: Math.min(MORALE_MAX, Math.max(0, (item.morale ?? MORALE_MAX) - FIRING_MORALE_HIT)),
+      })),
+    plannedTasks: flagWorkerJobs(state.plannedTasks, workerId),
+    firingHistory: [
+      ...(state.firingHistory ?? []),
+      { day: state.day, workerId, name: worker.name, kind: 'fired', severance },
+    ],
+  };
+}
+
+export function dismissVolunteer(state) {
+  const volunteer = (state.workers ?? []).find((item) => item.isVolunteer);
+  if (!volunteer || state.volunteerDismissed) return state;
+  return {
+    ...state,
+    workers: state.workers.filter((item) => !item.isVolunteer),
+    plannedTasks: flagWorkerJobs(state.plannedTasks, volunteer.id),
+    volunteerDismissed: true,
+    firingHistory: [
+      ...(state.firingHistory ?? []),
+      { day: state.day, workerId: volunteer.id, name: volunteer.name, kind: 'volunteerGone', severance: 0 },
+    ],
+  };
 }
 
 export function applyEarlyStartComplaints(state) {

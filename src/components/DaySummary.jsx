@@ -53,7 +53,9 @@ export default function DaySummary({ summary, onContinue }) {
           <ul className="mt-2 space-y-1">
             {summary.dropped.map((item) => (
               <li key={`${item.taskId}-dropped`}>
-                {item.taskId} ran out of time after interruptions ({item.minutes} min)
+                {item.reason === 'unassigned'
+                  ? `${item.taskId} needed reassignment`
+                  : `${item.taskId} ran out of time after interruptions (${item.minutes} min)`}
               </li>
             ))}
           </ul>

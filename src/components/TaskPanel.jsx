@@ -66,7 +66,7 @@ export default function TaskPanel({ surface, state, holes, onPlan, onRemove, onS
               {planned ? (
                 <div className="mt-2 space-y-2">
                   <p>
-                    Planned · {planned.minutes} min · {workerById(state, planned.workerId)?.name}
+                    Planned · {planned.minutes} min · {planned.needsReassignment ? 'Needs reassignment' : workerById(state, planned.workerId)?.name}
                     {planned.holes?.length ? ` · ${formatHoleSet(planned.holes)}` : ''}
                   </p>
                   <div className="block text-sm text-[var(--sand)]">

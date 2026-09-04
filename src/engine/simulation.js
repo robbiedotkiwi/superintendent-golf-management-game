@@ -188,6 +188,10 @@ export function resolveDay(state) {
   let moistureReadDay = state.moistureReadDay ?? emptyMoistureReadDay(holeN);
 
   for (const plannedTask of planned) {
+    if (plannedTask.needsReassignment || !workerById(state, plannedTask.workerId)) {
+      dropped.push({ ...plannedTask, reason: 'unassigned' });
+      continue;
+    }
     const task = getTask(plannedTask.taskId);
     const jobHoles = jobHolesFor(state, task, plannedTask.holes);
     if (task.kind === 'spray' && task.surface) {

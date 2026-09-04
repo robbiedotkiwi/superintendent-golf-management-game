@@ -284,4 +284,10 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Insolvency day is the first day running cash goes negative after that day's charges (and after the full season-close sequence on the last day). Intra-close dips that the grant covers are not flagged if the net close stays non-negative.
 - Sidebar cash sits under condition. Round 5's "no money in the sidebar" check now expects `formatMoney(state.cash)`.
 
+### Phase C
+
+- The player cannot be fired. Hired staff can. The volunteer is not fired; "Don't come back" removes them permanently at $0 with no morale hit.
+- Firing still proceeds if cash is short (balance can go negative). Remaining workers, including the player and volunteer, take `FIRING_MORALE_HIT`.
+- Jobs keep their plan rows with `needsReassignment` and a null worker. Start day skips those jobs instead of falling back to the player.
+
 

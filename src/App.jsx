@@ -203,6 +203,8 @@ export default function App() {
           onReorder={(order) => dispatch({ type: 'REORDER_TASKS', order })}
           onHire={(candidateId) => dispatch({ type: 'HIRE_WORKER', candidateId })}
           onTrain={(workerId, axis) => dispatch({ type: 'TRAIN_WORKER', workerId, axis })}
+          onFire={(workerId) => dispatch({ type: 'FIRE_WORKER', workerId })}
+          onDismissVolunteer={() => dispatch({ type: 'DISMISS_VOLUNTEER' })}
           onVolunteerDay={(weekday) => dispatch({ type: 'SET_VOLUNTEER_WEEKDAY', weekday })}
           onEarlyStart={(value) => dispatch({ type: 'SET_EARLY_START', value })}
           onSetWorker={(taskId, workerId) => dispatch({ type: 'SET_TASK_WORKER', taskId, workerId })}
@@ -318,6 +320,8 @@ function GameScreen({
   onReorder,
   onHire,
   onTrain,
+  onFire,
+  onDismissVolunteer,
   onVolunteerDay,
   onEarlyStart,
   onSetWorker,
@@ -461,9 +465,11 @@ function GameScreen({
             tab={tabs[SECTION_CREW]}
             onTab={(tab) => onTab(SECTION_CREW, tab)}
             onBack={onCloseShed}
-            onHire={onHire}
-            onTrain={onTrain}
-            onVolunteerDay={onVolunteerDay}
+          onHire={onHire}
+          onTrain={onTrain}
+          onFire={onFire}
+          onDismissVolunteer={onDismissVolunteer}
+          onVolunteerDay={onVolunteerDay}
             onEarlyStart={onEarlyStart}
           />
         ) : view === SECTION_OFFICE ? (

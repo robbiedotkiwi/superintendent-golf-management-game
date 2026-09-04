@@ -5,6 +5,8 @@ import {
   CREW_TAB_ROSTER,
   CREW_TABS,
   DAYS_PER_WEEK,
+  FIRING_MORALE_HIT,
+  FIRING_SEVERANCE_DAYS,
   PLAYER_ID,
   PLAYER_WAGE,
   TRAINING_COST,
@@ -12,7 +14,8 @@ import {
   VOLUNTEER_DEFAULT_WEEKDAY,
   VOLUNTEER_MINUTES,
 } from '../data/constants.js';
-import { dayOfWeek } from '../engine/staff.js';
+import { useState } from 'react';
+import { canFireWorker, dayOfWeek, severanceCost } from '../engine/staff.js';
 import { workerAbsenceReason } from '../engine/availability.js';
 import { formatMoney } from '../engine/format.js';
 import SectionTabs from './SectionTabs.jsx';
@@ -24,10 +27,14 @@ export default function Crew({
   onBack,
   onHire,
   onTrain,
+  onFire,
+  onDismissVolunteer,
   onVolunteerDay,
   onEarlyStart,
 }) {
   const paid = state.workers.filter((worker) => !worker.isVolunteer);
+  const [confirmFireId, setConfirmFireId] = useState(null);
+  const [confirmVolunteerGone, setConfirmVolunteerGone] = useState(false);
 
   return (
     <div className="h-full overflow-y-auto bg-[var(--soil)] px-6 py-5 text-[var(--paint)]">
@@ -83,12 +90,50 @@ export default function Crew({
                 Spray ticket ({formatMoney(TRAINING_COST)}, {TRAINING_DAYS} days)
               </button>
             ) : null}
+            {worker.id !== PLAYER_ID ? (
+              confirmFireId === worker.id ? (
+                <div className="mt-3 border border-[var(--sand)] p-3 text-sm">
+                  <p>
+                    Fire {worker.name}? Severance {formatMoney(severanceCost(worker))} ({FIRING_SEVERANCE_DAYS} days'
+                    wages). Remaining crew lose {FIRING_MORALE_HIT} morale.
+                  </p>
+                  <div className="mt-2 flex gap-2">
+                    <button
+                      type="button"
+                      className="bg-[var(--machine-orange)] px-3 py-1 font-semibold"
+                      onClick={() => {
+                        onFire(worker.id);
+                        setConfirmFireId(null);
+                      }}
+                    >
+                      Confirm fire
+                    </button>
+                    <button type="button" className="border border-[var(--sand)] px-3 py-1" onClick={() => setConfirmFireId(null)}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  disabled={!canFireWorker(state, worker.id).ok}
+                  onClick={() => setConfirmFireId(worker.id)}
+                  className="mt-2 border border-[var(--sand)] px-3 py-1"
+                >
+                  Fire
+                </button>
+              )
+            ) : null}
           </section>
           );
         })}
       </div>
 
       <h2 className="mt-10 font-condensed text-3xl">Volunteer</h2>
+      {state.volunteerDismissed || !state.workers.some((worker) => worker.isVolunteer) ? (
+        <p className="mt-2 text-[var(--sand)]">Asked not to come back.</p>
+      ) : (
+      <>
       {(() => {
         const volunteer = state.workers.find((worker) => worker.isVolunteer);
         const reason = volunteer ? workerAbsenceReason(state, volunteer) : null;
@@ -120,6 +165,32 @@ export default function Crew({
           </button>
         ))}
       </div>
+      {confirmVolunteerGone ? (
+        <div className="mt-3 border border-[var(--sand)] p-3 text-sm">
+          <p>Ask the volunteer not to come back? No cost. They will not return.</p>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              className="bg-[var(--machine-orange)] px-3 py-1 font-semibold"
+              onClick={() => {
+                onDismissVolunteer();
+                setConfirmVolunteerGone(false);
+              }}
+            >
+              Confirm
+            </button>
+            <button type="button" className="border border-[var(--sand)] px-3 py-1" onClick={() => setConfirmVolunteerGone(false)}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button type="button" className="mt-3 border border-[var(--sand)] px-3 py-1" onClick={() => setConfirmVolunteerGone(true)}>
+          Don&apos;t come back
+        </button>
+      )}
+      </>
+      )}
         </>
       ) : null}
 

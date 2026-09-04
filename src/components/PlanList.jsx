@@ -97,6 +97,7 @@ export default function PlanList({ state, compact = false, onReorder, onRemove }
                   </div>
                   <p className="text-sm text-[var(--sand)]">
                     {worker?.name ?? 'Unassigned'}
+                    {planned.needsReassignment ? ' · needs reassignment' : ''}
                     {machine ? ` · ${machineTitle(machine)}` : ''}
                     {planned.holes?.length ? ` · ${formatHoleSet(planned.holes)}` : ''}
                     {` · ${planned.minutes} min`}

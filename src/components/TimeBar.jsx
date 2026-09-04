@@ -7,7 +7,7 @@ export function timeFillPercent(minutes, capacity) {
 
 function plannedLabel(planned) {
   const task = getTask(planned.taskId);
-  return `${task.name} · ${planned.minutes} min`;
+  return `${task.name} · ${planned.minutes} min${planned.needsReassignment ? ' · needs reassignment' : ''}`;
 }
 
 export default function TimeBar({ remaining, used, capacity, plannedTasks, onRemove }) {

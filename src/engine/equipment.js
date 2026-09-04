@@ -514,6 +514,10 @@ export function recomputePlannedMinutes(state) {
   for (const planned of state.plannedTasks) {
     const task = getTask(planned.taskId);
     const worker = state.workers.find((item) => item.id === planned.workerId);
+    if (planned.needsReassignment || !worker) {
+      plannedTasks.push(planned);
+      continue;
+    }
     const probe = { ...state, plannedTasks };
     let machineId = null;
     if (task?.mowing) {

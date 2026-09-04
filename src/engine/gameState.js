@@ -9,6 +9,8 @@ import { assignWorker, certifiedPresent, workerById, workerAllows, isWorkerPrese
 import { findPlannedJob, jobHolesFor, applyRoute, canSaveRoute } from './jobs.js';
 import {
   applyEarlyStartComplaints,
+  dismissVolunteer,
+  fireWorker,
   hireWorker,
   setVolunteerWeekday,
   trainWorker,
@@ -266,6 +268,8 @@ export function createInitialState() {
     nextPresetId: 1,
     lastMainsCost: 0,
     lastDeliveryDay: null,
+    firingHistory: [],
+    volunteerDismissed: false,
     section: SECTION_MAP,
     tabs: defaultSectionTabs(),
   };
@@ -649,6 +653,10 @@ export function reducer(state, action) {
     }
     case 'TRAIN_WORKER':
       return trainWorker(state, action.workerId, action.axis);
+    case 'FIRE_WORKER':
+      return fireWorker(state, action.workerId);
+    case 'DISMISS_VOLUNTEER':
+      return dismissVolunteer(state);
     case 'SET_VOLUNTEER_WEEKDAY':
       return setVolunteerWeekday(state, action.weekday);
     case 'SET_EARLY_START':
@@ -681,7 +689,7 @@ export function reducer(state, action) {
         ...next,
         plannedTasks: next.plannedTasks.map((item) =>
           item.taskId === action.taskId
-            ? { ...item, workerId: worker.id, minutes, machineId: machineCheck.machine?.id ?? null }
+            ? { ...item, workerId: worker.id, minutes, machineId: machineCheck.machine?.id ?? null, needsReassignment: false }
             : item,
         ),
         workers: next.workers.map((item) =>
