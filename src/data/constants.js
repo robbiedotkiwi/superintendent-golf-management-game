@@ -285,11 +285,6 @@ export const MOISTURE_START = {
   tees: 25,
   fairways: 26,
 };
-export const MOISTURE_IRRIGATION_ADD = {
-  off: 0,
-  light: 5,
-  full: 8,
-};
 export const MOISTURE_ET_BASE = {
   greens: 4,
   tees: 3.5,
@@ -864,11 +859,15 @@ export const SUMMER_UNDERWATER_DECAY = {
   fairways: 3,
 };
 export const DROUGHT_DECAY = SUMMER_UNDERWATER_DECAY;
-export const IRRIGATION_M3 = {
-  greens: { light: 12, full: 25 },
-  tees: { light: 7, full: 15 },
-  fairways: { light: 60, full: 120 },
+export const IRRIGATION_MM_RANGE = {
+  green: { min: 0, max: 10, default: 4, step: 0.5 },
+  tee: { min: 0, max: 10, default: 4, step: 0.5 },
+  fairway: { min: 0, max: 8, default: 3, step: 0.5 },
 };
+export const IRRIGATED_AREA_M2_PER_HOLE = { green: 500, tee: 250, fairway: 3000 };
+export const MOISTURE_PER_MM = { green: 1.4, tee: 1.1, fairway: 0.9 };
+export const IRRIGATION_MM_M3_DIVISOR = 1000;
+export const IRRIGATION_SURFACE_KEY = { greens: 'green', tees: 'tee', fairways: 'fairway' };
 export const SEASON_WATER = {
   spring: 1.0,
   summer: 1.6,
@@ -876,11 +875,10 @@ export const SEASON_WATER = {
   winter: 0.2,
 };
 export const STARTING_IRRIGATION = {
-  greens: 'full',
-  tees: 'light',
-  fairways: 'off',
+  greens: IRRIGATION_MM_RANGE.green.default,
+  tees: IRRIGATION_MM_RANGE.tee.default,
+  fairways: IRRIGATION_MM_RANGE.fairway.default,
 };
-export const IRRIGATION_POLICIES = ['off', 'light', 'full'];
 export const SPRAY_MATERIALS_COST = nzPrice(600, 100);
 export const SPRAY_SUPPRESS_DAYS = 14;
 export const FERTILISER_MATERIALS_COST = nzPrice(450, 100);

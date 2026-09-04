@@ -41,6 +41,7 @@ import { buildForecast } from './weather.js';
 import { normalizeSection, normalizeTabs } from './section.js';
 import { allGmSeen, allSectionUnlocks } from './gm.js';
 import { migrateVolunteerWeekday } from './staff.js';
+import { migrateIrrigation } from './irrigation.js';
 
 function migrateHoleState(state) {
   if (isHoleModel(state.holes)) {
@@ -167,7 +168,7 @@ export function withDefaults(state) {
     hasFoleyGrinder: Boolean(state.hasFoleyGrinder),
     autoWeek: state.autoWeek ?? { weekStart: state.day ?? 1, hits: [] },
     pond: state.pond ?? { volume: POND_START_VOLUME, health: POND_HEALTH_START },
-    irrigation: state.irrigation ?? { ...STARTING_IRRIGATION },
+    irrigation: migrateIrrigation(state.irrigation),
     hasAerator: Boolean(state.hasAerator),
     pondDosing: Boolean(state.pondDosing),
     ...migrateMoisture(state),

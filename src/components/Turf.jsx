@@ -15,8 +15,8 @@ import {
   HOC_STRESS_THRESHOLD,
   HOC_SURFACES,
   INPUTS_SURFACES,
-  IRRIGATION_POLICIES,
   MACHINE_OVERRIDE_AUTO,
+  MOISTURE_BAND,
   PATTERN_ANGLE_MAX,
   PATTERN_ANGLE_MIN,
   PATTERN_KEYS,
@@ -70,7 +70,8 @@ import { canPlanTask } from '../engine/gameState.js';
 import PlanConfirmButton from './PlanConfirmButton.jsx';
 import { formatMoney } from '../engine/format.js';
 import { canBuyAerator, irrigationDemand, IRRIGATED_SURFACES, pondPercent } from '../engine/irrigation.js';
-import { canBuyGreensSensors, canBuyTurfRad } from '../engine/moisture.js';
+import { canBuyGreensSensors, canBuyTurfRad, moistureStatus } from '../engine/moisture.js';
+import IrrigationMmSlider from './IrrigationMmSlider.jsx';
 import { daysSinceLastWorked, isNeglected } from '../engine/neglect.js';
 import { courseSettings, holeCount, holeKind, meanQuality, presentHoles } from '../engine/holes.js';
 import { hasHoc, hasPattern, inHocStressBand } from '../engine/mowing.js';
@@ -78,12 +79,6 @@ import { mowingStatus } from '../engine/mowingStatus.js';
 import { GreensMoistureList, MoistureLine } from './MoistureReadout.jsx';
 import SectionTabs from './SectionTabs.jsx';
 import HoleSelector from './HoleSelector.jsx';
-
-const POLICY_LABELS = {
-  off: 'Off',
-  light: 'Light',
-  full: 'Full',
-};
 
 function formatQuality(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -94,11 +89,11 @@ function formatMm(value) {
   return Number.isInteger(value) ? `${value} mm` : `${value.toFixed(1)} mm`;
 }
 
-function TwoColumn({ left, right }) {
+function TwoColumn({ left, right, rightInteractive = false }) {
   return (
     <div className="mt-2 grid grid-cols-2 gap-4">
       <div>{left}</div>
-      <div className="pointer-events-none text-sm">{right}</div>
+      <div className={rightInteractive ? 'text-sm' : 'pointer-events-none text-sm'}>{right}</div>
     </div>
   );
 }
@@ -211,43 +206,21 @@ export default function Turf({
 
       {tab === TURF_TAB_IRRIGATION ? (
         <div className="space-y-3">
-          <HoleSelector state={state} onToggleHole={onToggleHole} onSelectHoles={onSelectHoles} />
           <p className="text-sm text-[var(--sand)]">
-            Nightly draw {Math.round(demand.total)} m³. Rough is never watered.
+            Nightly draw {demand.total.toFixed(1)} m³. Rough is never watered.
           </p>
           {IRRIGATED_SURFACES.map((surface) => (
-            <section key={surface} className="border border-[var(--sand)] p-3">
-              <h3 className="text-lg font-semibold">{SURFACE_LABELS[surface]}</h3>
-              <p className="text-sm text-[var(--sand)]">
-                Estimate {Math.round(demand.demand[surface] ?? 0)} m³ · moisture <MoistureLine state={state} surface={surface} />
-              </p>
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                {IRRIGATION_POLICIES.map((policy) => (
-                  <button
-                    key={policy}
-                    type="button"
-                    onClick={() => onSetIrrigation(surface, policy)}
-                    className={`border border-[var(--sand)] px-2 py-2 ${
-                      state.irrigation[surface] === policy ? 'bg-[var(--machine-orange)]' : ''
-                    }`}
-                  >
-                    {POLICY_LABELS[policy]}
-                  </button>
-                ))}
-              </div>
-              <PlanJob
-                state={state}
-                taskId={CHECK_MOISTURE_BY_SURFACE[surface]}
-                onPlan={onPlan}
-                onRemove={onRemove}
-                label={CHECK_MOISTURE_LABEL}
-              />
-            </section>
+            <IrrigationSurface
+              key={surface}
+              surface={surface}
+              state={state}
+              onSetIrrigation={onSetIrrigation}
+              onPlan={onPlan}
+              onRemove={onRemove}
+              onToggleHole={onToggleHole}
+              onSelectHoles={onSelectHoles}
+            />
           ))}
-          <section className="border border-[var(--sand)] p-3">
-            <h3 className="text-lg font-semibold">Moisture per green</h3>
-            <GreensMoistureList state={state} />
-          </section>
           <section className="border border-[var(--sand)] p-3">
             <h3 className="text-lg font-semibold">Hand-water targeting</h3>
             <div className="mt-2 grid grid-cols-3 gap-1">
@@ -417,6 +390,65 @@ function MachinePicker({ state, surface, onSetMachineOverride }) {
         </select>
       </label>
     </div>
+  );
+}
+
+function IrrigationStatus({ state, surface, onPlan, onRemove, onToggleHole, onSelectHoles }) {
+  const status = moistureStatus(state, surface);
+  const band = MOISTURE_BAND[surface];
+  const stale =
+    status.kind === 'hidden' ? 'No reading yet' : status.kind === 'stale' ? 'Stale' : 'Fresh';
+  return (
+    <div data-irrigation-status={surface}>
+      <p>
+        Moisture <MoistureLine state={state} surface={surface} />
+      </p>
+      <p>
+        Target band {band.min}–{band.max}%
+      </p>
+      <p>{stale}</p>
+      {surface === 'greens' ? <GreensMoistureList state={state} /> : null}
+      <div className="pointer-events-auto">
+        <HoleSelector state={state} onToggleHole={onToggleHole} onSelectHoles={onSelectHoles} />
+        <PlanJob
+          state={state}
+          taskId={CHECK_MOISTURE_BY_SURFACE[surface]}
+          onPlan={onPlan}
+          onRemove={onRemove}
+          label={CHECK_MOISTURE_LABEL}
+        />
+      </div>
+    </div>
+  );
+}
+
+function IrrigationSurface({
+  surface,
+  state,
+  onSetIrrigation,
+  onPlan,
+  onRemove,
+  onToggleHole,
+  onSelectHoles,
+}) {
+  return (
+    <section className="border border-[var(--sand)] p-3" data-irrigation-surface={surface}>
+      <h3 className="text-lg font-semibold">{SURFACE_LABELS[surface]}</h3>
+      <TwoColumn
+        rightInteractive
+        left={<IrrigationMmSlider state={state} surface={surface} onSetIrrigation={onSetIrrigation} />}
+        right={
+          <IrrigationStatus
+            state={state}
+            surface={surface}
+            onPlan={onPlan}
+            onRemove={onRemove}
+            onToggleHole={onToggleHole}
+            onSelectHoles={onSelectHoles}
+          />
+        }
+      />
+    </section>
   );
 }
 

@@ -8,6 +8,8 @@ import {
   DAYS_PER_SEASON,
   GROUNDWATER_M3,
   HAND_WATER_MINUTES,
+  HOLE_COUNT,
+  IRRIGATION_MM_RANGE,
   MAINS_COST_PER_M3,
   PLAYER_SPEED_SKILL,
   POND_CAPACITY,
@@ -26,7 +28,7 @@ import {
 } from '../src/data/constants.js';
 import { TASKS } from '../src/data/tasks.js';
 import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { irrigationDemand, pondPercent, resolveIrrigation } from '../src/engine/irrigation.js';
+import { irrigationDemand, irrigationMmToM3, pondPercent, resolveIrrigation } from '../src/engine/irrigation.js';
 import { clampQuality, decayAmount } from '../src/engine/simulation.js';
 import { applyWeatherToWorkers } from '../src/engine/weather.js';
 import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
@@ -53,11 +55,11 @@ assert.deepEqual(start.irrigation, STARTING_IRRIGATION);
 assert.equal(start.hasAerator, false);
 assert.ok(TASKS.some((task) => task.id === 'handWater'));
 
-let policy = reducer(start, { type: 'SET_IRRIGATION', surface: 'greens', policy: 'off' });
-policy = reducer(policy, { type: 'SET_IRRIGATION', surface: 'fairways', policy: 'full' });
+let policy = reducer(start, { type: 'SET_IRRIGATION', surface: 'greens', mm: 0 });
+policy = reducer(policy, { type: 'SET_IRRIGATION', surface: 'fairways', mm: IRRIGATION_MM_RANGE.fairway.default });
 const afterPolicy = endKeep(policy, { season: 'spring' }).state;
-assert.equal(afterPolicy.irrigation.greens, 'off');
-assert.equal(afterPolicy.irrigation.fairways, 'full');
+assert.equal(afterPolicy.irrigation.greens, 0);
+assert.equal(afterPolicy.irrigation.fairways, IRRIGATION_MM_RANGE.fairway.default);
 assert.equal(afterPolicy.irrigation.tees, STARTING_IRRIGATION.tees);
 
 function volumeAfter(season, irrigation) {
@@ -71,11 +73,17 @@ function volumeAfter(season, irrigation) {
   return resolveIrrigation(state).pond.volume;
 }
 
-const allFull = { greens: 'full', tees: 'full', fairways: 'full' };
+const allFull = {
+  greens: IRRIGATION_MM_RANGE.green.default,
+  tees: IRRIGATION_MM_RANGE.tee.default,
+  fairways: IRRIGATION_MM_RANGE.fairway.default,
+};
+const allOff = { greens: 0, tees: 0, fairways: 0 };
+assert.equal(irrigationMmToM3('greens', 4, HOLE_COUNT), 18);
 const summerVol = volumeAfter('summer', allFull);
 const winterVol = volumeAfter('winter', allFull);
 assert.ok(summerVol < POND_START_VOLUME, 'pond drops overnight');
-assert.ok(summerVol < winterVol, 'summer draw is heavier than winter');
+assert.equal(summerVol, winterVol, 'mm draw is the same year-round');
 const summerDemand = irrigationDemand({
   ...createInitialState(),
   season: 'summer',
@@ -88,7 +96,7 @@ assert.equal(summerVol, POND_START_VOLUME - summerDemand + GROUNDWATER_M3);
 const rainy = resolveIrrigation({
   ...createInitialState(),
   weather: WEATHER_RAIN,
-  irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
+  irrigation: allOff,
   plannedTasks: [],
 });
 assert.equal(rainy.pond.volume, POND_START_VOLUME + GROUNDWATER_M3 + RAIN_POND_M3);
@@ -115,7 +123,7 @@ let offSummer = {
   ...createInitialState(),
   season: 'summer',
   weather: STARTING_WEATHER,
-  irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
+  irrigation: allOff,
 };
 const greensStart = meanQuality(offSummer, 'greens');
 assert.equal(greensStart, STARTING_QUALITY_GREENS);
@@ -131,7 +139,7 @@ let watered = {
   ...createInitialState(),
   season: 'summer',
   weather: STARTING_WEATHER,
-  irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
+  irrigation: allOff,
 };
 const hand = reducer(watered, { type: 'PLAN_TASK', taskId: 'handWater' });
 const handTask = hand.plannedTasks.find((item) => item.taskId === 'handWater');
@@ -149,7 +157,7 @@ const afterDryGreens = meanQuality(
       ...createInitialState(),
       season: 'summer',
       weather: STARTING_WEATHER,
-      irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
+      irrigation: allOff,
     },
     { season: 'summer' },
   ).state,
@@ -161,7 +169,7 @@ const lowPond = {
   ...createInitialState(),
   season: 'winter',
   weather: STARTING_WEATHER,
-  irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
+  irrigation: allOff,
   pond: { volume: POND_CAPACITY * POND_LOW_FRACTION * 0.5, health: POND_HEALTH_START },
 };
 const lowAfter = resolveIrrigation(lowPond);
@@ -174,7 +182,7 @@ const held = resolveIrrigation({
   ...bought,
   season: 'summer',
   weather: STARTING_WEATHER,
-  irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
+  irrigation: allOff,
   pond: { volume: POND_CAPACITY * POND_LOW_FRACTION * 0.5, health: POND_HEALTH_START },
 });
 assert.equal(held.pond.health, POND_HEALTH_START);

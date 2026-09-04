@@ -32,9 +32,9 @@ assert.deepEqual(skippedOverdueSurfaces(neglected), ['greens']);
 const planned = reducer(neglected, { type: 'PLAN_TASK', taskId: 'cutGreens' });
 assert.deepEqual(skippedOverdueSurfaces(planned), []);
 
-let watered = reducer(planned, { type: 'SET_IRRIGATION', surface: 'tees', policy: 'light' });
+let watered = reducer(planned, { type: 'SET_IRRIGATION', surface: 'tees', mm: 2 });
 assert.equal(watered.plannedTasks.length, 1);
-assert.equal(watered.irrigation.tees, 'light');
+assert.equal(watered.irrigation.tees, 2);
 
 const needle = 'End' + ' day';
 const grep = execSync(`rg -n -F ${JSON.stringify(needle)} src DECISIONS.md BUILD_PLAN.md FIXES_ROUND_2.md || true`, {
@@ -59,7 +59,8 @@ assert.match(dialog, /skippedOverdueSurfaces/);
 assert.match(dialog, /Tonight's irrigation/);
 assert.match(dialog, /<ForecastStrip/);
 assert.match(dialog, />\s*Back\s*</);
-assert.match(dialog, /IRRIGATION_POLICIES/);
+assert.match(dialog, /IrrigationMmSlider/);
+assert.doesNotMatch(dialog, /IRRIGATION_POLICIES/);
 assert.match(dialog, /onRemove/);
 
 const tutorial = readFileSync(new URL('../src/components/Tutorial.jsx', import.meta.url), 'utf8');

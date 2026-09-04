@@ -82,7 +82,7 @@ assert.deepEqual(
   reversed.plannedTasks.map((item) => item.taskId),
   ['cutTees', 'rakeBunkers', 'changeCups'],
 );
-const kept = reducer(reversed, { type: 'SET_IRRIGATION', surface: 'greens', policy: 'off' });
+const kept = reducer(reversed, { type: 'SET_IRRIGATION', surface: 'greens', mm: 0 });
 assert.deepEqual(
   kept.plannedTasks.map((item) => item.taskId),
   ['cutTees', 'rakeBunkers', 'changeCups'],

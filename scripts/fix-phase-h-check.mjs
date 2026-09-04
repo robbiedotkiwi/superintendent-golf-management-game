@@ -73,7 +73,7 @@ for (let i = 0; i < 3; i += 1) {
 assert.equal(moistureStatus(rad, 'fairways').kind, 'stale');
 
 let live = reducer({ ...createInitialState(), cash: 250000 }, { type: 'BUY_GREENS_SENSORS' });
-live = reducer(live, { type: 'SET_IRRIGATION', surface: 'greens', policy: 'full' });
+live = reducer(live, { type: 'SET_IRRIGATION', surface: 'greens', mm: 4 });
 for (let i = 0; i < 4; i += 1) {
   live = reducer(live, { type: 'END_DAY' });
 }
@@ -100,7 +100,7 @@ assert.equal(WET_GAIN_MULT, 0.85);
 const pondWet = irrigationDemand({
   ...wetState,
   season: 'summer',
-  irrigation: { greens: 'full', tees: 'full', fairways: 'full' },
+  irrigation: { greens: 4, tees: 4, fairways: 3 },
 });
 assert.ok(pondWet.total > 0);
 

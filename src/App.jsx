@@ -215,7 +215,7 @@ export default function App() {
           onSetPattern={(surface, pattern) => dispatch({ type: 'SET_PATTERN', surface, pattern })}
           onSetAngle={(surface, angle) => dispatch({ type: 'SET_ANGLE', surface, angle })}
           onSetAutoRotate={(surface, value) => dispatch({ type: 'SET_AUTO_ROTATE', surface, value })}
-          onSetIrrigation={(surface, policy) => dispatch({ type: 'SET_IRRIGATION', surface, policy })}
+          onSetIrrigation={(surface, mm) => dispatch({ type: 'SET_IRRIGATION', surface, mm })}
           onSetPondDosing={(on) => dispatch({ type: 'SET_POND_DOSING', on })}
           onSetView={(view) => dispatch({ type: 'SET_VIEW', view })}
           onBuyAerator={() => dispatch({ type: 'BUY_AERATOR' })}

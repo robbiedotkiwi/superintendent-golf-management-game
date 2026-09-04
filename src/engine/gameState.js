@@ -24,7 +24,7 @@ import {
   emptyMoisture,
   emptyMoistureReadDay,
 } from './moisture.js';
-import { canBuyAerator, IRRIGATED_SURFACES, isIrrigationPolicy } from './irrigation.js';
+import { canBuyAerator, IRRIGATED_SURFACES, clampIrrigationMm, migrateIrrigationValue } from './irrigation.js';
 import { leaseMachine, stopLease, takeLoan } from './budget.js';
 import { emptyDaysSinceWorked, markMailRead, meetingDue } from './mail.js';
 import {
@@ -755,10 +755,12 @@ export function reducer(state, action) {
     case 'SET_POND_DOSING':
       return { ...state, pondDosing: Boolean(action.on) };
     case 'SET_IRRIGATION': {
-      if (!IRRIGATED_SURFACES.includes(action.surface) || !isIrrigationPolicy(action.policy)) return state;
+      if (!IRRIGATED_SURFACES.includes(action.surface)) return state;
+      const mm =
+        action.mm != null ? action.mm : migrateIrrigationValue(action.surface, action.policy);
       return {
         ...state,
-        irrigation: { ...state.irrigation, [action.surface]: action.policy },
+        irrigation: { ...state.irrigation, [action.surface]: clampIrrigationMm(action.surface, mm) },
       };
     }
     case 'BUY_AERATOR': {

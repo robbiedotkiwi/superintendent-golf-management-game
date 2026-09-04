@@ -319,3 +319,11 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Lagging holes are those with a strictly older `lastMownDay` than the most recently cut hole of that type.
 - Pattern wear shows in the right column only when it is above `PATTERN_WEAR_DEFAULT`. The right column is `pointer-events-none`.
 
+### Phase C
+
+- Irrigation is millimetres per surface. Overnight volume is `mm × IRRIGATED_AREA_M2_PER_HOLE × holeCount / 1000` with no `SEASON_WATER` or HOC multiplier on the draw. Season still hits moisture through ET.
+- `holesIrrigated` is the course hole count (whole-course overnight), not the map selection.
+- Projected pond in the slider is current volume minus tonight's total draw, before groundwater and rain.
+- Old Off / Light / Full values migrate on load: Off → 0, Light → half the surface default (2 mm greens/tees, 1.5 mm fairways), Full → default. `SET_IRRIGATION` still accepts a legacy `policy` field and stores millimetres.
+- Unused `IrrigationPanel.jsx` is deleted. Hand-water, sensors and TurfRad stay below the per-surface two-column blocks. Check moisture and the hole selector live in the right column.
+

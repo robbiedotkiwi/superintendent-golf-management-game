@@ -1,20 +1,11 @@
-import {
-  FUEL_TANK_CAPACITY,
-  IRRIGATION_POLICIES,
-  START_DAY_LABEL,
-} from '../data/constants.js';
+import { FUEL_TANK_CAPACITY, START_DAY_LABEL } from '../data/constants.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import { skippedOverdueSurfaces, unusedTimeCopy } from '../engine/badges.js';
 import { plannedDayFuel } from '../engine/fuel.js';
 import { IRRIGATED_SURFACES } from '../engine/irrigation.js';
 import ForecastStrip from './ForecastStrip.jsx';
+import IrrigationMmSlider from './IrrigationMmSlider.jsx';
 import PlanList from './PlanList.jsx';
-
-const POLICY_LABELS = {
-  off: 'Off',
-  light: 'Light',
-  full: 'Full',
-};
 
 export default function StartDayDialog({
   state,
@@ -63,20 +54,7 @@ export default function StartDayDialog({
           {IRRIGATED_SURFACES.map((surface) => (
             <div key={surface} className="border border-[var(--sand)] p-2">
               <div className="font-semibold">{SURFACE_LABELS[surface]}</div>
-              <div className="mt-2 grid grid-cols-3 gap-2">
-                {IRRIGATION_POLICIES.map((policy) => (
-                  <button
-                    key={policy}
-                    type="button"
-                    onClick={() => onSetIrrigation(surface, policy)}
-                    className={`border border-[var(--sand)] px-2 py-2 ${
-                      state.irrigation[surface] === policy ? 'bg-[var(--machine-orange)]' : ''
-                    }`}
-                  >
-                    {POLICY_LABELS[policy]}
-                  </button>
-                ))}
-              </div>
+              <IrrigationMmSlider state={state} surface={surface} onSetIrrigation={onSetIrrigation} />
             </div>
           ))}
         </div>

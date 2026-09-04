@@ -1,9 +1,12 @@
 import {
   AERATOR_COST,
   GROUNDWATER_M3,
-  IRRIGATION_M3,
-  IRRIGATION_POLICIES,
+  IRRIGATED_AREA_M2_PER_HOLE,
+  IRRIGATION_MM_M3_DIVISOR,
+  IRRIGATION_MM_RANGE,
+  IRRIGATION_SURFACE_KEY,
   MAINS_COST_PER_M3,
+  MOISTURE_PER_MM,
   POND_CAPACITY,
   POND_HEALTH_LOW_DROP,
   POND_HEALTH_MAX,
@@ -12,33 +15,73 @@ import {
   POND_DOSE_COST,
   POND_DOSE_MINUTES,
   RAIN_POND_M3,
-  SEASON_WATER,
+  STARTING_IRRIGATION,
   STORM_POND_M3,
   WEATHER_HEAVY_RAIN,
   WEATHER_RAIN,
   WEATHER_STORM,
-  HOC_WATER_MULT,
 } from '../data/constants.js';
-import { hocFactor } from './mowing.js';
+import { holeCount } from './holes.js';
 import { needsCash } from './cash.js';
 
 export const IRRIGATED_SURFACES = ['greens', 'tees', 'fairways'];
 
+export function irrigationMmKey(surface) {
+  return IRRIGATION_SURFACE_KEY[surface];
+}
+
+export function irrigationMmRange(surface) {
+  return IRRIGATION_MM_RANGE[irrigationMmKey(surface)];
+}
+
+export function clampIrrigationMm(surface, mm) {
+  const range = irrigationMmRange(surface);
+  if (!range) return 0;
+  const n = Number(mm);
+  if (!Number.isFinite(n)) return range.default;
+  const stepped = Math.round(n / range.step) * range.step;
+  return Math.min(range.max, Math.max(range.min, Number(stepped.toFixed(2))));
+}
+
+export function migrateIrrigationValue(surface, value) {
+  const range = irrigationMmRange(surface);
+  if (typeof value === 'number' && Number.isFinite(value)) return clampIrrigationMm(surface, value);
+  if (value === 'off') return 0;
+  if (value === 'light') return range.default / 2;
+  if (value === 'full') return range.default;
+  return STARTING_IRRIGATION[surface] ?? range.default;
+}
+
+export function migrateIrrigation(irrigation) {
+  const source = irrigation && typeof irrigation === 'object' ? irrigation : {};
+  return Object.fromEntries(IRRIGATED_SURFACES.map((surface) => [surface, migrateIrrigationValue(surface, source[surface])]));
+}
+
+export function irrigationMmToM3(surface, mm, holes) {
+  const key = irrigationMmKey(surface);
+  return (Number(mm) * IRRIGATED_AREA_M2_PER_HOLE[key] * holes) / IRRIGATION_MM_M3_DIVISOR;
+}
+
+export function moistureFromMm(surface, mm) {
+  const key = irrigationMmKey(surface);
+  return Number(mm) * MOISTURE_PER_MM[key];
+}
+
 export function irrigationDemand(state) {
-  const seasonMult = SEASON_WATER[state.season];
+  const holes = holeCount(state);
   const demand = {};
   let total = 0;
   for (const surface of IRRIGATED_SURFACES) {
-    const policy = state.irrigation[surface];
-    let amount = 0;
-    if (policy === 'light' || policy === 'full') {
-      const factor = hocFactor(surface, state.surfaceDefaults?.[surface]?.hoc);
-      amount = IRRIGATION_M3[surface][policy] * seasonMult * HOC_WATER_MULT(factor);
-    }
+    const mm = migrateIrrigationValue(surface, state.irrigation?.[surface]);
+    const amount = irrigationMmToM3(surface, mm, holes);
     demand[surface] = amount;
     total += amount;
   }
   return { demand, total };
+}
+
+export function projectedPondVolume(state) {
+  return Math.max(0, (state.pond?.volume ?? 0) - irrigationDemand(state).total);
 }
 
 export function rainFill(weather) {
@@ -97,8 +140,4 @@ export function canBuyAerator(state) {
 
 export function pondPercent(volume) {
   return (volume / POND_CAPACITY) * 100;
-}
-
-export function isIrrigationPolicy(policy) {
-  return IRRIGATION_POLICIES.includes(policy);
 }

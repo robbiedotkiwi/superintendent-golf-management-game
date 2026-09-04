@@ -13,7 +13,6 @@ import {
   MOISTURE_ET_WEATHER,
   MOISTURE_HAND_WATER_ADD,
   MOISTURE_HIDDEN,
-  MOISTURE_IRRIGATION_ADD,
   MOISTURE_MAX,
   MOISTURE_MIN,
   MOISTURE_OVERLAY_DRY_MIX,
@@ -37,6 +36,7 @@ import { lerpHex } from './color.js';
 import { hocFactor } from './mowing.js';
 import { needsCash } from './cash.js';
 import { holeCount, mapHoleSurfaces } from './holes.js';
+import { moistureFromMm, migrateIrrigationValue } from './irrigation.js';
 
 const WINDY_WEATHER = [WEATHER_FINE, WEATHER_OVERCAST];
 
@@ -129,8 +129,8 @@ function etMultiplier(state, surface) {
 }
 
 function irrigationAdd(state, surface) {
-  const policy = state.irrigation?.[surface] ?? 'off';
-  return MOISTURE_IRRIGATION_ADD[policy] ?? 0;
+  const mm = migrateIrrigationValue(surface, state.irrigation?.[surface]);
+  return moistureFromMm(surface, mm);
 }
 
 function rainAdd(weather) {
