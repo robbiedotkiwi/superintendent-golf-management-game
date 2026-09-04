@@ -19,6 +19,9 @@ import {
   PROJECT_EXPAND_18,
   PROJECT_EXTRA_BUNKERS,
   PROJECT_NEW_TEES,
+  PROJECT_POND_EXPANSION,
+  POND_EXPANSION_COST,
+  POND_EXPANSION_DAYS,
   SEASON_GROWTH,
   TASK_TIME_MULT_18,
 } from '../data/constants.js';
@@ -51,6 +54,12 @@ export const PROJECTS = {
     name: 'New tees',
     cost: NEW_TEES_COST,
     days: NEW_TEES_DAYS,
+  },
+  [PROJECT_POND_EXPANSION]: {
+    id: PROJECT_POND_EXPANSION,
+    name: 'Pond expansion',
+    cost: POND_EXPANSION_COST,
+    days: POND_EXPANSION_DAYS,
   },
 };
 
@@ -89,6 +98,7 @@ export function alreadyBuilt(state, id) {
   if (id === PROJECT_DRIVING_RANGE) return Boolean(state.hasDrivingRange);
   if (id === PROJECT_EXTRA_BUNKERS) return Boolean(state.hasExtraBunkers);
   if (id === PROJECT_NEW_TEES) return Boolean(state.hasNewTees);
+  if (id === PROJECT_POND_EXPANSION) return Boolean(state.hasPondExpansion);
   return false;
 }
 
@@ -154,6 +164,7 @@ function completeProject(state, id) {
   if (id === PROJECT_DRIVING_RANGE) return { ...state, hasDrivingRange: true };
   if (id === PROJECT_EXTRA_BUNKERS) return { ...state, hasExtraBunkers: true };
   if (id === PROJECT_NEW_TEES) return { ...state, hasNewTees: true };
+  if (id === PROJECT_POND_EXPANSION) return { ...state, hasPondExpansion: true };
   return state;
 }
 
