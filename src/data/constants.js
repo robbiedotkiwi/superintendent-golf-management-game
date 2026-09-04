@@ -147,6 +147,7 @@ export function nzPrice(amount, step) {
 }
 export const SAVED_ROUTE_CAP = 8;
 export const FRONT_NINE_COUNT = 9;
+export const HOLE_SELECTOR_COUNT = HOLE_COUNT;
 export const SELECT_ALL_LABEL = 'All';
 export const SELECT_FRONT_NINE_LABEL = 'Front nine';
 export const SELECT_CLEAR_LABEL = 'Clear';

@@ -267,4 +267,14 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Approaching-outbreak flag is `DISEASE_OUTBREAK_WARN` (45), below the outbreak threshold of 60.
 - Greens moisture status uses that hole's own read day. An unread green no longer inherits hole 1's reading, so a partial moisture check can leave other greens hidden.
 
+## Fixes Round 8
+
+- `FIXES_ROUND_8.md` is in the repo root and is the source of truth for this round.
+
+### Phase A
+
+- Hole chips follow `holeCount(state)`, with `HOLE_SELECTOR_COUNT` as the 9-hole fallback. One `HoleSelector` bound to `state.selectedHoles` is mounted on the map overlay and on Turf Mowing / Irrigation / Inputs — not a second selection model.
+- Empty selection still means the whole course (Round 7). All / Front nine / Clear and numbered chips write the same `SET_SELECTED_HOLES` / `TOGGLE_HOLE` actions from both places.
+- Map fairway clicks stay as a shortcut. Turf planning (`PlanJob` / `PlanThisCut`) uses `jobHolesFromSelection`.
+
 

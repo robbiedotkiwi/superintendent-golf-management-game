@@ -42,7 +42,7 @@ import {
 import { courseCondition } from './engine/simulation.js';
 import { holeCount } from './engine/holes.js';
 import HoleDetail from './components/HoleDetail.jsx';
-import MapSelectionBar, { selectAllHoles, selectFrontNine } from './components/MapSelectionBar.jsx';
+import MapSelectionBar from './components/MapSelectionBar.jsx';
 import {
   PLAYOUT_DONE,
   PLAYOUT_PLAYING,
@@ -510,6 +510,8 @@ function GameScreen({
             onDeletePreset={onDeletePreset}
             onMatchLastMowing={onMatchLastMowing}
             onSetMachineOverride={onSetMachineOverride}
+            onToggleHole={onToggleHole}
+            onSelectHoles={onSelectHoles}
           />
         ) : (
           <>
@@ -536,9 +538,8 @@ function GameScreen({
             {!watching ? (
               <MapSelectionBar
                 state={state}
-                onSelectAll={() => onSelectHoles(selectAllHoles(state))}
-                onSelectFrontNine={() => onSelectHoles(selectFrontNine(state))}
-                onClear={() => onSelectHoles([])}
+                onSelectHoles={onSelectHoles}
+                onToggleHole={onToggleHole}
                 onSaveRoute={onSaveRoute}
                 onApplyRoute={onApplyRoute}
                 onRepeatLast={onRepeatLast}

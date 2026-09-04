@@ -88,6 +88,7 @@ import { presetsForSurface } from '../engine/presets.js';
 import ForecastStrip from './ForecastStrip.jsx';
 import { GreensMoistureList, MoistureLine } from './MoistureReadout.jsx';
 import SectionTabs from './SectionTabs.jsx';
+import HoleSelector from './HoleSelector.jsx';
 import { DiseaseReadout } from './WeatherStrip.jsx';
 
 const POLICY_LABELS = {
@@ -169,6 +170,8 @@ export default function Turf({
   onMatchLastMowing,
   onSetMachineOverride,
   onSetPondDosing,
+  onToggleHole,
+  onSelectHoles,
 }) {
   const debris = state.plannedTasks.find((item) => item.taskId === 'clearDebris');
   const debrisCheck = canPlanTask(state, 'clearDebris');
@@ -265,6 +268,7 @@ export default function Turf({
 
       {tab === TURF_TAB_MOWING ? (
         <div className="space-y-4">
+          <HoleSelector state={state} onToggleHole={onToggleHole} onSelectHoles={onSelectHoles} />
           {HOC_SURFACES.map((surface) => (
             <MowingSurface
               key={surface}
@@ -284,6 +288,7 @@ export default function Turf({
 
       {tab === TURF_TAB_IRRIGATION ? (
         <div className="space-y-3">
+          <HoleSelector state={state} onToggleHole={onToggleHole} onSelectHoles={onSelectHoles} />
           <p className="text-sm text-[var(--sand)]">
             Nightly draw {Math.round(demand.total)} m³. Rough is never watered.
           </p>
@@ -383,7 +388,12 @@ export default function Turf({
       ) : null}
 
       {tab === TURF_TAB_INPUTS ? (
-        <InputsTab state={state} onPlan={onPlan} onRemove={onRemove} />
+        <>
+          <HoleSelector state={state} onToggleHole={onToggleHole} onSelectHoles={onSelectHoles} />
+          <div className="mt-4">
+            <InputsTab state={state} onPlan={onPlan} onRemove={onRemove} />
+          </div>
+        </>
       ) : null}
 
       {tab === TURF_TAB_OTHER ? (
@@ -417,11 +427,12 @@ export default function Turf({
 function PlanThisCut({ state, surface, onPlan, onRemove }) {
   const taskId = CUT_TASK_BY_SURFACE[surface];
   if (!taskId) return null;
-  const planned = findPlannedJob(state, taskId);
-  const minutes = planned?.minutes ?? durationForTask(state, taskId);
+  const holes = jobHolesFromSelection(state);
+  const planned = findPlannedJob(state, taskId, holes);
+  const minutes = planned?.minutes ?? durationForTask(state, taskId, undefined, undefined, holes);
   if (planned) {
     return (
-      <button type="button" onClick={() => onRemove(taskId)} className="mt-3 border border-[var(--sand)] px-3 py-2">
+      <button type="button" onClick={() => onRemove(taskId, planned.planId)} className="mt-3 border border-[var(--sand)] px-3 py-2">
         {PLAN_THIS_CUT_LABEL} planned · {planned.minutes} min
       </button>
     );
@@ -430,6 +441,7 @@ function PlanThisCut({ state, surface, onPlan, onRemove }) {
     <PlanConfirmButton
       state={state}
       taskId={taskId}
+      holes={holes}
       onPlan={onPlan}
       className="mt-3 bg-[var(--machine-orange)] px-3 py-2 font-semibold disabled:opacity-40"
     >

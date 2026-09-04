@@ -90,9 +90,11 @@ assert.equal(holeSurface(partial, 7, 'greens').heightAtLastCut, null);
 assert.ok(holeSurface(partial, 1, 'greens').quality > holeSurface(partial, 7, 'greens').quality);
 
 const map = readFileSync(new URL('../src/components/MapSelectionBar.jsx', import.meta.url), 'utf8');
-assert.match(map, /SELECT_ALL_LABEL/);
-assert.match(map, /SELECT_FRONT_NINE_LABEL/);
-assert.match(map, /SELECT_CLEAR_LABEL/);
+const holeSel = readFileSync(new URL('../src/components/HoleSelector.jsx', import.meta.url), 'utf8');
+assert.match(map, /HoleSelector/);
+assert.match(holeSel, /SELECT_ALL_LABEL/);
+assert.match(holeSel, /SELECT_FRONT_NINE_LABEL/);
+assert.match(holeSel, /SELECT_CLEAR_LABEL/);
 assert.match(readFileSync(new URL('../src/components/CourseMap.jsx', import.meta.url), 'utf8'), /onToggleHole/);
 assert.match(readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8'), /MapSelectionBar/);
 

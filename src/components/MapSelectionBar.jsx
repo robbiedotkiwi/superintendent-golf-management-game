@@ -4,22 +4,20 @@ import {
   REPEAT_LAST_LABEL,
   SAVE_ROUTE_LABEL,
   SAVED_ROUTE_CAP,
-  SELECT_ALL_LABEL,
-  SELECT_CLEAR_LABEL,
-  SELECT_FRONT_NINE_LABEL,
 } from '../data/constants.js';
 import { useState } from 'react';
 import { describeJob, findPlannedJob, formatHoleSet } from '../engine/jobs.js';
-import { defaultJobHoles, frontNineIds } from '../engine/holes.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import PlanConfirmButton from './PlanConfirmButton.jsx';
 import { durationForTask } from '../engine/assignment.js';
+import HoleSelector from './HoleSelector.jsx';
+
+export { selectAllHoles, selectFrontNine } from './HoleSelector.jsx';
 
 export default function MapSelectionBar({
   state,
-  onSelectAll,
-  onSelectFrontNine,
-  onClear,
+  onSelectHoles,
+  onToggleHole,
   onSaveRoute,
   onApplyRoute,
   onRepeatLast,
@@ -33,22 +31,12 @@ export default function MapSelectionBar({
 
   return (
     <div className="absolute right-3 top-3 z-20 w-72 border-2 border-[var(--sand)] bg-[var(--soil)] p-3 text-[var(--paint)] shadow-lg">
-      <p className="mb-2 text-sm text-[var(--sand)]">
+      <HoleSelector state={state} onToggleHole={onToggleHole} onSelectHoles={onSelectHoles} />
+      <p className="mb-2 mt-2 text-sm text-[var(--sand)]">
         {selected.length
           ? `${selected.length} hole${selected.length === 1 ? '' : 's'} · ${formatHoleSet(selected)}`
           : 'No holes selected — jobs use the whole course.'}
       </p>
-      <div className="mb-2 flex flex-wrap gap-1">
-        <button type="button" className="border border-[var(--sand)] px-2 py-1 text-sm" onClick={onSelectAll}>
-          {SELECT_ALL_LABEL}
-        </button>
-        <button type="button" className="border border-[var(--sand)] px-2 py-1 text-sm" onClick={onSelectFrontNine}>
-          {SELECT_FRONT_NINE_LABEL}
-        </button>
-        <button type="button" className="border border-[var(--sand)] px-2 py-1 text-sm" onClick={onClear}>
-          {SELECT_CLEAR_LABEL}
-        </button>
-      </div>
       <div className="mb-2 flex gap-1">
         <input
           type="text"
@@ -139,12 +127,4 @@ export default function MapSelectionBar({
       </div>
     </div>
   );
-}
-
-export function selectAllHoles(state) {
-  return defaultJobHoles(state, 'greens');
-}
-
-export function selectFrontNine(state) {
-  return frontNineIds(state);
 }
