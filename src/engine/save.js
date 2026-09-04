@@ -11,6 +11,8 @@ import {
   DELIVERY_SOURCE_USED,
   HOURS_MIGRATED,
   STARTING_MACHINE_IDS,
+  FUEL_START,
+  FUEL_TANK_CAPACITY,
   STARTING_RNG_SEED,
   STARTING_WIND_DIR,
   STARTING_WIND_SPEED,
@@ -209,6 +211,11 @@ export function withDefaults(state) {
     nextPresetId: Number.isInteger(state.nextPresetId) && state.nextPresetId > 0 ? state.nextPresetId : 1,
     lastMainsCost: Number.isFinite(Number(state.lastMainsCost)) ? Number(state.lastMainsCost) : 0,
     lastDeliveryDay: Number.isInteger(state.lastDeliveryDay) ? state.lastDeliveryDay : null,
+    fuelLitres: (() => {
+      const n = Number(state.fuelLitres);
+      if (!Number.isFinite(n)) return FUEL_START;
+      return Math.min(FUEL_TANK_CAPACITY, Math.max(0, n));
+    })(),
     firingHistory: (Array.isArray(state.firingHistory) ? state.firingHistory : []).map((item) => ({
       day: item.day,
       workerId: item.workerId,

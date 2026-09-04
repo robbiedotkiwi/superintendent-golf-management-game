@@ -39,6 +39,7 @@ import { clampStanding } from './satisfaction.js';
 import { buyAutoPicker, startProject } from './projects.js';
 import { bumpCapitalSpent, emptyYearRecord } from './history.js';
 import { spendCash } from './cash.js';
+import { buyFuel } from './fuel.js';
 import { resolveDay } from './simulation.js';
 import {
   CUT_TASK_BY_SURFACE,
@@ -55,6 +56,7 @@ import {
   PLAYER_SPEED_SKILL,
   PLAYER_WAGE,
   STARTING_OPENING_CASH,
+  FUEL_START,
   STARTING_DAY,
   STARTING_DAYS_WORKED_RUNNING,
   STARTING_MACHINE_CONDITION,
@@ -139,6 +141,7 @@ export function createInitialState() {
     season: calendar.season,
     year: calendar.year,
     cash: STARTING_OPENING_CASH,
+    fuelLitres: FUEL_START,
     fuelSpendLog: [],
     holes: createInitialHoles(HOLE_COUNT),
     surfaceDefaults: createSurfaceDefaults(),
@@ -616,6 +619,8 @@ export function reducer(state, action) {
       return sellMachine(state, action.machineId);
     case 'BUY_FOLEY':
       return buyFoley(state);
+    case 'BUY_FUEL':
+      return buyFuel(state, action.litres);
     case 'SEND_GRIND':
       return sendForGrind(state, action.machineId);
     case 'GRIND_IN_HOUSE':

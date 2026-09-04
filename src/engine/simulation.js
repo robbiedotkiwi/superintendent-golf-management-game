@@ -36,6 +36,7 @@ import { PLAYER_ID } from '../data/constants.js';
 import { generateCandidates } from '../data/staff.js';
 import { getTask, taskAppliesQuality } from '../data/tasks.js';
 import { workerById, workerQualityMultiplier, qualityRandomFactor } from './assignment.js';
+import { consumeJobFuel, jobBurnsFuel, replaceBurnSpend } from './fuel.js';
 import { applyMowingAftermath, hocStressApplies, mowingGain, rotatePatternAngle } from './mowing.js';
 import {
   cloneHoles,
@@ -172,6 +173,10 @@ export function resolveDay(state) {
   let planned = [...state.plannedTasks];
   const extra = interruptionMinutesForDay(state);
   let plannedMinutes = planned.reduce((sum, item) => sum + item.minutes, 0);
+  let fuelLitres = Number(state.fuelLitres) || 0;
+  let fuelBurned = 0;
+  let fuelCutShort = false;
+  let fuelStop = null;
   while (extra > 0 && plannedMinutes + extra > capacityOf(state) && planned.length) {
     const item = planned.pop();
     plannedMinutes -= item.minutes;
@@ -188,12 +193,50 @@ export function resolveDay(state) {
   let moistureReadDay = state.moistureReadDay ?? emptyMoistureReadDay(holeN);
 
   for (const plannedTask of planned) {
+    if (fuelCutShort) {
+      dropped.push({ ...plannedTask, reason: 'fuel' });
+      continue;
+    }
     if (plannedTask.needsReassignment || !workerById(state, plannedTask.workerId)) {
       dropped.push({ ...plannedTask, reason: 'unassigned' });
       continue;
     }
     const task = getTask(plannedTask.taskId);
-    const jobHoles = jobHolesFor(state, task, plannedTask.holes);
+    const machine = plannedTask.machineId
+      ? getMachine(plannedTask.machineId)
+      : pickMachineForTask(state, task, workerById(state, plannedTask.workerId), undefined, plannedTask.holes);
+    let jobHoles = jobHolesFor(state, task, plannedTask.holes);
+    const fuel = consumeJobFuel({
+      task,
+      machine,
+      minutes: plannedTask.minutes,
+      holes: jobHoles,
+      fuelLitres,
+    });
+    fuelLitres = fuel.fuelLitres;
+    fuelBurned += fuel.burned;
+    if (fuel.stopped) {
+      fuelCutShort = true;
+      fuelStop = {
+        taskId: plannedTask.taskId,
+        name: task.name,
+        completedHoles: fuel.completedHoles,
+        remainingHoles: fuel.remainingHoles,
+      };
+      if (fuel.runMinutes < plannedTask.minutes) {
+        dropped.push({
+          ...plannedTask,
+          minutes: plannedTask.minutes - fuel.runMinutes,
+          holes: fuel.remainingHoles,
+          reason: 'fuel',
+        });
+      }
+      jobHoles = fuel.completedHoles;
+      if (!jobHoles.length && jobBurnsFuel(task, machine)) {
+        continue;
+      }
+    }
+    const runMinutes = fuel.stopped ? fuel.runMinutes : plannedTask.minutes;
     if (task.kind === 'spray' && task.surface) {
       const sprayed = applySpray({ ...state, disease, sprayedUntil, holes }, task.surface, jobHoles);
       disease = sprayed.disease;
@@ -232,11 +275,8 @@ export function resolveDay(state) {
       moistureReadDay = revealMoisture(moistureReadDay, task.surface, state.day, holeN);
     }
 
-    const machine = plannedTask.machineId
-      ? getMachine(plannedTask.machineId)
-      : pickMachineForTask(state, task, workerById(state, plannedTask.workerId), undefined, plannedTask.holes);
-    if (machine && (task.mowing || task.id === 'rollGreens')) markUsed(machine.id);
-    if (task.id === 'rollGreens' && isMachineAvailable(state, 'greensRoller')) {
+    if (machine && runMinutes > 0 && (task.mowing || task.id === 'rollGreens')) markUsed(machine.id);
+    if (task.id === 'rollGreens' && runMinutes > 0 && isMachineAvailable(state, 'greensRoller')) {
       markUsed('greensRoller');
     }
 
@@ -245,7 +285,7 @@ export function resolveDay(state) {
         taskId: plannedTask.taskId,
         name: task.name,
         surface: task.surface,
-        minutes: plannedTask.minutes,
+        minutes: runMinutes,
         before: null,
         after: null,
       });
@@ -307,7 +347,7 @@ export function resolveDay(state) {
       taskId: plannedTask.taskId,
       name: task.name,
       surface: task.surface,
-      minutes: plannedTask.minutes,
+      minutes: runMinutes,
       before: qualityBefore,
       after: qualityAfter,
     });
@@ -517,6 +557,8 @@ export function resolveDay(state) {
     plannedTasks: [],
     lastDayJobs,
     lastRepeatDropped: [],
+    fuelLitres,
+    fuelSpendLog: [...(state.fuelSpendLog ?? []), { day: state.day, spend: replaceBurnSpend(fuelBurned) }].slice(-30),
     workers,
     satisfaction: tournament.state.satisfaction,
     gmStanding,
@@ -632,6 +674,7 @@ export function resolveDay(state) {
     done,
     skipped,
     dropped,
+    fuelStop,
     interruptions: extra,
     breakdowns,
     wages: wageBill(state.workers),

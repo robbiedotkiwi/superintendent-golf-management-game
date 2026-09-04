@@ -55,13 +55,22 @@ export default function DaySummary({ summary, onContinue }) {
               <li key={`${item.taskId}-dropped`}>
                 {item.reason === 'unassigned'
                   ? `${item.taskId} needed reassignment`
-                  : `${item.taskId} ran out of time after interruptions (${item.minutes} min)`}
+                  : item.reason === 'fuel'
+                    ? `${item.taskId} stopped — tank empty${item.holes?.length ? ` · holes ${item.holes.join(', ')} untouched` : ''}`
+                    : `${item.taskId} ran out of time after interruptions (${item.minutes} min)`}
               </li>
             ))}
           </ul>
         ) : (
           <p>Nothing dropped.</p>
         )}
+        {summary.fuelStop?.remainingHoles?.length ? (
+          <p className="mt-2">
+            {summary.fuelStop.name} ran the tank dry. Finished holes{' '}
+            {summary.fuelStop.completedHoles.join(', ') || 'none'}. Left untouched:{' '}
+            {summary.fuelStop.remainingHoles.join(', ')}.
+          </p>
+        ) : null}
         {summary.wages ? <p className="mt-3">Wages {formatMoney(summary.wages)}</p> : null}
         {summary.gmWarning ? <p className="mt-2">GM warning: neighbours are complaining about the early start.</p> : null}
         {summary.neighbourFine ? <p className="mt-2">Fine {formatMoney(summary.neighbourFine)} for the early starts.</p> : null}

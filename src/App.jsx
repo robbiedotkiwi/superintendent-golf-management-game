@@ -196,6 +196,7 @@ export default function App() {
           onCloseShed={() => dispatch({ type: 'SET_SECTION', section: SECTION_MAP })}
           onBuy={(machineId) => dispatch({ type: 'BUY_MACHINE', machineId })}
           onBuyFoley={() => dispatch({ type: 'BUY_FOLEY' })}
+          onBuyFuel={(litres) => dispatch({ type: 'BUY_FUEL', litres })}
           onSendGrind={(machineId) => dispatch({ type: 'SEND_GRIND', machineId })}
           onGrindInHouse={(machineId) => dispatch({ type: 'GRIND_IN_HOUSE', machineId })}
           onRepair={(machineId) => dispatch({ type: 'REPAIR_MACHINE', machineId })}
@@ -313,6 +314,7 @@ function GameScreen({
   onCloseShed,
   onBuy,
   onBuyFoley,
+  onBuyFuel,
   onSendGrind,
   onGrindInHouse,
   onRepair,
@@ -451,6 +453,7 @@ function GameScreen({
             onBack={onCloseShed}
             onBuy={onBuy}
             onBuyFoley={onBuyFoley}
+            onBuyFuel={onBuyFuel}
             onSendGrind={onSendGrind}
             onGrindInHouse={onGrindInHouse}
             onRepair={onRepair}

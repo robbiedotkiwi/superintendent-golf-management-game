@@ -290,4 +290,10 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Firing still proceeds if cash is short (balance can go negative). Remaining workers, including the player and volunteer, take `FIRING_MORALE_HIT`.
 - Jobs keep their plan rows with `needsReassignment` and a null worker. Start day skips those jobs instead of falling back to the player.
 
+### Phase D
+
+- Burn uses the resolved job's minutes, split as setup plus per-hole variable. A dry tank completes only whole holes it could pay for; leftover litres go to zero. Later jobs that day are dropped.
+- Fuel spend in the forecast is `burned litres × FUEL_PRICE_PER_L` written to `fuelSpendLog`. Old saves get `FUEL_START` in a 400 L tank.
+- Per-litre prices show two decimals in the Shed; the charged amount is still whole dollars via `fuelCost` / `formatMoney`.
+
 
