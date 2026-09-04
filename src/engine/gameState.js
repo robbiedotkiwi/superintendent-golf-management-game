@@ -137,6 +137,7 @@ export function createInitialState() {
     season: calendar.season,
     year: calendar.year,
     cash: STARTING_OPENING_CASH,
+    fuelSpendLog: [],
     holes: createInitialHoles(HOLE_COUNT),
     surfaceDefaults: createSurfaceDefaults(),
     weather: STARTING_WEATHER,

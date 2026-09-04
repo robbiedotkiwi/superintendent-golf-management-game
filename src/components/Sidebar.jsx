@@ -14,6 +14,7 @@ import {
 import { WEATHER_LABELS } from '../data/events.js';
 import { qualityColor } from '../engine/color.js';
 import { sectionBadge } from '../engine/badges.js';
+import { formatMoney } from '../engine/format.js';
 import { fitCourse } from '../engine/view.js';
 import TimeBar from './TimeBar.jsx';
 
@@ -87,6 +88,7 @@ export default function Sidebar({
           <div className="font-condensed text-6xl font-bold leading-none" style={{ color: qualityColor(condition) }}>
             {condition}
           </div>
+          <div className="mt-1 font-condensed text-xl font-bold leading-none">{formatMoney(state.cash)}</div>
         </div>
 
         <nav aria-label="Sections" className="mt-3 flex flex-col" style={{ gap: SIDEBAR_NAV_GAP }}>

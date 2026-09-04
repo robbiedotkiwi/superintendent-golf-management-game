@@ -153,7 +153,7 @@ assert.match(sidebar, /Turn sound off/);
 assert.match(sidebar, /overflow-hidden/);
 assert.doesNotMatch(sidebar, /overflow-y-auto/);
 assert.doesNotMatch(sidebar, /ForecastStrip/);
-assert.doesNotMatch(sidebar, /formatMoney/);
+assert.match(sidebar, /formatMoney\(state\.cash\)/);
 assert.doesNotMatch(sidebar, /SURFACE_KEYS/);
 assert.doesNotMatch(sidebar, /Satisfaction/);
 assert.doesNotMatch(sidebar, /Budgets/);
@@ -182,7 +182,7 @@ assert.match(app, /SURFACE_KEYS\.includes\(selected\)/);
 
 console.log('GATE B1 PASS sidebar is day, weather, condition, four buttons, pinned footer');
 console.log('GATE B2 PASS Turf section has six named tabs');
-console.log('GATE B3 PASS sidebar has no turf, pond, money or surface content');
+console.log('GATE B3 PASS sidebar has no turf, pond, budgets or surface content');
 console.log('GATE B4 PASS turf/office/crew/shed badges and dots fire on constructed state');
 console.log('GATE B5 PASS map quick-job popover mounts without opening Turf');
 console.log('GATE B6 PASS day-40 continue-shaped save still migrates Turf tabs');

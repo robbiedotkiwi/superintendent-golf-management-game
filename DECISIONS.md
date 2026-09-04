@@ -277,4 +277,11 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Empty selection still means the whole course (Round 7). All / Front nine / Clear and numbered chips write the same `SET_SELECTED_HOLES` / `TOGGLE_HOLE` actions from both places.
 - Map fairway clicks stay as a shortcut. Turf planning (`PlanJob` / `PlanThisCut`) uses `jobHolesFromSelection`.
 
+### Phase B
+
+- Forecast remaining days include today (`daysUntilSeasonEnd`). Wages, dosing and the fuel extrapolation use that count. Leases, grant and loan land on season close.
+- Used-market deliveries are prepaid at purchase, so they are listed with $0 still due. Fuel spend is `FORECAST_FUEL_LOOKBACK_DAYS` of `fuelSpendLog` (missing days count as zero); empty until Phase D.
+- Insolvency day is the first day running cash goes negative after that day's charges (and after the full season-close sequence on the last day). Intra-close dips that the grant covers are not flagged if the net close stays non-negative.
+- Sidebar cash sits under condition. Round 5's "no money in the sidebar" check now expects `formatMoney(state.cash)`.
+
 

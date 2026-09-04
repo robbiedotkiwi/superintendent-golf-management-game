@@ -13,7 +13,7 @@ assert.equal(formatMoney(40000), '$40,000');
 
 const sidebar = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
 assert.doesNotMatch(sidebar, /Budgets/);
-assert.doesNotMatch(sidebar, /formatMoney\(state\.cash\)/);
+assert.match(sidebar, /formatMoney\(state\.cash\)/);
 assert.match(sidebar, /qualityColor\(condition\)/);
 assert.doesNotMatch(sidebar, /label="Holes"/);
 

@@ -209,6 +209,9 @@ export function withDefaults(state) {
     nextPresetId: Number.isInteger(state.nextPresetId) && state.nextPresetId > 0 ? state.nextPresetId : 1,
     lastMainsCost: Number.isFinite(Number(state.lastMainsCost)) ? Number(state.lastMainsCost) : 0,
     lastDeliveryDay: Number.isInteger(state.lastDeliveryDay) ? state.lastDeliveryDay : null,
+    fuelSpendLog: (Array.isArray(state.fuelSpendLog) ? state.fuelSpendLog : [])
+      .filter((entry) => Number.isInteger(entry?.day) && Number.isFinite(Number(entry?.spend)))
+      .map((entry) => ({ day: entry.day, spend: Number(entry.spend) })),
     volunteerWeekday: migrateVolunteerWeekday(state.volunteerWeekday),
     section: normalizeSection(state.section),
     tabs: normalizeTabs(state.tabs),

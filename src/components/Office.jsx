@@ -23,6 +23,7 @@ import { invitationById } from '../engine/events.js';
 import { canPlanTask } from '../engine/gameState.js';
 import { daysUntilNextTournament, nextTournament } from '../engine/tournament.js';
 import { holeCount } from '../engine/holes.js';
+import CashForecast from './CashForecast.jsx';
 import SeasonStart from './SeasonStart.jsx';
 import SectionTabs from './SectionTabs.jsx';
 import {
@@ -94,6 +95,7 @@ export default function Office({
 
       {tab === OFFICE_TAB_MONEY ? (
         <>
+          <CashForecast state={state} />
           <h2 className="mt-8 font-condensed text-3xl">Raise cash</h2>
           <div className="mt-3 flex flex-wrap gap-3">
             <button
