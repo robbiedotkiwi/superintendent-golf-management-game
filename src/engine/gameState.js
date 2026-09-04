@@ -40,6 +40,7 @@ import { buyAutoPicker, startProject } from './projects.js';
 import { bumpCapitalSpent, emptyYearRecord } from './history.js';
 import { spendCash } from './cash.js';
 import { buyFuel } from './fuel.js';
+import { dismissGm, emptySectionUnlocks, GM_MSG_DAY1, isSectionLocked } from './gm.js';
 import { resolveDay } from './simulation.js';
 import {
   CUT_TASK_BY_SURFACE,
@@ -259,7 +260,11 @@ export function createInitialState() {
     hasNewTees: false,
     saveVersion: SAVE_VERSION,
     soundEnabled: SOUND_DEFAULT_ON,
-    tutorialDone: false,
+    tutorialDone: true,
+    gmQueue: [GM_MSG_DAY1],
+    gmSeen: { [GM_MSG_DAY1]: true },
+    sectionUnlocks: emptySectionUnlocks(),
+    lockHint: null,
     pendingYearReview: false,
     lastYearReview: null,
     yearRecord: emptyYearRecord(calendar.year, [PLAYER_ID]),
@@ -831,6 +836,10 @@ export function reducer(state, action) {
       return { ...state, soundEnabled: !state.soundEnabled };
     case 'DISMISS_TUTORIAL':
       return { ...state, tutorialDone: true };
+    case 'DISMISS_GM':
+      return dismissGm(state);
+    case 'DISMISS_LOCK_HINT':
+      return { ...state, lockHint: null };
     case 'DISMISS_YEAR_REVIEW':
       return { ...state, pendingYearReview: false };
     case 'LEASE_MACHINE':
@@ -918,8 +927,13 @@ export function reducer(state, action) {
         ...state,
         customPresets: (state.customPresets ?? []).filter((item) => item.id !== action.id),
       };
-    case 'SET_SECTION':
-      return { ...state, section: normalizeSection(action.section) };
+    case 'SET_SECTION': {
+      const section = normalizeSection(action.section);
+      if (isSectionLocked(state, section)) {
+        return { ...state, lockHint: section };
+      }
+      return { ...state, section, lockHint: null };
+    }
     case 'SET_TAB': {
       const section = normalizeSection(action.section);
       const allowed = tabListForSection(section);

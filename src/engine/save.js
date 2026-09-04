@@ -39,6 +39,7 @@ import { migrateMoisture } from './moisture.js';
 import { createRng } from './rng.js';
 import { buildForecast } from './weather.js';
 import { normalizeSection, normalizeTabs } from './section.js';
+import { allGmSeen, allSectionUnlocks } from './gm.js';
 import { migrateVolunteerWeekday } from './staff.js';
 
 function migrateHoleState(state) {
@@ -201,7 +202,16 @@ export function withDefaults(state) {
     hasNewTees: Boolean(state.hasNewTees),
     saveVersion: SAVE_VERSION,
     soundEnabled: state.soundEnabled ?? SOUND_DEFAULT_ON,
-    tutorialDone: Boolean(state.tutorialDone),
+    tutorialDone: state.sectionUnlocks == null ? true : Boolean(state.tutorialDone),
+    gmQueue: state.sectionUnlocks == null ? [] : (Array.isArray(state.gmQueue) ? state.gmQueue : []),
+    gmSeen: state.sectionUnlocks == null ? allGmSeen() : (state.gmSeen && typeof state.gmSeen === 'object' ? state.gmSeen : {}),
+    sectionUnlocks: state.sectionUnlocks == null
+      ? allSectionUnlocks()
+      : {
+          crew: Boolean(state.sectionUnlocks.crew),
+          office: Boolean(state.sectionUnlocks.office),
+        },
+    lockHint: null,
     pendingYearReview: Boolean(state.pendingYearReview),
     lastYearReview: state.lastYearReview ?? null,
     yearRecord: state.yearRecord ?? emptyYearRecord(state.year ?? 1, []),

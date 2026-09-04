@@ -296,4 +296,11 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Fuel spend in the forecast is `burned litres × FUEL_PRICE_PER_L` written to `fuelSpendLog`. Old saves get `FUEL_START` in a 400 L tank.
 - Per-litre prices show two decimals in the Shed; the charged amount is still whole dollars via `fuelCost` / `formatMoney`.
 
+### Phase E
+
+- New games set `tutorialDone` so the old instruction card never shows. The GM queue is the walk-in. Day 1 is marked seen when queued, same as later messages. Crew unlocks on `GM_UNLOCK_CREW_DAY` (3); Office on `GM_UNLOCK_OFFICE_DAY` (7).
+- A save without `sectionUnlocks` is treated as a finished tutorial: both sections open, every GM flag seen, empty queue. Save version stays 3.
+- Satisfaction trigger is the first time live satisfaction is 10 points from `SATISFACTION_START`. Cash trigger needs a non-zero weekly wage bill.
+- Locked clicks set `lockHint` and do not change section. Hint copy names the unlock in outline, not the day.
+
 

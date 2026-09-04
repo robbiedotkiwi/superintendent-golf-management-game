@@ -10,6 +10,7 @@ import StartDayDialog from './components/StartDayDialog.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import PlanList from './components/PlanList.jsx';
 import Tutorial from './components/Tutorial.jsx';
+import GmTalk from './components/GmTalk.jsx';
 import Turf from './components/Turf.jsx';
 import YearReview from './components/YearReview.jsx';
 import Shed from './components/Shed.jsx';
@@ -56,6 +57,7 @@ import {
 } from './engine/playout.js';
 import { playBirds, playMower, prefersReducedMotion } from './engine/sound.js';
 import { clearSave, hasSave, loadGame, saveGame } from './engine/save.js';
+import { currentGmMessage } from './engine/gm.js';
 
 function paletteStyle() {
   return {
@@ -248,6 +250,8 @@ export default function App() {
           onBuyPicker={() => dispatch({ type: 'BUY_AUTO_PICKER' })}
           onToggleSound={() => dispatch({ type: 'TOGGLE_SOUND' })}
           onDismissTutorial={() => dispatch({ type: 'DISMISS_TUTORIAL' })}
+          onDismissGm={() => dispatch({ type: 'DISMISS_GM' })}
+          onDismissLockHint={() => dispatch({ type: 'DISMISS_LOCK_HINT' })}
           onDismissYearReview={() => dispatch({ type: 'DISMISS_YEAR_REVIEW' })}
           onNewGame={handleNewGame}
         />
@@ -361,6 +365,8 @@ function GameScreen({
   onBuyPicker,
   onToggleSound,
   onDismissTutorial,
+  onDismissGm,
+  onDismissLockHint,
   onDismissYearReview,
   onNewGame,
 }) {
@@ -419,13 +425,16 @@ function GameScreen({
       {!state.dismissed && state.pendingYearReview && !summary && !watching ? (
         <YearReview review={state.lastYearReview} onContinue={onDismissYearReview} />
       ) : null}
-      {!state.dismissed &&
-      !state.tutorialDone &&
-      !state.pendingYearReview &&
-      !summary &&
-      !watching ? (
-        <Tutorial onDismiss={onDismissTutorial} />
-      ) : null}
+      {(() => {
+        const gm = currentGmMessage(state);
+        if (!state.dismissed && gm && !state.pendingYearReview && !summary && !watching) {
+          return <GmTalk message={gm} onDismiss={onDismissGm} />;
+        }
+        if (!state.dismissed && !state.tutorialDone && !state.pendingYearReview && !summary && !watching) {
+          return <Tutorial onDismiss={onDismissTutorial} />;
+        }
+        return null;
+      })()}
       <Sidebar
         state={state}
         condition={condition}
@@ -443,6 +452,7 @@ function GameScreen({
         onSetView={onSetView}
         onToggleMoistureOverlay={onToggleMoistureOverlay}
         onToggleSound={onToggleSound}
+        onDismissLockHint={onDismissLockHint}
       />
       <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
         {view === SECTION_SHED ? (

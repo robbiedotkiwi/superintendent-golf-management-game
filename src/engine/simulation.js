@@ -36,6 +36,7 @@ import { PLAYER_ID } from '../data/constants.js';
 import { generateCandidates } from '../data/staff.js';
 import { getTask, taskAppliesQuality } from '../data/tasks.js';
 import { workerById, workerQualityMultiplier, qualityRandomFactor } from './assignment.js';
+import { tickGm } from './gm.js';
 import { consumeJobFuel, jobBurnsFuel, replaceBurnSpend } from './fuel.js';
 import { applyMowingAftermath, hocStressApplies, mowingGain, rotatePatternAngle } from './mowing.js';
 import {
@@ -667,6 +668,8 @@ export function resolveDay(state) {
     };
     next = pushMail(next, grantForecastMail({ satisfaction: next.satisfaction, grant: projected }));
   }
+
+  next = tickGm(next, { breakdowns });
 
   const summary = {
     day: state.day,

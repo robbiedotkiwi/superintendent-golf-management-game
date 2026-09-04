@@ -15,20 +15,31 @@ import { WEATHER_LABELS } from '../data/events.js';
 import { qualityColor } from '../engine/color.js';
 import { sectionBadge } from '../engine/badges.js';
 import { formatMoney } from '../engine/format.js';
+import { GM_LOCK_HINT, isSectionLocked } from '../engine/gm.js';
 import { fitCourse } from '../engine/view.js';
 import TimeBar from './TimeBar.jsx';
 
-function NavButton({ label, description, active, badge, dot, onClick }) {
+function LockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="absolute left-1 top-1 h-4 w-4 text-[var(--sand)]" aria-hidden="true" fill="currentColor">
+      <path d="M17 8h-1V6a4 4 0 1 0-8 0v2H7a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2zm-7-2a2 2 0 1 1 4 0v2h-4V6zm7 12H7v-8h10v8z" />
+    </svg>
+  );
+}
+
+function NavButton({ label, description, active, badge, dot, locked, onClick }) {
   return (
     <button
       type="button"
       onClick={onClick}
       aria-pressed={active}
+      aria-disabled={locked}
       className={`relative w-full border border-[var(--sand)] px-3 py-2 text-left ${
-        active ? 'bg-[var(--machine-orange)]' : ''
+        locked ? 'opacity-50' : active ? 'bg-[var(--machine-orange)]' : ''
       }`}
     >
-      <div className="font-condensed text-xl font-bold leading-tight">{label}</div>
+      {locked ? <LockIcon /> : null}
+      <div className={`font-condensed text-xl font-bold leading-tight ${locked ? 'pl-5' : ''}`}>{label}</div>
       <div className="text-xs leading-tight text-[var(--sand)]">{description}</div>
       {badge ? (
         <span className="absolute right-1 top-1 min-w-5 rounded-full bg-[var(--machine-orange)] px-1 text-center text-xs font-bold leading-5 text-[var(--paint)]">
@@ -59,6 +70,7 @@ export default function Sidebar({
   onSetView,
   onToggleMoistureOverlay,
   onToggleSound,
+  onDismissLockHint,
 }) {
   const turf = sectionBadge(state, 'turf');
   const office = sectionBadge(state, 'office');
@@ -68,7 +80,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className="flex h-full shrink-0 flex-col overflow-hidden bg-[var(--soil)] text-[var(--paint)]"
+      className="relative flex h-full shrink-0 flex-col overflow-hidden bg-[var(--soil)] text-[var(--paint)]"
       style={{ width: SIDEBAR_WIDTH, maxHeight: '100%' }}
     >
       <div className="flex-1 px-3 py-3">
@@ -106,6 +118,7 @@ export default function Sidebar({
             active={section === SECTION_OFFICE}
             badge={office.count}
             dot={office.dot}
+            locked={isSectionLocked(state, SECTION_OFFICE)}
             onClick={onOpenOffice}
           />
           <NavButton
@@ -114,6 +127,7 @@ export default function Sidebar({
             active={section === SECTION_CREW}
             badge={crew.count}
             dot={crew.dot}
+            locked={isSectionLocked(state, SECTION_CREW)}
             onClick={onOpenCrew}
           />
           <NavButton
@@ -125,6 +139,14 @@ export default function Sidebar({
             onClick={onOpenShed}
           />
         </nav>
+        {state.lockHint && GM_LOCK_HINT[state.lockHint] ? (
+          <div className="absolute left-3 right-3 top-1/2 z-30 border-2 border-[var(--sand)] bg-[var(--soil)] p-3 text-sm">
+            <p>{GM_LOCK_HINT[state.lockHint]}</p>
+            <button type="button" className="mt-2 border border-[var(--sand)] px-3 py-1" onClick={onDismissLockHint}>
+              OK
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <div className="shrink-0 border-t border-[var(--sand)] p-3">
