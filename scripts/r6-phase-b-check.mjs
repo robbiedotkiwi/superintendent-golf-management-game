@@ -123,7 +123,7 @@ const autoGreens = pickMachine(start, getTask('cutGreens'));
 assert.ok(autoGreens);
 assert.equal(machineAssignment(start, 'greens').machine?.id, autoGreens.id);
 
-let both = { ...createInitialState(), capitalBudget: 250000 };
+let both = { ...createInitialState(), cash: 250000 };
 both = reducer(both, { type: 'BUY_MACHINE', machineId: 'fairwayUnit' });
 both = reducer(both, { type: 'BUY_MACHINE', machineId: 'ventrac' });
 assert.ok(both.ownedMachines.includes('fairwayUnit'));

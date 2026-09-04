@@ -252,4 +252,11 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - `NZ_PRICE_MULT` is 2.5. Machine, wage, training, materials, lease rate and repair (grind-away) use `nzPrice`. Lease rate becomes 0.25 so the dollar lease scales with prices, not 6.25×. Starter machines stay $0. Fines were scaled as a cost. Mains water stayed at $2.5/m³ — it is not a listed materials cost.
 - Historical packed-day checks now hire a second worker, plan a one-hole rough, or buy with a larger capital pot, because nine greens is 384 min and NZ prices no longer fit the old $40,000 / one-worker packing.
 
+### Phase E
+
+- Opening cash is `STARTING_CASH + STARTING_MAINTENANCE_BUDGET + STARTING_CAPITAL_BUDGET` so day-1 purchasing power matches the three old pots. `STARTING_CASH` stays 8000 (the reserve).
+- One grant every season from `SEASON_GRANT_BASE`, not a maintenance grant plus a yearly capital grant. Old `maintenanceGrant` / `capitalGrant` are gone.
+- Forecast snapshots satisfaction seven days before season end (inclusive). Bonus/penalty is ±5 satisfaction against that snapshot, applied on top of the live grant formula at close. Leases still charge before the grant; loan repayment after the grant, before solvency.
+- Old saves with `maintenanceBudget` / `capitalBudget` add those remaining pots into `cash` once. A save with no cash and no pots is refused. Save version is 3.
+
 

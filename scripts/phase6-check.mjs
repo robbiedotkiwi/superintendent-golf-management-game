@@ -121,11 +121,11 @@ sprayed = {
   },
 };
 sprayed = reducer(sprayed, { type: 'PLAN_TASK', taskId: 'sprayGreens' });
-const maintBeforeSpray = sprayed.maintenanceBudget;
+const cashBeforeSpray = sprayed.cash;
 const afterSpray = endKeep(sprayed);
 assert.equal(afterSpray.disease.greens.outbreak, false);
 assert.equal(afterSpray.disease.greens.pressure, STARTING_DISEASE_PRESSURE);
-assert.equal(afterSpray.maintenanceBudget, maintBeforeSpray - SPRAY_MATERIALS_COST);
+assert.equal(afterSpray.cash, cashBeforeSpray - SPRAY_MATERIALS_COST);
 assert.equal(afterSpray.log.at(-1).materialsSpent, SPRAY_MATERIALS_COST);
 
 let suppressed = {
@@ -144,10 +144,10 @@ assert.ok(suppressed.disease.greens.pressure > STARTING_DISEASE_PRESSURE);
 let fed = certify(createInitialState());
 const greensCeiling = surfaceCeiling(fed, 'greens');
 fed = reducer(fed, { type: 'PLAN_TASK', taskId: 'fertiliseGreens' });
-const maintBeforeFert = fed.maintenanceBudget;
+const cashBeforeFert = fed.cash;
 fed = endKeep(fed);
 assert.equal(surfaceCeiling(fed, 'greens'), greensCeiling + FERTILISER_CEILING_BONUS);
-assert.equal(fed.maintenanceBudget, maintBeforeFert - FERTILISER_MATERIALS_COST);
+assert.equal(fed.cash, cashBeforeFert - FERTILISER_MATERIALS_COST);
 while (fed.day < fed.fertiliserUntil.greens) {
   fed = endKeep(fed);
 }

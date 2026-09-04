@@ -10,7 +10,6 @@ import {
   EARLY_START_MINUTES,
   MORALE_SLOW_BELOW,
   PLAYER_ID,
-  STARTING_CASH,
   STARTING_WEATHER,
   TRAINING_COST,
   TRAINING_DAYS,
@@ -51,10 +50,9 @@ const candidate = start.candidates.find((item) => item.speedSkill < 5 && !item.i
 let hired = reducer(start, { type: 'HIRE_WORKER', candidateId: candidate.id });
 assert.ok(hired.workers.length > start.workers.length);
 assert.equal(combinedMinutesRemaining(hired), DAY_LENGTH_MINUTES + DAY_LENGTH_MINUTES);
-const hiredMaint = hired.maintenanceBudget;
+const hiredCash = hired.cash;
 const afterWages = end(hired);
-assert.equal(afterWages.maintenanceBudget, hiredMaint - candidate.wage);
-assert.equal(afterWages.cash, STARTING_CASH);
+assert.equal(afterWages.cash, hiredCash - candidate.wage);
 
 const fast = { ...createInitialState() };
 fast.workers = [
@@ -95,7 +93,7 @@ assert.equal(assignWorker(day, getTask('cutGreens'))?.id, PLAYER_ID);
 assert.ok(assignWorker(day, getTask('cutFairways')));
 
 let trained = reducer(hired, { type: 'TRAIN_WORKER', workerId: hired.workers.at(-1).id, axis: 'speedSkill' });
-assert.equal(trained.cash, STARTING_CASH - TRAINING_COST);
+assert.equal(trained.cash, hired.cash - TRAINING_COST);
 const trainee = trained.workers.at(-1);
 const skillBefore = candidate.speedSkill;
 assert.equal(trainee.minutesToday, 0);
@@ -139,11 +137,10 @@ for (let i = 0; i < 7; i += 1) {
 const tired = moraleState.workers.find((worker) => worker.id === PLAYER_ID);
 assert.ok(tired.morale < MORALE_SLOW_BELOW);
 
-let early = { ...createInitialState(), earlyStart: true };
-const earlyMaint = early.maintenanceBudget;
+let early = { ...createInitialState(), earlyStart: true, irrigation: { greens: 'off', tees: 'off', fairways: 'off' } };
+const earlyCash = early.cash;
 for (let i = 0; i < EARLY_START_FINE_COUNT; i += 1) early = reducer(early, { type: 'END_DAY' });
-assert.equal(early.maintenanceBudget, earlyMaint - EARLY_START_FINE);
-assert.equal(early.cash, STARTING_CASH);
+assert.equal(early.cash, earlyCash - EARLY_START_FINE);
 assert.equal(early.earlyStart, true);
 
 console.log('phase4 checks passed');

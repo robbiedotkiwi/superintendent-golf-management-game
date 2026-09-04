@@ -18,7 +18,7 @@ import {
   HOC_WATER_MULT,
 } from '../data/constants.js';
 import { hocFactor } from './mowing.js';
-import { formatMoney } from './format.js';
+import { needsCash } from './cash.js';
 
 export const IRRIGATED_SURFACES = ['greens', 'tees', 'fairways'];
 
@@ -72,12 +72,8 @@ export function resolveIrrigation(state) {
 
 export function canBuyAerator(state) {
   if (state.hasAerator) return { ok: false, reason: 'Already in the pond.' };
-  if (state.capitalBudget < AERATOR_COST) {
-    return {
-      ok: false,
-      reason: `Needs ${formatMoney(AERATOR_COST)} capital, only ${formatMoney(state.capitalBudget)} posted.`,
-    };
-  }
+  const aeratorCash = needsCash(state, AERATOR_COST);
+  if (!aeratorCash.ok) return aeratorCash;
   return { ok: true };
 }
 

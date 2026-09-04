@@ -45,14 +45,14 @@ assert.match(office, /dueDay/);
 
 const funded = {
   ...createInitialState(),
-  capitalBudget: EXPAND_18_COST + DRIVING_RANGE_COST + AUTO_PICKER_COST,
+  cash: EXPAND_18_COST + DRIVING_RANGE_COST + AUTO_PICKER_COST,
   satisfaction: EXPAND_18_SATISFACTION_MIN,
 };
 assert.equal(canStartProject(funded, PROJECT_EXPAND_18).ok, true);
 assert.equal(canStartProject({ ...funded, satisfaction: EXPAND_18_SATISFACTION_MIN - 1 }, PROJECT_EXPAND_18).hidden, true);
 
 const summer = reducer({ ...funded, season: 'summer' }, { type: 'START_PROJECT', projectId: PROJECT_EXPAND_18 });
-assert.equal(summer.capitalBudget, funded.capitalBudget - EXPAND_18_COST);
+assert.equal(summer.cash, funded.cash - EXPAND_18_COST);
 assert.equal(summer.projects[0].dueDay, funded.day + EXPAND_18_DAYS);
 assert.equal(holeCount(summer), HOLE_COUNT);
 
@@ -81,7 +81,7 @@ assert.ok(eighteenMin > nineMin);
 assert.ok(Math.abs(eighteenMin - (setup + (nineMin - setup) * TASK_TIME_MULT_18)) <= 1);
 
 let range = reducer(
-  { ...createInitialState(), capitalBudget: DRIVING_RANGE_COST + AUTO_PICKER_COST },
+  { ...createInitialState(), cash: DRIVING_RANGE_COST + AUTO_PICKER_COST },
   { type: 'START_PROJECT', projectId: PROJECT_DRIVING_RANGE },
 );
 range = {
@@ -98,7 +98,7 @@ assert.equal(range.plannedTasks[0].minutes, BALL_PICK_MINUTES);
 range = reducer(range, { type: 'REMOVE_TASK', taskId: 'pickBalls' });
 range = reducer(range, { type: 'BUY_AUTO_PICKER' });
 assert.equal(range.hasAutoPicker, true);
-assert.equal(range.capitalBudget, 0);
+assert.equal(range.cash, 0);
 const picked = reducer(range, { type: 'PLAN_TASK', taskId: 'pickBalls' });
 assert.equal(picked.plannedTasks[0].minutes, AUTO_PICK_MINUTES);
 

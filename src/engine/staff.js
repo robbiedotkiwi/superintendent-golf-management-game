@@ -158,7 +158,7 @@ export function applyEarlyStartComplaints(state) {
     state: {
       ...state,
       neighbourComplaintsThisSeason: complaints,
-      maintenanceBudget: state.maintenanceBudget - fine,
+      cash: (state.cash ?? 0) - fine,
     },
     warning,
     fine,

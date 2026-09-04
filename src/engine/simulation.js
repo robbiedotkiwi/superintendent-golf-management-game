@@ -25,6 +25,7 @@ import {
   SURFACE_KEYS,
   SATISFACTION_MAX,
   SATISFACTION_MIN,
+  GRANT_FORECAST_LEAD_DAYS,
   WET_GAIN_MULT,
   WEATHER_HEAVY_RAIN,
 } from '../data/constants.js';
@@ -43,7 +44,7 @@ import {
   presentHoles,
   surfaceSettings,
 } from './holes.js';
-import { calendarFromDay } from './calendar.js';
+import { calendarFromDay, daysUntilSeasonEnd } from './calendar.js';
 import {
   applyWear,
   applyConditionLoss,
@@ -75,8 +76,8 @@ import {
   writeMoistureToHoles,
 } from './moisture.js';
 import { rollMorningWithRng } from './weather.js';
-import { closeSeason } from './budget.js';
-import { golferMail, gmMissedTournamentMail, gmSeasonMail, gmTournamentRequestMail, meetingDue, pushMail, tickDaysSinceWorked } from './mail.js';
+import { closeSeason, seasonGrant } from './budget.js';
+import { golferMail, gmMissedTournamentMail, gmSeasonMail, gmTournamentRequestMail, grantForecastMail, meetingDue, pushMail, tickDaysSinceWorked } from './mail.js';
 import { neglectMail, neglectSatisfactionDrain } from './neglect.js';
 import {
   applyScheduledTournament,
@@ -159,7 +160,7 @@ export function resolveDay(state) {
   }
   let sprayedUntil = { ...(state.sprayedUntil ?? {}) };
   let fertiliserUntil = { ...(state.fertiliserUntil ?? {}) };
-  let maintenanceBudget = state.maintenanceBudget ?? 0;
+  let cash = state.cash ?? 0;
   let materialsSpent = 0;
   let tournamentPrepScore = state.tournamentPrepScore ?? 0;
 
@@ -192,7 +193,7 @@ export function resolveDay(state) {
       fertiliserUntil = applyFertiliser({ ...state, fertiliserUntil }, task.surface).fertiliserUntil;
     }
     if (task.materialsCost) {
-      maintenanceBudget -= task.materialsCost;
+      cash -= task.materialsCost;
       materialsSpent += task.materialsCost;
     }
     const jobHoles = jobHolesFor(state, task, plannedTask.holes);
@@ -427,9 +428,9 @@ export function resolveDay(state) {
     );
   }
   workers = applyMorale(workers);
-  maintenanceBudget = maintenanceBudget - wageBill(state.workers) - irrigation.mainsCost;
-  const complaint = applyEarlyStartComplaints({ ...state, maintenanceBudget, workers, holes, surfaceDefaults });
-  maintenanceBudget = complaint.state.maintenanceBudget;
+  cash = cash - wageBill(state.workers) - irrigation.mainsCost;
+  const complaint = applyEarlyStartComplaints({ ...state, cash, workers, holes, surfaceDefaults });
+  cash = complaint.state.cash;
 
   const daysSinceWorked = tickDaysSinceWorked(state.daysSinceWorked, worked);
   let gmStanding = state.gmStanding ?? 0;
@@ -439,10 +440,9 @@ export function resolveDay(state) {
 
   let mailed = {
     ...complaint.state,
-    workers,
+    cash,
     holes,
     surfaceDefaults,
-    maintenanceBudget,
     daysSinceWorked,
     gmStanding,
     inbox: state.inbox ?? [],
@@ -465,7 +465,7 @@ export function resolveDay(state) {
   const tournament = applyScheduledTournament(
     {
       ...mailed,
-      cash: state.cash,
+      cash,
       satisfaction,
       tournamentPrepScore,
       tournaments: state.tournaments ?? [],
@@ -489,7 +489,6 @@ export function resolveDay(state) {
     moistureReadDay,
     pond: irrigation.pond,
     lastMainsCost: irrigation.mainsCost,
-    maintenanceBudget,
     disease,
     sprayedUntil,
     fertiliserUntil,
@@ -536,15 +535,13 @@ export function resolveDay(state) {
         ? []
         : (next.tournaments ?? []).filter((item) => item.season === calendar.season || item.day >= next.day),
     };
-    seasonClose = closeSeason(next, { yearChanged });
+    seasonClose = closeSeason(next);
     next = seasonClose.state;
     for (const mail of seasonClose.mail.concat(
       gmSeasonMail({
-        leftover: seasonClose.leftover,
+        grant: seasonClose.grant,
+        adjustment: seasonClose.adjustment,
         insolvent: seasonClose.insolvent,
-        yearChanged,
-        maintenance: next.maintenanceBudget,
-        capital: next.capitalBudget,
       }),
     )) {
       next = pushMail(next, mail);
@@ -593,6 +590,23 @@ export function resolveDay(state) {
     next = pushMail(next, gmTournamentRequestMail(setupSeason, deadline));
   }
 
+  if (
+    daysUntilSeasonEnd(next.day) === GRANT_FORECAST_LEAD_DAYS &&
+    !(next.grantForecast?.season === next.season && next.grantForecast?.year === next.year)
+  ) {
+    const projected = seasonGrant(next.satisfaction, next.gmStanding);
+    next = {
+      ...next,
+      grantForecast: {
+        season: next.season,
+        year: next.year,
+        satisfaction: next.satisfaction,
+        grant: projected,
+      },
+    };
+    next = pushMail(next, grantForecastMail({ satisfaction: next.satisfaction, grant: projected }));
+  }
+
   const summary = {
     day: state.day,
     weather: state.weather,
@@ -608,14 +622,13 @@ export function resolveDay(state) {
     mainsM3: irrigation.shortfall,
     pond: irrigation.pond,
     materialsSpent,
-    maintenanceBudget,
     outbreaks: diseaseTick.outbreaks,
     diseaseOngoing: diseaseTick.ongoing,
     disease,
     tournament: tournament.result,
     projectsCompleted: built.completed,
     seasonClose: seasonClose
-      ? { leftover: seasonClose.leftover, insolvent: seasonClose.insolvent, dismissed: next.dismissed }
+      ? { grant: seasonClose.grant, adjustment: seasonClose.adjustment, insolvent: seasonClose.insolvent, dismissed: next.dismissed }
       : null,
     before,
     after: cloneHoles(holes),

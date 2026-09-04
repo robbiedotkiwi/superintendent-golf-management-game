@@ -56,7 +56,7 @@ assert.ok(listing.condition <= USED_CONDITION_MAX);
 assert.equal(canBuyUsed(start, listing.id).ok, true);
 
 const bought = reducer(start, { type: 'BUY_USED', listingId: listing.id });
-assert.equal(bought.capitalBudget, start.capitalBudget - listing.price);
+assert.equal(bought.cash, start.cash - listing.price);
 assert.equal(bought.salesmanRelationship, SALESMAN_RELATIONSHIP_START + SALESMAN_BUY_RELATIONSHIP);
 assert.equal(bought.usedListings.length, USED_LISTING_COUNT - 1);
 assert.equal(bought.pendingDeliveries.length, 1);
@@ -66,7 +66,7 @@ assert.equal(bought.ownedMachines.includes(listing.machineId), false);
 assert.equal(canBuyUsed(bought, listing.id).ok, false);
 
 const engineBuy = buyUsed(start, listing.id);
-assert.equal(engineBuy.capitalBudget, bought.capitalBudget);
+assert.equal(engineBuy.cash, bought.cash);
 assert.equal(engineBuy.pendingDeliveries[0].machineId, listing.machineId);
 
 let delivered = bought;
@@ -89,7 +89,7 @@ assert.equal(sold.salesmanRelationship, delivered.salesmanRelationship + SALESMA
 assert.equal(sold.activeSales.length, 1);
 assert.equal(sold.activeSales[0].price, proceeds);
 assert.equal(sold.activeSales[0].dueDay, delivered.day + SALE_DAYS);
-assert.equal(sold.capitalBudget, delivered.capitalBudget);
+assert.equal(sold.cash, delivered.cash);
 
 const engineSell = sellMachine(delivered, listing.machineId);
 assert.equal(engineSell.activeSales[0].price, sold.activeSales[0].price);
@@ -100,9 +100,9 @@ for (let i = 0; i < SALE_DAYS; i += 1) {
 }
 assert.equal(paid.day, sold.day + SALE_DAYS);
 assert.equal(paid.activeSales.length, 0);
-assert.equal(paid.capitalBudget, sold.capitalBudget + proceeds);
+assert.equal(paid.cash, sold.cash + proceeds);
 
-const broke = canBuyUsed({ ...start, capitalBudget: 0 }, listing.id);
+const broke = canBuyUsed({ ...start, cash: 0 }, listing.id);
 assert.equal(broke.ok, false);
 assert.match(broke.reason, /Needs/);
 

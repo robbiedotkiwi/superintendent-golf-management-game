@@ -23,7 +23,7 @@ import {
   emptyMoistureReadDay,
 } from './moisture.js';
 import { canBuyAerator, IRRIGATED_SURFACES, isIrrigationPolicy } from './irrigation.js';
-import { capitalGrant, leaseMachine, maintenanceGrant, stopLease, takeLoan } from './budget.js';
+import { leaseMachine, stopLease, takeLoan } from './budget.js';
 import { emptyDaysSinceWorked, markMailRead, meetingDue } from './mail.js';
 import {
   applySnapTournament,
@@ -36,6 +36,7 @@ import {
 import { clampStanding } from './satisfaction.js';
 import { buyAutoPicker, startProject } from './projects.js';
 import { bumpCapitalSpent, emptyYearRecord } from './history.js';
+import { spendCash } from './cash.js';
 import { resolveDay } from './simulation.js';
 import {
   CUT_TASK_BY_SURFACE,
@@ -51,7 +52,7 @@ import {
   PLAYER_QUALITY_SKILL,
   PLAYER_SPEED_SKILL,
   PLAYER_WAGE,
-  STARTING_CASH,
+  STARTING_OPENING_CASH,
   STARTING_DAY,
   STARTING_DAYS_WORKED_RUNNING,
   STARTING_MACHINE_CONDITION,
@@ -135,7 +136,7 @@ export function createInitialState() {
     day: STARTING_DAY,
     season: calendar.season,
     year: calendar.year,
-    cash: STARTING_CASH,
+    cash: STARTING_OPENING_CASH,
     holes: createInitialHoles(HOLE_COUNT),
     surfaceDefaults: createSurfaceDefaults(),
     weather: STARTING_WEATHER,
@@ -228,8 +229,7 @@ export function createInitialState() {
     fertiliserUntil: emptyUntil(),
     satisfaction: SATISFACTION_START,
     gmStanding: GM_STANDING_START,
-    maintenanceBudget: maintenanceGrant(SATISFACTION_START, GM_STANDING_START),
-    capitalBudget: capitalGrant(SATISFACTION_START, GM_STANDING_START),
+    grantForecast: null,
     leasedMachines: [],
     loan: null,
     lastSeasonRevenue: 0,
@@ -348,8 +348,8 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
       const planned = getTask(item.taskId);
       return sum + (planned?.materialsCost ?? 0);
     }, 0);
-    if (already + task.materialsCost > (state.maintenanceBudget ?? 0)) {
-      return { ok: false, reason: `Needs ${formatMoney(task.materialsCost)} from the maintenance budget.` };
+    if (already + task.materialsCost > (state.cash ?? 0)) {
+      return { ok: false, reason: `Needs ${formatMoney(task.materialsCost)}, only ${formatMoney(state.cash ?? 0)}.` };
     }
   }
 
@@ -770,26 +770,17 @@ export function reducer(state, action) {
     case 'BUY_AERATOR': {
       const check = canBuyAerator(state);
       if (!check.ok) return state;
-      return bumpCapitalSpent(
-        { ...state, capitalBudget: state.capitalBudget - AERATOR_COST, hasAerator: true },
-        AERATOR_COST,
-      );
+      return bumpCapitalSpent(spendCash({ ...state, hasAerator: true }, AERATOR_COST), AERATOR_COST);
     }
     case 'BUY_GREENS_SENSORS': {
       const check = canBuyGreensSensors(state);
       if (!check.ok) return state;
-      return bumpCapitalSpent(
-        { ...state, capitalBudget: state.capitalBudget - GREENS_SENSORS_COST, hasGreensSensors: true },
-        GREENS_SENSORS_COST,
-      );
+      return bumpCapitalSpent(spendCash({ ...state, hasGreensSensors: true }, GREENS_SENSORS_COST), GREENS_SENSORS_COST);
     }
     case 'BUY_TURFRAD': {
       const check = canBuyTurfRad(state);
       if (!check.ok) return state;
-      return bumpCapitalSpent(
-        { ...state, capitalBudget: state.capitalBudget - TURFRAD_COST, hasTurfRad: true },
-        TURFRAD_COST,
-      );
+      return bumpCapitalSpent(spendCash({ ...state, hasTurfRad: true }, TURFRAD_COST), TURFRAD_COST);
     }
     case 'TOGGLE_MOISTURE_OVERLAY':
       return { ...state, moistureOverlay: !state.moistureOverlay };

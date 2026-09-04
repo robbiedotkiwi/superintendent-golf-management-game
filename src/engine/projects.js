@@ -24,7 +24,7 @@ import {
 } from '../data/constants.js';
 import { bumpCapitalSpent } from './history.js';
 import { expandHoleRecords, holeCount } from './holes.js';
-import { formatMoney } from './format.js';
+import { needsCash, spendCash } from './cash.js';
 
 export const PROJECTS = {
   [PROJECT_EXPAND_18]: {
@@ -101,9 +101,8 @@ export function canStartProject(state, id) {
   if (spec.minSatisfaction != null && (state.satisfaction ?? 0) < spec.minSatisfaction) {
     return { ok: false, hidden: true, reason: `Offered above satisfaction ${spec.minSatisfaction}.` };
   }
-  if ((state.capitalBudget ?? 0) < spec.cost) {
-    return { ok: false, reason: `Needs ${formatMoney(spec.cost)} capital, only ${formatMoney(state.capitalBudget ?? 0)} posted.` };
-  }
+  const projectCash = needsCash(state, spec.cost);
+  if (!projectCash.ok) return projectCash;
   return { ok: true };
 }
 
@@ -125,8 +124,7 @@ export function startProject(state, id) {
   const extra = Math.round((PROJECT_DAILY_MINUTES[id] ?? 0) * (SEASON_GROWTH[state.season] ?? 1));
   return bumpCapitalSpent(
     {
-      ...state,
-      capitalBudget: state.capitalBudget - spec.cost,
+      ...spendCash(state, spec.cost),
       workers: applySiteMinutes(state, extra),
       projects: [
         ...(state.projects ?? []),
@@ -140,19 +138,15 @@ export function startProject(state, id) {
 export function canBuyAutoPicker(state) {
   if (!state.hasDrivingRange) return { ok: false, reason: 'Build the range first.' };
   if (state.hasAutoPicker) return { ok: false, reason: 'Already picking.' };
-  if ((state.capitalBudget ?? 0) < AUTO_PICKER_COST) {
-    return { ok: false, reason: `Needs ${formatMoney(AUTO_PICKER_COST)} capital.` };
-  }
+  const pickerCash = needsCash(state, AUTO_PICKER_COST);
+  if (!pickerCash.ok) return pickerCash;
   return { ok: true };
 }
 
 export function buyAutoPicker(state) {
   const check = canBuyAutoPicker(state);
   if (!check.ok) return state;
-  return bumpCapitalSpent(
-    { ...state, capitalBudget: state.capitalBudget - AUTO_PICKER_COST, hasAutoPicker: true },
-    AUTO_PICKER_COST,
-  );
+  return bumpCapitalSpent(spendCash({ ...state, hasAutoPicker: true }, AUTO_PICKER_COST), AUTO_PICKER_COST);
 }
 
 function completeProject(state, id) {

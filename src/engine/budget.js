@@ -1,5 +1,7 @@
 import {
-  CAPITAL_BASE,
+  GRANT_BONUS_AMOUNT,
+  GRANT_BONUS_THRESHOLD,
+  GRANT_PENALTY_AMOUNT,
   GM_STANDING_MAX,
   GM_STANDING_MULT_MAX,
   GM_STANDING_MULT_MIN,
@@ -7,12 +9,13 @@ import {
   LEASE_RATE,
   LOAN_INTEREST,
   LOAN_LIMIT_MULTIPLIER,
-  MAINTENANCE_BASE,
   SATISFACTION_MAX,
   BUDGET_SATISFACTION_OFFSET,
+  SEASON_GRANT_BASE,
   SEASON_ORDER,
 } from '../data/constants.js';
 import { getMachine } from '../data/equipment.js';
+import { cashOnHand, creditCash, spendCash } from './cash.js';
 import { dropOwnedMachine, stampOwnedMachine } from './equipment.js';
 import { formatMoney } from './format.js';
 
@@ -24,12 +27,15 @@ export function satisfactionFactor(satisfaction) {
   return BUDGET_SATISFACTION_OFFSET + satisfaction / SATISFACTION_MAX;
 }
 
-export function maintenanceGrant(satisfaction, standing) {
-  return MAINTENANCE_BASE * satisfactionFactor(satisfaction) * gmStandingMultiplier(standing);
+export function seasonGrant(satisfaction, standing) {
+  return Math.round(SEASON_GRANT_BASE * satisfactionFactor(satisfaction) * gmStandingMultiplier(standing));
 }
 
-export function capitalGrant(satisfaction, standing) {
-  return CAPITAL_BASE * satisfactionFactor(satisfaction) * gmStandingMultiplier(standing);
+export function grantAdjustment(forecastSatisfaction, currentSatisfaction) {
+  if (forecastSatisfaction == null || !Number.isFinite(Number(forecastSatisfaction))) return 0;
+  if (currentSatisfaction >= forecastSatisfaction + GRANT_BONUS_THRESHOLD) return GRANT_BONUS_AMOUNT;
+  if (currentSatisfaction <= forecastSatisfaction - GRANT_BONUS_THRESHOLD) return -GRANT_PENALTY_AMOUNT;
+  return 0;
 }
 
 export function nextSeasonStamp(season, year) {
@@ -67,7 +73,7 @@ export function takeLoan(state, amount) {
   const due = nextSeasonStamp(state.season, state.year);
   return {
     ...state,
-    cash: state.cash + amount,
+    cash: cashOnHand(state) + amount,
     loan: { amount, repay: loanRepayment(amount), dueSeason: due.season, dueYear: due.year },
   };
 }
@@ -110,56 +116,45 @@ export function chargeLeases(state) {
   const mail = [];
   for (const machineId of [...next.leasedMachines]) {
     const cost = leaseCost(machineId);
-    if (next.maintenanceBudget >= cost) {
-      next = { ...next, maintenanceBudget: next.maintenanceBudget - cost };
+    if (cashOnHand(next) >= cost) {
+      next = spendCash(next, cost);
     } else {
       next = repossess(next, machineId);
       mail.push({
         from: 'gm',
         kind: 'repossess',
         subject: 'Lease returned',
-        body: `The ${getMachine(machineId)?.name ?? machineId} went back. Maintenance could not cover the lease.`,
+        body: `The ${getMachine(machineId)?.name ?? machineId} went back. Cash could not cover the lease.`,
       });
     }
   }
   return { state: next, mail };
 }
 
-export function closeSeason(state, { yearChanged }) {
+export function closeSeason(state) {
   const charged = chargeLeases(state);
   let next = charged.state;
-  const leftover = next.maintenanceBudget;
-  next = {
-    ...next,
-    cash: next.cash + leftover,
-    maintenanceBudget: 0,
-    capitalBudget: 0,
-    lastSeasonRevenue: next.seasonRevenue ?? 0,
-    seasonRevenue: 0,
-  };
-
-  next = {
-    ...next,
-    maintenanceBudget: maintenanceGrant(next.satisfaction, next.gmStanding),
-  };
-  if (yearChanged) {
-    next = {
+  const forecastSat = next.grantForecast?.satisfaction;
+  const grant = seasonGrant(next.satisfaction, next.gmStanding);
+  const adjustment = grantAdjustment(forecastSat, next.satisfaction);
+  const posted = grant + adjustment;
+  next = creditCash(
+    {
       ...next,
-      capitalBudget: capitalGrant(next.satisfaction, next.gmStanding),
-    };
-  }
+      lastSeasonRevenue: next.seasonRevenue ?? 0,
+      seasonRevenue: 0,
+      grantForecast: null,
+    },
+    posted,
+  );
 
   if (next.loan && next.season === next.loan.dueSeason && next.year === next.loan.dueYear) {
-    next = {
-      ...next,
-      maintenanceBudget: next.maintenanceBudget - next.loan.repay,
-      loan: null,
-    };
+    next = { ...spendCash(next, next.loan.repay), loan: null };
   }
 
   let insolventStreak = next.insolventStreak ?? 0;
   let dismissed = Boolean(next.dismissed);
-  const insolvent = next.cash < 0;
+  const insolvent = cashOnHand(next) < 0;
   if (insolvent) {
     insolventStreak += 1;
     if (insolventStreak >= INSOLVENT_DISMISS_STREAK) dismissed = true;
@@ -169,8 +164,11 @@ export function closeSeason(state, { yearChanged }) {
 
   return {
     state: { ...next, insolventStreak, dismissed },
-    leftover,
+    grant: posted,
+    adjustment,
     insolvent,
     mail: charged.mail,
   };
 }
+
+export { cashOnHand, spendCash, creditCash };

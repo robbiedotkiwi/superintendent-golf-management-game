@@ -8,9 +8,6 @@ import {
   GREENSMASTER_ID,
   GRIND_AWAY_DAYS,
   REPAIR_MINUTES,
-  GM_STANDING_START,
-  SATISFACTION_START,
-  STARTING_CASH,
   STARTING_WEATHER,
   WALK_BEHIND_COST,
   WALK_BEHIND_TIME_MULT,
@@ -20,7 +17,6 @@ import {
 } from '../src/data/constants.js';
 import { getTask } from '../src/data/tasks.js';
 import { durationForTask } from '../src/engine/assignment.js';
-import { capitalGrant } from '../src/engine/budget.js';
 import {
   canBuyMachine,
   ineligibleMachines,
@@ -63,14 +59,14 @@ assert.equal(
 assert.equal(pickMachine(start, getTask('cutGreens'))?.id, GREENSMASTER_ID);
 
 let bought = reducer(start, { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
-assert.equal(bought.capitalBudget, capitalGrant(SATISFACTION_START, GM_STANDING_START) - WALK_BEHIND_COST);
+assert.equal(bought.cash, start.cash - WALK_BEHIND_COST);
 assert.equal(
   durationForTask(bought, 'cutGreens'),
   Math.round(JOB_SETUP_MINUTES.green + variableJobMinutes(bought, 'cutGreens') * WALK_BEHIND_TIME_MULT),
 );
 assert.ok(durationForTask(bought, 'cutGreens') < baseTime);
 
-const withVentrac = reducer({ ...createInitialState(), capitalBudget: 250000 }, { type: 'BUY_MACHINE', machineId: 'ventrac' });
+const withVentrac = reducer({ ...createInitialState(), cash: 250000 }, { type: 'BUY_MACHINE', machineId: 'ventrac' });
 assert.ok(withVentrac.ownedMachines.includes('ventrac'));
 const blocked = ineligibleMachines(withVentrac, getTask('cutGreens'));
 assert.ok(blocked.some((item) => item.machine.id === 'ventrac'));
@@ -116,7 +112,7 @@ assert.equal(isMachineAvailable(away, 'walkBehindReel'), false);
 away = end(away);
 assert.equal(isMachineAvailable(away, 'walkBehindReel'), true);
 
-let foley = { ...createInitialState(), capitalBudget: 250000 };
+let foley = { ...createInitialState(), cash: 250000 };
 foley = reducer(foley, { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
 foley = reducer(foley, { type: 'BUY_FOLEY' });
 foley.machineWear = { ...foley.machineWear, walkBehindReel: 80 };
@@ -131,7 +127,7 @@ broken = reducer(broken, { type: 'REPAIR_MACHINE', machineId: 'walkBehindReel' }
 assert.equal(broken.machineBroken.walkBehindReel, false);
 assert.equal(broken.workers[0].minutesUsed, REPAIR_MINUTES);
 
-let auto = { ...createInitialState(), capitalBudget: 250000, weather: STARTING_WEATHER };
+let auto = { ...createInitialState(), cash: 250000, weather: STARTING_WEATHER };
 auto = reducer(auto, { type: 'BUY_MACHINE', machineId: 'autonomousMower' });
 assert.ok(auto.ownedMachines.includes('autonomousMower'));
 auto.autoWeek = { weekStart: auto.day, hits: [{ day: auto.day, minutes: 40 }] };

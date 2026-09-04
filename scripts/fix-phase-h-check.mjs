@@ -50,16 +50,16 @@ checked = reducer(checked, { type: 'END_DAY' });
 assert.equal(MOISTURE_DATA_FRESH_DAYS, 2);
 assert.ok(greensStatuses(checked).every((item) => item.kind === 'stale'));
 
-const sensors = reducer({ ...createInitialState(), capitalBudget: 250000 }, { type: 'BUY_GREENS_SENSORS' });
+const sensors = reducer({ ...createInitialState(), cash: 250000 }, { type: 'BUY_GREENS_SENSORS' });
 assert.equal(sensors.hasGreensSensors, true);
-assert.equal(sensors.capitalBudget, 250000 - GREENS_SENSORS_COST);
+assert.equal(sensors.cash, 250000 - GREENS_SENSORS_COST);
 assert.equal(moistureStatus(sensors, 'greens').kind, 'fresh');
 assert.equal(moistureStatus(sensors, 'tees').kind, 'hidden');
 assert.equal(moistureStatus(sensors, 'fairways').kind, 'hidden');
 
-let rad = reducer({ ...createInitialState(), capitalBudget: 250000 }, { type: 'BUY_TURFRAD' });
+let rad = reducer({ ...createInitialState(), cash: 250000 }, { type: 'BUY_TURFRAD' });
 assert.equal(rad.hasTurfRad, true);
-assert.equal(rad.capitalBudget, 250000 - TURFRAD_COST);
+assert.equal(rad.cash, 250000 - TURFRAD_COST);
 rad = reducer(rad, { type: 'PLAN_TASK', taskId: 'cutFairways' });
 rad = reducer(rad, { type: 'END_DAY' });
 assert.equal(moistureStatus(rad, 'fairways').kind, 'fresh');
@@ -72,7 +72,7 @@ for (let i = 0; i < 3; i += 1) {
 }
 assert.equal(moistureStatus(rad, 'fairways').kind, 'stale');
 
-let live = reducer({ ...createInitialState(), capitalBudget: 250000 }, { type: 'BUY_GREENS_SENSORS' });
+let live = reducer({ ...createInitialState(), cash: 250000 }, { type: 'BUY_GREENS_SENSORS' });
 live = reducer(live, { type: 'SET_IRRIGATION', surface: 'greens', policy: 'full' });
 for (let i = 0; i < 4; i += 1) {
   live = reducer(live, { type: 'END_DAY' });

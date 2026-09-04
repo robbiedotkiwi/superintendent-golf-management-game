@@ -70,7 +70,7 @@ import { bumpCapitalSpent } from './history.js';
 import { workerTimeMultiplier } from './skills.js';
 import { hasMechanic } from './staff.js';
 import { createRng } from './rng.js';
-import { formatMoney } from './format.js';
+import { needsCash, spendCash } from './cash.js';
 
 function remainingMinutes(state) {
   return state.workers.reduce((total, worker) => total + (worker.minutesToday - worker.minutesUsed), 0);
@@ -447,17 +447,14 @@ export function canBuyMachine(state, machineId) {
   if ((state.pendingDeliveries ?? []).some((item) => item.machineId === machineId)) {
     return { ok: false, reason: 'Already on a truck.' };
   }
-  if ((state.capitalBudget ?? 0) < machine.cost) {
-    return { ok: false, reason: `Needs ${formatMoney(machine.cost)} capital, only ${formatMoney(state.capitalBudget ?? 0)} posted.` };
-  }
+  if (!needsCash(state, machine.cost).ok) return needsCash(state, machine.cost);
   return { ok: true };
 }
 
 export function canBuyFoley(state) {
   if (state.hasFoleyGrinder) return { ok: false, reason: 'Already installed.' };
-  if ((state.capitalBudget ?? 0) < FOLEY_GRINDER_COST) {
-    return { ok: false, reason: `Needs ${formatMoney(FOLEY_GRINDER_COST)} capital, only ${formatMoney(state.capitalBudget ?? 0)} posted.` };
-  }
+  const foleyCash = needsCash(state, FOLEY_GRINDER_COST);
+  if (!foleyCash.ok) return foleyCash;
   return { ok: true };
 }
 
@@ -467,9 +464,8 @@ export function canSendGrind(state, machineId) {
   if (!isMachineAvailable(state, machineId) && !state.machineBroken[machineId]) {
     return { ok: false, reason: 'That unit is not here.' };
   }
-  if ((state.maintenanceBudget ?? 0) < GRIND_AWAY_COST) {
-    return { ok: false, reason: `Needs ${formatMoney(GRIND_AWAY_COST)} from maintenance.` };
-  }
+  const grindCash = needsCash(state, GRIND_AWAY_COST);
+  if (!grindCash.ok) return grindCash;
   return { ok: true };
 }
 
@@ -546,8 +542,7 @@ export function buyMachine(state, machineId) {
   if (!check.ok) return state;
   const machine = getMachine(machineId);
   let next = {
-    ...state,
-    capitalBudget: state.capitalBudget - machine.cost,
+    ...spendCash(state, machine.cost),
     ...stampOwnedMachine(state, machineId, NEW_PURCHASE_CONDITION),
   };
   if (machine.autonomous) {
@@ -562,18 +557,14 @@ export function buyMachine(state, machineId) {
 export function buyFoley(state) {
   const check = canBuyFoley(state);
   if (!check.ok) return state;
-  return bumpCapitalSpent(
-    { ...state, capitalBudget: state.capitalBudget - FOLEY_GRINDER_COST, hasFoleyGrinder: true },
-    FOLEY_GRINDER_COST,
-  );
+  return bumpCapitalSpent(spendCash({ ...state, hasFoleyGrinder: true }, FOLEY_GRINDER_COST), FOLEY_GRINDER_COST);
 }
 
 export function sendForGrind(state, machineId) {
   const check = canSendGrind(state, machineId);
   if (!check.ok) return state;
   const next = {
-    ...state,
-    maintenanceBudget: state.maintenanceBudget - GRIND_AWAY_COST,
+    ...spendCash(state, GRIND_AWAY_COST),
     machineAwayUntil: { ...state.machineAwayUntil, [machineId]: state.day + GRIND_AWAY_DAYS },
     machineWear: { ...state.machineWear, [machineId]: 0 },
     machineBroken: { ...state.machineBroken, [machineId]: false },

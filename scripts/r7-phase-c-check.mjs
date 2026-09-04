@@ -54,7 +54,7 @@ for (const id of mowers) {
   }
 }
 
-let fleet = { ...start, capitalBudget: 200000 };
+let fleet = { ...start, cash: 200000 };
 for (const id of ['fairwayUnit', 'ventrac', 'rideOnReel', 'pushRotary']) {
   fleet = reducer(fleet, { type: 'BUY_MACHINE', machineId: id });
 }
@@ -123,7 +123,7 @@ damaged = reducer(damaged, {
 damaged = reducer(damaged, { type: 'END_DAY' });
 assert.equal(holeSurface(damaged, 1, 'greens').quality, 70 - SUITABILITY_DAMAGING_QUALITY_HIT);
 assert.equal(holeSurface(damaged, 9, 'greens').quality, 70 - SUITABILITY_DAMAGING_QUALITY_HIT);
-let withFairway = { ...start, capitalBudget: 200000 };
+let withFairway = { ...start, cash: 200000 };
 withFairway = reducer(withFairway, { type: 'BUY_MACHINE', machineId: 'fairwayUnit' });
 assert.equal(surfaceCeiling(withFairway, 'greens'), surfaceCeiling(start, 'greens'), 'fairway unit must not raise the greens cap');
 

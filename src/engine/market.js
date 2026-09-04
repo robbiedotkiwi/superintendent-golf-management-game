@@ -19,7 +19,7 @@ import {
 import { getMachine, MACHINES } from '../data/equipment.js';
 import { bumpCapitalSpent } from './history.js';
 import { clampCondition, conditionOf, dropOwnedMachine, ensureAutoWeek, recomputePlannedMinutes, stampOwnedMachine } from './equipment.js';
-import { formatMoney } from './format.js';
+import { cashOnHand, needsCash, spendCash } from './cash.js';
 import { createRng } from './rng.js';
 
 export function clampRelationship(value) {
@@ -86,12 +86,8 @@ export function canBuyUsed(state, listingId) {
   if ((state.pendingDeliveries ?? []).some((item) => item.machineId === listing.machineId)) {
     return { ok: false, reason: 'Already on a truck.' };
   }
-  if ((state.capitalBudget ?? 0) < listing.price) {
-    return {
-      ok: false,
-      reason: `Needs ${formatMoney(listing.price)} capital, only ${formatMoney(state.capitalBudget ?? 0)} posted.`,
-    };
-  }
+  const usedCash = needsCash(state, listing.price);
+  if (!usedCash.ok) return usedCash;
   return { ok: true, listing };
 }
 
@@ -100,8 +96,7 @@ export function buyUsed(state, listingId) {
   if (!check.ok) return state;
   const listing = check.listing;
   const next = {
-    ...state,
-    capitalBudget: state.capitalBudget - listing.price,
+    ...spendCash(state, listing.price),
     usedListings: (state.usedListings ?? []).filter((item) => item.id !== listingId),
     pendingDeliveries: [
       ...(state.pendingDeliveries ?? []),
@@ -172,10 +167,10 @@ export function tickMarket(state) {
   }
   next = { ...next, pendingDeliveries };
   const activeSales = [];
-  let capitalBudget = next.capitalBudget ?? 0;
+  let cash = cashOnHand(next);
   for (const item of next.activeSales ?? []) {
     if (next.day >= item.dueDay) {
-      capitalBudget += item.price;
+      cash += item.price;
     } else {
       activeSales.push(item);
     }
@@ -183,7 +178,7 @@ export function tickMarket(state) {
   return {
     ...next,
     activeSales,
-    capitalBudget,
+    cash,
     lastDeliveryDay: arrived ? next.day : (next.lastDeliveryDay ?? null),
   };
 }

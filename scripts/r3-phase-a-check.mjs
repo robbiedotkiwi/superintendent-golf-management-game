@@ -38,8 +38,6 @@ function fingerprint(state) {
     rngSeed: state.rngSeed,
     weather: state.weather,
     satisfaction: state.satisfaction,
-    maintenanceBudget: state.maintenanceBudget,
-    capitalBudget: state.capitalBudget,
     pond: state.pond,
     moisture: state.moisture,
     greens: meanQuality(state, 'greens'),

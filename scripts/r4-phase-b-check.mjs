@@ -75,7 +75,7 @@ assert.equal(bookedAssign.reason, MACHINE_BOOKED_REASON);
 const refused = reducer(crew, { type: 'PLAN_TASK', taskId: 'cutRough', workerId: hire.id, holes: PARTIAL_ROUGH });
 assert.equal(refused.plannedTasks.length, crew.plannedTasks.length);
 
-let two = reducer({ ...createInitialState(), capitalBudget: 250000 }, { type: 'BUY_MACHINE', machineId: 'ventrac' });
+let two = reducer({ ...createInitialState(), cash: 250000 }, { type: 'BUY_MACHINE', machineId: 'ventrac' });
 assert.ok(two.ownedMachines.includes('ventrac'));
 two = reducer(two, { type: 'HIRE_WORKER', candidateId: candidate.id });
 const hireTwo = two.workers.find((item) => item.id !== PLAYER_ID && !item.isVolunteer);

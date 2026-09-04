@@ -79,7 +79,7 @@ export default function Office({
       <SectionTabs tabs={OFFICE_TABS} labels={labels} value={tab} onChange={onTab} />
 
       <p>
-        Maintenance {formatMoney(state.maintenanceBudget)} · Capital {formatMoney(state.capitalBudget)} · Cash {formatMoney(state.cash)}
+        Cash {formatMoney(state.cash)}
       </p>
       <p className="mt-1 text-[var(--sand)]">
         {holeCount(state)}-hole course · Satisfaction {Math.round(state.satisfaction)} · GM standing {Math.round(state.gmStanding)}
@@ -116,7 +116,7 @@ export default function Office({
           </div>
           {state.loan ? (
             <p className="mt-2 text-sm">
-              Loan on the books. Repay {formatMoney(state.loan.repay)} from {state.loan.dueSeason} year {state.loan.dueYear} maintenance.
+              Loan on the books. Repay {formatMoney(state.loan.repay)} from {state.loan.dueSeason} year {state.loan.dueYear} cash.
             </p>
           ) : (
             <p className="mt-2 text-sm text-[var(--sand)]">Last season revenue {formatMoney(state.lastSeasonRevenue ?? 0)}.</p>

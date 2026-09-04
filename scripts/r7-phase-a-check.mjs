@@ -26,7 +26,7 @@ import { migrateSave } from '../src/engine/save.js';
 import { COMPLAINT_HOLE_CUT_BODY } from '../src/data/constants.js';
 import { neglectMail } from '../src/engine/neglect.js';
 
-assert.equal(SAVE_VERSION, 2);
+assert.equal(SAVE_VERSION, 3);
 assert.equal(TRACKED_SURFACES_NINE, 45);
 
 const start = createInitialState();

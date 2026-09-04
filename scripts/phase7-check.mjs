@@ -14,16 +14,15 @@ import {
   LOAN_INTEREST,
   LOAN_LIMIT_MULTIPLIER,
   SATISFACTION_START,
-  STARTING_CASH,
+  STARTING_OPENING_CASH,
   STARTING_WEATHER,
   WALK_BEHIND_COST,
 } from '../src/data/constants.js';
 import {
-  capitalGrant,
   leaseCost,
   loanRepayment,
-  maintenanceGrant,
   maxLoan,
+  seasonGrant,
 } from '../src/engine/budget.js';
 import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
 import { courseCondition } from '../src/engine/simulation.js';
@@ -40,40 +39,32 @@ function endKeep(state, extras = {}) {
 }
 
 const start = createInitialState();
-assert.equal(start.maintenanceBudget, maintenanceGrant(SATISFACTION_START, GM_STANDING_START));
-assert.equal(start.capitalBudget, capitalGrant(SATISFACTION_START, GM_STANDING_START));
-assert.ok(start.maintenanceBudget !== start.capitalBudget);
+assert.equal(start.cash, STARTING_OPENING_CASH);
 
 const bought = reducer(start, { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
-assert.equal(bought.capitalBudget, start.capitalBudget - WALK_BEHIND_COST);
-assert.equal(bought.cash, STARTING_CASH);
-assert.equal(bought.maintenanceBudget, start.maintenanceBudget);
+assert.equal(bought.cash, start.cash - WALK_BEHIND_COST);
 
 let season = {
   ...createInitialState(),
   day: DAYS_PER_SEASON,
   irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
-  maintenanceBudget: 4000,
-  capitalBudget: 9000,
   cash: 1000,
 };
 season = reducer(season, { type: 'END_DAY' });
 assert.equal(season.season, 'summer');
-assert.equal(season.capitalBudget, 0);
 assert.ok(season.cash > 1000);
-assert.equal(season.cash, 1000 + 4000);
-assert.equal(season.maintenanceBudget, maintenanceGrant(season.satisfaction, season.gmStanding));
+assert.equal(season.cash, 1000 + seasonGrant(season.satisfaction, season.gmStanding));
 
 const leased = reducer(createInitialState(), { type: 'LEASE_MACHINE', machineId: 'walkBehindReel' });
 assert.ok(leased.ownedMachines.includes('walkBehindReel'));
 assert.ok(leased.leasedMachines.includes('walkBehindReel'));
-assert.equal(leased.capitalBudget, start.capitalBudget);
+assert.equal(leased.cash, start.cash);
 assert.equal(leaseCost('walkBehindReel'), WALK_BEHIND_COST * LEASE_RATE);
 let unpaid = {
   ...leased,
   day: DAYS_PER_SEASON,
   irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
-  maintenanceBudget: 0,
+  cash: 0,
 };
 unpaid = reducer(unpaid, { type: 'END_DAY' });
 assert.equal(unpaid.ownedMachines.includes('walkBehindReel'), false);
@@ -101,14 +92,14 @@ const afterSat = endKeep(createInitialState());
 assert.notEqual(afterSat.satisfaction, courseCondition(afterSat));
 assert.notEqual(afterSat.satisfaction, satStart);
 
-assert.ok(maintenanceGrant(90, SATISFACTION_START) > maintenanceGrant(10, SATISFACTION_START));
-assert.ok(capitalGrant(90, GM_STANDING_START) > capitalGrant(10, GM_STANDING_START));
+assert.ok(seasonGrant(90, SATISFACTION_START) > seasonGrant(10, SATISFACTION_START));
+assert.ok(seasonGrant(SATISFACTION_START, 90) > seasonGrant(SATISFACTION_START, 10));
 
 const revenue = 4000;
 assert.equal(maxLoan(revenue), revenue * LOAN_LIMIT_MULTIPLIER);
 let loaned = { ...createInitialState(), lastSeasonRevenue: revenue };
 loaned = reducer(loaned, { type: 'TAKE_LOAN', amount: revenue });
-assert.equal(loaned.cash, STARTING_CASH + revenue);
+assert.equal(loaned.cash, STARTING_OPENING_CASH + revenue);
 assert.equal(loaned.loan.repay, loanRepayment(revenue));
 assert.equal(loaned.loan.repay, revenue * (1 + LOAN_INTEREST));
 loaned = {
@@ -116,19 +107,15 @@ loaned = {
   day: DAYS_PER_SEASON,
   irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
 };
+const cashBeforeClose = loaned.cash;
 loaned = reducer(loaned, { type: 'END_DAY' });
 assert.equal(loaned.loan, null);
-assert.equal(
-  loaned.maintenanceBudget,
-  maintenanceGrant(loaned.satisfaction, loaned.gmStanding) - loanRepayment(revenue),
-);
+assert.equal(loaned.cash, cashBeforeClose + seasonGrant(loaned.satisfaction, loaned.gmStanding) - loanRepayment(revenue));
 
 let broke = {
   ...createInitialState(),
   day: DAYS_PER_SEASON,
   cash: -50000,
-  maintenanceBudget: 0,
-  capitalBudget: 0,
   irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
 };
 broke = reducer(broke, { type: 'END_DAY' });
@@ -138,7 +125,6 @@ broke = {
   ...broke,
   day: DAYS_PER_SEASON * 2,
   cash: -50000,
-  maintenanceBudget: 0,
   irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
 };
 broke = reducer(broke, { type: 'END_DAY' });
@@ -146,7 +132,7 @@ assert.equal(broke.insolventStreak, INSOLVENT_DISMISS_STREAK);
 assert.equal(broke.dismissed, true);
 
 const snap = reducer(createInitialState(), { type: 'SNAP_TOURNAMENT' });
-assert.ok(snap.cash > STARTING_CASH);
+assert.ok(snap.cash > STARTING_OPENING_CASH);
 assert.ok(snap.lastSnap);
 assert.equal(snap.snappedToday, true);
 

@@ -19,8 +19,6 @@ assert.doesNotMatch(sidebar, /label="Holes"/);
 
 const office = readFileSync(new URL('../src/components/Office.jsx', import.meta.url), 'utf8');
 assert.match(office, /formatMoney\(state\.cash\)/);
-assert.match(office, /formatMoney\(state\.maintenanceBudget\)/);
-assert.match(office, /formatMoney\(state\.capitalBudget\)/);
 assert.match(office, /\{holeCount\(state\)\}-hole course/);
 
 const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');

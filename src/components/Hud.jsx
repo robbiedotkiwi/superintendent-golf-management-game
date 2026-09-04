@@ -40,13 +40,6 @@ export default function Hud({ state, condition }) {
         <Stat label="Cash" value={formatMoney(state.cash)} size="secondary" />
         <Stat label="Satisfaction" value={Math.round(state.satisfaction)} size="secondary" />
       </div>
-      <div>
-        <div className="text-xs uppercase tracking-widest text-[var(--sand)]">Budgets</div>
-        <div className="mt-1 flex items-end gap-5">
-          <Stat label="Maintenance" value={formatMoney(state.maintenanceBudget)} size="tertiary" />
-          <Stat label="Capital" value={formatMoney(state.capitalBudget)} size="tertiary" />
-        </div>
-      </div>
       <Stat
         label="Pond"
         value={`${Math.round(state.pond.volume)} m³`}

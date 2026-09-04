@@ -8,7 +8,7 @@ import {
   HOLE_COUNT,
   PLAYER_QUALITY_SKILL,
   PLAYER_SPEED_SKILL,
-  STARTING_CASH,
+  STARTING_OPENING_CASH,
   STARTING_DAY,
   STARTING_QUALITY_BUNKERS,
   STARTING_QUALITY_FAIRWAYS,
@@ -31,7 +31,7 @@ const state = createInitialState();
 assert.equal(state.day, STARTING_DAY);
 assert.equal(state.season, STARTING_SEASON);
 assert.equal(state.year, STARTING_YEAR);
-assert.equal(state.cash, STARTING_CASH);
+assert.equal(state.cash, STARTING_OPENING_CASH);
 assert.equal(holeCount(state), HOLE_COUNT);
 assert.ok(Array.isArray(state.workers));
 assert.ok(state.workers.length >= 1);
@@ -65,9 +65,9 @@ assert.deepEqual(reset, initialState);
 
 const loaded = reducer(state, {
   type: 'LOAD_GAME',
-  state: { ...createInitialState(), day: STARTING_DAY + STARTING_DAY, cash: STARTING_CASH / 2 },
+  state: { ...createInitialState(), day: STARTING_DAY + STARTING_DAY, cash: STARTING_OPENING_CASH / 2 },
 });
 assert.equal(loaded.day, STARTING_DAY + STARTING_DAY);
-assert.equal(loaded.cash, STARTING_CASH / 2);
+assert.equal(loaded.cash, STARTING_OPENING_CASH / 2);
 
 console.log('phase0 engine checks passed');

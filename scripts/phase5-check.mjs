@@ -18,7 +18,6 @@ import {
   RAIN_POND_M3,
   SPEED_SKILL_BASE,
   SPEED_SKILL_STEP,
-  STARTING_CASH,
   STARTING_IRRIGATION,
   STARTING_QUALITY_GREENS,
   STARTING_WEATHER,
@@ -110,8 +109,7 @@ const dryEnded = reducer(dry, { type: 'END_DAY' });
 const drySummary = dryEnded.log.at(-1);
 assert.equal(drySummary.mainsCost, short.mainsCost);
 assert.equal(drySummary.mainsM3, short.shortfall);
-assert.equal(dryEnded.maintenanceBudget, dry.maintenanceBudget - short.mainsCost);
-assert.equal(dryEnded.cash, STARTING_CASH);
+assert.equal(dryEnded.cash, dry.cash - short.mainsCost);
 
 let offSummer = {
   ...createInitialState(),
@@ -171,8 +169,7 @@ assert.equal(lowAfter.pond.health, POND_HEALTH_START - POND_HEALTH_LOW_DROP);
 
 const bought = reducer(createInitialState(), { type: 'BUY_AERATOR' });
 assert.equal(bought.hasAerator, true);
-assert.equal(bought.capitalBudget, createInitialState().capitalBudget - AERATOR_COST);
-assert.equal(bought.cash, STARTING_CASH);
+assert.equal(bought.cash, createInitialState().cash - AERATOR_COST);
 const held = resolveIrrigation({
   ...bought,
   season: 'summer',

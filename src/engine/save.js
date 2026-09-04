@@ -7,12 +7,10 @@ import {
   SAVE_KEY,
   SAVE_VERSION,
   SOUND_DEFAULT_ON,
-  STARTING_CAPITAL_BUDGET,
   STARTING_IRRIGATION,
   DELIVERY_SOURCE_USED,
   HOURS_MIGRATED,
   STARTING_MACHINE_IDS,
-  STARTING_MAINTENANCE_BUDGET,
   STARTING_RNG_SEED,
   STARTING_WIND_DIR,
   STARTING_WIND_SPEED,
@@ -55,6 +53,24 @@ function migrateHoleState(state) {
     };
   }
   return { holes: null, surfaceDefaults: null };
+}
+
+export function migrateCash(state) {
+  const hasPots =
+    Object.prototype.hasOwnProperty.call(state, 'maintenanceBudget') ||
+    Object.prototype.hasOwnProperty.call(state, 'capitalBudget');
+  if (state.cash != null && !Number.isFinite(Number(state.cash))) return Number.NaN;
+  let cash = Number(state.cash);
+  if (!Number.isFinite(cash)) cash = 0;
+  if (hasPots) {
+    const maint = state.maintenanceBudget == null ? 0 : Number(state.maintenanceBudget);
+    const cap = state.capitalBudget == null ? 0 : Number(state.capitalBudget);
+    if ((state.maintenanceBudget != null && !Number.isFinite(maint)) || (state.capitalBudget != null && !Number.isFinite(cap))) {
+      return Number.NaN;
+    }
+    cash += maint + cap;
+  }
+  return cash;
 }
 
 export function withDefaults(state) {
@@ -149,8 +165,8 @@ export function withDefaults(state) {
     irrigation: state.irrigation ?? { ...STARTING_IRRIGATION },
     hasAerator: Boolean(state.hasAerator),
     ...migrateMoisture(state),
-    maintenanceBudget: state.maintenanceBudget ?? STARTING_MAINTENANCE_BUDGET,
-    capitalBudget: state.capitalBudget ?? STARTING_CAPITAL_BUDGET,
+    cash: migrateCash(state),
+    grantForecast: state.grantForecast ?? null,
     disease: state.disease ?? emptyDisease(),
     sprayedUntil: state.sprayedUntil ?? emptyUntil(),
     fertiliserUntil: state.fertiliserUntil ?? emptyUntil(),
@@ -204,7 +220,15 @@ export function migrateSave(raw) {
   if (!raw || typeof raw !== 'object') return null;
   if (typeof raw.day !== 'number') return null;
   try {
+    const cash = migrateCash(raw);
+    if (!Number.isFinite(cash)) return null;
     const migrated = withDefaults(raw);
+    if (migrated && Object.prototype.hasOwnProperty.call(migrated, 'maintenanceBudget')) {
+      delete migrated.maintenanceBudget;
+    }
+    if (migrated && Object.prototype.hasOwnProperty.call(migrated, 'capitalBudget')) {
+      delete migrated.capitalBudget;
+    }
     return isUsable(migrated) ? migrated : null;
   } catch {
     return null;

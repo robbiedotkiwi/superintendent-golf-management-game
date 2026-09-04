@@ -76,7 +76,7 @@ export default function DaySummary({ summary, onContinue }) {
             Pond {Math.round(summary.pond.volume)} m³ · health {Math.round(summary.pond.health)}
           </p>
         ) : null}
-        {summary.materialsSpent ? <p className="mt-2">Materials {formatMoney(summary.materialsSpent)} from maintenance</p> : null}
+        {summary.materialsSpent ? <p className="mt-2">Materials {formatMoney(summary.materialsSpent)}</p> : null}
         {summary.outbreaks?.length ? (
           <p className="mt-2">
             Outbreak: {summary.outbreaks.map((item) => `${SURFACE_LABELS[item.surface]} −${item.drop}`).join(', ')}
@@ -89,7 +89,9 @@ export default function DaySummary({ summary, onContinue }) {
         ) : null}
         {summary.seasonClose ? (
           <p className="mt-2">
-            Season closed. Maintenance leftover {formatMoney(summary.seasonClose.leftover)} rolled to cash.
+            Season closed. Grant {formatMoney(summary.seasonClose.grant ?? 0)} posted.
+            {summary.seasonClose.adjustment > 0 ? ` Bonus ${formatMoney(summary.seasonClose.adjustment)}.` : ''}
+            {summary.seasonClose.adjustment < 0 ? ` Penalty ${formatMoney(-summary.seasonClose.adjustment)}.` : ''}
             {summary.seasonClose.insolvent ? ' In the red.' : ''}
             {summary.seasonClose.dismissed ? ' Dismissed.' : ''}
           </p>

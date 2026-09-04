@@ -3,6 +3,11 @@ import {
   COMPLAINT_GREENS_QUALITY,
   COMPLAINT_HOLE_QUALITY_BODY,
   COMPLAINT_HOLE_QUALITY_SUBJECT,
+  GRANT_BONUS_AMOUNT,
+  GRANT_BONUS_THRESHOLD,
+  GRANT_FORECAST_KIND,
+  GRANT_FORECAST_SUBJECT,
+  GRANT_PENALTY_AMOUNT,
   SURFACE_KEYS,
   SURFACE_SINGULAR,
 } from '../data/constants.js';
@@ -76,13 +81,19 @@ export function golferMail(state) {
   return mail;
 }
 
-export function gmSeasonMail({ leftover, insolvent, yearChanged, maintenance, capital }) {
+export function gmSeasonMail({ grant, adjustment, insolvent }) {
+  const extra =
+    adjustment > 0
+      ? ` Bonus ${formatMoney(adjustment)} for beating the forecast.`
+      : adjustment < 0
+        ? ` Penalty ${formatMoney(-adjustment)} for slipping the forecast.`
+        : '';
   const mail = [
     {
       from: 'gm',
       kind: 'budget',
-      subject: yearChanged ? 'Year budgets posted' : 'Season maintenance posted',
-      body: `Maintenance grant ${formatMoney(maintenance)}.${yearChanged ? ` Capital grant ${formatMoney(capital)}.` : ' Unspent capital is gone.'} Unspent maintenance ${formatMoney(leftover)} rolled to cash.`,
+      subject: 'Season grant posted',
+      body: `Season grant ${formatMoney(grant)} posted.${extra}`,
     },
   ];
   if (insolvent) {
@@ -94,6 +105,18 @@ export function gmSeasonMail({ leftover, insolvent, yearChanged, maintenance, ca
     });
   }
   return mail;
+}
+
+export function grantForecastMail({ satisfaction, grant }) {
+  const current = Math.round(satisfaction);
+  const bonusAt = current + GRANT_BONUS_THRESHOLD;
+  const penaltyAt = current - GRANT_BONUS_THRESHOLD;
+  return {
+    from: 'gm',
+    kind: GRANT_FORECAST_KIND,
+    subject: GRANT_FORECAST_SUBJECT,
+    body: `On current satisfaction of ${current} you'll receive ${formatMoney(grant)} at season end. Get it to ${bonusAt} and I'll add ${formatMoney(GRANT_BONUS_AMOUNT)}. Let it slip to ${penaltyAt} and I'll take ${formatMoney(GRANT_PENALTY_AMOUNT)} off.`,
+  };
 }
 
 export function meetingDue(day) {

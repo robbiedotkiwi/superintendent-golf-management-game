@@ -83,7 +83,7 @@ export default function Shed({
       </div>
       <SectionTabs tabs={SHED_TABS} labels={SHED_TAB_LABELS} value={tab} onChange={onTab} />
       <p className="mb-6 text-[var(--sand)]">
-        Cash {formatMoney(state.cash)} · Capital {formatMoney(state.capitalBudget)} · Maintenance {formatMoney(state.maintenanceBudget)}
+        Cash {formatMoney(state.cash)}
       </p>
 
       {tab === SHED_TAB_YARD ? (

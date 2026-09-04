@@ -14,3 +14,15 @@ export function seasonNumberFromDay(day) {
 export function inDiseaseGrace(day) {
   return seasonNumberFromDay(day) <= GRACE_NO_DISEASE_SEASON;
 }
+
+export function seasonStartDay(day) {
+  return Math.floor((day - 1) / DAYS_PER_SEASON) * DAYS_PER_SEASON + 1;
+}
+
+export function seasonEndDay(day) {
+  return seasonStartDay(day) + DAYS_PER_SEASON - 1;
+}
+
+export function daysUntilSeasonEnd(day) {
+  return seasonEndDay(day) - day + 1;
+}
