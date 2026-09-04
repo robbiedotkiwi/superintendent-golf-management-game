@@ -47,6 +47,7 @@ import {
 import { getMachine, MACHINES, machineAllows, TURF_DAMAGE_REASON } from '../data/equipment.js';
 import { getTask, taskUsesMachine } from '../data/tasks.js';
 import { hocFactor, mowingMinutes } from './mowing.js';
+import { setupMinutesFor, variableJobMinutes } from './jobs.js';
 import { handWaterMinutes } from './moisture.js';
 import { taskTimeMultiplier } from './projects.js';
 import { bumpCapitalSpent } from './history.js';
@@ -255,24 +256,27 @@ export function machineAssignment(state, surface, worker) {
   return { machine, fallbackReason, overrideId };
 }
 
-export function durationOnMachine(state, taskId, worker, machineId) {
+export function durationOnMachine(state, taskId, worker, machineId, holeIds) {
   const task = getTask(taskId);
-  const base =
-    taskId === 'pickBalls'
-      ? state.hasAutoPicker
-        ? AUTO_PICK_MINUTES
-        : BALL_PICK_MINUTES
-      : taskId === 'handWater'
-        ? handWaterMinutes(state)
-        : task?.mowing
-          ? mowingMinutes(state, taskId)
-          : TASK_MINUTES[taskId];
-  const withMachine =
-    taskId === 'pickBalls'
-      ? base
-      : Math.round(base * (machineId ? machineMultiplierFor(state, machineId) : 1) * taskTimeMultiplier(state, task));
-  if (!worker) return withMachine;
-  return Math.round(withMachine * workerTimeMultiplier(worker));
+  if (taskId === 'pickBalls') {
+    const base = state.hasAutoPicker ? AUTO_PICK_MINUTES : BALL_PICK_MINUTES;
+    return worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
+  }
+  if (taskId === 'handWater') {
+    const probe = holeIds?.length ? { ...state, handWaterTargets: holeIds } : state;
+    const base = handWaterMinutes(probe);
+    return worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
+  }
+  if (!task?.surface) {
+    const base = TASK_MINUTES[taskId] ?? 0;
+    return worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
+  }
+  const setup = setupMinutesFor(task);
+  const variable = variableJobMinutes(state, taskId, holeIds);
+  const machine = machineId ? machineMultiplierFor(state, machineId) : 1;
+  const extras = taskTimeMultiplier(state, task);
+  const workerMult = worker ? workerTimeMultiplier(worker) : 1;
+  return Math.round(setup + variable * machine * extras * workerMult);
 }
 
 export function pickMachine(state, task, options = {}) {
@@ -300,7 +304,13 @@ export function pickMachineForTask(state, task, worker, ignoreTaskId) {
   });
 }
 
-export function machinePlanCheck(state, task, worker) {
+export function machinePlanCheck(state, task, worker, machineId) {
+  if (machineId) {
+    if (!isMachineAvailable(state, machineId) || !state.ownedMachines?.includes(machineId)) {
+      return { ok: false, reason: 'That machine is not available.', machine: null };
+    }
+    return { ok: true, machine: getMachine(machineId) };
+  }
   if (!task?.mowing) {
     return { ok: true, machine: taskUsesMachine(task) ? pickMachineForTask(state, task, worker) : null };
   }
@@ -466,7 +476,7 @@ export function recomputePlannedMinutes(state) {
     } else if (taskUsesMachine(task)) {
       machineId = pickMachineForTask(probe, task, worker)?.id ?? null;
     }
-    const minutes = durationOnMachine(probe, planned.taskId, worker, machineId);
+    const minutes = durationOnMachine(probe, planned.taskId, worker, machineId, planned.holes);
     plannedTasks.push({ ...planned, minutes, machineId });
   }
   const newByWorker = {};

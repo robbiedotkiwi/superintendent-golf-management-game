@@ -51,15 +51,15 @@ assert.equal(dayTotal, DEFAULT_DAY_OVERLOAD_MINUTES);
 assert.equal(
   dayTotal,
   durationForTask(start, 'cutGreens', player) +
-    TASK_MINUTES.rollGreens +
-    TASK_MINUTES.changeCups +
+    durationForTask(start, 'rollGreens', player) +
+    durationForTask(start, 'changeCups', player) +
     durationForTask(start, 'cutTees', player) +
     durationForTask(start, 'cutFairways', player) +
     durationForTask(start, 'cutRough', player) +
-    TASK_MINUTES.rakeBunkers,
+    durationForTask(start, 'rakeBunkers', player),
 );
-assert.ok(ratio > 1.3);
-assert.ok(ratio < 1.5);
+assert.ok(ratio > 1.8);
+assert.ok(ratio < 2.0);
 assert.equal(percent, Math.round(DEFAULT_DAY_OVERLOAD_RATIO * 100));
 
 console.log(

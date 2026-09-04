@@ -19,6 +19,7 @@ import {
   REELMASTER_TIME_MULT,
   STARTING_MACHINE_IDS,
   TASK_MINUTES,
+  JOB_SETUP_MINUTES,
 } from '../src/data/constants.js';
 import { getMachine } from '../src/data/equipment.js';
 import { durationForTask } from '../src/engine/assignment.js';
@@ -29,6 +30,7 @@ import {
 } from '../src/engine/equipment.js';
 import { canPlanTask, createInitialState } from '../src/engine/gameState.js';
 import { mowingMinutes } from '../src/engine/mowing.js';
+import { variableJobMinutes } from '../src/engine/jobs.js';
 
 assert.deepEqual(STARTING_MACHINE_IDS, [GREENSMASTER_ID, REELMASTER_ID]);
 assert.equal(GREENSMASTER_CEILING, 68);
@@ -69,11 +71,11 @@ assert.ok(durationForTask(start, 'cutRough') < DAY_LENGTH_MINUTES);
 
 assert.equal(
   durationForTask(start, 'cutGreens'),
-  Math.round(mowingMinutes(start, 'cutGreens') * machineMultiplierFor(start, GREENSMASTER_ID)),
+  Math.round(JOB_SETUP_MINUTES.green + variableJobMinutes(start, 'cutGreens') * machineMultiplierFor(start, GREENSMASTER_ID)),
 );
 assert.equal(
   durationForTask(start, 'cutFairways'),
-  Math.round(mowingMinutes(start, 'cutFairways') * machineMultiplierFor(start, REELMASTER_ID)),
+  Math.round(JOB_SETUP_MINUTES.fairway + variableJobMinutes(start, 'cutFairways') * machineMultiplierFor(start, REELMASTER_ID)),
 );
 assert.equal(
   machineMultiplierFor(start, GREENSMASTER_ID),
@@ -91,17 +93,17 @@ const ratio = dayTotal / DAY_LENGTH_MINUTES;
 const percent = Math.round(ratio * 100);
 assert.equal(dayTotal, DEFAULT_DAY_OVERLOAD_MINUTES);
 assert.equal(percent, Math.round(DEFAULT_DAY_OVERLOAD_RATIO * 100));
-assert.ok(ratio > 1.3);
-assert.ok(ratio < 1.5);
+assert.ok(ratio > 1.8);
+assert.ok(ratio < 2.0);
 assert.equal(
   dayTotal,
   durationForTask(start, 'cutGreens', player) +
-    TASK_MINUTES.rollGreens +
-    TASK_MINUTES.changeCups +
+    durationForTask(start, 'rollGreens', player) +
+    durationForTask(start, 'changeCups', player) +
     durationForTask(start, 'cutTees', player) +
     durationForTask(start, 'cutFairways', player) +
     durationForTask(start, 'cutRough', player) +
-    TASK_MINUTES.rakeBunkers,
+    durationForTask(start, 'rakeBunkers', player),
 );
 
 console.log(

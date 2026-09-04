@@ -17,6 +17,7 @@ import {
   GREENSMASTER_ID,
   GREENSMASTER_START_CONDITION,
   GREENSMASTER_TIME_MULT,
+  JOB_SETUP_MINUTES,
   REELMASTER_ID,
   REELMASTER_START_CONDITION,
   STARTING_MACHINE_CONDITION,
@@ -34,6 +35,7 @@ import {
 } from '../src/engine/equipment.js';
 import { createInitialState, reducer } from '../src/engine/gameState.js';
 import { mowingMinutes } from '../src/engine/mowing.js';
+import { variableJobMinutes } from '../src/engine/jobs.js';
 import { migrateSave } from '../src/engine/save.js';
 import { getTask } from '../src/data/tasks.js';
 
@@ -69,7 +71,7 @@ const greensTask = getTask('cutGreens');
 assert.equal(machineTimeMultiplier(start, greensTask), machineMultiplierFor(start, GREENSMASTER_ID));
 assert.equal(
   durationForTask(start, 'cutGreens'),
-  Math.round(mowingMinutes(start, 'cutGreens') * GREENSMASTER_TIME_MULT * conditionTimeMultiplier(GREENSMASTER_START_CONDITION)),
+  Math.round(JOB_SETUP_MINUTES.green + variableJobMinutes(start, 'cutGreens') * GREENSMASTER_TIME_MULT * conditionTimeMultiplier(GREENSMASTER_START_CONDITION)),
 );
 
 const worn = {
@@ -83,7 +85,7 @@ const mint = {
 assert.equal(machineTimeMultiplier(worn, greensTask), 1.25);
 assert.equal(
   durationForTask(worn, 'cutGreens'),
-  Math.round(mowingMinutes(worn, 'cutGreens') * GREENSMASTER_TIME_MULT * conditionTimeMultiplier(50)),
+  Math.round(JOB_SETUP_MINUTES.green + variableJobMinutes(worn, 'cutGreens') * GREENSMASTER_TIME_MULT * conditionTimeMultiplier(50)),
 );
 assert.ok(durationForTask(worn, 'cutGreens') > durationForTask(mint, 'cutGreens'));
 
@@ -129,7 +131,7 @@ assert.equal(bought.machineCondition.walkBehindReel, NEW_PURCHASE_CONDITION);
 assert.equal(bought.machineDailyMinutes.walkBehindReel, MACHINE_DAILY_MINUTES);
 assert.equal(
   durationForTask(bought, 'cutGreens'),
-  Math.round(mowingMinutes(bought, 'cutGreens') * WALK_BEHIND_TIME_MULT),
+  Math.round(JOB_SETUP_MINUTES.green + variableJobMinutes(bought, 'cutGreens') * WALK_BEHIND_TIME_MULT),
 );
 
 const shedSrc = readFileSync(new URL('../src/components/Shed.jsx', import.meta.url), 'utf8');

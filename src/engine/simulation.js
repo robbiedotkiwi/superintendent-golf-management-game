@@ -87,6 +87,7 @@ import { clampRange, clampStanding, tickSatisfaction } from './satisfaction.js';
 import { GM_MEETING_SKIP_STANDING } from '../data/constants.js';
 import { tickMarket, rollUsedListings } from './market.js';
 import { tickEvents } from './events.js';
+import { jobHolesFor, snapshotDayJobs } from './jobs.js';
 
 export function clampQuality(value) {
   return Math.min(QUALITY_MAX, Math.max(QUALITY_MIN, value));
@@ -142,6 +143,8 @@ export function resolveDay(state) {
   const conditionBefore = courseCondition(state);
   let surfaceDefaults = { ...state.surfaceDefaults };
   const worked = new Set();
+  const workedHolesByType = Object.fromEntries(SURFACE_KEYS.map((key) => [key, new Set()]));
+  const lastDayJobs = snapshotDayJobs(state.plannedTasks);
   const done = [];
   const usedMachineIds = [];
   const dropped = [];
@@ -188,9 +191,13 @@ export function resolveDay(state) {
       maintenanceBudget -= task.materialsCost;
       materialsSpent += task.materialsCost;
     }
+    const jobHoles = jobHolesFor(state, task, plannedTask.holes);
+    if (task.surface && (taskAppliesQuality(task) || task.kind === 'prep')) {
+      for (const id of jobHoles) workedHolesByType[task.surface].add(id);
+      if (jobHoles.length) worked.add(task.surface);
+    }
     if (task.kind === 'prep') {
       tournamentPrepScore += task.prepBonus ?? 0;
-      if (task.surface) worked.add(task.surface);
     }
     if (task.kind === 'moistureCheck' && task.surface) {
       moistureReadDay = revealMoisture(moistureReadDay, task.surface, state.day, holeN);
@@ -239,6 +246,7 @@ export function resolveDay(state) {
     const qualityBefore = meanQuality(live, task.surface);
     const ceiling = surfaceCeiling({ ...live, fertiliserUntil }, task.surface);
     holes = mapHoleSurfaces(holes, task.surface, (record, hole) => {
+      if (jobHoles.length && !jobHoles.includes(hole.id)) return record;
       let qualityAfter = applyGain(record.quality, gain, ceiling);
       let next = { ...record, quality: qualityAfter };
       if (task.mowing) {
@@ -312,18 +320,22 @@ export function resolveDay(state) {
 
   const skipped = [];
   for (const key of SURFACE_KEYS) {
-    if (worked.has(key)) continue;
     const live = workingState({ ...state, surfaceDefaults }, holes);
     const qualityBefore = meanQuality(live, key);
-    holes = mapHoleSurfaces(holes, key, (record) => ({
-      ...record,
-      quality: applyDecay(record.quality, state.season),
-    }));
-    skipped.push({
-      surface: key,
-      before: qualityBefore,
-      after: meanQuality(workingState({ ...state, surfaceDefaults }, holes), key),
+    const protectedHoles = workedHolesByType[key];
+    let decayed = false;
+    holes = mapHoleSurfaces(holes, key, (record, hole) => {
+      if (protectedHoles.has(hole.id)) return record;
+      decayed = true;
+      return { ...record, quality: applyDecay(record.quality, state.season) };
     });
+    if (decayed) {
+      skipped.push({
+        surface: key,
+        before: qualityBefore,
+        after: meanQuality(workingState({ ...state, surfaceDefaults }, holes), key),
+      });
+    }
   }
 
   if (state.weather === WEATHER_HEAVY_RAIN) {
@@ -475,6 +487,8 @@ export function resolveDay(state) {
     machineCondition,
     machineBroken,
     plannedTasks: [],
+    lastDayJobs,
+    lastRepeatDropped: [],
     workers,
     satisfaction: tournament.state.satisfaction,
     gmStanding,

@@ -108,7 +108,7 @@ assert.equal(applyGain(ceiling, BASE_GAIN, ceiling), ceiling);
 assert.equal(applyDecay(DECAY_BASE / DECAY_ACCELERATION, STARTING_SEASON), QUALITY_MIN);
 
 const mid = plan(createInitialState(), 'rollGreens');
-assert.equal(mid.plannedTasks[0].minutes, TASK_MINUTES.rollGreens);
+assert.equal(mid.plannedTasks[0].minutes, durationForTask(createInitialState(), 'rollGreens'));
 const json = JSON.parse(JSON.stringify(mid));
 assert.deepEqual(json.plannedTasks, mid.plannedTasks);
 assert.equal(combinedMinutesRemaining(json), combinedMinutesRemaining(mid));

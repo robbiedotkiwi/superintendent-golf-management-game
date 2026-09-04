@@ -5,6 +5,7 @@ import { createRng } from './rng.js';
 import { buyFoley, buyMachine, grindInHouse, repairMachine, sendForGrind, machinePlanCheck, durationOnMachine, recomputePlannedMinutes, allowingMachines, pickMachineForTask, MACHINE_BOOKED_REASON, NO_MACHINE_REASON, getMachine, normalizeMachineOverride } from './equipment.js';
 import { machineAllows } from '../data/equipment.js';
 import { assignWorker, certifiedPresent, workerById, workerAllows, isWorkerPresent } from './assignment.js';
+import { findPlannedJob, jobHolesFor, applyRoute, canSaveRoute } from './jobs.js';
 import {
   applyEarlyStartComplaints,
   hireWorker,
@@ -177,6 +178,12 @@ export function createInitialState() {
       panY: VIEW_PAN_Y_DEFAULT,
     },
     plannedTasks: [],
+    nextPlanId: 1,
+    selectedHoles: [],
+    savedRoutes: [],
+    nextRouteId: 1,
+    lastDayJobs: [],
+    lastRepeatDropped: [],
     log: [],
     ownedMachines: [...STARTING_MACHINE_IDS],
     machineWear: Object.fromEntries(STARTING_MACHINE_IDS.map((id) => [id, 0])),
@@ -277,9 +284,13 @@ export function combinedMinutesUsed(state) {
   return state.workers.reduce((total, worker) => total + worker.minutesUsed, 0);
 }
 
-export function canPlanTask(state, taskId, workerId) {
+export function canPlanTask(state, taskId, workerId, options = {}) {
   const task = getTask(taskId);
   if (!task) return { ok: false, reason: 'Unknown job.' };
+  const holes =
+    task.id === 'handWater'
+      ? [...(options.holes?.length ? options.holes : state.handWaterTargets ?? [])]
+      : jobHolesFor(state, task, options.holes);
 
   if (task.id === 'clearDebris' && state.weather !== WEATHER_STORM) {
     return { ok: false, reason: 'No debris to clear.' };
@@ -302,11 +313,11 @@ export function canPlanTask(state, taskId, workerId) {
     return { ok: false, reason: 'Prep only in the three days before a tournament.' };
   }
 
-  if (task.id === 'handWater' && (state.handWaterTargets ?? []).length === 0) {
+  if (task.id === 'handWater' && !(options.holes ?? state.handWaterTargets ?? []).length) {
     return { ok: false, reason: 'Select at least one green.' };
   }
 
-  if (state.plannedTasks.some((planned) => planned.taskId === taskId)) {
+  if (task.surface ? findPlannedJob(state, taskId, holes) : state.plannedTasks.some((planned) => planned.taskId === taskId)) {
     return { ok: false, reason: 'Already planned. Take it off the list first.' };
   }
 
@@ -323,7 +334,7 @@ export function canPlanTask(state, taskId, workerId) {
     return { ok: false, reason: 'No one available for that job.' };
   }
 
-  const worker = requested ?? assignWorker(state, task);
+  const worker = requested ?? assignWorker(state, task, holes);
 
   if (task.requiresSpray && !certifiedPresent(state, task.surface)) {
     return { ok: false, reason: 'No spray-certified worker available.' };
@@ -359,32 +370,34 @@ export function canPlanTask(state, taskId, workerId) {
           isWorkerPresent(item) &&
           workerAllows(item, task.surface) &&
           (!task.requiresSpray || item.sprayCertified) &&
-          item.minutesToday - item.minutesUsed >= durationOnMachine(state, taskId, item, catalogId),
+          item.minutesToday - item.minutesUsed >= durationOnMachine(state, taskId, item, catalogId, holes),
       );
       if (someoneHasTime && !pickMachineForTask(state, task, fallback)) {
         return { ok: false, reason: MACHINE_BOOKED_REASON };
       }
     }
-    const minutes = durationOnMachine(state, taskId, fallback, allowingMachines(state, task)[0]?.id);
+    const minutes = durationOnMachine(state, taskId, fallback, allowingMachines(state, task)[0]?.id, holes);
     const remaining = fallback.minutesToday - fallback.minutesUsed;
     return { ok: false, reason: `Needs ${minutes} min, only ${remaining} left.` };
   }
-  const machineCheck = machinePlanCheck(state, task, worker);
+  const machineCheck = machinePlanCheck(state, task, worker, options.machineId);
   if (!machineCheck.ok) return machineCheck;
-  const minutes = durationOnMachine(state, taskId, worker, machineCheck.machine?.id);
+  const minutes = durationOnMachine(state, taskId, worker, machineCheck.machine?.id, holes);
   const remaining = worker.minutesToday - worker.minutesUsed;
   if (minutes > remaining) {
     return { ok: false, reason: `Needs ${minutes} min on ${worker.name}, only ${remaining} left.` };
   }
-  return { ok: true, minutes, workerId: worker.id, machineId: machineCheck.machine?.id ?? null };
+  return { ok: true, minutes, workerId: worker.id, machineId: machineCheck.machine?.id ?? null, holes };
 }
 
-function removePlannedTask(state, taskId) {
-  const planned = state.plannedTasks.find((item) => item.taskId === taskId);
+function removePlannedTask(state, taskId, planId) {
+  const planned = planId
+    ? state.plannedTasks.find((item) => item.planId === planId)
+    : state.plannedTasks.find((item) => item.taskId === taskId);
   if (!planned) return state;
   return {
     ...state,
-    plannedTasks: state.plannedTasks.filter((item) => item.taskId !== taskId),
+    plannedTasks: state.plannedTasks.filter((item) => (planId ? item.planId !== planId : item.taskId !== taskId)),
     workers: state.workers.map((item) =>
       item.id === planned.workerId ? { ...item, minutesUsed: item.minutesUsed - planned.minutes } : item,
     ),
@@ -426,19 +439,27 @@ export function reducer(state, action) {
       return action.state;
     case 'PLAN_TASK': {
       const task = getTask(action.taskId);
-      const check = canPlanTask(state, action.taskId, action.workerId);
+      const check = canPlanTask(state, action.taskId, action.workerId, {
+        holes: action.holes,
+        machineId: action.machineId,
+      });
       if (!task || !check.ok) return state;
       return {
         ...state,
+        nextPlanId: (state.nextPlanId ?? 1) + 1,
         plannedTasks: [
           ...state.plannedTasks,
           {
+            planId: state.nextPlanId ?? 1,
             taskId: action.taskId,
             surface: task.surface,
             workerId: check.workerId,
             minutes: check.minutes,
             machineId: check.machineId ?? null,
-            ...(action.taskId === 'handWater' ? { greens: [...(state.handWaterTargets ?? [])] } : {}),
+            holes: check.holes ?? [],
+            ...(action.taskId === 'handWater'
+              ? { greens: [...(action.holes ?? state.handWaterTargets ?? [])] }
+              : {}),
           },
         ],
         workers: state.workers.map((item) =>
@@ -446,8 +467,65 @@ export function reducer(state, action) {
         ),
       };
     }
+    case 'SET_SELECTED_HOLES': {
+      const holes = Array.isArray(action.holes) ? [...new Set(action.holes.map(Number))].sort((a, b) => a - b) : [];
+      return { ...state, selectedHoles: holes };
+    }
+    case 'TOGGLE_HOLE': {
+      const id = Number(action.holeId);
+      if (!Number.isInteger(id) || id < 1) return state;
+      const current = state.selectedHoles ?? [];
+      const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id].sort((a, b) => a - b);
+      return { ...state, selectedHoles: next };
+    }
+    case 'ADD_HOLE': {
+      const id = Number(action.holeId);
+      if (!Number.isInteger(id) || id < 1) return state;
+      if ((state.selectedHoles ?? []).includes(id)) return state;
+      return { ...state, selectedHoles: [...(state.selectedHoles ?? []), id].sort((a, b) => a - b) };
+    }
+    case 'SAVE_ROUTE': {
+      const check = canSaveRoute(state, action.name);
+      if (!check.ok) return state;
+      return {
+        ...state,
+        nextRouteId: (state.nextRouteId ?? 1) + 1,
+        savedRoutes: [
+          ...(state.savedRoutes ?? []),
+          { id: state.nextRouteId ?? 1, name: check.name, holes: [...state.selectedHoles] },
+        ],
+      };
+    }
+    case 'APPLY_ROUTE':
+      return applyRoute(state, action.id);
+    case 'DELETE_ROUTE':
+      return {
+        ...state,
+        savedRoutes: (state.savedRoutes ?? []).filter((item) => item.id !== action.id),
+      };
+    case 'REPEAT_LAST': {
+      const dropped = [];
+      let next = { ...state, lastRepeatDropped: [] };
+      for (const job of state.lastDayJobs ?? []) {
+        const check = canPlanTask(next, job.taskId, undefined, {
+          holes: job.holes,
+          machineId: job.machineId,
+        });
+        if (!check.ok) {
+          dropped.push({ taskId: job.taskId, holes: job.holes, reason: check.reason });
+          continue;
+        }
+        next = reducer(next, {
+          type: 'PLAN_TASK',
+          taskId: job.taskId,
+          holes: job.holes,
+          machineId: job.machineId,
+        });
+      }
+      return { ...next, lastRepeatDropped: dropped };
+    }
     case 'REMOVE_TASK':
-      return removePlannedTask(state, action.taskId);
+      return removePlannedTask(state, action.taskId, action.planId);
     case 'END_DAY': {
       if (state.dismissed) return state;
       const { state: next, summary } = resolveDay(state);

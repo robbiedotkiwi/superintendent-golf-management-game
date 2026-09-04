@@ -42,6 +42,7 @@ import {
 import { courseCondition } from './engine/simulation.js';
 import { holeCount } from './engine/holes.js';
 import HoleDetail from './components/HoleDetail.jsx';
+import MapSelectionBar, { selectAllHoles, selectFrontNine } from './components/MapSelectionBar.jsx';
 import {
   PLAYOUT_DONE,
   PLAYOUT_PLAYING,
@@ -167,8 +168,14 @@ export default function App() {
           minutesCapacity={minutesCapacity}
           condition={condition}
           onSelect={setSelected}
-          onPlan={(taskId) => dispatch({ type: 'PLAN_TASK', taskId })}
-          onRemove={(taskId) => dispatch({ type: 'REMOVE_TASK', taskId })}
+          onPlan={(taskId, holes) => dispatch({ type: 'PLAN_TASK', taskId, holes })}
+          onRemove={(taskId, planId) => dispatch({ type: 'REMOVE_TASK', taskId, planId })}
+          onSelectHoles={(holes) => dispatch({ type: 'SET_SELECTED_HOLES', holes })}
+          onToggleHole={(holeId) => dispatch({ type: 'TOGGLE_HOLE', holeId })}
+          onAddHole={(holeId) => dispatch({ type: 'ADD_HOLE', holeId })}
+          onSaveRoute={(name) => dispatch({ type: 'SAVE_ROUTE', name })}
+          onApplyRoute={(id) => dispatch({ type: 'APPLY_ROUTE', id })}
+          onRepeatLast={() => dispatch({ type: 'REPEAT_LAST' })}
           onEndDay={() => dispatch({ type: 'END_DAY' })}
           onDismissSummary={() => setSummary(null)}
           onSkipPlayout={() => setPlayout((current) => skipPlayout(current))}
@@ -277,6 +284,12 @@ function GameScreen({
   onSelect,
   onPlan,
   onRemove,
+  onSelectHoles,
+  onToggleHole,
+  onAddHole,
+  onSaveRoute,
+  onApplyRoute,
+  onRepeatLast,
   onEndDay,
   onDismissSummary,
   onSkipPlayout,
@@ -499,6 +512,9 @@ function GameScreen({
               showMower={showMower}
               selected={selected}
               highlight={event?.surface ?? selected}
+              selectedHoles={state.selectedHoles}
+              onToggleHole={onToggleHole}
+              onAddHole={onAddHole}
               onSelect={handleSelect}
               onOpenShed={onOpenShed}
               day={watching ? playout.day : state.day}
@@ -506,10 +522,22 @@ function GameScreen({
               onView={onSetView}
               moistureState={state}
             />
+            {!watching ? (
+              <MapSelectionBar
+                state={state}
+                onSelectAll={() => onSelectHoles(selectAllHoles(state))}
+                onSelectFrontNine={() => onSelectHoles(selectFrontNine(state))}
+                onClear={() => onSelectHoles([])}
+                onSaveRoute={onSaveRoute}
+                onApplyRoute={onApplyRoute}
+                onRepeatLast={onRepeatLast}
+              />
+            ) : null}
             {SURFACE_KEYS.includes(selected) && !watching ? (
               <MapJobPopover
                 surface={selected}
                 state={state}
+                holes={state.selectedHoles}
                 onPlan={onPlan}
                 onRemove={onRemove}
                 onSetWorker={onSetWorker}

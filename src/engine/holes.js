@@ -220,7 +220,48 @@ export function holeSurface(state, holeId, type) {
 export function presentHoles(state, type) {
   const holes = Array.isArray(state) ? state : (state?.holes ?? []);
   const kind = holeKind(type);
-  return holes.filter((hole) => hole[kind] != null);
+  if (isHoleModel(holes)) return holes.filter((hole) => hole[kind] != null);
+  const n = holeCount(state);
+  return Array.from({ length: n }, (_, index) => ({ id: index + 1, [kind]: {} }));
+}
+
+export function defaultJobHoles(state, type) {
+  return presentHoles(state, type).map((hole) => hole.id);
+}
+
+export function normalizeJobHoles(state, type, holeIds) {
+  const allowed = new Set(defaultJobHoles(state, type));
+  const raw = Array.isArray(holeIds) && holeIds.length ? holeIds : [...allowed];
+  return [...new Set(raw.map((id) => Number(id)).filter((id) => allowed.has(id)))].sort((a, b) => a - b);
+}
+
+export function sameHoleSet(a, b) {
+  const left = [...(a ?? [])].map(Number).sort((x, y) => x - y);
+  const right = [...(b ?? [])].map(Number).sort((x, y) => x - y);
+  return left.length === right.length && left.every((id, index) => id === right[index]);
+}
+
+export function formatHoleSet(holeIds) {
+  if (!holeIds?.length) return '';
+  const ids = [...holeIds].map(Number).sort((a, b) => a - b);
+  const parts = [];
+  let start = ids[0];
+  let prev = ids[0];
+  for (let i = 1; i <= ids.length; i += 1) {
+    const id = ids[i];
+    if (id === prev + 1) {
+      prev = id;
+      continue;
+    }
+    parts.push(start === prev ? `${start}` : `${start}–${prev}`);
+    start = id;
+    prev = id;
+  }
+  return parts.join(', ');
+}
+
+export function frontNineIds(state) {
+  return defaultJobHoles(state, 'greens').filter((id) => id >= 1 && id <= HOLE_COUNT);
 }
 
 export function setTypeQuality(state, type, quality) {

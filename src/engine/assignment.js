@@ -21,15 +21,15 @@ export function baseTaskMinutes(state, taskId) {
   return TASK_MINUTES[taskId];
 }
 
-export function durationForTask(state, taskId, worker, machineId) {
+export function durationForTask(state, taskId, worker, machineId, holeIds) {
   const task = getTask(taskId);
   const id =
     machineId ??
     (taskUsesMachine(task) ? pickMachineForTask(state, task, worker)?.id : null);
-  return durationOnMachine(state, taskId, worker, id);
+  return durationOnMachine(state, taskId, worker, id, holeIds);
 }
 
-export function assignWorker(state, task) {
+export function assignWorker(state, task, holeIds) {
   const stat = preferredStat(task.surface);
   const ranked = [...state.workers]
     .filter((worker) => isWorkerPresent(worker) && workerAllows(worker, task.surface))
@@ -38,7 +38,7 @@ export function assignWorker(state, task) {
   for (const worker of ranked) {
     if (task.mowing && !pickMachineForTask(state, task, worker)) continue;
     const machine = pickMachineForTask(state, task, worker);
-    const minutes = durationForTask(state, task.id, worker, machine?.id);
+    const minutes = durationForTask(state, task.id, worker, machine?.id, holeIds);
     if (worker.minutesToday - worker.minutesUsed >= minutes) return worker;
   }
   return null;

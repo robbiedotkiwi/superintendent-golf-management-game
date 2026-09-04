@@ -112,8 +112,37 @@ export const BASE_MINUTES = {
   rough: 130,
 };
 
-export const DEFAULT_DAY_OVERLOAD_MINUTES = 672;
-export const DEFAULT_DAY_OVERLOAD_RATIO = 1.4;
+export const JOB_SETUP_MINUTES = {
+  green: 35,
+  tee: 25,
+  fairway: 45,
+  rough: 45,
+  bunker: 20,
+};
+export const JOB_SETUP_MINUTES_BY_TYPE = {
+  greens: JOB_SETUP_MINUTES.green,
+  tees: JOB_SETUP_MINUTES.tee,
+  fairways: JOB_SETUP_MINUTES.fairway,
+  rough: JOB_SETUP_MINUTES.rough,
+  bunkers: JOB_SETUP_MINUTES.bunker,
+};
+export const PER_HOLE_MINUTES = {
+  greens: BASE_MINUTES.greens / HOLE_COUNT,
+  tees: BASE_MINUTES.tees / HOLE_COUNT,
+  fairways: BASE_MINUTES.fairways / HOLE_COUNT,
+  rough: BASE_MINUTES.rough / HOLE_COUNT,
+};
+export const SAVED_ROUTE_CAP = 8;
+export const FRONT_NINE_COUNT = 9;
+export const SELECT_ALL_LABEL = 'All';
+export const SELECT_FRONT_NINE_LABEL = 'Front nine';
+export const SELECT_CLEAR_LABEL = 'Clear';
+export const SAVE_ROUTE_LABEL = 'Save route';
+export const REPEAT_LAST_LABEL = 'Repeat last';
+export const ROUTE_NAME_MAX = 24;
+
+export const DEFAULT_DAY_OVERLOAD_MINUTES = 910;
+export const DEFAULT_DAY_OVERLOAD_RATIO = DEFAULT_DAY_OVERLOAD_MINUTES / DAY_LENGTH_MINUTES;
 
 export const BASE_GAIN = 6;
 export const HOC_GAIN_BASE = 0.8;

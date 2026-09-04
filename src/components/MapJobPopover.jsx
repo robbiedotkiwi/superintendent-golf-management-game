@@ -4,6 +4,7 @@ import TaskPanel from './TaskPanel.jsx';
 export default function MapJobPopover({
   surface,
   state,
+  holes,
   onPlan,
   onRemove,
   onSetWorker,
@@ -18,10 +19,13 @@ export default function MapJobPopover({
           Close
         </button>
       </div>
-      <p className="mb-3 text-sm text-[var(--sand)]">Jobs at the current Turf settings.</p>
+      <p className="mb-3 text-sm text-[var(--sand)]">
+        {holes?.length ? `Jobs on ${holes.length} selected hole${holes.length === 1 ? '' : 's'}.` : 'Jobs at the current Turf settings.'}
+      </p>
       <TaskPanel
         surface={surface}
         state={state}
+        holes={holes}
         onPlan={onPlan}
         onRemove={onRemove}
         onSetWorker={onSetWorker}

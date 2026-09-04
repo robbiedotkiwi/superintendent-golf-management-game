@@ -37,6 +37,7 @@ import {
 } from '../data/constants.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import { durationForTask } from '../engine/assignment.js';
+import { findPlannedJob } from '../engine/jobs.js';
 import {
   machineAssignment,
   machineMinutesRemaining,
@@ -330,7 +331,7 @@ export default function Turf({
 function PlanThisCut({ state, surface, onPlan, onRemove }) {
   const taskId = CUT_TASK_BY_SURFACE[surface];
   if (!taskId) return null;
-  const planned = state.plannedTasks.find((item) => item.taskId === taskId);
+  const planned = findPlannedJob(state, taskId);
   const check = canPlanTask(state, taskId);
   const minutes = planned?.minutes ?? durationForTask(state, taskId);
   if (planned) {
@@ -524,9 +525,9 @@ function MowingSurface({
 
 function BunkerTab({ state, onPlan, onRemove }) {
   const days = daysSinceLastWorked(state, 'bunkers');
-  const planned = state.plannedTasks.find((item) => item.taskId === 'rakeBunkers');
+  const planned = findPlannedJob(state, 'rakeBunkers');
   const check = canPlanTask(state, 'rakeBunkers');
-  const minutes = durationForTask(state, 'rakeBunkers');
+  const minutes = planned?.minutes ?? durationForTask(state, 'rakeBunkers');
   return (
     <section className="border border-[var(--sand)] p-3">
       <h3 className="text-lg font-semibold">Bunkers</h3>

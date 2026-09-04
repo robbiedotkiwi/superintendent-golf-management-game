@@ -4,6 +4,7 @@ import { getTask } from '../data/tasks.js';
 import { workerById } from '../engine/assignment.js';
 import { getMachine } from '../engine/equipment.js';
 import { machineTitle } from '../engine/machineDisplay.js';
+import { formatHoleSet } from '../engine/holes.js';
 
 export default function PlanList({ state, compact = false, onReorder, onRemove }) {
   const [dragId, setDragId] = useState(null);
@@ -75,9 +76,10 @@ export default function PlanList({ state, compact = false, onReorder, onRemove }
             const task = getTask(planned.taskId);
             const worker = workerById(state, planned.workerId);
             const machine = planned.machineId ? getMachine(planned.machineId) : null;
+            const rowId = planned.planId ?? planned.taskId;
             return (
               <li
-                key={planned.taskId}
+                key={rowId}
                 data-plan-task={planned.taskId}
                 onPointerDown={(event) => {
                   if (event.button !== 0) return;
@@ -96,6 +98,7 @@ export default function PlanList({ state, compact = false, onReorder, onRemove }
                   <p className="text-sm text-[var(--sand)]">
                     {worker?.name ?? 'Unassigned'}
                     {machine ? ` · ${machineTitle(machine)}` : ''}
+                    {planned.holes?.length ? ` · ${formatHoleSet(planned.holes)}` : ''}
                     {` · ${planned.minutes} min`}
                   </p>
                 </div>
@@ -103,7 +106,7 @@ export default function PlanList({ state, compact = false, onReorder, onRemove }
                   <button
                     type="button"
                     onPointerDown={(event) => event.stopPropagation()}
-                    onClick={() => onRemove(planned.taskId)}
+                    onClick={() => onRemove(planned.taskId, planned.planId)}
                     className="border border-[var(--sand)] px-2 py-1 text-sm"
                   >
                     Remove

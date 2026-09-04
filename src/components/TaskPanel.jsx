@@ -5,10 +5,13 @@ import { getMachine, ineligibleMachines, pickMachineForTask } from '../engine/eq
 import { machineTitle } from '../engine/machineDisplay.js';
 import { inPrepWindow } from '../engine/tournament.js';
 import { canPlanTask } from '../engine/gameState.js';
+import { findPlannedJob } from '../engine/jobs.js';
+import { formatHoleSet } from '../engine/holes.js';
 import { formatMoney } from '../engine/format.js';
 
-export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorker }) {
+export default function TaskPanel({ surface, state, holes, onPlan, onRemove, onSetWorker }) {
   const tasks = tasksForSurface(surface);
+  const jobHoles = holes?.length ? holes : undefined;
 
   return (
     <div className="space-y-3 text-[var(--paint)]">
@@ -19,8 +22,8 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
         .filter((task) => !task.requiresSpray || certifiedPresent(state, surface))
         .filter((task) => task.kind !== 'prep' || inPrepWindow(state))
         .map((task) => {
-          const planned = state.plannedTasks.find((item) => item.taskId === task.id);
-          const assigned = planned ? workerById(state, planned.workerId) : assignWorker(state, task);
+          const planned = findPlannedJob(state, task.id, jobHoles);
+          const assigned = planned ? workerById(state, planned.workerId) : assignWorker(state, task, jobHoles);
           const machine = planned?.machineId
             ? getMachine(planned.machineId)
             : taskUsesMachine(task)
@@ -44,6 +47,7 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
                 <div className="mt-2 space-y-2">
                   <p>
                     Planned · {planned.minutes} min · {workerById(state, planned.workerId)?.name}
+                    {planned.holes?.length ? ` · ${formatHoleSet(planned.holes)}` : ''}
                   </p>
                   <div className="block text-sm text-[var(--sand)]">
                     Worker
@@ -68,19 +72,19 @@ export default function TaskPanel({ surface, state, onPlan, onRemove, onSetWorke
                       })}
                     </ul>
                   </div>
-                  <button type="button" onClick={() => onRemove(task.id)} className="border border-[var(--sand)] px-3 py-1">
+                  <button type="button" onClick={() => onRemove(task.id, planned.planId)} className="border border-[var(--sand)] px-3 py-1">
                     Take off
                   </button>
                 </div>
               ) : (
                 (() => {
-                  const minutes = durationForTask(state, task.id, assigned);
-                  const check = canPlanTask(state, task.id);
+                  const minutes = durationForTask(state, task.id, assigned, undefined, jobHoles);
+                  const check = canPlanTask(state, task.id, undefined, { holes: jobHoles });
                   return (
                     <button
                       type="button"
                       disabled={!check.ok}
-                      onClick={() => onPlan(task.id)}
+                      onClick={() => onPlan(task.id, jobHoles)}
                       className="mt-3 border border-[var(--sand)] px-3 py-2 text-left disabled:opacity-40"
                       title={check.ok ? undefined : check.reason}
                     >

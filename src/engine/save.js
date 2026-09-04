@@ -24,7 +24,9 @@ import {
   PLAYOUT_SPEED_DEFAULT,
   PLAYOUT_SKIP_DEFAULT,
   PLAYOUT_SPEEDS,
+  ROUTE_NAME_MAX,
   SALESMAN_RELATIONSHIP_MAX,
+  SAVED_ROUTE_CAP,
   SALESMAN_RELATIONSHIP_MIN,
   SALESMAN_RELATIONSHIP_START,
 } from '../data/constants.js';
@@ -93,6 +95,18 @@ export function withDefaults(state) {
     surfaceDefaults: holeState.surfaceDefaults,
     saveVersion: SAVE_VERSION,
     plannedTasks,
+    nextPlanId: Number.isInteger(state.nextPlanId) && state.nextPlanId > 0 ? state.nextPlanId : 1,
+    selectedHoles: Array.isArray(state.selectedHoles) ? state.selectedHoles.map(Number).filter((id) => id > 0) : [],
+    savedRoutes: (Array.isArray(state.savedRoutes) ? state.savedRoutes : [])
+      .slice(0, SAVED_ROUTE_CAP)
+      .map((item, index) => ({
+        id: item.id ?? index + 1,
+        name: String(item.name ?? 'Route').slice(0, ROUTE_NAME_MAX),
+        holes: Array.isArray(item.holes) ? item.holes.map(Number).filter((id) => id > 0) : [],
+      })),
+    nextRouteId: Number.isInteger(state.nextRouteId) && state.nextRouteId > 0 ? state.nextRouteId : 1,
+    lastDayJobs: Array.isArray(state.lastDayJobs) ? state.lastDayJobs : [],
+    lastRepeatDropped: Array.isArray(state.lastRepeatDropped) ? state.lastRepeatDropped : [],
     forecast,
     weatherQueue,
     forecastStrip,

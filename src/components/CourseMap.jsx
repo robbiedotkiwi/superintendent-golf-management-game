@@ -187,10 +187,50 @@ export default function CourseMap({
   onView,
   moistureState = null,
   highlight = null,
+  selectedHoles = [],
+  onToggleHole,
+  onAddHole,
 }) {
   const svgRef = useRef(null);
   const dragRef = useRef(null);
+  const holeDragRef = useRef(null);
   const viewRef = useRef(view);
+  const selectedSet = new Set(selectedHoles ?? []);
+
+  function holeHandlers(hole, surface) {
+    return {
+      onPointerDown: (event) => {
+        if (event.button !== 0) return;
+        holeDragRef.current = { start: hole.id, surface, dragged: false };
+        event.stopPropagation();
+      },
+      onPointerEnter: () => {
+        const drag = holeDragRef.current;
+        if (!drag) return;
+        if (drag.start !== hole.id) drag.dragged = true;
+        if (drag.dragged) {
+          onAddHole?.(drag.start);
+          onAddHole?.(hole.id);
+        }
+      },
+      onClick: () => {
+        const drag = holeDragRef.current;
+        const dragged = Boolean(drag?.dragged);
+        holeDragRef.current = null;
+        if (dragged) {
+          onSelect(surface);
+          return;
+        }
+        onToggleHole?.(hole.id);
+        onSelect(surface);
+      },
+      onDoubleClick: (event) => {
+        event.preventDefault();
+        fitHole(hole);
+      },
+      onKeyDown: (event) => activate(event, surface, onSelect),
+    };
+  }
   const holeRecord = (id) => (holesData ?? []).find((item) => item.id === id);
   const fillFor = (id, type) => {
     const kind = type === 'greens' ? 'green' : type === 'tees' ? 'tee' : type === 'fairways' ? 'fairway' : type === 'bunkers' ? 'bunker' : type;
@@ -405,12 +445,7 @@ export default function CourseMap({
           tabIndex={0}
           role="button"
           aria-label={`Hole ${hole.id} rough`}
-          onClick={() => onSelect('rough')}
-          onDoubleClick={(event) => {
-            event.preventDefault();
-            fitHole(hole);
-          }}
-          onKeyDown={(event) => activate(event, 'rough', onSelect)}
+          {...holeHandlers(hole, 'rough')}
         />
       ))}
       {layout.map((hole) => {
@@ -426,12 +461,7 @@ export default function CourseMap({
               tabIndex={0}
               role="button"
               aria-label={`Hole ${hole.id} tee`}
-              onClick={() => onSelect('tees')}
-              onDoubleClick={(event) => {
-                event.preventDefault();
-                fitHole(hole);
-              }}
-              onKeyDown={(event) => activate(event, 'tees', onSelect)}
+              {...holeHandlers(hole, 'tees')}
             />
             <path d={teeD} fill="url(#mow-tees)" opacity={surfacePatternOpacity(patternState, 'tees')} pointerEvents="none" />
             <MoistureOverlayShape kind="path" d={teeD} surface="tees" state={moistureState} />
@@ -449,12 +479,7 @@ export default function CourseMap({
             tabIndex={0}
             role="button"
             aria-label={`Hole ${hole.id} fairway`}
-            onClick={() => onSelect('fairways')}
-            onDoubleClick={(event) => {
-              event.preventDefault();
-              fitHole(hole);
-            }}
-            onKeyDown={(event) => activate(event, 'fairways', onSelect)}
+            {...holeHandlers(hole, 'fairways')}
           />
           {showsMowOverlay(surfaceDefaults?.fairways?.pattern) ? (
           <path
@@ -480,12 +505,7 @@ export default function CourseMap({
               tabIndex={0}
               role="button"
               aria-label={`Hole ${hole.id} green`}
-              onClick={() => onSelect('greens')}
-              onDoubleClick={(event) => {
-                event.preventDefault();
-                fitHole(hole);
-              }}
-              onKeyDown={(event) => activate(event, 'greens', onSelect)}
+              {...holeHandlers(hole, 'greens')}
             />
             <path d={greenD} fill="url(#mow-greens)" opacity={surfacePatternOpacity(patternState, 'greens')} pointerEvents="none" />
             <MoistureOverlayShape
@@ -510,12 +530,7 @@ export default function CourseMap({
             tabIndex={0}
             role="button"
             aria-label={`Hole ${hole.id} bunker`}
-            onClick={() => onSelect('bunkers')}
-            onDoubleClick={(event) => {
-              event.preventDefault();
-              fitHole(hole);
-            }}
-            onKeyDown={(event) => activate(event, 'bunkers', onSelect)}
+            {...holeHandlers(hole, 'bunkers')}
           />
         )),
       )}
@@ -553,8 +568,8 @@ export default function CourseMap({
             cy={hole.marker.cy}
             r={HOLE_NUMBER_RADIUS}
             fill="var(--paint)"
-            stroke="var(--soil)"
-            strokeWidth="2"
+            stroke={selectedSet.has(hole.id) ? 'var(--machine-orange)' : 'var(--soil)'}
+            strokeWidth={selectedSet.has(hole.id) ? 4 : 2}
           />
           <text
             x={hole.marker.cx}

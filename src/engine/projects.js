@@ -78,7 +78,7 @@ export function absorbNote(season) {
 
 export function taskTimeMultiplier(state, task) {
   if (!task || task.id === 'gmMeeting' || task.id === 'pickBalls') return 1;
-  let mult = holeCount(state) >= EXPANDED_HOLE_COUNT ? TASK_TIME_MULT_18 : 1;
+  let mult = 1;
   if (task.surface === 'bunkers' && state.hasExtraBunkers) mult *= EXTRA_BUNKER_TIME_MULT;
   if (task.surface === 'tees' && state.hasNewTees) mult *= NEW_TEES_TIME_MULT;
   return mult;

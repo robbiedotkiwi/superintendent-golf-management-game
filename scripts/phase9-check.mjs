@@ -20,6 +20,7 @@ import {
   SATISFACTION_START,
   STARTING_WEATHER,
   TASK_TIME_MULT_18,
+  JOB_SETUP_MINUTES,
 } from '../src/data/constants.js';
 import { holesForCount } from '../src/data/course.js';
 import { durationForTask } from '../src/engine/assignment.js';
@@ -75,7 +76,9 @@ assert.equal(holesForCount(HOLE_COUNT).length, HOLE_COUNT);
 
 const nineMin = durationForTask(start, 'cutGreens', start.workers[0]);
 const eighteenMin = durationForTask({ ...start, holes: EXPANDED_HOLE_COUNT }, 'cutGreens', start.workers[0]);
-assert.equal(eighteenMin, nineMin * TASK_TIME_MULT_18);
+const setup = JOB_SETUP_MINUTES.green;
+assert.ok(eighteenMin > nineMin);
+assert.ok(Math.abs(eighteenMin - (setup + (nineMin - setup) * TASK_TIME_MULT_18)) <= 1);
 
 let range = reducer(
   { ...createInitialState(), capitalBudget: DRIVING_RANGE_COST + AUTO_PICKER_COST },
