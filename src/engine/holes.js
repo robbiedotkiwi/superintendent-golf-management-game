@@ -173,12 +173,10 @@ export function createInitialHoles(count = HOLE_COUNT, extras = {}) {
       tee: fanMowFromGrouped('tees', grouped, { ...extras, count }, index, id),
       fairway: fanMowFromGrouped('fairways', grouped, { ...extras, count }, index, id),
       rough: fanMowFromGrouped('rough', grouped, { ...extras, count }, index, id),
-      bunker: layoutHasBunker(id, count)
-        ? createBunkerRecord({
-            quality: grouped?.bunkers?.quality ?? STARTING_QUALITY_BUNKERS,
-            lastRakedDay: grouped?.bunkers?.lastRakedDay ?? STARTING_DAY,
-          })
-        : null,
+      bunker: createBunkerRecord({
+        quality: grouped?.bunkers?.quality ?? STARTING_QUALITY_BUNKERS,
+        lastRakedDay: grouped?.bunkers?.lastRakedDay ?? STARTING_DAY,
+      }),
     });
   }
   if (!grouped) {

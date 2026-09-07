@@ -4,8 +4,8 @@
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { HOLE_COUNT, HOLE_WALK_MAX, POND_CX, POND_CY, SHED_PROXIMITY_MAX, TEE_MARKER_FONT, TEE_MARKER_RADIUS } from '../src/data/constants.js';
-import { HOLES, SHED_HEIGHT, SHED_WIDTH, SHED_X, SHED_Y, courseBoundaryPath } from '../src/data/course.js';
+import { HOLE_COUNT, HOLE_NUMBER_FONT, POND_CX, POND_CY, TEE_MARKER_RADIUS } from '../src/data/constants.js';
+import { HOLES, SHED_WIDTH, SHED_X, SHED_Y, courseBoundaryPath } from '../src/data/course.js';
 import { boundaryFill, healthyFill, luminance } from '../src/engine/color.js';
 
 function dist(ax, ay, bx, by) {
@@ -19,23 +19,10 @@ assert.deepEqual(
 );
 
 const shedCx = SHED_X + SHED_WIDTH / 2;
-const shedCy = SHED_Y + SHED_HEIGHT / 2;
-const hole9 = HOLES[8];
-assert.ok(
-  dist(hole9.green.cx, hole9.green.cy, shedCx, shedCy) < SHED_PROXIMITY_MAX,
-  'hole 9 returns near the shed',
-);
-assert.ok(
-  dist(HOLES[0].tee.cx, HOLES[0].tee.cy, shedCx, shedCy) < SHED_PROXIMITY_MAX,
-  'hole 1 starts near the shed',
-);
-
-for (let i = 0; i < HOLES.length - 1; i += 1) {
-  const from = HOLES[i].green;
-  const to = HOLES[i + 1].tee;
-  const walk = dist(from.cx, from.cy, to.cx, to.cy);
-  assert.ok(walk < HOLE_WALK_MAX, `hole ${i + 1} green is adjacent to hole ${i + 2} tee (${walk.toFixed(1)})`);
-}
+const hole8 = HOLES[7];
+assert.ok(hole8.rough.every((point) => point[1] <= SHED_Y), 'hole 8 sits above the shed');
+assert.ok(Math.abs(HOLES[6].tee.cx - POND_CX) < 450, 'pond sits under the hole 7 column');
+assert.ok(Math.abs(shedCx - hole8.tee.cx) < 400, 'shed sits under the hole 8 column');
 
 const centroid = HOLES.reduce(
   (acc, hole) => ({
@@ -50,7 +37,7 @@ assert.ok(
   'pond is a side hazard, not the hub of a ring',
 );
 assert.ok(TEE_MARKER_RADIUS >= 18, 'tee markers large enough to read when scaled');
-assert.ok(TEE_MARKER_FONT >= 20, 'tee numbers large enough to read when scaled');
+assert.ok(HOLE_NUMBER_FONT >= 20, 'tee numbers large enough to read when scaled');
 
 const boundary = courseBoundaryPath(HOLES);
 assert.match(boundary, /^M/);

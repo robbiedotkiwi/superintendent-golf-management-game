@@ -8,6 +8,7 @@ import {
   FLAG_POLE,
   FLAG_WIDTH,
   HOLE_COUNT,
+  HOLE_NUMBER_FONT,
   HOLE_NUMBER_RADIUS,
   CENTRELINE_WIDTH,
   MOWER_ANIM_MS,
@@ -18,6 +19,7 @@ import {
   PATTERN_RING_SPACING,
   PATTERN_STRIPE_SPACING,
   PATTERN_STRIPE_WIDTH,
+  POND_CORNER,
   POND_CX,
   POND_CY,
   POND_HEALTH_STRESSED,
@@ -28,7 +30,6 @@ import {
   RANGE_WIDTH,
   RANGE_X,
   RANGE_Y,
-  TEE_MARKER_FONT,
   VIEW_ZOOM_STEP,
   VIEW_ZOOM_WHEEL_FACTOR,
   MOISTURE_BAND_MARK_WIDTH,
@@ -47,8 +48,6 @@ import {
   mowerPathFor,
   SHED_HEIGHT,
   SHED_ROOF,
-  SHED_DOOR_HEIGHT,
-  SHED_DOOR_WIDTH,
   SHED_WIDTH,
   SHED_X,
   SHED_Y,
@@ -413,21 +412,13 @@ export default function CourseMap({
         }}
       >
         <polygon
-          points={`${SHED_X},${SHED_Y} ${SHED_X + SHED_WIDTH / 2},${SHED_Y - SHED_ROOF} ${SHED_X + SHED_WIDTH},${SHED_Y}`}
-          fill="var(--soil)"
+          points={`${SHED_X},${SHED_Y} ${SHED_X + SHED_WIDTH / 2},${SHED_Y - SHED_ROOF} ${SHED_X + SHED_WIDTH},${SHED_Y} ${SHED_X + SHED_WIDTH},${SHED_Y + SHED_HEIGHT} ${SHED_X},${SHED_Y + SHED_HEIGHT}`}
+          fill="var(--sand)"
           stroke="var(--paint)"
-        />
-        <rect x={SHED_X} y={SHED_Y} width={SHED_WIDTH} height={SHED_HEIGHT} fill="var(--sand)" stroke="var(--paint)" />
-        <rect
-          x={SHED_X + SHED_WIDTH / 2 - SHED_DOOR_WIDTH / 2}
-          y={SHED_Y + SHED_HEIGHT - SHED_DOOR_HEIGHT}
-          width={SHED_DOOR_WIDTH}
-          height={SHED_DOOR_HEIGHT}
-          fill="var(--soil)"
         />
         <text
           x={SHED_X + SHED_WIDTH / 2}
-          y={SHED_Y + 22}
+          y={SHED_Y + SHED_HEIGHT / 2 + 6}
           textAnchor="middle"
           fill="var(--soil)"
           fontSize="18"
@@ -569,18 +560,18 @@ export default function CourseMap({
             cx={hole.marker.cx}
             cy={hole.marker.cy}
             r={HOLE_NUMBER_RADIUS}
-            fill="var(--paint)"
-            stroke={selectedSet.has(hole.id) ? 'var(--machine-orange)' : 'var(--soil)'}
-            strokeWidth={selectedSet.has(hole.id) ? 4 : 2}
+            fill="none"
+            stroke={selectedSet.has(hole.id) ? 'var(--machine-orange)' : 'none'}
+            strokeWidth={selectedSet.has(hole.id) ? 4 : 0}
           />
           <text
             x={hole.marker.cx}
             y={hole.marker.cy + 1}
             textAnchor="middle"
             dominantBaseline="middle"
-            fill="var(--soil)"
-            fontSize={TEE_MARKER_FONT}
-            fontWeight="700"
+            fill="var(--paint)"
+            fontSize={HOLE_NUMBER_FONT}
+            fontWeight="400"
           >
             {hole.id}
           </text>
@@ -618,11 +609,12 @@ export default function CourseMap({
         }}
         onKeyDown={(event) => activate(event, 'pond', onSelect)}
       >
-        <ellipse
-          cx={POND_CX}
-          cy={POND_CY}
-          rx={POND_RX}
-          ry={POND_RY}
+        <rect
+          x={POND_CX - POND_RX}
+          y={POND_CY - POND_RY}
+          width={POND_RX * 2}
+          height={POND_RY * 2}
+          rx={POND_CORNER}
           fill={pond.health < POND_HEALTH_STRESSED ? 'var(--pond-stressed)' : 'var(--pond-water)'}
           className={active === 'pond' ? 'stroke-[var(--paint)] stroke-[3]' : 'stroke-[var(--soil)] stroke-1'}
         />

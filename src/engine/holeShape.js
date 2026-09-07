@@ -98,6 +98,68 @@ function greenPoints(cx, cy, size, tx, ty, variant) {
   }
 }
 
+function rectPoly(x, y, w, h) {
+  return [
+    [x, y],
+    [x + w, y],
+    [x + w, y + h],
+    [x, y + h],
+  ];
+}
+
+function circlePoly(cx, cy, r, count = 24) {
+  const points = [];
+  for (let i = 0; i < count; i += 1) {
+    const ang = (i / count) * Math.PI * 2;
+    points.push([cx + Math.cos(ang) * r, cy + Math.sin(ang) * r]);
+  }
+  return points;
+}
+
+function expandSchematicHole(recipe) {
+  const { schematic } = recipe;
+  const raw = centerlineFromRecipe(recipe);
+  const dense = densifyPolyline(raw, HOLE_PATH_SAMPLES);
+  const teePt = recipe.tee;
+  const greenPt = recipe.green;
+  const greenDir = tangentAtLength(dense, 1);
+  const teeRect = schematic.tee;
+  const roughRect = schematic.rough;
+  const radius = schematic.green.r;
+  const flag = [
+    greenPt[0] + greenDir[0] * radius * FLAG_FAR_FACTOR,
+    greenPt[1] + greenDir[1] * radius * FLAG_FAR_FACTOR,
+  ];
+  return {
+    id: recipe.id,
+    dogleg: false,
+    bent: false,
+    centerline: raw,
+    centerlineDense: dense,
+    rough: rectPoly(roughRect.x, roughRect.y, roughRect.w, roughRect.h),
+    fairway: schematic.fairway,
+    bunkers: [],
+    tee: {
+      cx: teePt[0],
+      cy: teePt[1],
+      rx: teeRect.w / 2,
+      ry: teeRect.h / 2,
+      points: rectPoly(teeRect.x, teeRect.y, teeRect.w, teeRect.h),
+    },
+    green: {
+      cx: greenPt[0],
+      cy: greenPt[1],
+      rx: radius,
+      ry: radius,
+      variant: recipe.greenShape,
+      points: circlePoly(schematic.green.cx, schematic.green.cy, radius),
+    },
+    marker: { cx: schematic.marker.cx, cy: schematic.marker.cy, r: HOLE_NUMBER_RADIUS },
+    flag: { x: flag[0], y: flag[1] },
+    dryingFactor: recipe.dryingFactor,
+  };
+}
+
 function rotatedRect(cx, cy, width, height, tx, ty) {
   const [nx, ny] = normalFromTangent(tx, ty);
   const hx = width / 2;
@@ -156,6 +218,7 @@ function boundsRadius(points) {
 }
 
 export function expandHole(recipe) {
+  if (recipe.schematic) return expandSchematicHole(recipe);
   const raw = centerlineFromRecipe(recipe);
   const dense = densifyPolyline(raw, HOLE_PATH_SAMPLES);
   const teePt = dense[0];

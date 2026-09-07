@@ -1,156 +1,76 @@
-import {
-  BUNKER_LANDING_T,
-  BUNKER_GREENSIDE_T,
-  BUNKER_SHAPE_BEAN,
-  BUNKER_SHAPE_SEMI,
-  GREEN_SHAPE_BEAN,
-  GREEN_SHAPE_CIRCLE,
-  GREEN_SHAPE_KIDNEY_LEFT,
-  GREEN_SHAPE_KIDNEY_RIGHT,
-  GREEN_SHAPE_LONG,
-  GREEN_SHAPE_OVAL,
-  GREEN_SHAPE_PEAR,
-  GREEN_SHAPE_TEARDROP,
-  GREEN_SHAPE_WIDE,
-} from './constants.js';
+import { GREEN_SHAPE_CIRCLE } from './constants.js';
 import { expandHole } from '../engine/holeShape.js';
 
-// tee + optional bend + green form the hole centerline; bunkers are { t, side, size, shape }.
+// Simple Course frame from Figma "Golf Management Sim" (node 2:93).
+// Coordinates are frame-local: origin at the top-left of the 2911×800 artboard.
 
-const HOLE_RECIPES = [
-  {
-    id: 1,
-    dryingFactor: 1.12,
-    tee: [520, 770],
-    green: [545, 530],
+const HOLE_WIDTH = 917;
+const HOLE_HEIGHT = 160;
+const HOLE_GAP = 40;
+const HOLE_ORIGIN = 40;
+const HOLE_COLS = 3;
+
+const TEE_RECT = { x: 20, y: 20, w: 60, h: 120 };
+const FAIRWAY_RECT = { x: 120, y: 30, w: 500, h: 100 };
+const GREEN_RECT = { x: 660, y: 20, w: 120, h: 120 };
+const NUMBER_RECT = { x: 820, y: 22, w: 77, h: 116 };
+
+// Fairway vector path in the 500×100 fairway box (Figma node Fairway).
+const FAIRWAY_LOCAL = [
+  [0, 0],
+  [250, 12.5],
+  [500, 0],
+  [500, 100],
+  [250, 87.5],
+  [0, 100],
+];
+
+const DRYING_FACTORS = [1.12, 0.86, 1.3, 0.8, 1.24, 0.93, 1.0, 1.18, 1.06];
+
+function holeOrigin(id) {
+  const col = (id - 1) % HOLE_COLS;
+  const row = Math.floor((id - 1) / HOLE_COLS);
+  return [HOLE_ORIGIN + col * (HOLE_WIDTH + HOLE_GAP), HOLE_ORIGIN + row * (HOLE_HEIGHT + HOLE_GAP)];
+}
+
+// tee + green form the hole centerline. Schematic polygons come from named Figma layers.
+
+const HOLE_RECIPES = DRYING_FACTORS.map((dryingFactor, index) => {
+  const id = index + 1;
+  const [hx, hy] = holeOrigin(id);
+  const tee = [hx + TEE_RECT.x + TEE_RECT.w / 2, hy + TEE_RECT.y + TEE_RECT.h / 2];
+  const green = [hx + GREEN_RECT.x + GREEN_RECT.w / 2, hy + GREEN_RECT.y + GREEN_RECT.h / 2];
+  return {
+    id,
+    dryingFactor,
+    tee,
+    green,
     bend: null,
     greenShape: GREEN_SHAPE_CIRCLE,
-    greenSize: 62,
-    bunkers: [
-      { t: BUNKER_LANDING_T, side: 1, size: 28, shape: BUNKER_SHAPE_SEMI },
-      { t: BUNKER_GREENSIDE_T, side: -1, size: 24, shape: BUNKER_SHAPE_BEAN },
-    ],
-  },
-  {
-    id: 2,
-    dryingFactor: 0.86,
-    tee: [670, 500],
-    bend: [800, 420],
-    green: [760, 270],
-    greenShape: GREEN_SHAPE_OVAL,
-    greenSize: 70,
-    bunkers: [
-      { t: BUNKER_LANDING_T, side: -1, size: 32, shape: BUNKER_SHAPE_SEMI },
-      { t: 0.7, side: 1, size: 26, shape: BUNKER_SHAPE_BEAN },
-      { t: BUNKER_GREENSIDE_T, side: 1, size: 24, shape: BUNKER_SHAPE_SEMI },
-    ],
-  },
-  {
-    id: 3,
-    dryingFactor: 1.3,
-    tee: [900, 260],
-    green: [1120, 280],
-    bend: null,
-    greenShape: GREEN_SHAPE_KIDNEY_LEFT,
-    greenSize: 66,
-    bunkers: [
-      { t: BUNKER_LANDING_T, side: 1, size: 30, shape: BUNKER_SHAPE_BEAN },
-      { t: BUNKER_GREENSIDE_T, side: -1, size: 26, shape: BUNKER_SHAPE_SEMI },
-    ],
-  },
-  {
-    id: 4,
-    dryingFactor: 0.8,
-    tee: [1140, 420],
-    bend: [1060, 560],
-    green: [1145, 700],
-    greenShape: GREEN_SHAPE_KIDNEY_RIGHT,
-    greenSize: 74,
-    bunkers: [
-      { t: 0.35, side: 1, size: 34, shape: BUNKER_SHAPE_SEMI },
-      { t: 0.58, side: -1, size: 28, shape: BUNKER_SHAPE_BEAN },
-      { t: BUNKER_GREENSIDE_T, side: 1, size: 24, shape: BUNKER_SHAPE_SEMI },
-      { t: 0.92, side: -1, size: 26, shape: BUNKER_SHAPE_BEAN },
-    ],
-  },
-  {
-    id: 5,
-    dryingFactor: 1.24,
-    tee: [1010, 780],
-    green: [990, 1000],
-    bend: null,
-    greenShape: GREEN_SHAPE_PEAR,
-    greenSize: 68,
-    bunkers: [
-      { t: BUNKER_LANDING_T, side: -1, size: 30, shape: BUNKER_SHAPE_SEMI },
-      { t: BUNKER_GREENSIDE_T, side: 1, size: 36, shape: BUNKER_SHAPE_BEAN },
-      { t: 0.72, side: 1, size: 24, shape: BUNKER_SHAPE_SEMI },
-    ],
-  },
-  {
-    id: 6,
-    dryingFactor: 0.93,
-    tee: [860, 1040],
-    green: [860, 1180],
-    bend: null,
-    greenShape: GREEN_SHAPE_WIDE,
-    greenSize: 58,
-    bunkers: [
-      { t: BUNKER_LANDING_T, side: 1, size: 26, shape: BUNKER_SHAPE_BEAN },
-      { t: BUNKER_GREENSIDE_T, side: -1, size: 24, shape: BUNKER_SHAPE_SEMI },
-    ],
-  },
-  {
-    id: 7,
-    dryingFactor: 1.0,
-    tee: [720, 1180],
-    green: [560, 1180],
-    bend: null,
-    greenShape: GREEN_SHAPE_BEAN,
-    greenSize: 64,
-    bunkers: [
-      { t: BUNKER_LANDING_T, side: -1, size: 28, shape: BUNKER_SHAPE_SEMI },
-      { t: 0.65, side: 1, size: 26, shape: BUNKER_SHAPE_BEAN },
-      { t: BUNKER_GREENSIDE_T, side: 1, size: 24, shape: BUNKER_SHAPE_SEMI },
-    ],
-  },
-  {
-    id: 8,
-    dryingFactor: 1.18,
-    tee: [420, 1180],
-    green: [280, 1180],
-    bend: null,
-    greenShape: GREEN_SHAPE_LONG,
-    greenSize: 78,
-    bunkers: [
-      { t: 0.32, side: 1, size: 32, shape: BUNKER_SHAPE_BEAN },
-      { t: BUNKER_LANDING_T, side: -1, size: 28, shape: BUNKER_SHAPE_SEMI },
-      { t: BUNKER_GREENSIDE_T, side: -1, size: 30, shape: BUNKER_SHAPE_BEAN },
-    ],
-  },
-  {
-    id: 9,
-    dryingFactor: 1.06,
-    tee: [280, 1060],
-    bend: [700, 1060],
-    green: [660, 880],
-    greenShape: GREEN_SHAPE_TEARDROP,
-    greenSize: 72,
-    bunkers: [
-      { t: BUNKER_LANDING_T, side: 1, size: 28, shape: BUNKER_SHAPE_SEMI },
-      { t: BUNKER_GREENSIDE_T, side: -1, size: 26, shape: BUNKER_SHAPE_BEAN },
-    ],
-  },
-];
+    greenSize: GREEN_RECT.w,
+    bunkers: [],
+    schematic: {
+      rough: { x: hx, y: hy, w: HOLE_WIDTH, h: HOLE_HEIGHT },
+      tee: { x: hx + TEE_RECT.x, y: hy + TEE_RECT.y, w: TEE_RECT.w, h: TEE_RECT.h },
+      fairway: FAIRWAY_LOCAL.map(([x, y]) => [x + hx + FAIRWAY_RECT.x, y + hy + FAIRWAY_RECT.y]),
+      green: { cx: green[0], cy: green[1], r: GREEN_RECT.w / 2 },
+      marker: {
+        cx: hx + NUMBER_RECT.x + NUMBER_RECT.w / 2,
+        cy: hy + NUMBER_RECT.y + NUMBER_RECT.h / 2,
+      },
+    },
+  };
+});
 
 export const HOLE_SHAPES = HOLE_RECIPES.map(expandHole);
 
+// Figma Shed vector: house pentagon 200×120 at (997, 640); eaves at y ≈ 48.
 export const SHED = {
-  x: 430,
-  y: 900,
-  width: 120,
-  height: 56,
-  roof: 28,
-  doorWidth: 22,
-  doorHeight: 28,
+  x: 997,
+  y: 688,
+  width: 200,
+  height: 72,
+  roof: 48,
+  doorWidth: 36,
+  doorHeight: 40,
 };

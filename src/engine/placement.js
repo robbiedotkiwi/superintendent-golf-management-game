@@ -20,15 +20,6 @@ function rectPolygon(rect) {
   ];
 }
 
-function ellipsePolygon(cx, cy, rx, ry, count = 24) {
-  const points = [];
-  for (let i = 0; i < count; i += 1) {
-    const ang = (i / count) * Math.PI * 2;
-    points.push([cx + Math.cos(ang) * rx, cy + Math.sin(ang) * ry]);
-  }
-  return points;
-}
-
 export function shedClearanceRect(shed) {
   return {
     x: shed.x - SHED_CLEARANCE,
@@ -40,7 +31,15 @@ export function shedClearanceRect(shed) {
 
 export function holePlacement(hole, holes, shed) {
   const shedClear = !polygonsIntersect(hole.rough, rectPolygon(shedClearanceRect(shed)));
-  const pond = !polygonsIntersect(hole.rough, ellipsePolygon(POND_CX, POND_CY, POND_RX, POND_RY));
+  const pond = !polygonsIntersect(
+    hole.rough,
+    rectPolygon({
+      x: POND_CX - POND_RX,
+      y: POND_CY - POND_RY,
+      width: POND_RX * 2,
+      height: POND_RY * 2,
+    }),
+  );
   const others = holes
     .filter((other) => other.id !== hole.id)
     .every((other) => !polygonsIntersect(hole.rough, other.rough));

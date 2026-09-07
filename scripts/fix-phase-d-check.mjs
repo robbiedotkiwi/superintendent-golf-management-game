@@ -45,7 +45,11 @@ assert.equal(FAIRWAY_WIDTH, 58);
 assert.equal(fairwayHalfWidth(), FAIRWAY_WIDTH / 2);
 assert.equal(fairwayWidthVaries(), false);
 
-assert.ok(HOLES.some((hole) => hole.bunkers.length >= 2), 'landing and greenside bunkers');
+assert.equal(
+  HOLES.filter((hole) => hole.bunkers.length > 0).length,
+  0,
+  'Figma Simple Course has no bunker layers',
+);
 for (const hole of HOLES) {
   for (const bunker of hole.bunkers) {
     assert.ok(bunker.length >= 5, 'bunker is an irregular polygon, not an ellipse');

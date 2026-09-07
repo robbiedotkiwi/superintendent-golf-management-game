@@ -343,3 +343,9 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Pond expansion is Office → Projects (`POND_EXPANSION_COST` 95000, `POND_EXPANSION_DAYS` 45). Daily site minutes are `POND_EXPANSION_DAILY_MINUTES` (40), scaled by `SEASON_GROWTH` like the other projects.
 - On completion `hasPondExpansion` raises capacity to 14,000, groundwater to 35 m³/day, and halves both pond health drops. Volume is unchanged; the level bar rescales off `pondCapacity(state)`.
 
+## Course map (Figma Simple Course)
+
+- The playable map is the named Simple Course frame from Figma (`Golf Management Sim`, node `2:93`): a 3×3 grid of hole blocks (tee, bone fairway, circle green, hole number), pond pill under hole 7, house shed under hole 8.
+- Figma has no bunker or dogleg layers, so `BUNKER_HOLE_COUNT` and `DOGLEG_MIN_HOLES` are 0. Bunker quality is still tracked on every hole record; rake jobs stay in Turf.
+- Property bounds are `3000×900` to fit the 2911×800 artboard. Pond is a rounded rect at `(450, 700)` size `820×120`. Driving range sits in the empty bottom-row cell beside the shed.
+
