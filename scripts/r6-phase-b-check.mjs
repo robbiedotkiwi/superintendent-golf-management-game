@@ -83,13 +83,13 @@ assert.equal(planned.plannedTasks.length, 1);
 assert.equal(planned.plannedTasks[0].taskId, 'cutGreens');
 assert.equal(holeSurface(planned, 1, 'greens').heightAtLastCut, null, 'last-cut fields are not written at plan time');
 
-let changed = reducer(start, { type: 'SET_HOC', surface: 'greens', hoc: 2.8 });
+let changed = reducer(start, { type: 'SET_HOC', surface: 'greens', hoc: 8 });
 changed = reducer(changed, { type: 'SET_PATTERN', surface: 'greens', pattern: PATTERN_RINGS });
 changed = reducer(changed, { type: 'SET_ANGLE', surface: 'greens', angle: 45 });
 changed = reducer(changed, { type: 'PLAN_TASK', taskId: 'cutGreens', holes: [1] });
 assert.equal(holeSurface(changed, 1, 'greens').heightAtLastCut, null);
 let resolved = reducer(changed, { type: 'END_DAY' });
-assert.equal(holeSurface(resolved, 1, 'greens').heightAtLastCut, 2.8);
+assert.equal(holeSurface(resolved, 1, 'greens').heightAtLastCut, 8);
 assert.equal(holeSurface(resolved, 1, 'greens').patternAtLastCut, PATTERN_RINGS);
 assert.equal(holeSurface(resolved, 1, 'greens').angleAtLastCut, 45);
 assert.equal(resolved.plannedTasks.length, 0);
@@ -98,7 +98,7 @@ resolved = reducer(resolved, { type: 'SET_HOC', surface: 'greens', hoc: 4.0 });
 resolved = reducer(resolved, { type: 'SET_PATTERN', surface: 'greens', pattern: 'stripes' });
 resolved = reducer(resolved, { type: 'SET_ANGLE', surface: 'greens', angle: 0 });
 resolved = reducer(resolved, { type: 'PLAN_TASK', taskId: 'rakeBunkers' });
-assert.equal(holeSurface(resolved, 1, 'greens').heightAtLastCut, 2.8, 'last-cut fields persist after settings change');
+assert.equal(holeSurface(resolved, 1, 'greens').heightAtLastCut, 8, 'last-cut fields persist after settings change');
 assert.equal(courseSettings(resolved, 'greens').hoc, 4.0);
 
 const autoGreens = pickMachine(start, getTask('cutGreens'));

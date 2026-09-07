@@ -20,6 +20,7 @@ import {
 import { inDiseaseGrace } from './calendar.js';
 import { defaultJobHoles, isHoleModel, mapHoleSurfaces } from './holes.js';
 import { isAboveBand } from './moisture.js';
+import { diseaseRiskMult } from './grass.js';
 
 export const DISEASE_SURFACES = ['greens', 'tees', 'fairways', 'rough'];
 
@@ -79,7 +80,7 @@ export function pressureGain(state, surface) {
   const susceptibility = DISEASE_SUSCEPTIBILITY[surface] ?? 0;
   if (susceptibility === 0) return 0;
   if (isSuppressed(state, surface)) return 0;
-  let gain = DISEASE_PRESSURE_BASE * susceptibility * DISEASE_SEASON[state.season];
+  let gain = DISEASE_PRESSURE_BASE * susceptibility * DISEASE_SEASON[state.season] * diseaseRiskMult(state, surface);
   if (WET_WEATHER.includes(state.weather)) gain *= DISEASE_WET_MULT;
   if (isAboveBand(state.moisture, surface)) gain *= WET_DISEASE_MULT;
   return gain;

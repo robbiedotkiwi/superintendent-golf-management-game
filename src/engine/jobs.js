@@ -10,6 +10,7 @@ import {
 } from '../data/constants.js';
 import { getTask } from '../data/tasks.js';
 import { hocFactor, patternTimeMult } from './mowing.js';
+import { hocRangeFor } from './grass.js';
 import { defaultJobHoles, formatHoleSet, normalizeJobHoles, sameHoleSet } from './holes.js';
 
 export function setupMinutesFor(taskOrSurface) {
@@ -44,9 +45,9 @@ export function perHoleMinutesFor(state, taskId) {
 
 export function heightPatternMult(state, task) {
   if (!task?.mowing || !task.surface) return 1;
-  const height = state.surfaceDefaults?.[task.surface]?.hoc ?? HOC_RANGE[task.surface]?.default;
+  const height = state.surfaceDefaults?.[task.surface]?.hoc ?? hocRangeFor(state, task.surface)?.default ?? HOC_RANGE[task.surface]?.default;
   const pattern = state.surfaceDefaults?.[task.surface]?.pattern;
-  return HOC_TIME_MULT(hocFactor(task.surface, height)) * patternTimeMult(task.surface, pattern);
+  return HOC_TIME_MULT(hocFactor(task.surface, height, state)) * patternTimeMult(task.surface, pattern);
 }
 
 export function variableJobMinutes(state, taskId, holeIds) {

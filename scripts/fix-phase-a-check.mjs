@@ -24,6 +24,7 @@ import { durationForTask } from '../src/engine/assignment.js';
 import { surfaceCeiling } from '../src/engine/equipment.js';
 import { createInitialState, reducer } from '../src/engine/gameState.js';
 import { hocFactor, inHocStressBand, mowingMinutes } from '../src/engine/mowing.js';
+import { hocRangeFor } from '../src/engine/grass.js';
 import { migrateSave } from '../src/engine/save.js';
 import { applyWeatherToWorkers } from '../src/engine/weather.js';
 import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
@@ -64,18 +65,18 @@ function endKeep(state, extras = {}) {
 }
 
 const start = createInitialState();
-assert.equal(courseSettings(start, 'greens').hoc, HOC_RANGE.greens.default);
-assert.equal(courseSettings(start, 'tees').hoc, HOC_RANGE.tees.default);
-assert.equal(courseSettings(start, 'fairways').hoc, HOC_RANGE.fairways.default);
-assert.equal(courseSettings(start, 'rough').hoc, HOC_RANGE.rough.default);
+assert.equal(courseSettings(start, 'greens').hoc, hocRangeFor(start, 'greens').default);
+assert.equal(courseSettings(start, 'tees').hoc, hocRangeFor(start, 'tees').default);
+assert.equal(courseSettings(start, 'fairways').hoc, hocRangeFor(start, 'fairways').default);
+assert.equal(courseSettings(start, 'rough').hoc, hocRangeFor(start, 'rough').default);
 assert.equal(courseSettings(start, 'greens').pattern, PATTERN_STRIPES);
 assert.equal(courseSettings(start, 'fairways').pattern, PATTERN_BLOCK);
 assert.equal(courseSettings(start, 'rough').pattern, PATTERN_BLOCK);
 
-let lowered = reducer(start, { type: 'SET_HOC', surface: 'greens', hoc: HOC_RANGE.greens.min });
-assert.equal(courseSettings(lowered, 'greens').hoc, HOC_RANGE.greens.min);
+let lowered = reducer(start, { type: 'SET_HOC', surface: 'greens', hoc: hocRangeFor(start, 'greens').min });
+assert.equal(courseSettings(lowered, 'greens').hoc, hocRangeFor(start, 'greens').min);
 const roundTrip = migrateSave(JSON.parse(JSON.stringify(lowered)));
-assert.equal(courseSettings(roundTrip, 'greens').hoc, HOC_RANGE.greens.min);
+assert.equal(courseSettings(roundTrip, 'greens').hoc, hocRangeFor(start, 'greens').min);
 assert.equal(courseSettings(roundTrip, 'greens').pattern, PATTERN_STRIPES);
 assert.equal(roundTrip.view.zoom, 1);
 
@@ -90,7 +91,7 @@ const old = migrateSave({
     bunkers: { quality: 40 },
   },
 });
-assert.equal(courseSettings(old, 'greens').hoc, HOC_RANGE.greens.default);
+assert.equal(courseSettings(old, 'greens').hoc, hocRangeFor(old, 'greens').default);
 assert.equal(courseSettings(old, 'greens').pattern, PATTERN_STRIPES);
 assert.equal(old.view.panX, 0);
 assert.equal(typeof holeSurface(old, 1, 'greens').moisture, 'number');
@@ -108,7 +109,7 @@ const off = { greens: 'off', tees: 'off', fairways: 'off' };
 let high = { ...createInitialState(), season: 'summer', irrigation: off, weather: STARTING_WEATHER };
 let low = reducer(
   { ...createInitialState(), season: 'summer', irrigation: off, weather: STARTING_WEATHER },
-  { type: 'SET_HOC', surface: 'greens', hoc: HOC_RANGE.greens.min },
+  { type: 'SET_HOC', surface: 'greens', hoc: hocRangeFor(start, 'greens').min },
 );
 high = endKeep(high, { season: 'summer' });
 low = endKeep(low, { season: 'summer' });

@@ -242,6 +242,9 @@ export default function App() {
           onAcceptEvent={(inviteId) => dispatch({ type: 'ACCEPT_EVENT', inviteId })}
           onDeclineEvent={(inviteId) => dispatch({ type: 'DECLINE_EVENT', inviteId })}
           onStartProject={(projectId) => dispatch({ type: 'START_PROJECT', projectId })}
+          onStartGrassConversion={(surface, speciesId) =>
+            dispatch({ type: 'START_GRASS_CONVERSION', surface, speciesId })
+          }
           onBuyPicker={() => dispatch({ type: 'BUY_AUTO_PICKER' })}
           onToggleSound={() => dispatch({ type: 'TOGGLE_SOUND' })}
           onDismissTutorial={() => dispatch({ type: 'DISMISS_TUTORIAL' })}
@@ -351,6 +354,7 @@ function GameScreen({
   onAcceptEvent,
   onDeclineEvent,
   onStartProject,
+  onStartGrassConversion,
   onBuyPicker,
   onToggleSound,
   onDismissTutorial,
@@ -493,6 +497,7 @@ function GameScreen({
             onDeclineEvent={onDeclineEvent}
             onSetTournaments={onSetTournaments}
             onStartProject={onStartProject}
+            onStartGrassConversion={onStartGrassConversion}
             onBuyPicker={onBuyPicker}
           />
         ) : view === SECTION_TURF ? (

@@ -5,6 +5,7 @@ import {
   SEASON_GROWTH,
 } from '../data/constants.js';
 import { surfaceCeiling } from './equipment.js';
+import { grassGrowthFactor, hocRangeFor } from './grass.js';
 import { courseSettings, holeKind, meanQuality, presentHoles } from './holes.js';
 import { daysSinceLastWorked, isNeglected } from './neglect.js';
 import { hasPattern } from './mowing.js';
@@ -13,11 +14,12 @@ export function holeGrassLengthMm(state, surface, record) {
   const hoc =
     record?.heightAtLastCut ??
     courseSettings(state, surface)?.hoc ??
+    hocRangeFor(state, surface)?.default ??
     HOC_RANGE[surface]?.default ??
     0;
   const last = record?.lastMownDay;
   const days = last == null ? 0 : Math.max(0, state.day - last);
-  const rate = GRASS_GROWTH_MM_PER_DAY[surface] ?? 0;
+  const rate = (GRASS_GROWTH_MM_PER_DAY[surface] ?? 0) * grassGrowthFactor(state, surface);
   const season = SEASON_GROWTH[state.season] ?? 1;
   return hoc + days * rate * season;
 }
@@ -56,7 +58,7 @@ export function mowingStatus(state, surface) {
   const settings = courseSettings(state, surface) ?? {};
   const wear = surfacePatternWear(state, surface);
   return {
-    heightMm: settings.hoc ?? HOC_RANGE[surface]?.default ?? null,
+    heightMm: settings.hoc ?? hocRangeFor(state, surface)?.default ?? HOC_RANGE[surface]?.default ?? null,
     grassMm: surfaceGrassLengthMm(state, surface),
     daysSinceCut: daysSinceLastWorked(state, surface),
     overdue: isNeglected(state, surface),

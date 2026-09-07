@@ -15,7 +15,10 @@ import {
   OFFICE_TAB_MONEY,
   OFFICE_TAB_PROJECTS,
   OFFICE_TABS,
+  HOC_SURFACES,
+  PROJECT_GRASS_CONVERSION,
 } from '../data/constants.js';
+import { SURFACE_LABELS } from '../data/tasks.js';
 import { canTakeLoan, maxLoan } from '../engine/budget.js';
 import { unreadCount } from '../engine/mail.js';
 import { formatMoney } from '../engine/format.js';
@@ -30,11 +33,16 @@ import {
   absorbNote,
   alreadyBuilt,
   canBuyAutoPicker,
+  canStartGrassConversion,
   canStartProject,
   constructionMinutes,
+  grassConversionOptions,
+  grassConversionSpec,
   PROJECTS,
-  projectSpec,
+  projectKey,
+  projectName,
 } from '../engine/projects.js';
+import { grassSpeciesFor } from '../engine/grass.js';
 
 export default function Office({
   state,
@@ -53,6 +61,7 @@ export default function Office({
   onDeclineEvent,
   onSetTournaments,
   onStartProject,
+  onStartGrassConversion,
   onBuyPicker,
 }) {
   const unread = unreadCount(state);
@@ -136,10 +145,9 @@ export default function Office({
           <h2 className="mt-8 font-condensed text-3xl">Projects</h2>
           <p className="mt-2 text-sm text-[var(--sand)]">{absorbNote(state.season)}</p>
           {(state.projects ?? []).map((item) => {
-            const spec = projectSpec(item.id);
             return (
-              <p key={item.id} className="mt-2">
-                {spec?.name ?? item.id} underway · finishes day {item.dueDay} · site work{' '}
+              <p key={projectKey(item)} className="mt-2">
+                {projectName(item)} underway · finishes day {item.dueDay} · site work{' '}
                 {constructionMinutes({ ...state, projects: [item] })} min today
               </p>
             );
@@ -172,6 +180,53 @@ export default function Office({
                   </div>
                   {!check.ok ? <div className="text-sm">{check.reason}</div> : null}
                 </button>
+              );
+            })}
+          </div>
+          <h2 className="mt-8 font-condensed text-3xl">Turf conversion</h2>
+          <p className="mt-2 text-sm text-[var(--sand)]">
+            Changing species is a renovation project. Couch starts on the greens; kikuyu everywhere else.
+          </p>
+          <div className="mt-3 space-y-4">
+            {HOC_SURFACES.map((surface) => {
+              const current = grassSpeciesFor(state, surface);
+              const converting = (state.projects ?? []).find(
+                (item) => item.id === PROJECT_GRASS_CONVERSION && item.surface === surface,
+              );
+              return (
+                <section key={surface} className="border border-[var(--sand)] p-3">
+                  <h3 className="font-semibold">
+                    {SURFACE_LABELS[surface]} · {current?.name ?? 'Unknown'}
+                  </h3>
+                  {converting ? (
+                    <p className="mt-2 text-sm text-[var(--sand)]">
+                      {projectName(converting)} underway · finishes day {converting.dueDay}
+                    </p>
+                  ) : (
+                    <div className="mt-2 space-y-2">
+                      {grassConversionOptions(state, surface).map((species) => {
+                        const spec = grassConversionSpec(surface, species.id);
+                        const check = canStartGrassConversion(state, surface, species.id);
+                        return (
+                          <button
+                            key={species.id}
+                            type="button"
+                            disabled={!check.ok}
+                            title={check.reason}
+                            onClick={() => onStartGrassConversion(surface, species.id)}
+                            className="block w-full border border-[var(--sand)] px-3 py-2 text-left disabled:opacity-40"
+                          >
+                            <div className="font-semibold">
+                              {species.name} · {formatMoney(spec.cost)} capital · {spec.days} days
+                            </div>
+                            {species.note ? <div className="text-sm text-[var(--sand)]">{species.note}</div> : null}
+                            {!check.ok ? <div className="text-sm">{check.reason}</div> : null}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </section>
               );
             })}
           </div>

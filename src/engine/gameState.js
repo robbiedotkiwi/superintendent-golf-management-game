@@ -36,7 +36,7 @@ import {
   scheduleTournamentDays,
 } from './tournament.js';
 import { clampStanding } from './satisfaction.js';
-import { buyAutoPicker, startProject } from './projects.js';
+import { buyAutoPicker, startGrassConversion, startProject } from './projects.js';
 import { bumpCapitalSpent, emptyYearRecord } from './history.js';
 import { spendCash } from './cash.js';
 import { buyFuel } from './fuel.js';
@@ -104,6 +104,7 @@ import {
   SECTION_MAP,
 } from '../data/constants.js';
 import { clampAngle, clampHoc, hasHoc, hasPattern, mergeSurfaceFields, angleDelta } from './mowing.js';
+import { startingGrass } from './grass.js';
 import {
   createInitialHoles,
   createSurfaceDefaults,
@@ -133,6 +134,7 @@ export function createInitialState() {
     },
     rng,
   );
+  const grass = startingGrass();
   return {
     day: STARTING_DAY,
     season: calendar.season,
@@ -140,8 +142,9 @@ export function createInitialState() {
     cash: STARTING_OPENING_CASH,
     fuelLitres: FUEL_START,
     fuelSpendLog: [],
-    holes: createInitialHoles(HOLE_COUNT),
-    surfaceDefaults: createSurfaceDefaults(),
+    holes: createInitialHoles(HOLE_COUNT, { grass }),
+    surfaceDefaults: createSurfaceDefaults(undefined, grass),
+    grass,
     weather: STARTING_WEATHER,
     ...forecast,
     rngSeed,
@@ -609,6 +612,8 @@ export function reducer(state, action) {
     }
     case 'START_PROJECT':
       return startProject(state, action.projectId);
+    case 'START_GRASS_CONVERSION':
+      return startGrassConversion(state, action.surface, action.speciesId);
     case 'BUY_AUTO_PICKER':
       return buyAutoPicker(state);
     case 'BUY_MACHINE':
@@ -705,7 +710,7 @@ export function reducer(state, action) {
     }
     case 'SET_HOC': {
       if (!hasHoc(action.surface)) return state;
-      return applySurfacePatch(state, action.surface, { hoc: clampHoc(action.surface, action.hoc) });
+      return applySurfacePatch(state, action.surface, { hoc: clampHoc(action.surface, action.hoc, state) });
     }
     case 'SET_PATTERN': {
       if (!hasPattern(action.surface) || !PATTERN_KEYS.includes(action.pattern)) return state;

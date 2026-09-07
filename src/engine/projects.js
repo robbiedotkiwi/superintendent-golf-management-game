@@ -20,13 +20,21 @@ import {
   PROJECT_EXTRA_BUNKERS,
   PROJECT_NEW_TEES,
   PROJECT_POND_EXPANSION,
+  PROJECT_GRASS_CONVERSION,
   POND_EXPANSION_COST,
   POND_EXPANSION_DAYS,
+  GRASS_CONVERSION_COST,
+  GRASS_CONVERSION_DAYS,
+  GRASS_CONVERSION_QUALITY_HIT,
+  QUALITY_MIN,
   SEASON_GROWTH,
   TASK_TIME_MULT_18,
 } from '../data/constants.js';
+import { SURFACE_LABELS } from '../data/tasks.js';
 import { bumpCapitalSpent } from './history.js';
-import { expandHoleRecords, holeCount } from './holes.js';
+import { conversionTargets, grassById, grassIdFor, speciesAllowedOn } from './grass.js';
+import { expandHoleRecords, holeCount, mapHoleSurfaces } from './holes.js';
+import { clampHoc } from './mowing.js';
 import { needsCash, spendCash } from './cash.js';
 
 export const PROJECTS = {
@@ -102,6 +110,62 @@ export function alreadyBuilt(state, id) {
   return false;
 }
 
+export function projectKey(project) {
+  if (project?.id === PROJECT_GRASS_CONVERSION) {
+    return `${project.id}:${project.surface}:${project.speciesId}`;
+  }
+  return project?.id ?? '';
+}
+
+export function projectName(project) {
+  if (project?.id === PROJECT_GRASS_CONVERSION) {
+    const species = grassById(project.speciesId);
+    const surface = SURFACE_LABELS[project.surface] ?? project.surface;
+    return `Convert ${surface} to ${species?.name ?? project.speciesId}`;
+  }
+  return projectSpec(project?.id)?.name ?? project?.id ?? '';
+}
+
+export function grassConversionSpec(surface, speciesId) {
+  const species = grassById(speciesId);
+  if (!species || !GRASS_CONVERSION_COST[surface]) return null;
+  return {
+    id: PROJECT_GRASS_CONVERSION,
+    surface,
+    speciesId,
+    name: projectName({ id: PROJECT_GRASS_CONVERSION, surface, speciesId }),
+    cost: GRASS_CONVERSION_COST[surface],
+    days: GRASS_CONVERSION_DAYS[surface],
+  };
+}
+
+export function hasGrassConversion(state, surface) {
+  return (state.projects ?? []).some(
+    (item) => item.id === PROJECT_GRASS_CONVERSION && item.surface === surface,
+  );
+}
+
+export function canStartGrassConversion(state, surface, speciesId) {
+  const spec = grassConversionSpec(surface, speciesId);
+  if (!spec) return { ok: false, reason: 'Unknown conversion.' };
+  if (!speciesAllowedOn(speciesId, surface)) {
+    return { ok: false, reason: 'That species does not belong on this surface.' };
+  }
+  if (grassIdFor(state, surface) === speciesId) {
+    return { ok: false, reason: 'Already planted.' };
+  }
+  if (hasGrassConversion(state, surface)) {
+    return { ok: false, reason: 'Already underway or finished.' };
+  }
+  const projectCash = needsCash(state, spec.cost);
+  if (!projectCash.ok) return projectCash;
+  return { ok: true };
+}
+
+export function grassConversionOptions(state, surface) {
+  return conversionTargets(surface).filter((species) => species.id !== grassIdFor(state, surface));
+}
+
 export function canStartProject(state, id) {
   const spec = projectSpec(id);
   if (!spec) return { ok: false, reason: 'Unknown project.' };
@@ -145,6 +209,32 @@ export function startProject(state, id) {
   );
 }
 
+export function startGrassConversion(state, surface, speciesId) {
+  const check = canStartGrassConversion(state, surface, speciesId);
+  if (!check.ok) return state;
+  const spec = grassConversionSpec(surface, speciesId);
+  const extra = Math.round(
+    (PROJECT_DAILY_MINUTES[PROJECT_GRASS_CONVERSION] ?? 0) * (SEASON_GROWTH[state.season] ?? 1),
+  );
+  return bumpCapitalSpent(
+    {
+      ...spendCash(state, spec.cost),
+      workers: applySiteMinutes(state, extra),
+      projects: [
+        ...(state.projects ?? []),
+        {
+          id: PROJECT_GRASS_CONVERSION,
+          surface,
+          speciesId,
+          dueDay: state.day + spec.days,
+          startedSeason: state.season,
+        },
+      ],
+    },
+    spec.cost,
+  );
+}
+
 export function canBuyAutoPicker(state) {
   if (!state.hasDrivingRange) return { ok: false, reason: 'Build the range first.' };
   if (state.hasAutoPicker) return { ok: false, reason: 'Already picking.' };
@@ -159,12 +249,42 @@ export function buyAutoPicker(state) {
   return bumpCapitalSpent(spendCash({ ...state, hasAutoPicker: true }, AUTO_PICKER_COST), AUTO_PICKER_COST);
 }
 
-function completeProject(state, id) {
+function completeGrassConversion(state, project) {
+  const surface = project.surface;
+  const speciesId = project.speciesId;
+  if (!speciesAllowedOn(speciesId, surface)) return state;
+  const grass = { ...(state.grass ?? {}), [surface]: speciesId };
+  const probe = { ...state, grass };
+  const current = state.surfaceDefaults?.[surface] ?? {};
+  const hoc = clampHoc(surface, current.hoc, probe);
+  return {
+    ...state,
+    grass,
+    surfaceDefaults: {
+      ...state.surfaceDefaults,
+      [surface]: { ...current, hoc },
+    },
+    holes: mapHoleSurfaces(state.holes, surface, (record) => {
+      const override = record.override
+        ? { ...record.override, hoc: clampHoc(surface, record.override.hoc ?? hoc, probe) }
+        : record.override;
+      return {
+        ...record,
+        override,
+        quality: Math.max(QUALITY_MIN, record.quality - GRASS_CONVERSION_QUALITY_HIT),
+      };
+    }),
+  };
+}
+
+function completeProject(state, project) {
+  const id = typeof project === 'string' ? project : project?.id;
   if (id === PROJECT_EXPAND_18) return { ...state, holes: expandHoleRecords(state) };
   if (id === PROJECT_DRIVING_RANGE) return { ...state, hasDrivingRange: true };
   if (id === PROJECT_EXTRA_BUNKERS) return { ...state, hasExtraBunkers: true };
   if (id === PROJECT_NEW_TEES) return { ...state, hasNewTees: true };
   if (id === PROJECT_POND_EXPANSION) return { ...state, hasPondExpansion: true };
+  if (id === PROJECT_GRASS_CONVERSION) return completeGrassConversion(state, project);
   return state;
 }
 
@@ -174,8 +294,8 @@ export function tickProjects(state) {
   let next = state;
   for (const project of state.projects ?? []) {
     if (next.day >= project.dueDay) {
-      next = completeProject(next, project.id);
-      completed.push(project.id);
+      next = completeProject(next, project);
+      completed.push(projectName(project));
     } else {
       still.push(project);
     }

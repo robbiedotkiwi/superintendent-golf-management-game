@@ -8,7 +8,6 @@ import {
   FERTILISER_DAYS,
   FERTILISER_MATERIALS_COST,
   GREENS_SENSORS_COST,
-  HOC_RANGE,
   HOC_STEP,
   HOC_STRESS_DAMAGE,
   HOC_STRESS_THRESHOLD,
@@ -69,6 +68,8 @@ import PondLevelBar from './PondLevelBar.jsx';
 import { daysSinceLastWorked, isNeglected } from '../engine/neglect.js';
 import { courseSettings, holeCount, meanQuality } from '../engine/holes.js';
 import { hasHoc, hasPattern, inHocStressBand } from '../engine/mowing.js';
+import { grassSpeciesFor, hocRangeFor, isGrassDormant } from '../engine/grass.js';
+import { BASELINE_MOW_FREQUENCY_PER_WEEK } from '../data/grass.js';
 import { mowingStatus } from '../engine/mowingStatus.js';
 import { inputsStatus } from '../engine/inputsStatus.js';
 import { GreensMoistureList, MoistureLine } from './MoistureReadout.jsx';
@@ -126,15 +127,15 @@ function PlanJob({ state, taskId, onPlan, onRemove, label, extra, className }) {
   );
 }
 
-function stressThresholdHeight(surface) {
-  const range = HOC_RANGE[surface];
+function stressThresholdHeight(surface, state) {
+  const range = hocRangeFor(state, surface);
   if (!range) return null;
   return range.max - HOC_STRESS_THRESHOLD * (range.max - range.min);
 }
 
-function stressBandWidth(surface) {
-  const range = HOC_RANGE[surface];
-  const threshold = stressThresholdHeight(surface);
+function stressBandWidth(surface, state) {
+  const range = hocRangeFor(state, surface);
+  const threshold = stressThresholdHeight(surface, state);
   if (!range || threshold == null) return 0;
   return ((threshold - range.min) / (range.max - range.min)) * 100;
 }
@@ -551,30 +552,40 @@ function MowingSurface({
   onSelectHoles,
 }) {
   const record = courseSettings(state, surface) ?? {};
+  const range = hocRangeFor(state, surface);
+  const species = grassSpeciesFor(state, surface);
   const showHoc = hasHoc(surface);
   const showPattern = hasPattern(surface);
-  const stress = showHoc && inHocStressBand(surface, record.hoc);
-  const threshold = stressThresholdHeight(surface);
+  const stress = showHoc && inHocStressBand(surface, record.hoc, state);
+  const threshold = stressThresholdHeight(surface, state);
   const cutId = CUT_TASK_BY_SURFACE[surface];
   const minutes = cutId ? durationForTask(state, cutId) : null;
+  const typicalCuts = BASELINE_MOW_FREQUENCY_PER_WEEK[surface];
   return (
     <section className="border border-[var(--sand)] p-3">
       <h3 className="text-lg font-semibold">{SURFACE_LABELS[surface]}</h3>
+      {species ? (
+        <p className="mt-1 text-sm text-[var(--sand)]">
+          {species.name}
+          {typicalCuts != null ? ` · typical ${typicalCuts} cuts/week` : ''}
+          {isGrassDormant(state, surface) ? ' · dormant' : ''}
+        </p>
+      ) : null}
       <TwoColumn
         left={
           <>
-            {showHoc ? (
+            {showHoc && range ? (
               <label className="mt-2 block">
                 <span className="text-sm text-[var(--sand)]">Height of cut</span>
                 <div className="font-condensed text-3xl font-bold leading-none">{record.hoc} mm</div>
                 <div className="relative mt-2">
                   <div className="pointer-events-none absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 bg-[var(--sand)]/30">
-                    <div className="h-full bg-[var(--machine-orange)]/50" style={{ width: `${stressBandWidth(surface)}%` }} />
+                    <div className="h-full bg-[var(--machine-orange)]/50" style={{ width: `${stressBandWidth(surface, state)}%` }} />
                   </div>
                   <input
                     type="range"
-                    min={HOC_RANGE[surface].min}
-                    max={HOC_RANGE[surface].max}
+                    min={range.min}
+                    max={range.max}
                     step={HOC_STEP[surface]}
                     value={record.hoc}
                     onChange={(event) => onSetHoc(surface, Number(event.target.value))}

@@ -17,6 +17,7 @@ import {
   STARTING_WIND_DIR,
   STARTING_WIND_SPEED,
   SURFACE_KEYS,
+  HOC_SURFACES,
   FORECAST_DAYS,
   VIEW_PAN_X_DEFAULT,
   VIEW_PAN_Y_DEFAULT,
@@ -42,21 +43,37 @@ import { normalizeSection, normalizeTabs } from './section.js';
 import { allGmSeen, allSectionUnlocks } from './gm.js';
 import { migrateVolunteerWeekday } from './staff.js';
 import { migrateIrrigation } from './irrigation.js';
+import { hocRangeFor, normalizeGrass } from './grass.js';
+import { clampHoc } from './mowing.js';
+
+function clampGrassHoc(defaults, grass) {
+  if (!defaults) return defaults;
+  const probe = { grass };
+  const next = { ...defaults };
+  for (const type of HOC_SURFACES) {
+    if (!next[type]) continue;
+    next[type] = { ...next[type], hoc: clampHoc(type, next[type].hoc ?? hocRangeFor(probe, type)?.default, probe) };
+  }
+  return next;
+}
 
 function migrateHoleState(state) {
+  const grass = normalizeGrass(state.grass);
   if (isHoleModel(state.holes)) {
     return {
       holes: state.holes,
-      surfaceDefaults: state.surfaceDefaults ?? createSurfaceDefaults(),
+      surfaceDefaults: clampGrassHoc(state.surfaceDefaults ?? createSurfaceDefaults(undefined, grass), grass),
+      grass,
     };
   }
   if (state.surfaces?.greens) {
     return {
-      holes: fanGroupedToHoles(state),
-      surfaceDefaults: createSurfaceDefaults(state.surfaces),
+      holes: fanGroupedToHoles({ ...state, grass }),
+      surfaceDefaults: createSurfaceDefaults(state.surfaces, grass),
+      grass,
     };
   }
-  return { holes: null, surfaceDefaults: null };
+  return { holes: null, surfaceDefaults: null, grass };
 }
 
 export function migrateCash(state) {
@@ -207,6 +224,7 @@ export function withDefaults(state) {
     hasExtraBunkers: Boolean(state.hasExtraBunkers),
     hasNewTees: Boolean(state.hasNewTees),
     hasPondExpansion: Boolean(state.hasPondExpansion),
+    grass: holeState.grass ?? normalizeGrass(state.grass),
     saveVersion: SAVE_VERSION,
     soundEnabled: state.soundEnabled ?? SOUND_DEFAULT_ON,
     tutorialDone: state.sectionUnlocks == null ? true : Boolean(state.tutorialDone),

@@ -95,7 +95,9 @@ const wetState = {
 assert.equal(isAboveBand(wetState.moisture, 'greens'), true);
 const dryState = { ...createInitialState(), day: 31, season: 'summer', year: 1 };
 assert.ok(pressureGain(wetState, 'greens') > pressureGain(dryState, 'greens'));
-assert.equal(pressureGain(wetState, 'greens') / pressureGain(dryState, 'greens'), WET_DISEASE_MULT);
+assert.ok(
+  Math.abs(pressureGain(wetState, 'greens') / pressureGain(dryState, 'greens') - WET_DISEASE_MULT) < 1e-9,
+);
 assert.equal(WET_GAIN_MULT, 0.85);
 const pondWet = irrigationDemand({
   ...wetState,

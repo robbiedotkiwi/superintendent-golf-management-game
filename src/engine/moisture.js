@@ -34,6 +34,7 @@ import {
 import { HOLES } from '../data/course.js';
 import { lerpHex } from './color.js';
 import { hocFactor } from './mowing.js';
+import { droughtMult } from './grass.js';
 import { needsCash } from './cash.js';
 import { holeCount, mapHoleSurfaces } from './holes.js';
 import { moistureFromMm, migrateIrrigationValue } from './irrigation.js';
@@ -118,7 +119,7 @@ function cloneReadDay(readDay, holes = HOLE_COUNT) {
 }
 
 function etMultiplier(state, surface) {
-  const factor = hocFactor(surface, state.surfaceDefaults?.[surface]?.hoc);
+  const factor = hocFactor(surface, state.surfaceDefaults?.[surface]?.hoc, state);
   const season = MOISTURE_ET_SEASON[state.season] ?? 1;
   const weather = MOISTURE_ET_WEATHER[state.weather] ?? 1;
   const wind = state.windSpeed ?? STARTING_WIND_SPEED;
@@ -240,10 +241,10 @@ export function greensStatuses(state) {
   }));
 }
 
-export function droughtDecay(moisture) {
+export function droughtDecay(moisture, state) {
   const extra = {};
   for (const surface of MOISTURE_SURFACES) {
-    if (isBelowBand(moisture, surface)) extra[surface] = DROUGHT_DECAY[surface];
+    if (isBelowBand(moisture, surface)) extra[surface] = DROUGHT_DECAY[surface] * droughtMult(state, surface);
   }
   return extra;
 }

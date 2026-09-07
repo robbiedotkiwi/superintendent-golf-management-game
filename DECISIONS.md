@@ -349,3 +349,9 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 - Every hole has one named bunker. `BUNKER_HOLE_COUNT` is 9. `DOGLEG_MIN_HOLES` stays 0. The map does not draw a centreline on the hole.
 - Property bounds are `3300×900` to fit the 3211×800 artboard. Pond is a rounded rect at `(548.5, 700)` size `1017×120`. Driving range sits in the empty bottom-right cell.
 
+## Grass species
+
+- Seven NZ species live in `src/data/grass.js`. New games start couch on greens and kikuyu on tees, fairways and rough. Conversion to another species is Office → Projects (`START_GRASS_CONVERSION`), not a Turf slider.
+- Height of cut uses the planted species range. Catalog `HOC_RANGE` stays for helpers called without grass state. Starting HOC is the stress-threshold height in that range so default time/gain match the old catalog factor.
+- Daily grass length still uses `GRASS_GROWTH_MM_PER_DAY × SEASON_GROWTH`, multiplied by `growthIndex[season] / 5`. Couch and kikuyu have winter index 0 (dormant, no growth). Disease, drought and thatch/wear scale off the species ratings. Save version stays 3; missing `grass` migrates to the starting mix.
+

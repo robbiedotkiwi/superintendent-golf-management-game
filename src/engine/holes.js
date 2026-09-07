@@ -26,6 +26,8 @@ import {
 } from '../data/constants.js';
 import { HOLE_SHAPES } from '../data/courseLayout.js';
 import { holesForCount } from '../data/course.js';
+import { hocRangeFor } from './grass.js';
+import { clampHoc } from './mowing.js';
 
 export function holeCount(stateOrHoles) {
   if (Array.isArray(stateOrHoles)) return stateOrHoles.length;
@@ -63,12 +65,14 @@ export function dryingFactorForHole(holeId) {
   return recipe?.dryingFactor ?? DRYING_FACTOR_DEFAULT;
 }
 
-export function createSurfaceDefaults(grouped) {
+export function createSurfaceDefaults(grouped, grass) {
   const defaults = {};
+  const probe = grass ? { grass } : undefined;
   for (const type of HOC_SURFACES) {
     const src = grouped?.[type] ?? {};
+    const range = hocRangeFor(probe, type) ?? HOC_RANGE[type];
     defaults[type] = {
-      hoc: src.hoc ?? HOC_RANGE[type].default,
+      hoc: src.hoc != null ? clampHoc(type, src.hoc, probe) : range.default,
       pattern: src.pattern ?? PATTERN_SURFACE_DEFAULT[type],
       angle: src.angle ?? PATTERN_ANGLE_DEFAULT,
       autoRotate: src.autoRotate ?? PATTERN_AUTO_ROTATE_DEFAULT,
@@ -154,7 +158,7 @@ function fanMowFromGrouped(type, grouped, extras, index, holeId) {
     moistureReadDay: moistType ? readDayFor(extras.moistureReadDay, moistType, index) : MOISTURE_HIDDEN,
     dryingFactor: type === 'greens' ? dryingFactorForHole(holeId) : DRYING_FACTOR_DEFAULT,
     override: null,
-    hocAtLastCut: src.hocAtLastCut ?? src.hoc ?? HOC_RANGE[type]?.default ?? null,
+    hocAtLastCut: src.hocAtLastCut ?? src.hoc ?? hocRangeFor(extras, type)?.default ?? HOC_RANGE[type]?.default ?? null,
     lastPattern: src.lastPattern ?? null,
     lastAngle: src.lastAngle ?? null,
     fertiliserUntil: extras.fertiliserUntil?.[type] ?? 0,
@@ -202,6 +206,7 @@ export function fanGroupedToHoles(state) {
     disease: state.disease,
     fertiliserUntil: state.fertiliserUntil,
     sprayedUntil: state.sprayedUntil,
+    grass: state.grass,
   });
 }
 
@@ -305,7 +310,7 @@ export function courseCondition(state) {
 }
 
 export function courseSettings(state, type) {
-  return state.surfaceDefaults?.[type] ?? createSurfaceDefaults()[type];
+  return state.surfaceDefaults?.[type] ?? createSurfaceDefaults(undefined, state?.grass)[type];
 }
 
 export function surfaceSettings(state, holeId, type) {

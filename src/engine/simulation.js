@@ -334,6 +334,7 @@ export function resolveDay(state) {
           state.day,
           wearIncremented,
           surfaceSettings(live, hole.id, task.surface),
+          live,
         );
       }
       if (task.id === 'rakeBunkers') {
@@ -379,6 +380,7 @@ export function resolveDay(state) {
           state.day,
           wearIncremented,
           surfaceSettings(live, hole.id, surface),
+          live,
         );
       });
       worked.add(surface);
@@ -425,7 +427,7 @@ export function resolveDay(state) {
 
   moisture = tickMoisture({ ...state, moisture, holes, surfaceDefaults });
   holes = writeMoistureToHoles(holes, moisture, moistureReadDay);
-  const extraDecay = droughtDecay(moisture);
+  const extraDecay = droughtDecay(moisture, { ...state, moisture, holes, surfaceDefaults });
   for (const [surface, amount] of Object.entries(extraDecay)) {
     holes = mapHoleSurfaces(holes, surface, (record) => ({
       ...record,
