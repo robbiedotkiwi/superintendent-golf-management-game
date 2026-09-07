@@ -342,7 +342,7 @@ export const CONDITION_WEIGHTS = {
   bunkers: 0.15,
 };
 
-export const BUNKER_HOLE_COUNT = 0;
+export const BUNKER_HOLE_COUNT = 9;
 export const TEE_SIZE = { w: 34, h: 20 };
 export const FAIRWAY_WIDTH = 58;
 export const FAIRWAY_HALF_WIDTH = FAIRWAY_WIDTH / 2;
@@ -369,7 +369,7 @@ export const PERIMETER_HALF_WIDTH = 54;
 export const FLAG_FAR_FACTOR = 0.4;
 export const PROPERTY_MIN_X = 0;
 export const PROPERTY_MIN_Y = 0;
-export const PROPERTY_MAX_X = 3000;
+export const PROPERTY_MAX_X = 3300;
 export const PROPERTY_MAX_Y = 900;
 export const GREEN_SHAPE_CIRCLE = 'circle';
 export const GREEN_SHAPE_OVAL = 'oval';
@@ -422,11 +422,11 @@ export const PATTERN_CHECK_SIZE = 14;
 export const PATTERN_OVERLAY_MIX = 0.28;
 export const PATTERN_OPACITY_FRESH = 1;
 export const PATTERN_OPACITY_OVERDUE = 0;
-export const POND_CX = 450;
+export const POND_CX = 548.5;
 export const POND_CY = 700;
-export const POND_RX = 410;
+export const POND_RX = 508.5;
 export const POND_RY = 60;
-export const POND_CORNER = 50;
+export const POND_CORNER = 20;
 export const POND_X = POND_CX - POND_RX;
 export const POND_Y = POND_CY - POND_RY;
 export const AERATOR_RX = 8;
@@ -1037,8 +1037,8 @@ export const PROJECT_DAILY_MINUTES = {
   [PROJECT_NEW_TEES]: NEW_TEES_DAILY_MINUTES,
   [PROJECT_POND_EXPANSION]: POND_EXPANSION_DAILY_MINUTES,
 };
-export const BACK_NINE_OFFSET_X = 2951;
-export const RANGE_X = 1237;
+export const BACK_NINE_OFFSET_X = 3251;
+export const RANGE_X = 2154;
 export const RANGE_Y = 640;
 export const RANGE_WIDTH = 200;
 export const RANGE_HEIGHT = 120;

@@ -345,7 +345,7 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 
 ## Course map (Figma Simple Course)
 
-- The playable map is the named Simple Course frame from Figma (`Golf Management Sim`, node `2:93`): a 3×3 grid of hole blocks (tee, bone fairway, circle green, hole number), pond pill under hole 7, house shed under hole 8.
-- Figma has no bunker or dogleg layers, so `BUNKER_HOLE_COUNT` and `DOGLEG_MIN_HOLES` are 0. Bunker quality is still tracked on every hole record; rake jobs stay in Turf.
-- Property bounds are `3000×900` to fit the 2911×800 artboard. Pond is a rounded rect at `(450, 700)` size `820×120`. Driving range sits in the empty bottom-row cell beside the shed.
+- The playable map is the named Simple Course frame from Figma (`Golf Management Sim`, node `2:93`): a 3×3 grid of hole blocks (tee, bone fairway, greenside bunker, circle green, hole number), pond pill under hole 7, house shed under hole 8.
+- Every hole has one named bunker. `BUNKER_HOLE_COUNT` is 9. `DOGLEG_MIN_HOLES` stays 0. The map does not draw a centreline on the hole.
+- Property bounds are `3300×900` to fit the 3211×800 artboard. Pond is a rounded rect at `(548.5, 700)` size `1017×120`. Driving range sits in the empty bottom-right cell.
 

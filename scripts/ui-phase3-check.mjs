@@ -21,7 +21,7 @@ assert.deepEqual(
 const shedCx = SHED_X + SHED_WIDTH / 2;
 const hole8 = HOLES[7];
 assert.ok(hole8.rough.every((point) => point[1] <= SHED_Y), 'hole 8 sits above the shed');
-assert.ok(Math.abs(HOLES[6].tee.cx - POND_CX) < 450, 'pond sits under the hole 7 column');
+assert.ok(Math.abs(HOLES[6].tee.cx - POND_CX) < 500, 'pond sits under the hole 7 column');
 assert.ok(Math.abs(shedCx - hole8.tee.cx) < 400, 'shed sits under the hole 8 column');
 
 const centroid = HOLES.reduce(

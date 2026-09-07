@@ -38,7 +38,7 @@ for (const hole of HOLES) {
   assert.ok(hole.tee?.points?.length, `hole ${hole.id} tee`);
   assert.ok(hole.fairway?.length, `hole ${hole.id} fairway`);
   assert.ok(hole.green?.points?.length, `hole ${hole.id} green`);
-  assert.equal(hole.bunkers.length, 0, `hole ${hole.id} has no bunker layers in the Figma layout`);
+  assert.equal(hole.bunkers.length, 1, `hole ${hole.id} has the named Figma bunker`);
   assert.ok(hole.centerline?.length >= 2, `hole ${hole.id} centreline`);
   assert.equal(hole.green.variant, GREEN_SHAPE_CIRCLE, `hole ${hole.id} green is a circle`);
   assert.ok(hole.marker.cx > hole.green.cx, `hole ${hole.id} number sits right of the green`);
@@ -56,7 +56,7 @@ for (const hole of HOLES) {
 assert.equal(HOLES.filter((hole) => hole.bent).length, 0, 'Figma holes are straight');
 
 const map = readFileSync(new URL('../src/components/CourseMap.jsx', import.meta.url), 'utf8');
-assert.match(map, /centrelinePath|centerline/);
+assert.doesNotMatch(map, /key=\{`centreline-/);
 assert.match(map, /HOLE_NUMBER_RADIUS/);
 assert.match(map, /hole\.flag/);
 

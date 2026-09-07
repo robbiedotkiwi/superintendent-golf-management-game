@@ -10,7 +10,6 @@ import {
   HOLE_COUNT,
   HOLE_NUMBER_FONT,
   HOLE_NUMBER_RADIUS,
-  CENTRELINE_WIDTH,
   MOWER_ANIM_MS,
   PATTERN_CHECK_SIZE,
   PATTERN_CHECKERBOARD,
@@ -25,7 +24,6 @@ import {
   POND_HEALTH_STRESSED,
   POND_RX,
   POND_RY,
-  POND_LABEL_OFFSET,
   RANGE_HEIGHT,
   RANGE_WIDTH,
   RANGE_X,
@@ -42,7 +40,6 @@ import {
 import {
   courseBoundaryPath,
   courseBounds,
-  centrelinePath,
   holesForCount,
   holePath,
   mowerPathFor,
@@ -417,12 +414,11 @@ export default function CourseMap({
           stroke="var(--paint)"
         />
         <text
-          x={SHED_X + SHED_WIDTH / 2}
-          y={SHED_Y + SHED_HEIGHT / 2 + 6}
+          x={SHED_X + SHED_WIDTH + 68}
+          y={SHED_Y + SHED_HEIGHT / 2 - SHED_ROOF / 2 + 16}
           textAnchor="middle"
-          fill="var(--soil)"
-          fontSize="18"
-          fontWeight="700"
+          fill="var(--paint)"
+          fontSize="48"
         >
           Shed
         </text>
@@ -528,17 +524,6 @@ export default function CourseMap({
         )),
       )}
       {layout.map((hole) => (
-        <path
-          key={`centreline-${hole.id}`}
-          d={centrelinePath(hole.centerline)}
-          fill="none"
-          stroke="var(--paint)"
-          strokeWidth={CENTRELINE_WIDTH}
-          opacity="0.7"
-          pointerEvents="none"
-        />
-      ))}
-      {layout.map((hole) => (
         <g
           key={`marker-${hole.id}`}
           className="cursor-pointer"
@@ -625,7 +610,7 @@ export default function CourseMap({
             <line x1={POND_CX} y1={POND_CY - AERATOR_ARM} x2={POND_CX} y2={POND_CY + AERATOR_ARM} />
           </g>
         ) : null}
-        <text x={POND_CX} y={POND_CY + POND_RY + POND_LABEL_OFFSET} textAnchor="middle" fill="var(--sand)" fontSize="18">
+        <text x={POND_CX} y={POND_CY + 16} textAnchor="middle" fill="var(--soil)" fontSize="48">
           Pond
         </text>
       </g>

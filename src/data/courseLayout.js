@@ -2,9 +2,9 @@ import { GREEN_SHAPE_CIRCLE } from './constants.js';
 import { expandHole } from '../engine/holeShape.js';
 
 // Simple Course frame from Figma "Golf Management Sim" (node 2:93).
-// Coordinates are frame-local: origin at the top-left of the 2911×800 artboard.
+// Coordinates are frame-local: origin at the top-left of the 3211×800 artboard.
 
-const HOLE_WIDTH = 917;
+const HOLE_WIDTH = 1017;
 const HOLE_HEIGHT = 160;
 const HOLE_GAP = 40;
 const HOLE_ORIGIN = 40;
@@ -12,8 +12,9 @@ const HOLE_COLS = 3;
 
 const TEE_RECT = { x: 20, y: 20, w: 60, h: 120 };
 const FAIRWAY_RECT = { x: 120, y: 30, w: 500, h: 100 };
-const GREEN_RECT = { x: 660, y: 20, w: 120, h: 120 };
-const NUMBER_RECT = { x: 820, y: 22, w: 77, h: 116 };
+const BUNKER_RECT = { x: 660, y: 50, w: 60, h: 60, r: 25 };
+const GREEN_RECT = { x: 760, y: 20, w: 120, h: 120 };
+const NUMBER_RECT = { x: 920, y: 22, w: 77, h: 116 };
 
 // Fairway vector path in the 500×100 fairway box (Figma node Fairway).
 const FAIRWAY_LOCAL = [
@@ -33,7 +34,7 @@ function holeOrigin(id) {
   return [HOLE_ORIGIN + col * (HOLE_WIDTH + HOLE_GAP), HOLE_ORIGIN + row * (HOLE_HEIGHT + HOLE_GAP)];
 }
 
-// tee + green form the hole centerline. Schematic polygons come from named Figma layers.
+// tee + green form the hole centerline (mower path only). Named Figma layers supply the polygons.
 
 const HOLE_RECIPES = DRYING_FACTORS.map((dryingFactor, index) => {
   const id = index + 1;
@@ -53,6 +54,15 @@ const HOLE_RECIPES = DRYING_FACTORS.map((dryingFactor, index) => {
       rough: { x: hx, y: hy, w: HOLE_WIDTH, h: HOLE_HEIGHT },
       tee: { x: hx + TEE_RECT.x, y: hy + TEE_RECT.y, w: TEE_RECT.w, h: TEE_RECT.h },
       fairway: FAIRWAY_LOCAL.map(([x, y]) => [x + hx + FAIRWAY_RECT.x, y + hy + FAIRWAY_RECT.y]),
+      bunkers: [
+        {
+          x: hx + BUNKER_RECT.x,
+          y: hy + BUNKER_RECT.y,
+          w: BUNKER_RECT.w,
+          h: BUNKER_RECT.h,
+          r: BUNKER_RECT.r,
+        },
+      ],
       green: { cx: green[0], cy: green[1], r: GREEN_RECT.w / 2 },
       marker: {
         cx: hx + NUMBER_RECT.x + NUMBER_RECT.w / 2,
@@ -64,9 +74,9 @@ const HOLE_RECIPES = DRYING_FACTORS.map((dryingFactor, index) => {
 
 export const HOLE_SHAPES = HOLE_RECIPES.map(expandHole);
 
-// Figma Shed vector: house pentagon 200×120 at (997, 640); eaves at y ≈ 48.
+// Figma Shed vector: house pentagon 200×120 at (1097, 640); eaves at y ≈ 48.
 export const SHED = {
-  x: 997,
+  x: 1097,
   y: 688,
   width: 200,
   height: 72,

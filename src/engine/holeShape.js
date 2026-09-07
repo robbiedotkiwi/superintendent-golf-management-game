@@ -116,6 +116,24 @@ function circlePoly(cx, cy, r, count = 24) {
   return points;
 }
 
+function roundedRectPoly(x, y, w, h, r, steps = 4) {
+  const rr = Math.min(r, w / 2, h / 2);
+  const corners = [
+    [x + w - rr, y + rr, -Math.PI / 2, 0],
+    [x + w - rr, y + h - rr, 0, Math.PI / 2],
+    [x + rr, y + h - rr, Math.PI / 2, Math.PI],
+    [x + rr, y + rr, Math.PI, (3 * Math.PI) / 2],
+  ];
+  const points = [];
+  for (const [cx, cy, start, end] of corners) {
+    for (let i = 0; i <= steps; i += 1) {
+      const ang = start + ((end - start) * i) / steps;
+      points.push([cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr]);
+    }
+  }
+  return points;
+}
+
 function expandSchematicHole(recipe) {
   const { schematic } = recipe;
   const raw = centerlineFromRecipe(recipe);
@@ -138,7 +156,9 @@ function expandSchematicHole(recipe) {
     centerlineDense: dense,
     rough: rectPoly(roughRect.x, roughRect.y, roughRect.w, roughRect.h),
     fairway: schematic.fairway,
-    bunkers: [],
+    bunkers: (schematic.bunkers ?? []).map((bunker) =>
+      roundedRectPoly(bunker.x, bunker.y, bunker.w, bunker.h, bunker.r),
+    ),
     tee: {
       cx: teePt[0],
       cy: teePt[1],
