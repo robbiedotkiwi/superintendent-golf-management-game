@@ -7,6 +7,7 @@ import {
   projectedPondVolume,
 } from '../engine/irrigation.js';
 import { holeCount } from '../engine/holes.js';
+import { planningDayOf, weekdayLabel } from '../engine/week.js';
 
 function formatIrrigationMm(value) {
   if (!Number.isFinite(value)) return '0 mm';
@@ -22,10 +23,11 @@ export default function IrrigationMmSlider({ state, surface, onSetIrrigation }) 
   const demand = irrigationDemand(state);
   const projected = projectedPondVolume(state);
   const mains = demand.total > (state.pond?.volume ?? 0);
+  const night = weekdayLabel(planningDayOf(state));
 
   return (
     <label className="mt-2 block">
-      <span className="text-sm text-[var(--sand)]">Water tonight</span>
+      <span className="text-sm text-[var(--sand)]">Water {night} night</span>
       <div className="font-condensed text-3xl font-bold leading-none">{formatIrrigationMm(mm)}</div>
       <input
         type="range"

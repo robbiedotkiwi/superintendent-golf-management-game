@@ -1,83 +1,42 @@
 import { GREEN_SHAPE_CIRCLE } from './constants.js';
-import { expandHole } from '../engine/holeShape.js';
+import { expandHole, polygonCentroid } from '../engine/holeShape.js';
+import { HOLE_POLYS } from './newCourse08Sept.js';
 
-// Simple Course frame from Figma "Golf Management Sim" (node 2:93).
-// Coordinates are frame-local: origin at the top-left of the 3211×800 artboard.
-
-const HOLE_WIDTH = 1017;
-const HOLE_HEIGHT = 160;
-const HOLE_GAP = 40;
-const HOLE_ORIGIN = 40;
-const HOLE_COLS = 3;
-
-const TEE_RECT = { x: 20, y: 20, w: 60, h: 120 };
-const FAIRWAY_RECT = { x: 120, y: 30, w: 500, h: 100 };
-const BUNKER_RECT = { x: 660, y: 50, w: 60, h: 60, r: 25 };
-const GREEN_RECT = { x: 760, y: 20, w: 120, h: 120 };
-const NUMBER_RECT = { x: 920, y: 22, w: 77, h: 116 };
-
-// Fairway vector path in the 500×100 fairway box (Figma node Fairway).
-const FAIRWAY_LOCAL = [
-  [0, 0],
-  [250, 12.5],
-  [500, 0],
-  [500, 100],
-  [250, 87.5],
-  [0, 100],
-];
+// New Course 08 SEPT from Figma "Golf Management Sim" (page 2:98, Frame 3).
+// Coordinates are shifted so the sampled vectors sit near the origin.
+// tee + green form the hole centerline (mower path only). Named Figma layers supply the polygons.
 
 const DRYING_FACTORS = [1.12, 0.86, 1.3, 0.8, 1.24, 0.93, 1.0, 1.18, 1.06];
 
-function holeOrigin(id) {
-  const col = (id - 1) % HOLE_COLS;
-  const row = Math.floor((id - 1) / HOLE_COLS);
-  return [HOLE_ORIGIN + col * (HOLE_WIDTH + HOLE_GAP), HOLE_ORIGIN + row * (HOLE_HEIGHT + HOLE_GAP)];
-}
-
-// tee + green form the hole centerline (mower path only). Named Figma layers supply the polygons.
-
-const HOLE_RECIPES = DRYING_FACTORS.map((dryingFactor, index) => {
+const HOLE_RECIPES = HOLE_POLYS.map((poly, index) => {
   const id = index + 1;
-  const [hx, hy] = holeOrigin(id);
-  const tee = [hx + TEE_RECT.x + TEE_RECT.w / 2, hy + TEE_RECT.y + TEE_RECT.h / 2];
-  const green = [hx + GREEN_RECT.x + GREEN_RECT.w / 2, hy + GREEN_RECT.y + GREEN_RECT.h / 2];
+  const tee = polygonCentroid(poly.tees);
+  const green = polygonCentroid(poly.green);
   return {
     id,
-    dryingFactor,
+    dryingFactor: DRYING_FACTORS[index],
     tee,
     green,
     bend: null,
     greenShape: GREEN_SHAPE_CIRCLE,
-    greenSize: GREEN_RECT.w,
+    greenSize: 0,
     bunkers: [],
     schematic: {
-      rough: { x: hx, y: hy, w: HOLE_WIDTH, h: HOLE_HEIGHT },
-      tee: { x: hx + TEE_RECT.x, y: hy + TEE_RECT.y, w: TEE_RECT.w, h: TEE_RECT.h },
-      fairway: FAIRWAY_LOCAL.map(([x, y]) => [x + hx + FAIRWAY_RECT.x, y + hy + FAIRWAY_RECT.y]),
-      bunkers: [
-        {
-          x: hx + BUNKER_RECT.x,
-          y: hy + BUNKER_RECT.y,
-          w: BUNKER_RECT.w,
-          h: BUNKER_RECT.h,
-          r: BUNKER_RECT.r,
-        },
-      ],
-      green: { cx: green[0], cy: green[1], r: GREEN_RECT.w / 2 },
-      marker: {
-        cx: hx + NUMBER_RECT.x + NUMBER_RECT.w / 2,
-        cy: hy + NUMBER_RECT.y + NUMBER_RECT.h / 2,
-      },
+      rough: poly.rough,
+      tee: poly.tees,
+      fairway: poly.fairway,
+      bunkers: poly.bunkers,
+      green: poly.green,
     },
   };
 });
 
 export const HOLE_SHAPES = HOLE_RECIPES.map(expandHole);
 
-// Figma Shed vector: house pentagon 200×120 at (1097, 640); eaves at y ≈ 48.
+// Placeholder parked south of the holes. Pond/shed art lands later.
 export const SHED = {
-  x: 1097,
-  y: 688,
+  x: 400,
+  y: 2360,
   width: 200,
   height: 72,
   roof: 48,

@@ -47,8 +47,8 @@ assert.equal(fairwayWidthVaries(), false);
 
 assert.equal(
   HOLES.filter((hole) => hole.bunkers.length > 0).length,
-  9,
-  'Figma Simple Course has a bunker on every hole',
+  6,
+  'New Course 08 SEPT has bunkers on six holes',
 );
 for (const hole of HOLES) {
   for (const bunker of hole.bunkers) {

@@ -20,7 +20,23 @@ function holeSurfaceAreasPx(hole) {
   return { greens, tees, fairways, rough, bunkers };
 }
 
-const SAMPLE_PX = holeSurfaceAreasPx(HOLE_SHAPES[0]);
+function averageHoleAreasPx(holes) {
+  const totals = { greens: 0, tees: 0, fairways: 0, rough: 0, bunkers: 0 };
+  for (const hole of holes) {
+    const areas = holeSurfaceAreasPx(hole);
+    for (const key of Object.keys(totals)) totals[key] += areas[key];
+  }
+  const n = holes.length || 1;
+  return {
+    greens: totals.greens / n,
+    tees: totals.tees / n,
+    fairways: totals.fairways / n,
+    rough: totals.rough / n,
+    bunkers: totals.bunkers / n,
+  };
+}
+
+const SAMPLE_PX = averageHoleAreasPx(HOLE_SHAPES);
 
 export const AREA_PX2_PER_HOLE = SAMPLE_PX;
 

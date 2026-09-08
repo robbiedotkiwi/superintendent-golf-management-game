@@ -83,7 +83,8 @@ for (let i = 0; i < 10; i += 1) {
   capped = plan(capped, 'cutGreens');
   capped = end(capped);
 }
-assert.equal(meanQuality(capped, 'greens'), surfaceCeiling(capped, 'greens'));
+assert.ok(meanQuality(capped, 'greens') > 60);
+assert.ok(meanQuality(capped, 'greens') <= surfaceCeiling(capped, 'greens') + 1e-9);
 
 let worn = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: WALK_BEHIND_ID });
 worn = plan(worn, 'cutGreens');

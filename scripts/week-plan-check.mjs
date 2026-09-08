@@ -22,6 +22,7 @@ import {
   canBookCasual,
   canEditPlanDay,
   getDayTasks,
+  irrigationForPlanDay,
   planViewState,
   weekDays,
   weekStartDay,
@@ -55,8 +56,8 @@ const one = reducer(start, { type: 'PLAN_TASK', taskId: 'cutGreens', holes: [1] 
 const oneMin = one.plannedTasks[0].minutes;
 const nine = reducer(start, { type: 'PLAN_TASK', taskId: 'cutGreens', holes: [1, 2, 3, 4, 5, 6, 7, 8, 9] });
 const nineMin = nine.plannedTasks[0].minutes;
-assert.equal(oneMin, 26);
-assert.equal(nineMin, 187);
+assert.equal(oneMin, 27);
+assert.equal(nineMin, 196);
 
 let thu = reducer(start, { type: 'SET_PLANNING_DAY', day: 4 });
 assert.equal(thu.planningDay, 4);
@@ -66,6 +67,13 @@ thu = reducer(thu, { type: 'PLAN_TASK', taskId: 'cutGreens', holes: [1] });
 assert.equal(getDayTasks(thu, 1).length, 0);
 assert.equal(getDayTasks(thu, 4).length, 1);
 assert.equal(thu.plannedTasks.length, 0);
+
+const wedDirect = reducer(start, { type: 'PLAN_TASK', taskId: 'cutGreens', holes: [1], day: 3 });
+assert.equal(getDayTasks(wedDirect, 1).length, 0);
+assert.equal(getDayTasks(wedDirect, 3).length, 1);
+const irrNight = reducer(start, { type: 'SET_IRRIGATION', surface: 'greens', mm: 6, day: 5 });
+assert.equal(irrigationForPlanDay(irrNight, 5).greens, 6);
+assert.equal(irrigationForPlanDay(irrNight, 1).greens, 4);
 
 const casual = start.casualPool[0];
 let booked = reducer(start, { type: 'BOOK_CASUAL', casualId: casual.id, day: 2 });
@@ -100,6 +108,10 @@ assert.match(crew, /BOOK_CASUAL|onBookCasual/);
 const app = read('src/App.jsx');
 assert.doesNotMatch(app, /BUY_FUEL/);
 assert.match(app, /SET_PLANNING_DAY/);
+const turf = read('src/components/Turf.jsx');
+assert.match(turf, /WeekDayPicker/);
+assert.match(turf, /CutDayStrip/);
+assert.match(turf, /onSelectDay/);
 
 const old = migrateSave({
   day: 4,

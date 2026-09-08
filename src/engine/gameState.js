@@ -320,10 +320,19 @@ export function combinedMinutesUsed(state) {
   return (state.workers ?? []).reduce((total, worker) => total + worker.minutesUsed, 0);
 }
 
+function actionPlanDay(state, actionOrDay) {
+  const raw = actionOrDay && typeof actionOrDay === 'object' ? actionOrDay.day : actionOrDay;
+  if (raw == null) return planningDayOf(state);
+  const day = Number(raw);
+  if (!Number.isInteger(day) || weekStartDay(day) !== weekStartDay(state.day)) return planningDayOf(state);
+  return day;
+}
+
 export function canPlanTask(state, taskId, workerId, options = {}) {
-  const edit = canEditPlanDay(state);
+  const day = actionPlanDay(state, options);
+  const edit = canEditPlanDay(state, day);
   if (!edit.ok) return edit;
-  state = planViewState(state);
+  state = planViewState({ ...state, planningDay: day });
   const task = getTask(taskId);
   if (!task) return { ok: false, reason: 'Unknown job.' };
   const holes =
@@ -448,8 +457,7 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
   return { ok: true, minutes, workerId: worker.id, machineId: machineCheck.machine?.id ?? null, holes, suitability };
 }
 
-function commitDayTasks(state, tasks) {
-  const day = planningDayOf(state);
+function commitDayTasks(state, tasks, day = planningDayOf(state)) {
   const next = setDayTasks(state, day, tasks);
   if (day !== state.day) return next;
   const used = {};
@@ -465,8 +473,7 @@ function commitDayTasks(state, tasks) {
   };
 }
 
-function removePlannedTask(state, taskId, planId) {
-  const day = planningDayOf(state);
+function removePlannedTask(state, taskId, planId, day = planningDayOf(state)) {
   const tasks = getDayTasks(state, day);
   const planned = planId
     ? tasks.find((item) => item.planId === planId)
@@ -519,13 +526,14 @@ export function reducer(state, action) {
       return action.state;
     case 'PLAN_TASK': {
       const task = getTask(action.taskId);
+      const day = actionPlanDay(state, action);
       const check = canPlanTask(state, action.taskId, action.workerId, {
         holes: action.holes,
         machineId: action.machineId,
         confirmDamaging: action.confirmDamaging,
+        day,
       });
       if (!task || !check.ok) return state;
-      const day = planningDayOf(state);
       const tasks = [
         ...getDayTasks(state, day),
         {
@@ -541,7 +549,7 @@ export function reducer(state, action) {
             : {}),
         },
       ];
-      return commitDayTasks({ ...state, nextPlanId: (state.nextPlanId ?? 1) + 1 }, tasks);
+      return commitDayTasks({ ...state, nextPlanId: (state.nextPlanId ?? 1) + 1 }, tasks, day);
     }
     case 'SET_SELECTED_HOLES': {
       const holes = Array.isArray(action.holes) ? [...new Set(action.holes.map(Number))].sort((a, b) => a - b) : [];
@@ -602,7 +610,7 @@ export function reducer(state, action) {
       return { ...next, lastRepeatDropped: dropped };
     }
     case 'REMOVE_TASK':
-      return removePlannedTask(state, action.taskId, action.planId);
+      return removePlannedTask(state, action.taskId, action.planId, actionPlanDay(state, action));
     case 'END_DAY': {
       if (state.dismissed) return state;
       const { state: next, summary } = resolveDay(state);
@@ -803,7 +811,7 @@ export function reducer(state, action) {
       const mm =
         action.mm != null ? action.mm : migrateIrrigationValue(action.surface, action.policy);
       const value = clampIrrigationMm(action.surface, mm);
-      const day = planningDayOf(state);
+      const day = actionPlanDay(state, action);
       const edit = canEditPlanDay(state, day);
       if (!edit.ok && day !== state.day) return state;
       const irrigation = { ...irrigationForPlanDay(state, day), [action.surface]: value };

@@ -181,9 +181,10 @@ export default function App() {
               holes,
               confirmDamaging: options?.confirmDamaging,
               machineId: options?.machineId,
+              day: options?.day,
             })
           }
-          onRemove={(taskId, planId) => dispatch({ type: 'REMOVE_TASK', taskId, planId })}
+          onRemove={(taskId, planId, day) => dispatch({ type: 'REMOVE_TASK', taskId, planId, day })}
           onSelectHoles={(holes) => dispatch({ type: 'SET_SELECTED_HOLES', holes })}
           onToggleHole={(holeId) => dispatch({ type: 'TOGGLE_HOLE', holeId })}
           onAddHole={(holeId) => dispatch({ type: 'ADD_HOLE', holeId })}
@@ -222,7 +223,7 @@ export default function App() {
           onSetPattern={(surface, pattern) => dispatch({ type: 'SET_PATTERN', surface, pattern })}
           onSetAngle={(surface, angle) => dispatch({ type: 'SET_ANGLE', surface, angle })}
           onSetAutoRotate={(surface, value) => dispatch({ type: 'SET_AUTO_ROTATE', surface, value })}
-          onSetIrrigation={(surface, mm) => dispatch({ type: 'SET_IRRIGATION', surface, mm })}
+          onSetIrrigation={(surface, mm, day) => dispatch({ type: 'SET_IRRIGATION', surface, mm, day })}
           onSetView={(view) => dispatch({ type: 'SET_VIEW', view })}
           onBuyAerator={() => dispatch({ type: 'BUY_AERATOR' })}
           onBuyGreensSensors={() => dispatch({ type: 'BUY_GREENS_SENSORS' })}
@@ -524,6 +525,7 @@ function GameScreen({
             onBack={onCloseShed}
             onPlan={onPlan}
             onRemove={onRemove}
+            onSelectDay={onSelectDay}
             onSetHoc={onSetHoc}
             onSetPattern={onSetPattern}
             onSetAngle={onSetAngle}

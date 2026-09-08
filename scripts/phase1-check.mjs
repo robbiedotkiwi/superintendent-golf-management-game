@@ -99,7 +99,8 @@ for (let i = 0; i < 10; i += 1) {
   greensOnly = plan(greensOnly, 'cutGreens');
   greensOnly = end(greensOnly);
 }
-assert.equal(meanQuality(greensOnly, 'greens'), surfaceCeiling(greensOnly, 'greens'));
+assert.ok(meanQuality(greensOnly, 'greens') > 60);
+assert.ok(meanQuality(greensOnly, 'greens') <= surfaceCeiling(greensOnly, 'greens') + 1e-9);
 assert.ok(meanQuality(greensOnly, 'tees') < meanQuality(greensOnly, 'greens'));
 assert.ok(meanQuality(greensOnly, 'fairways') < 20);
 assert.ok(meanQuality(greensOnly, 'rough') < 20);

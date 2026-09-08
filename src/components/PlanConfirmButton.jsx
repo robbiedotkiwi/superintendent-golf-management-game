@@ -7,12 +7,13 @@ export default function PlanConfirmButton({
   taskId,
   holes,
   onPlan,
+  day,
   className,
   children,
   titleWhenBlocked,
 }) {
   const [confirming, setConfirming] = useState(false);
-  const check = canPlanTask(state, taskId, undefined, { holes });
+  const check = canPlanTask(state, taskId, undefined, { holes, day });
   const blocked = !check.ok && !check.needsConfirm;
 
   return (
@@ -26,7 +27,7 @@ export default function PlanConfirmButton({
             setConfirming(true);
             return;
           }
-          onPlan(taskId, holes, { confirmDamaging: Boolean(check.needsConfirm) });
+          onPlan(taskId, holes, { confirmDamaging: Boolean(check.needsConfirm), day });
         }}
         className={className}
         title={blocked ? titleWhenBlocked ?? check.reason : undefined}

@@ -88,10 +88,10 @@ export function jobMinutes(state, taskId, holeIds) {
   return setupMinutesFor(task, holes.length) + variableJobMinutes(state, taskId, holeIds);
 }
 
-export function findPlannedJob(state, taskId, holeIds) {
+export function findPlannedJob(state, taskId, holeIds, day = planningDayOf(state)) {
   const task = getTask(taskId);
   const holes = jobHolesFor(state, task, holeIds);
-  return getDayTasks(state, planningDayOf(state)).find(
+  return getDayTasks(state, day).find(
     (item) => item.taskId === taskId && sameHoleSet(item.holes ?? [], holes),
   );
 }

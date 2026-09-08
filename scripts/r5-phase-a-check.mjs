@@ -1,5 +1,5 @@
 /**
- * Round 5 Phase A: schematic Figma course layout and placement assertions.
+ * Round 5 Phase A: named Figma course layout and placement assertions.
  * Run: node scripts/r5-phase-a-check.mjs
  */
 import assert from 'node:assert/strict';
@@ -25,6 +25,8 @@ assert.equal(CENTRELINE_WIDTH, 2);
 assert.equal(HOLE_NUMBER_RADIUS, 50);
 assert.equal(SHED_CLEARANCE, 40);
 
+const BUNKERS_BY_HOLE = { 1: 1, 2: 2, 3: 0, 4: 1, 5: 1, 6: 0, 7: 1, 8: 2, 9: 0 };
+
 const lines = formatPlacementReport(HOLES, SHED);
 for (const line of lines) console.log(line);
 const rows = placementReport(HOLES, SHED);
@@ -38,7 +40,7 @@ for (const hole of HOLES) {
   assert.ok(hole.tee?.points?.length, `hole ${hole.id} tee`);
   assert.ok(hole.fairway?.length, `hole ${hole.id} fairway`);
   assert.ok(hole.green?.points?.length, `hole ${hole.id} green`);
-  assert.equal(hole.bunkers.length, 1, `hole ${hole.id} has the named Figma bunker`);
+  assert.equal(hole.bunkers.length, BUNKERS_BY_HOLE[hole.id], `hole ${hole.id} named Figma bunkers`);
   assert.ok(hole.centerline?.length >= 2, `hole ${hole.id} centreline`);
   assert.equal(hole.green.variant, GREEN_SHAPE_CIRCLE, `hole ${hole.id} green is a circle`);
   assert.ok(hole.marker.cx > hole.green.cx, `hole ${hole.id} number sits right of the green`);

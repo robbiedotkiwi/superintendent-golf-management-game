@@ -65,6 +65,7 @@ import { canBuyAerator, irrigationDemand, IRRIGATED_SURFACES, pondCapacity, pond
 import { canBuyGreensSensors, canBuyTurfRad, moistureStatus } from '../engine/moisture.js';
 import IrrigationMmSlider from './IrrigationMmSlider.jsx';
 import PondLevelBar from './PondLevelBar.jsx';
+import WeekDayPicker from './WeekDayPicker.jsx';
 import { daysSinceLastWorked, isNeglected } from '../engine/neglect.js';
 import { courseSettings, holeCount, meanQuality } from '../engine/holes.js';
 import { hasHoc, hasPattern, inHocStressBand } from '../engine/mowing.js';
@@ -75,6 +76,12 @@ import { inputsStatus } from '../engine/inputsStatus.js';
 import { GreensMoistureList, MoistureLine } from './MoistureReadout.jsx';
 import SectionTabs from './SectionTabs.jsx';
 import HoleSelector from './HoleSelector.jsx';
+import {
+  canEditPlanDay,
+  planningDayOf,
+  weekDays,
+  weekdayLabel,
+} from '../engine/week.js';
 
 function formatQuality(value) {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
@@ -147,6 +154,7 @@ export default function Turf({
   onBack,
   onPlan,
   onRemove,
+  onSelectDay,
   onSetHoc,
   onSetPattern,
   onSetAngle,
@@ -181,6 +189,15 @@ export default function Turf({
 
       {tab === TURF_TAB_MOWING ? (
         <div className="space-y-4">
+          <section className="border border-[var(--sand)] p-3">
+            <h2 className="text-sm font-semibold text-[var(--sand)]">Days this week</h2>
+            <p className="mt-1 text-sm text-[var(--sand)]">
+              Pick a day, then plan each surface. The dots on a surface are the days that cut is booked.
+            </p>
+            <div className="mt-2">
+              <WeekDayPicker state={state} onSelectDay={onSelectDay} ariaLabel="Mowing plan day" />
+            </div>
+          </section>
           {HOC_SURFACES.map((surface) => (
             <MowingSurface
               key={surface}
@@ -192,6 +209,7 @@ export default function Turf({
               onSetAutoRotate={onSetAutoRotate}
               onPlan={onPlan}
               onRemove={onRemove}
+              onSelectDay={onSelectDay}
               onSetMachineOverride={onSetMachineOverride}
               onToggleHole={onToggleHole}
               onSelectHoles={onSelectHoles}
@@ -202,6 +220,15 @@ export default function Turf({
 
       {tab === TURF_TAB_IRRIGATION ? (
         <div className="space-y-3">
+          <section className="border border-[var(--sand)] p-3">
+            <h2 className="text-sm font-semibold text-[var(--sand)]">Nights this week</h2>
+            <p className="mt-1 text-sm text-[var(--sand)]">
+              {weekdayLabel(planningDayOf(state))} night. The sliders apply to the selected night only.
+            </p>
+            <div className="mt-2">
+              <WeekDayPicker state={state} onSelectDay={onSelectDay} ariaLabel="Irrigation plan night" />
+            </div>
+          </section>
           <p className="text-sm text-[var(--sand)]">
             Nightly draw {demand.total.toFixed(1)} m³. Rough is never watered.
           </p>
@@ -322,6 +349,50 @@ export default function Turf({
           />
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function CutDayStrip({ state, taskId, holes, onPlan, onRemove, onSelectDay }) {
+  if (!taskId) return null;
+  const days = weekDays(state.day);
+  return (
+    <div data-cut-days={taskId} className="mt-3">
+      <div className="text-sm text-[var(--sand)]">Cut days</div>
+      <div className="mt-1 flex gap-1">
+        {days.map((day) => {
+          const planned = findPlannedJob(state, taskId, holes, day);
+          const past = day < state.day;
+          const edit = canEditPlanDay(state, day);
+          const check = planned ? { ok: true } : canPlanTask(state, taskId, undefined, { holes, day });
+          const blocked = past || (!edit.ok && !planned) || (!planned && !check.ok && !check.needsConfirm);
+          return (
+            <button
+              key={day}
+              type="button"
+              data-cut-day={day}
+              disabled={blocked || !onPlan}
+              onClick={() => {
+                onSelectDay?.(day);
+                if (planned) onRemove(taskId, planned.planId, day);
+                else onPlan(taskId, holes, { day, confirmDamaging: Boolean(check.needsConfirm) });
+              }}
+              className={`min-w-0 flex-1 px-1 py-1 text-center text-[11px] font-semibold ${
+                planned
+                  ? 'bg-[var(--machine-orange)] text-[var(--paint)]'
+                  : 'border border-[var(--sand)]/40'
+              } disabled:cursor-default disabled:opacity-40`}
+              title={
+                blocked && !planned
+                  ? check.reason ?? edit.reason
+                  : `${weekdayLabel(day)}${planned ? ' · cut planned' : ''}`
+              }
+            >
+              {weekdayLabel(day)}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -547,6 +618,7 @@ function MowingSurface({
   onSetAutoRotate,
   onPlan,
   onRemove,
+  onSelectDay,
   onSetMachineOverride,
   onToggleHole,
   onSelectHoles,
@@ -650,6 +722,14 @@ function MowingSurface({
             ) : null}
             <MachinePicker state={state} surface={surface} onSetMachineOverride={onSetMachineOverride} />
             <HoleSelector state={state} onToggleHole={onToggleHole} onSelectHoles={onSelectHoles} />
+            <CutDayStrip
+              state={state}
+              taskId={cutId}
+              holes={holes}
+              onPlan={onPlan}
+              onRemove={onRemove}
+              onSelectDay={onSelectDay}
+            />
             <PlanThisCut state={state} surface={surface} onPlan={onPlan} onRemove={onRemove} />
             {surface === 'greens' ? (
               <PlanJob

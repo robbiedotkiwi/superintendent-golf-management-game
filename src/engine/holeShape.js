@@ -134,16 +134,83 @@ function roundedRectPoly(x, y, w, h, r, steps = 4) {
   return points;
 }
 
+function isPointList(shape) {
+  return Array.isArray(shape) && Array.isArray(shape[0]);
+}
+
+function isRectSpec(shape) {
+  return shape && !isPointList(shape) && Number.isFinite(shape.w) && Number.isFinite(shape.h);
+}
+
+export function polygonCentroid(points) {
+  if (!points?.length) return [0, 0];
+  let area = 0;
+  let cx = 0;
+  let cy = 0;
+  for (let i = 0; i < points.length; i += 1) {
+    const [x1, y1] = points[i];
+    const [x2, y2] = points[(i + 1) % points.length];
+    const cross = x1 * y2 - x2 * y1;
+    area += cross;
+    cx += (x1 + x2) * cross;
+    cy += (y1 + y2) * cross;
+  }
+  area *= 0.5;
+  if (Math.abs(area) < 1e-6) {
+    const n = points.length;
+    return [points.reduce((sum, p) => sum + p[0], 0) / n, points.reduce((sum, p) => sum + p[1], 0) / n];
+  }
+  return [cx / (6 * area), cy / (6 * area)];
+}
+
+function polyBounds(points) {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const [x, y] of points ?? []) {
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+  }
+  return { minX, minY, maxX, maxY };
+}
+
+function schematicPoly(shape, fallback) {
+  if (isPointList(shape)) return shape;
+  if (isRectSpec(shape)) return rectPoly(shape.x, shape.y, shape.w, shape.h);
+  if (shape && Number.isFinite(shape.cx) && Number.isFinite(shape.cy) && Number.isFinite(shape.r)) {
+    return circlePoly(shape.cx, shape.cy, shape.r);
+  }
+  return fallback;
+}
+
+function schematicBunker(spec) {
+  if (isPointList(spec)) return spec;
+  if (spec?.points && isPointList(spec.points)) return spec.points;
+  return roundedRectPoly(spec.x, spec.y, spec.w, spec.h, spec.r);
+}
+
 function expandSchematicHole(recipe) {
   const { schematic } = recipe;
-  const raw = centerlineFromRecipe(recipe);
+  const rough = schematicPoly(schematic.rough);
+  const fairway = schematicPoly(schematic.fairway);
+  const teePoly = schematicPoly(schematic.tee);
+  const greenPoly = schematicPoly(schematic.green);
+  const bunkers = (schematic.bunkers ?? []).map(schematicBunker);
+  const teePt = recipe.tee ?? polygonCentroid(teePoly);
+  const greenPt = recipe.green ?? polygonCentroid(greenPoly);
+  const raw = centerlineFromRecipe({ ...recipe, tee: teePt, green: greenPt });
   const dense = densifyPolyline(raw, HOLE_PATH_SAMPLES);
-  const teePt = recipe.tee;
-  const greenPt = recipe.green;
   const greenDir = tangentAtLength(dense, 1);
-  const teeRect = schematic.tee;
-  const roughRect = schematic.rough;
-  const radius = schematic.green.r;
+  const radius = boundsRadius(greenPoly);
+  const teeBounds = polyBounds(teePoly);
+  const greenBounds = polyBounds(greenPoly);
+  const marker = schematic.marker ?? {
+    cx: greenBounds.maxX + HOLE_NUMBER_RADIUS * 0.65,
+    cy: greenPt[1],
+  };
   const flag = [
     greenPt[0] + greenDir[0] * radius * FLAG_FAR_FACTOR,
     greenPt[1] + greenDir[1] * radius * FLAG_FAR_FACTOR,
@@ -154,17 +221,15 @@ function expandSchematicHole(recipe) {
     bent: false,
     centerline: raw,
     centerlineDense: dense,
-    rough: rectPoly(roughRect.x, roughRect.y, roughRect.w, roughRect.h),
-    fairway: schematic.fairway,
-    bunkers: (schematic.bunkers ?? []).map((bunker) =>
-      roundedRectPoly(bunker.x, bunker.y, bunker.w, bunker.h, bunker.r),
-    ),
+    rough,
+    fairway,
+    bunkers,
     tee: {
       cx: teePt[0],
       cy: teePt[1],
-      rx: teeRect.w / 2,
-      ry: teeRect.h / 2,
-      points: rectPoly(teeRect.x, teeRect.y, teeRect.w, teeRect.h),
+      rx: isRectSpec(schematic.tee) ? schematic.tee.w / 2 : (teeBounds.maxX - teeBounds.minX) / 2,
+      ry: isRectSpec(schematic.tee) ? schematic.tee.h / 2 : (teeBounds.maxY - teeBounds.minY) / 2,
+      points: teePoly,
     },
     green: {
       cx: greenPt[0],
@@ -172,9 +237,9 @@ function expandSchematicHole(recipe) {
       rx: radius,
       ry: radius,
       variant: recipe.greenShape,
-      points: circlePoly(schematic.green.cx, schematic.green.cy, radius),
+      points: greenPoly,
     },
-    marker: { cx: schematic.marker.cx, cy: schematic.marker.cy, r: HOLE_NUMBER_RADIUS },
+    marker: { cx: marker.cx, cy: marker.cy, r: HOLE_NUMBER_RADIUS },
     flag: { x: flag[0], y: flag[1] },
     dryingFactor: recipe.dryingFactor,
   };
@@ -230,8 +295,7 @@ export function centerlineFromRecipe(recipe) {
 
 function boundsRadius(points) {
   if (!points?.length) return GREEN_SIZE_MIN / 2;
-  const cx = points.reduce((sum, p) => sum + p[0], 0) / points.length;
-  const cy = points.reduce((sum, p) => sum + p[1], 0) / points.length;
+  const [cx, cy] = polygonCentroid(points);
   let max = 0;
   for (const [x, y] of points) max = Math.max(max, dist([cx, cy], [x, y]));
   return max;
