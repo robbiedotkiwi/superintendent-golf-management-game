@@ -11,7 +11,7 @@ import {
 import { getTask } from '../data/tasks.js';
 import { getMachine, machineClass } from '../data/equipment.js';
 import { pickMachineForTask, upgradeModifiers } from './equipment.js';
-import { setupMinutesFor } from './jobs.js';
+import { hitchMinutesFor, travelMinutesPerHole } from './jobs.js';
 import { needsCash, spendCash } from './cash.js';
 import { workerById } from './assignment.js';
 
@@ -87,9 +87,11 @@ export function consumeJobFuel({ task, machine, minutes, holes, fuelLitres }) {
     };
   }
   const n = Math.max(list.length, 1);
-  const setup = setupMinutesFor(task);
+  const hitch = hitchMinutesFor(task);
+  const travel = travelMinutesPerHole(task);
+  const setup = hitch + travel * n;
   const variable = Math.max(0, minutes - setup);
-  const perHole = variable / n;
+  const perHole = variable / n + travel;
   if (!list.length) {
     const need = litresForMinutes(machine, minutes);
     if (need > fuelLitres + 1e-9) {
@@ -116,7 +118,7 @@ export function consumeJobFuel({ task, machine, minutes, holes, fuelLitres }) {
   let runMinutes = 0;
   let burned = 0;
   for (let i = 0; i < list.length; i += 1) {
-    const chunk = (i === 0 ? setup : 0) + perHole;
+    const chunk = (i === 0 ? hitch : 0) + perHole;
     const need = litresForMinutes(machine, chunk);
     if (need > remaining + 1e-9) {
       return {

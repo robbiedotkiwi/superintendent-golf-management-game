@@ -65,7 +65,7 @@ import {
 import { getUpgrade, upgradeAppliesTo } from '../data/upgrades.js';
 import { getTask, taskUsesMachine } from '../data/tasks.js';
 import { hocFactor } from './mowing.js';
-import { setupMinutesFor, variableJobMinutes } from './jobs.js';
+import { jobHolesFor, setupMinutesFor, variableJobMinutes } from './jobs.js';
 import { handWaterMinutes } from './moisture.js';
 import { taskTimeMultiplier } from './projects.js';
 import { bumpCapitalSpent } from './history.js';
@@ -386,7 +386,8 @@ export function durationOnMachine(state, taskId, worker, machineId, holeIds) {
     const base = TASK_MINUTES[taskId] ?? 0;
     return worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
   }
-  const setup = setupMinutesFor(task);
+  const holes = jobHolesFor(state, task, holeIds);
+  const setup = setupMinutesFor(task, holes.length);
   const variable = variableJobMinutes(state, taskId, holeIds);
   const machine = machineId ? machineMultiplierFor(state, machineId, task?.surface) : 1;
   const extras = taskTimeMultiplier(state, task);

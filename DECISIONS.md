@@ -359,7 +359,7 @@ Ambiguous plan items, resolved by the simplest reading that still satisfies the 
 
 - The shed catalog is the Toro/Salsco/Ventrac/Nexmow list from the equipment CSV. Old units (`Greensmaster 1000`, `Reelmaster 3100`, push rotary, NX1, etc.) are gone. Saves remap those ids onto the new models.
 - New games start with a poor-condition (`28`) Greensmaster 1026 (340 hours) and Groundsmaster 3200 (480 hours).
-- Map scale is `10px = 1 metre`. Mow minutes come from polygon area ÷ the machine's `coverage_m2_per_hr`. Starter coverage is the reference (1026 at 2600 m²/h on greens/tees, 3200 at 24000 m²/h on fairways/rough), so those two machines are 1.0×; faster decks finish sooner.
-- Setup minutes are unchanged. The schematic nine is small, so a full cut day is 502 minutes (about 105% of 480) instead of the old overloaded 2260.
+- Map scale is `5px = 1 metre`. Mow minutes come from polygon area ÷ the machine's `coverage_m2_per_hr`. Starter coverage is the reference (1026 at 2600 m²/h on greens/tees, 3200 at 24000 m²/h on fairways/rough), so those two machines are 1.0×; faster decks finish sooner.
+- Setup is a small hitch plus per-hole travel, so one green is not almost as expensive as nine. The schematic nine at this scale is a long day.
 - Attachments that map onto existing math (blade count, LED early-start, tri-roller, groomer, recycler, roller weight) can be fitted on owned machines from the shed yard. Deck-width and electric SKUs are separate machines, not upgrades.
 

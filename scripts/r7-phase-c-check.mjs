@@ -9,7 +9,6 @@ import {
   FAIRWAY_UNIT_ID,
   GREENSMASTER_ID,
   HOC_SURFACES,
-  JOB_SETUP_MINUTES,
   MACHINE_TIME_MULT,
   MACHINE_TIME_MULT_RIDING_FAIRWAY_UNIT,
   MACHINE_TIME_MULT_RIDING_GREENS_TRIPLEX,
@@ -38,6 +37,7 @@ import {
 } from '../src/engine/equipment.js';
 import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
 import { holeSurface, setTypeQuality } from '../src/engine/holes.js';
+import { setupMinutesFor } from '../src/engine/jobs.js';
 
 assert.equal(MACHINE_TIME_MULT.walkBehindReel, MACHINE_TIME_MULT_WALK_BEHIND_REEL);
 assert.equal(MACHINE_TIME_MULT.ridingGreensTriplex, MACHINE_TIME_MULT_RIDING_GREENS_TRIPLEX);
@@ -140,7 +140,7 @@ const even = {
 const player = even.workers[0];
 const walk = durationOnMachine(even, 'cutGreens', player, GREENSMASTER_ID);
 const trip = durationOnMachine(even, 'cutGreens', player, RIDE_ON_REEL_ID);
-const setup = JOB_SETUP_MINUTES.green;
+const setup = setupMinutesFor('greens', 9);
 const variableRatio = (trip - setup) / (walk - setup);
 assert.ok(Math.abs(variableRatio - MACHINE_TIME_MULT.ridingGreensTriplex) < 0.02);
 assert.equal(machineTimeMult(getMachine(RIDE_ON_REEL_ID)), MACHINE_TIME_MULT.ridingGreensTriplex);

@@ -19,7 +19,6 @@ import {
   REELMASTER_TIME_MULT,
   STARTING_MACHINE_IDS,
   TASK_MINUTES,
-  JOB_SETUP_MINUTES,
 } from '../src/data/constants.js';
 import { getMachine } from '../src/data/equipment.js';
 import { durationForTask } from '../src/engine/assignment.js';
@@ -30,7 +29,7 @@ import {
 } from '../src/engine/equipment.js';
 import { canPlanTask, createInitialState } from '../src/engine/gameState.js';
 import { mowingMinutes } from '../src/engine/mowing.js';
-import { variableJobMinutes } from '../src/engine/jobs.js';
+import { setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.js';
 
 assert.deepEqual(STARTING_MACHINE_IDS, [GREENSMASTER_ID, REELMASTER_ID]);
 assert.equal(GREENSMASTER_CEILING, 68);
@@ -70,11 +69,11 @@ assert.ok(durationForTask(start, 'cutRough') < DAY_LENGTH_MINUTES);
 
 assert.equal(
   durationForTask(start, 'cutGreens'),
-  Math.round(JOB_SETUP_MINUTES.green + variableJobMinutes(start, 'cutGreens') * machineMultiplierFor(start, GREENSMASTER_ID)),
+  Math.round(setupMinutesFor('greens', 9) + variableJobMinutes(start, 'cutGreens') * machineMultiplierFor(start, GREENSMASTER_ID)),
 );
 assert.equal(
   durationForTask(start, 'cutFairways'),
-  Math.round(JOB_SETUP_MINUTES.fairway + variableJobMinutes(start, 'cutFairways') * machineMultiplierFor(start, REELMASTER_ID)),
+  Math.round(setupMinutesFor('fairways', 9) + variableJobMinutes(start, 'cutFairways') * machineMultiplierFor(start, REELMASTER_ID)),
 );
 assert.equal(
   machineMultiplierFor(start, GREENSMASTER_ID),

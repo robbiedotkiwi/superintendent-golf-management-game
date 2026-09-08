@@ -111,11 +111,11 @@ export const TASK_MINUTES = {
 };
 
 export const JOB_SETUP_MINUTES = {
-  green: 35,
-  tee: 25,
-  fairway: 45,
-  rough: 45,
-  bunker: 20,
+  green: 6,
+  tee: 5,
+  fairway: 8,
+  rough: 8,
+  bunker: 5,
 };
 export const JOB_SETUP_MINUTES_BY_TYPE = {
   greens: JOB_SETUP_MINUTES.green,
@@ -124,7 +124,21 @@ export const JOB_SETUP_MINUTES_BY_TYPE = {
   rough: JOB_SETUP_MINUTES.rough,
   bunkers: JOB_SETUP_MINUTES.bunker,
 };
-export const MAP_PX_PER_METRE = 10;
+export const JOB_TRAVEL_MINUTES = {
+  green: 4,
+  tee: 3,
+  fairway: 4,
+  rough: 4,
+  bunker: 3,
+};
+export const JOB_TRAVEL_MINUTES_BY_TYPE = {
+  greens: JOB_TRAVEL_MINUTES.green,
+  tees: JOB_TRAVEL_MINUTES.tee,
+  fairways: JOB_TRAVEL_MINUTES.fairway,
+  rough: JOB_TRAVEL_MINUTES.rough,
+  bunkers: JOB_TRAVEL_MINUTES.bunker,
+};
+export const MAP_PX_PER_METRE = 5;
 export const REFERENCE_COVERAGE_M2_PER_HR = {
   greens: 2600,
   tees: 2600,
@@ -164,7 +178,7 @@ export const SAVE_ROUTE_LABEL = 'Save route';
 export const REPEAT_LAST_LABEL = 'Repeat last';
 export const ROUTE_NAME_MAX = 24;
 
-export const DEFAULT_DAY_OVERLOAD_MINUTES = 502;
+export const DEFAULT_DAY_OVERLOAD_MINUTES = 863;
 export const DEFAULT_DAY_OVERLOAD_RATIO = DEFAULT_DAY_OVERLOAD_MINUTES / DAY_LENGTH_MINUTES;
 
 export const BASE_GAIN = 6;

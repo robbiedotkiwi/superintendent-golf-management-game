@@ -60,7 +60,7 @@ assert.ok(tees < DAY_LENGTH_MINUTES);
 assert.ok(fairways < DAY_LENGTH_MINUTES);
 assert.ok(rough < DAY_LENGTH_MINUTES);
 assert.ok(PER_HOLE_MINUTES.greens > 0);
-assert.equal(JOB_SETUP_MINUTES.green, 35);
+assert.equal(JOB_SETUP_MINUTES.green, 6);
 
 const weekly =
   WEEKLY_CUTS_GREENS * greens +

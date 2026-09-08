@@ -7,6 +7,7 @@ import { readFileSync } from 'node:fs';
 import {
   JOB_SETUP_MINUTES,
   JOB_SETUP_MINUTES_BY_TYPE,
+  JOB_TRAVEL_MINUTES,
   SAVED_ROUTE_CAP,
 } from '../src/data/constants.js';
 import { PER_HOLE_MINUTES } from '../src/engine/courseArea.js';
@@ -15,8 +16,8 @@ import { durationForTask } from '../src/engine/assignment.js';
 import { jobMinutes, setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.js';
 import { defaultJobHoles, frontNineIds, holeSurface } from '../src/engine/holes.js';
 
-assert.deepEqual(JOB_SETUP_MINUTES, { green: 35, tee: 25, fairway: 45, rough: 45, bunker: 20 });
-assert.equal(JOB_SETUP_MINUTES_BY_TYPE.greens, 35);
+assert.deepEqual(JOB_SETUP_MINUTES, { green: 6, tee: 5, fairway: 8, rough: 8, bunker: 5 });
+assert.equal(JOB_SETUP_MINUTES_BY_TYPE.greens, 6);
 assert.equal(SAVED_ROUTE_CAP, 8);
 
 const start = createInitialState();
@@ -30,10 +31,16 @@ assert.deepEqual(three.plannedTasks[0].holes, [1, 2, 3]);
 const nine = reducer(start, { type: 'PLAN_TASK', taskId: 'cutGreens' });
 assert.deepEqual(nine.plannedTasks[0].holes, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
+const oneMin = durationForTask(start, 'cutGreens', start.workers[0], undefined, [1]);
 const threeMin = durationForTask(start, 'cutGreens', start.workers[0], undefined, [1, 2, 3]);
 const nineMin = durationForTask(start, 'cutGreens', start.workers[0]);
 assert.ok(nineMin < threeMin * 3, 'nine holes in one job is cheaper than three jobs of three');
-assert.equal(jobMinutes(start, 'cutGreens', [1, 2, 3]), setupMinutesFor('greens') + variableJobMinutes(start, 'cutGreens', [1, 2, 3]));
+assert.ok(nineMin > oneMin * 6, 'nine greens should take most of nine times one green');
+assert.ok(nineMin < oneMin * 9, 'one hitch is shared across the nine');
+assert.equal(
+  jobMinutes(start, 'cutGreens', [1, 2, 3]),
+  setupMinutesFor('greens', 3) + variableJobMinutes(start, 'cutGreens', [1, 2, 3]),
+);
 
 const low = reducer(start, { type: 'SET_HOC', surface: 'greens', hoc: 2.5 });
 const defaultNine = durationForTask(start, 'cutGreens', start.workers[0]);
@@ -44,7 +51,8 @@ assert.ok(lowNine > defaultNine);
 const nineVar = variableJobMinutes(low, 'cutGreens') / variableJobMinutes(start, 'cutGreens');
 const threeVar = variableJobMinutes(low, 'cutGreens', [1, 2, 3]) / variableJobMinutes(start, 'cutGreens', [1, 2, 3]);
 assert.ok(Math.abs(nineVar - threeVar) < 0.02);
-assert.equal(setupMinutesFor('greens'), JOB_SETUP_MINUTES.green);
+assert.equal(setupMinutesFor('greens', 1), JOB_SETUP_MINUTES.green + JOB_TRAVEL_MINUTES.green);
+assert.equal(setupMinutesFor('greens', 9), JOB_SETUP_MINUTES.green + JOB_TRAVEL_MINUTES.green * 9);
 
 let selected = reducer(start, { type: 'SET_SELECTED_HOLES', holes: [4, 7] });
 selected = reducer(selected, { type: 'TOGGLE_HOLE', holeId: 4 });
@@ -102,10 +110,11 @@ assert.match(readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8'), /
 
 assert.ok(canPlanTask(start, 'cutGreens', undefined, { holes: [1] }).ok);
 
-console.log('NINE_MIN', nineMin, 'THREE_X3', threeMin * 3, 'SETUP', JOB_SETUP_MINUTES.green, 'PER_HOLE', PER_HOLE_MINUTES.greens);
+console.log('ONE_MIN', oneMin, 'NINE_MIN', nineMin, 'THREE_X3', threeMin * 3, 'HITCH', JOB_SETUP_MINUTES.green, 'TRAVEL', JOB_TRAVEL_MINUTES.green, 'PER_HOLE', PER_HOLE_MINUTES.greens);
 console.log('GATE B1 PASS holes can be selected and a task applied to just those');
 console.log('GATE B2 PASS All, Front nine and Clear shortcuts work');
 console.log('GATE B3 PASS nine holes in one job is cheaper than three jobs of three');
+console.log('GATE B3b PASS nine greens take most of nine times one green, not a shared setup lump');
 console.log('GATE B4 PASS setup cost does not scale with height');
 console.log('GATE B5 PASS a route can be saved, named, and reapplied');
 console.log('GATE B6 PASS Repeat last re-plans yesterday and reports dropped jobs');

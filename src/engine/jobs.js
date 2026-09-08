@@ -3,6 +3,7 @@ import {
   HOC_RANGE,
   HOC_TIME_MULT,
   JOB_SETUP_MINUTES_BY_TYPE,
+  JOB_TRAVEL_MINUTES_BY_TYPE,
   ROUTE_NAME_MAX,
   SAVED_ROUTE_CAP,
   TASK_MINUTES,
@@ -13,10 +14,30 @@ import { hocFactor, patternTimeMult } from './mowing.js';
 import { hocRangeFor } from './grass.js';
 import { defaultJobHoles, formatHoleSet, normalizeJobHoles, sameHoleSet } from './holes.js';
 
-export function setupMinutesFor(taskOrSurface) {
-  const surface = typeof taskOrSurface === 'string' ? taskOrSurface : taskOrSurface?.surface;
+function surfaceOf(taskOrSurface) {
+  return typeof taskOrSurface === 'string' ? taskOrSurface : taskOrSurface?.surface;
+}
+
+export function hitchMinutesFor(taskOrSurface) {
+  const surface = surfaceOf(taskOrSurface);
   if (!surface) return 0;
   return JOB_SETUP_MINUTES_BY_TYPE[surface] ?? 0;
+}
+
+export function travelMinutesPerHole(taskOrSurface) {
+  const surface = surfaceOf(taskOrSurface);
+  if (!surface) return 0;
+  return JOB_TRAVEL_MINUTES_BY_TYPE[surface] ?? 0;
+}
+
+export function setupHoleCount(count) {
+  const n = Number(count);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+export function setupMinutesFor(taskOrSurface, holeCount = 0) {
+  const n = setupHoleCount(holeCount);
+  return hitchMinutesFor(taskOrSurface) + travelMinutesPerHole(taskOrSurface) * n;
 }
 
 export function jobHolesFor(state, task, holeIds) {
@@ -61,9 +82,9 @@ export function variableJobMinutes(state, taskId, holeIds) {
 
 export function jobMinutes(state, taskId, holeIds) {
   const task = getTask(taskId);
-  const setup = setupMinutesFor(task);
   if (!task?.surface) return TASK_MINUTES[taskId] ?? 0;
-  return setup + variableJobMinutes(state, taskId, holeIds);
+  const holes = jobHolesFor(state, task, holeIds);
+  return setupMinutesFor(task, holes.length) + variableJobMinutes(state, taskId, holeIds);
 }
 
 export function findPlannedJob(state, taskId, holeIds) {

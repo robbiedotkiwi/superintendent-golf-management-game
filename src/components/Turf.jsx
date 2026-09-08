@@ -559,7 +559,8 @@ function MowingSurface({
   const stress = showHoc && inHocStressBand(surface, record.hoc, state);
   const threshold = stressThresholdHeight(surface, state);
   const cutId = CUT_TASK_BY_SURFACE[surface];
-  const minutes = cutId ? durationForTask(state, cutId) : null;
+  const holes = jobHolesFromSelection(state);
+  const minutes = cutId ? durationForTask(state, cutId, undefined, undefined, holes) : null;
   const typicalCuts = BASELINE_MOW_FREQUENCY_PER_WEEK[surface];
   return (
     <section className="border border-[var(--sand)] p-3">
