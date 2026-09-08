@@ -10,6 +10,8 @@ import {
   EARLY_START_MINUTES,
   MORALE_SLOW_BELOW,
   PLAYER_ID,
+  PLAYER_QUALITY_SKILL,
+  PLAYER_SPEED_SKILL,
   STARTING_WEATHER,
   TRAINING_COST,
   TRAINING_DAYS,
@@ -44,7 +46,13 @@ assert.equal(combinedMinutesRemaining(start), DAY_LENGTH_MINUTES);
 const volunteer = start.workers.find((worker) => worker.id === VOLUNTEER_ID);
 assert.ok(volunteer);
 assert.equal(volunteer.wage, 0);
-assert.equal(workerAllows(volunteer, 'greens'), false);
+assert.equal(volunteer.speedSkill, PLAYER_SPEED_SKILL);
+assert.equal(volunteer.qualitySkill, PLAYER_QUALITY_SKILL);
+assert.equal(volunteer.minutesToday, 0);
+assert.equal(volunteer.allowedSurfaces, 'all');
+assert.equal(workerAllows(volunteer, 'greens'), true);
+assert.equal(workerAllows(volunteer, 'tees'), true);
+assert.equal(workerAllows(volunteer, 'bunkers'), true);
 assert.equal(workerAllows(volunteer, 'fairways'), true);
 
 const candidate = start.candidates.find((item) => item.speedSkill < 5 && !item.isMechanic) ?? start.candidates[0];
@@ -90,8 +98,18 @@ while (dayOfWeek(day.day) !== VOLUNTEER_DEFAULT_WEEKDAY) {
 }
 const vol = day.workers.find((worker) => worker.id === VOLUNTEER_ID);
 assert.equal(vol.minutesToday, VOLUNTEER_MINUTES);
+assert.equal(vol.minutesToday, DAY_LENGTH_MINUTES / 2);
+assert.equal(workerAllows(vol, 'greens'), true);
 assert.equal(assignWorker(day, getTask('cutGreens'))?.id, PLAYER_ID);
 assert.ok(assignWorker(day, getTask('cutFairways')));
+const playerBusy = {
+  ...day,
+  workers: day.workers.map((worker) =>
+    worker.id === PLAYER_ID ? { ...worker, minutesUsed: worker.minutesToday } : worker,
+  ),
+};
+assert.equal(assignWorker(playerBusy, getTask('cutGreens'))?.id, VOLUNTEER_ID);
+assert.equal(assignWorker(playerBusy, getTask('cutTees'))?.id, VOLUNTEER_ID);
 
 let trained = reducer(hired, { type: 'TRAIN_WORKER', workerId: hired.workers.at(-1).id, axis: 'speedSkill' });
 assert.equal(trained.cash, hired.cash - TRAINING_COST);

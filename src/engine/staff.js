@@ -23,6 +23,8 @@ import {
   VOLUNTEER_DEFAULT_WEEKDAY,
   VOLUNTEER_LEGACY_WEEKDAY,
   VOLUNTEER_MINUTES,
+  VOLUNTEER_QUALITY_SKILL,
+  VOLUNTEER_SPEED_SKILL,
 } from '../data/constants.js';
 import { cashOnHand } from './cash.js';
 import { minutesTodayForWeather } from './weather.js';
@@ -37,6 +39,16 @@ export function migrateVolunteerWeekday(value) {
   const weekday = Number(value);
   if (!Number.isInteger(weekday) || weekday < 1 || weekday > DAYS_PER_WEEK) return VOLUNTEER_DAY;
   return weekday;
+}
+
+export function migrateVolunteerWorker(worker) {
+  if (!worker?.isVolunteer) return worker;
+  return {
+    ...worker,
+    speedSkill: VOLUNTEER_SPEED_SKILL,
+    qualitySkill: VOLUNTEER_QUALITY_SKILL,
+    allowedSurfaces: 'all',
+  };
 }
 
 export function hasMechanic(state) {

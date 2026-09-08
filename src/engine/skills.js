@@ -12,8 +12,8 @@ import {
 } from '../data/constants.js';
 
 export function workerAllows(worker, surface) {
-  if (!surface) return !worker.isVolunteer;
   if (worker.allowedSurfaces === 'all') return true;
+  if (!surface) return !worker.isVolunteer;
   return worker.allowedSurfaces.includes(surface);
 }
 

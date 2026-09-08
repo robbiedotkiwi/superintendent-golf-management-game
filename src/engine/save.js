@@ -42,7 +42,7 @@ import { buildForecast } from './weather.js';
 import { normalizeSection, normalizeTabs } from './section.js';
 import { allGmSeen, allSectionUnlocks } from './gm.js';
 import { generateCasuals } from '../data/staff.js';
-import { migrateVolunteerWeekday } from './staff.js';
+import { migrateVolunteerWeekday, migrateVolunteerWorker } from './staff.js';
 import { emptyWeekPlan, weekStartDay } from './week.js';
 import { migrateIrrigation } from './irrigation.js';
 import { hocRangeFor, normalizeGrass } from './grass.js';
@@ -287,7 +287,7 @@ export function withDefaults(state) {
     section: normalizeSection(state.section),
     tabs: normalizeTabs(state.tabs),
     log: Array.isArray(state.log) ? state.log : [],
-    workers: Array.isArray(state.workers) ? state.workers : [],
+    workers: Array.isArray(state.workers) ? state.workers.map(migrateVolunteerWorker) : [],
   };
   delete next.customPresets;
   delete next.nextPresetId;

@@ -191,7 +191,7 @@ export function createInitialState() {
         sprayCertified: false,
         isMechanic: false,
         isVolunteer: true,
-        allowedSurfaces: ['fairways', 'rough'],
+        allowedSurfaces: 'all',
         availableFromDay: STARTING_DAY,
         minutesToday: STARTING_MINUTES_USED,
         minutesUsed: STARTING_MINUTES_USED,

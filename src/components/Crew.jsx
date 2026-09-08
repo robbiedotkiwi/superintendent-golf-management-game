@@ -146,12 +146,14 @@ export default function Crew({
           <>
             <p className={`mt-2 ${reason ? 'line-through' : ''}`}>{volunteer?.name ?? 'Volunteer'}</p>
             {reason ? <p className="text-sm text-[var(--sand)]">{reason}</p> : null}
+            <p className="mt-2">
+              Comes on day {state.volunteerWeekday ?? VOLUNTEER_DEFAULT_WEEKDAY} of each {DAYS_PER_WEEK}-day week
+              with {VOLUNTEER_MINUTES} min. Speed {volunteer?.speedSkill} · Quality {volunteer?.qualitySkill} — all
+              surfaces, half a day. Wage {formatMoney(PLAYER_WAGE)}.
+            </p>
           </>
         );
       })()}
-      <p className="mt-2">
-        Comes on day {state.volunteerWeekday ?? VOLUNTEER_DEFAULT_WEEKDAY} of each {DAYS_PER_WEEK}-day week with {VOLUNTEER_MINUTES} min. Fairways and rough only. Wage {formatMoney(PLAYER_WAGE)}.
-      </p>
       <p className="text-sm text-[var(--sand)]">Today is weekday {dayOfWeek(state.day)}.</p>
       <div className="mt-2 flex flex-wrap gap-2">
         {Array.from({ length: DAYS_PER_WEEK }, (_, index) => index + 1).map((weekday) => (

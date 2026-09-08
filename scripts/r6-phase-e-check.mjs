@@ -5,6 +5,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  DAY_LENGTH_MINUTES,
+  PLAYER_ID,
+  PLAYER_QUALITY_SKILL,
+  PLAYER_SPEED_SKILL,
   STARTING_WEATHER,
   VOLUNTEER_DAY,
   VOLUNTEER_DEFAULT_WEEKDAY,
@@ -29,10 +33,12 @@ const start = createInitialState();
 assert.equal(start.volunteerWeekday, VOLUNTEER_DAY);
 const volunteer = start.workers.find((worker) => worker.id === VOLUNTEER_ID);
 assert.ok(volunteer);
-assert.deepEqual(volunteer.allowedSurfaces, ['fairways', 'rough']);
-assert.equal(workerAllows(volunteer, 'greens'), false);
-assert.equal(workerAllows(volunteer, 'tees'), false);
-assert.equal(workerAllows(volunteer, 'bunkers'), false);
+assert.equal(volunteer.speedSkill, PLAYER_SPEED_SKILL);
+assert.equal(volunteer.qualitySkill, PLAYER_QUALITY_SKILL);
+assert.equal(volunteer.allowedSurfaces, 'all');
+assert.equal(workerAllows(volunteer, 'greens'), true);
+assert.equal(workerAllows(volunteer, 'tees'), true);
+assert.equal(workerAllows(volunteer, 'bunkers'), true);
 assert.equal(workerAllows(volunteer, 'fairways'), true);
 assert.equal(workerAllows(volunteer, 'rough'), true);
 
@@ -57,9 +63,18 @@ assert.equal(dayOfWeek(day.day), 3);
 assert.equal(isVolunteerOnDuty(day), true);
 const onDuty = day.workers.find((worker) => worker.id === VOLUNTEER_ID);
 assert.equal(onDuty.minutesToday, VOLUNTEER_MINUTES);
+assert.equal(onDuty.minutesToday, DAY_LENGTH_MINUTES / 2);
 assert.equal(workerAbsenceReason(day, onDuty), null);
-assert.equal(assignWorker(day, getTask('cutGreens'))?.id !== VOLUNTEER_ID, true);
+assert.equal(assignWorker(day, getTask('cutGreens'))?.id, PLAYER_ID);
 assert.ok(assignWorker(day, getTask('cutFairways')));
+const playerBusy = {
+  ...day,
+  workers: day.workers.map((worker) =>
+    worker.id === PLAYER_ID ? { ...worker, minutesUsed: worker.minutesToday } : worker,
+  ),
+};
+assert.equal(assignWorker(playerBusy, getTask('cutGreens'))?.id, VOLUNTEER_ID);
+assert.equal(assignWorker(playerBusy, getTask('rakeBunkers'))?.id, VOLUNTEER_ID);
 
 const legacy = migrateSave({
   day: 4,
@@ -87,10 +102,37 @@ const kept = migrateSave({
 });
 assert.equal(kept.volunteerWeekday, 4);
 
+const upgraded = migrateSave({
+  day: 4,
+  volunteerWeekday: VOLUNTEER_DAY,
+  workers: [
+    {
+      id: VOLUNTEER_ID,
+      name: 'Volunteer',
+      isVolunteer: true,
+      speedSkill: 2,
+      qualitySkill: 2,
+      allowedSurfaces: ['fairways', 'rough'],
+    },
+  ],
+  surfaces: {
+    greens: { quality: 50 },
+    tees: { quality: 50 },
+    fairways: { quality: 50 },
+    rough: { quality: 45 },
+    bunkers: { quality: 40 },
+  },
+});
+const upgradedVolunteer = upgraded.workers.find((worker) => worker.id === VOLUNTEER_ID);
+assert.equal(upgradedVolunteer.speedSkill, PLAYER_SPEED_SKILL);
+assert.equal(upgradedVolunteer.qualitySkill, PLAYER_QUALITY_SKILL);
+assert.equal(upgradedVolunteer.allowedSurfaces, 'all');
+
 const crewSrc = readFileSync(new URL('../src/components/Crew.jsx', import.meta.url), 'utf8');
 assert.match(crewSrc, /VOLUNTEER_OFF_REASON|not in today|weekday/);
+assert.match(crewSrc, /all\s+surfaces, half a day/);
 
 console.log('GATE E1 PASS volunteer arrives on weekday 3');
-console.log('GATE E2 PASS volunteer still cannot take greens, tees or bunkers');
+console.log('GATE E2 PASS volunteer is full greenkeeper skill on all surfaces with half a day');
 console.log('GATE E3 PASS off days use VOLUNTEER_OFF_REASON');
 console.log('round 6 phase E checks passed');
