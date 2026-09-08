@@ -124,6 +124,14 @@ export const JOB_SETUP_MINUTES_BY_TYPE = {
   rough: JOB_SETUP_MINUTES.rough,
   bunkers: JOB_SETUP_MINUTES.bunker,
 };
+export const MAP_PX_PER_METRE = 10;
+export const REFERENCE_COVERAGE_M2_PER_HR = {
+  greens: 2600,
+  tees: 2600,
+  fairways: 24000,
+  rough: 24000,
+  roll: 2200,
+};
 export const NINE_GREENS_TARGET_MINUTES = 384;
 export const NINE_GREENS_DAY_FRACTION = 0.8;
 export const WEEKLY_WORK_DAYS = 6;
@@ -156,7 +164,7 @@ export const SAVE_ROUTE_LABEL = 'Save route';
 export const REPEAT_LAST_LABEL = 'Repeat last';
 export const ROUTE_NAME_MAX = 24;
 
-export const DEFAULT_DAY_OVERLOAD_MINUTES = 2260;
+export const DEFAULT_DAY_OVERLOAD_MINUTES = 502;
 export const DEFAULT_DAY_OVERLOAD_RATIO = DEFAULT_DAY_OVERLOAD_MINUTES / DAY_LENGTH_MINUTES;
 
 export const BASE_GAIN = 6;
@@ -531,11 +539,19 @@ export const MACHINE_CLASS_RIDING_GREENS_TRIPLEX = 'ridingGreensTriplex';
 export const MACHINE_CLASS_RIDING_FAIRWAY_UNIT = 'ridingFairwayUnit';
 export const MACHINE_CLASS_ROUGH_UTILITY = 'roughUtility';
 export const MACHINE_CLASS_ROLLER = 'roller';
+export const MACHINE_CLASS_AUTONOMOUS = 'autonomous';
+export const MACHINE_CLASS_UTILITY = 'utility';
+export const COVERAGE_WALK_BEHIND_GREENS = 2600;
+export const COVERAGE_FLEX_WALK_BEHIND = 2200;
+export const COVERAGE_RIDE_ON_GREENS = 8400;
+export const COVERAGE_ENTRY_FAIRWAY = 20100;
+export const COVERAGE_ENTRY_ROUGH = 24000;
 export const MACHINE_TIME_MULT_PUSH_ROTARY = 1.2;
 export const MACHINE_TIME_MULT_WALK_BEHIND_REEL = 1;
-export const MACHINE_TIME_MULT_RIDING_GREENS_TRIPLEX = 0.45;
-export const MACHINE_TIME_MULT_RIDING_FAIRWAY_UNIT = 0.35;
-export const MACHINE_TIME_MULT_ROUGH_UTILITY = 0.4;
+export const MACHINE_TIME_MULT_RIDING_GREENS_TRIPLEX =
+  COVERAGE_WALK_BEHIND_GREENS / COVERAGE_RIDE_ON_GREENS;
+export const MACHINE_TIME_MULT_RIDING_FAIRWAY_UNIT = 1;
+export const MACHINE_TIME_MULT_ROUGH_UTILITY = 1;
 export const MACHINE_TIME_MULT = {
   [MACHINE_CLASS_PUSH_ROTARY]: MACHINE_TIME_MULT_PUSH_ROTARY,
   [MACHINE_CLASS_WALK_BEHIND_REEL]: MACHINE_TIME_MULT_WALK_BEHIND_REEL,
@@ -589,45 +605,57 @@ export function DAMAGING_JOB_REASON(machineName, surfaceLabel) {
 }
 export const CONFIRM_DAMAGING_LABEL = 'Confirm damaging job';
 
-export const PUSH_ROTARY_ID = 'pushRotary';
-export const PUSH_ROTARY_COST = nzPrice(1200, 1000);
-export const PUSH_ROTARY_CEILING = 65;
-export const PUSH_ROTARY_TIME_MULT = MACHINE_TIME_MULT_PUSH_ROTARY;
-export const GREENSMASTER_ID = 'greensmaster1000';
+export const GREENSMASTER_ID = 'greensmaster1026';
 export const GREENSMASTER_COST = 0;
 export const GREENSMASTER_CEILING = 68;
 export const GREENSMASTER_TIME_MULT = MACHINE_TIME_MULT_WALK_BEHIND_REEL;
 export const GREENSMASTER_START_CONDITION = 28;
-export const REELMASTER_ID = 'reelmaster3100';
-export const REELMASTER_COST = 0;
-export const REELMASTER_CEILING = 62;
-export const REELMASTER_TIME_MULT = MACHINE_TIME_MULT_RIDING_FAIRWAY_UNIT;
-export const REELMASTER_START_CONDITION = 24;
-export const WALK_BEHIND_COST = nzPrice(4500, 1000);
+export const GROUNDSMASTER_ID = 'groundsmaster3200';
+export const GROUNDSMASTER_COST = 0;
+export const GROUNDSMASTER_CEILING = 70;
+export const GROUNDSMASTER_TIME_MULT = MACHINE_TIME_MULT_ROUGH_UTILITY;
+export const GROUNDSMASTER_START_CONDITION = 28;
+export const REELMASTER_ID = GROUNDSMASTER_ID;
+export const REELMASTER_COST = GROUNDSMASTER_COST;
+export const REELMASTER_CEILING = GROUNDSMASTER_CEILING;
+export const REELMASTER_TIME_MULT = GROUNDSMASTER_TIME_MULT;
+export const REELMASTER_START_CONDITION = GROUNDSMASTER_START_CONDITION;
+export const WALK_BEHIND_ID = 'greensmasterFlex2120';
+export const WALK_BEHIND_COST = 10800;
 export const WALK_BEHIND_CEILING = 80;
-export const WALK_BEHIND_TIME_MULT = MACHINE_TIME_MULT_WALK_BEHIND_REEL;
-export const RIDE_ON_REEL_COST = nzPrice(22000, 1000);
-export const RIDE_ON_REEL_CEILING = 92;
+export const WALK_BEHIND_TIME_MULT = COVERAGE_WALK_BEHIND_GREENS / COVERAGE_FLEX_WALK_BEHIND;
+export const RIDE_ON_REEL_ID = 'greensmaster3250d';
+export const RIDE_ON_REEL_COST = 38000;
+export const RIDE_ON_REEL_CEILING = 88;
 export const RIDE_ON_REEL_TIME_MULT = MACHINE_TIME_MULT_RIDING_GREENS_TRIPLEX;
-export const PREMIUM_REEL_COST = nzPrice(48000, 1000);
+export const PREMIUM_REEL_ID = 'greensmasterEtriflex3370';
+export const PREMIUM_REEL_COST = 68000;
 export const PREMIUM_REEL_CEILING = 97;
 export const PREMIUM_REEL_TIME_MULT = MACHINE_TIME_MULT_RIDING_GREENS_TRIPLEX;
-export const FAIRWAY_UNIT_COST = nzPrice(30000, 1000);
+export const FAIRWAY_UNIT_ID = 'reelmaster5410d';
+export const FAIRWAY_UNIT_COST = 88000;
 export const FAIRWAY_UNIT_CEILING = 88;
-export const FAIRWAY_UNIT_TIME_MULT = MACHINE_TIME_MULT_RIDING_FAIRWAY_UNIT;
-export const VENTRAC_COST = nzPrice(18000, 1000);
+export const FAIRWAY_UNIT_TIME_MULT = COVERAGE_ENTRY_ROUGH / 22800;
+export const VENTRAC_ID = 'ventrac4500';
+export const VENTRAC_COST = 19000;
 export const VENTRAC_FAIRWAY_CEILING = 85;
 export const VENTRAC_ROUGH_CEILING = 90;
-export const VENTRAC_TIME_MULT = MACHINE_TIME_MULT_ROUGH_UTILITY;
-export const GREENS_ROLLER_COST = nzPrice(9000, 1000);
-export const GREENS_ROLLER_TIME_MULT = 0.7;
-export const AUTONOMOUS_COST = nzPrice(35000, 1000);
+export const VENTRAC_TIME_MULT = COVERAGE_ENTRY_ROUGH / 28000;
+export const GREENS_ROLLER_ID = 'salscoWalkBehind';
+export const GREENS_ROLLER_COST = 2400;
+export const GREENS_ROLLER_TIME_MULT = 1;
+export const AUTONOMOUS_ID = 'nexmowM2';
+export const AUTONOMOUS_COST = 19500;
 export const AUTONOMOUS_CEILING = 85;
+export const PUSH_ROTARY_ID = WALK_BEHIND_ID;
+export const PUSH_ROTARY_COST = WALK_BEHIND_COST;
+export const PUSH_ROTARY_CEILING = WALK_BEHIND_CEILING;
+export const PUSH_ROTARY_TIME_MULT = WALK_BEHIND_TIME_MULT;
 export const STARTING_MACHINE_ID = GREENSMASTER_ID;
-export const STARTING_MACHINE_IDS = [GREENSMASTER_ID, REELMASTER_ID];
+export const STARTING_MACHINE_IDS = [GREENSMASTER_ID, GROUNDSMASTER_ID];
 export const STARTING_MACHINE_CONDITIONS = {
   [GREENSMASTER_ID]: GREENSMASTER_START_CONDITION,
-  [REELMASTER_ID]: REELMASTER_START_CONDITION,
+  [GROUNDSMASTER_ID]: GROUNDSMASTER_START_CONDITION,
 };
 
 export const MACHINE_BRAND_TORO = 'Toro';
@@ -635,32 +663,52 @@ export const MACHINE_BRAND_VENTRAC = 'Ventrac';
 export const MACHINE_BRAND_NEXMOW = 'Nexmow';
 export const MACHINE_BRAND_SALSCO = 'Salsco';
 export const MACHINE_BRAND_FOLEY = 'Foley';
-export const MODEL_PUSH_ROTARY = '21-inch rotary';
-export const TYPE_PUSH_ROTARY = 'walk-behind rotary';
-export const MODEL_GREENSMASTER = 'Greensmaster 1000';
+export const MODEL_GREENSMASTER = 'Greensmaster 1026';
 export const TYPE_WALK_BEHIND_REEL = 'walk-behind reel';
-export const MODEL_REELMASTER = 'Reelmaster 3100';
+export const MODEL_GROUNDSMASTER = 'Groundsmaster 3200';
 export const TYPE_RIDE_ON_FAIRWAY = 'ride-on fairway';
-export const MODEL_WALK_BEHIND = 'Greensmaster 1600';
-export const MODEL_RIDE_ON = 'Reelmaster 5410';
+export const TYPE_ROTARY_RIDE_ON = 'rotary ride-on';
+export const MODEL_WALK_BEHIND = 'Greensmaster Flex 2120';
+export const MODEL_RIDE_ON = 'Greensmaster 3250-D';
 export const TYPE_RIDE_ON_REEL = 'ride-on reel';
-export const MODEL_PREMIUM_REEL = 'Reelmaster 5610';
+export const MODEL_PREMIUM_REEL = 'Greensmaster eTriflex 3370';
 export const TYPE_PREMIUM_RIDE_ON = 'premium ride-on reel';
-export const MODEL_FAIRWAY_UNIT = 'Reelmaster 5510';
-export const MODEL_VENTRAC = '4500Z';
-export const TYPE_ROUGH_UTILITY = 'rough and utility mower';
-export const MODEL_GREENS_ROLLER = '0750';
-export const TYPE_GREENS_ROLLER = 'greens roller';
-export const MODEL_AUTONOMOUS = 'NX1';
-export const TYPE_AUTONOMOUS = 'autonomous mower';
+export const MODEL_FAIRWAY_UNIT = 'Reelmaster 5410-D';
+export const MODEL_VENTRAC = '4500 tractor + MK960 deck';
+export const TYPE_ROUGH_UTILITY = 'tractor + attachment';
+export const MODEL_GREENS_ROLLER = 'Walk-Behind Roller';
+export const TYPE_GREENS_ROLLER = 'push roller';
+export const TYPE_RIDE_ON_ROLLER = 'ride-on roller';
+export const MODEL_AUTONOMOUS = 'M2';
+export const TYPE_AUTONOMOUS = 'autonomous robot';
+export const TYPE_AUTONOMOUS_RIDE_ON = 'autonomous ride-on';
+export const TYPE_UTILITY = 'utility vehicle';
+export const TYPE_BALL_PICKER = 'autonomous ball picker';
 export const MACHINE_CLASS_BY_TYPE = {
-  [TYPE_PUSH_ROTARY]: MACHINE_CLASS_PUSH_ROTARY,
   [TYPE_WALK_BEHIND_REEL]: MACHINE_CLASS_WALK_BEHIND_REEL,
   [TYPE_RIDE_ON_REEL]: MACHINE_CLASS_RIDING_GREENS_TRIPLEX,
   [TYPE_PREMIUM_RIDE_ON]: MACHINE_CLASS_RIDING_GREENS_TRIPLEX,
   [TYPE_RIDE_ON_FAIRWAY]: MACHINE_CLASS_RIDING_FAIRWAY_UNIT,
+  [TYPE_ROTARY_RIDE_ON]: MACHINE_CLASS_ROUGH_UTILITY,
   [TYPE_ROUGH_UTILITY]: MACHINE_CLASS_ROUGH_UTILITY,
   [TYPE_GREENS_ROLLER]: MACHINE_CLASS_ROLLER,
+  [TYPE_RIDE_ON_ROLLER]: MACHINE_CLASS_ROLLER,
+  [TYPE_AUTONOMOUS]: MACHINE_CLASS_AUTONOMOUS,
+  [TYPE_AUTONOMOUS_RIDE_ON]: MACHINE_CLASS_AUTONOMOUS,
+  [TYPE_BALL_PICKER]: MACHINE_CLASS_AUTONOMOUS,
+  [TYPE_UTILITY]: MACHINE_CLASS_UTILITY,
+};
+export const MACHINE_ID_ALIASES = {
+  greensmaster1000: GREENSMASTER_ID,
+  reelmaster3100: GROUNDSMASTER_ID,
+  walkBehindReel: WALK_BEHIND_ID,
+  rideOnReel: RIDE_ON_REEL_ID,
+  premiumRideOn: PREMIUM_REEL_ID,
+  fairwayUnit: FAIRWAY_UNIT_ID,
+  ventrac: VENTRAC_ID,
+  greensRoller: GREENS_ROLLER_ID,
+  autonomousMower: AUTONOMOUS_ID,
+  pushRotary: WALK_BEHIND_ID,
 };
 export const FOLEY_MODEL = 'Bedknife grinder';
 export const FOLEY_TYPE = 'bedknife grinder';
@@ -669,10 +717,11 @@ export const HOURS_USED_MIN = 180;
 export const HOURS_USED_MAX = 620;
 export const HOURS_MIGRATED = 400;
 export const HOURS_STARTER_GREENSMASTER = 340;
-export const HOURS_STARTER_REELMASTER = 480;
+export const HOURS_STARTER_GROUNDSMASTER = 480;
+export const HOURS_STARTER_REELMASTER = HOURS_STARTER_GROUNDSMASTER;
 export const STARTING_MACHINE_HOURS = {
   [GREENSMASTER_ID]: HOURS_STARTER_GREENSMASTER,
-  [REELMASTER_ID]: HOURS_STARTER_REELMASTER,
+  [GROUNDSMASTER_ID]: HOURS_STARTER_GROUNDSMASTER,
 };
 export const MACHINE_STATUS_NEW = 'New';
 export const MACHINE_STATUS_BROKEN = 'Broken · needs repair';
@@ -705,48 +754,6 @@ export function defaultHeightPatternMult(surface) {
   const factor = (range.max - range.default) / (range.max - range.min);
   return HOC_TIME_MULT(factor) * PATTERN_TIME_MULT[PATTERN_SURFACE_DEFAULT[surface]];
 }
-export function perHoleMinutesFromNineTarget(target, setup, surface, machineTimeMult, condition) {
-  return (
-    (target - setup) /
-    (HOLE_COUNT * defaultHeightPatternMult(surface) * machineTimeMult * conditionTimeMultFrom(condition))
-  );
-}
-export const PER_HOLE_MINUTES = {
-  greens: perHoleMinutesFromNineTarget(
-    NINE_GREENS_TARGET_MINUTES,
-    JOB_SETUP_MINUTES.green,
-    'greens',
-    MACHINE_TIME_MULT_WALK_BEHIND_REEL,
-    GREENSMASTER_START_CONDITION,
-  ),
-  tees: perHoleMinutesFromNineTarget(
-    NINE_TEES_TARGET_MINUTES,
-    JOB_SETUP_MINUTES.tee,
-    'tees',
-    MACHINE_TIME_MULT_WALK_BEHIND_REEL,
-    GREENSMASTER_START_CONDITION,
-  ),
-  fairways: perHoleMinutesFromNineTarget(
-    NINE_FAIRWAYS_TARGET_MINUTES,
-    JOB_SETUP_MINUTES.fairway,
-    'fairways',
-    MACHINE_TIME_MULT_RIDING_FAIRWAY_UNIT,
-    REELMASTER_START_CONDITION,
-  ),
-  rough: perHoleMinutesFromNineTarget(
-    NINE_ROUGH_TARGET_MINUTES,
-    JOB_SETUP_MINUTES.rough,
-    'rough',
-    MACHINE_TIME_MULT_RIDING_FAIRWAY_UNIT,
-    REELMASTER_START_CONDITION,
-  ),
-};
-export const BASE_MINUTES = {
-  greens: PER_HOLE_MINUTES.greens * HOLE_COUNT,
-  tees: PER_HOLE_MINUTES.tees * HOLE_COUNT,
-  fairways: PER_HOLE_MINUTES.fairways * HOLE_COUNT,
-  rough: PER_HOLE_MINUTES.rough * HOLE_COUNT,
-};
 export const CONDITION_LOSS_PER_USE = 1;
 export const CONDITION_SLOW_THRESHOLD = 80;
 export const MACHINE_DAILY_MINUTES = DAY_LENGTH_MINUTES;
@@ -949,6 +956,8 @@ export const FUEL_BURN_L_PER_HOUR = {
   [MACHINE_CLASS_RIDING_FAIRWAY_UNIT]: 7.0,
   [MACHINE_CLASS_ROUGH_UTILITY]: 6.0,
   [MACHINE_CLASS_ROLLER]: 2.0,
+  [MACHINE_CLASS_AUTONOMOUS]: 0,
+  [MACHINE_CLASS_UTILITY]: 3.0,
 };
 export const GRANT_BONUS_THRESHOLD = 5;
 export const GRANT_BONUS_AMOUNT = 4000;

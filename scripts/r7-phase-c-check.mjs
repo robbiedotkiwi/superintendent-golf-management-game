@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   CONFIRM_DAMAGING_LABEL,
+  FAIRWAY_UNIT_ID,
   GREENSMASTER_ID,
   HOC_SURFACES,
   JOB_SETUP_MINUTES,
@@ -14,6 +15,8 @@ import {
   MACHINE_TIME_MULT_RIDING_GREENS_TRIPLEX,
   MACHINE_TIME_MULT_WALK_BEHIND_REEL,
   REELMASTER_ID,
+  RIDE_ON_REEL_ID,
+  VENTRAC_ID,
   SUITABILITY_ACCEPTABLE_CEILING_PENALTY,
   SUITABILITY_DAMAGING,
   SUITABILITY_DAMAGING_CEILING_PENALTY,
@@ -22,7 +25,7 @@ import {
   SUITABILITY_LABELS,
   SUITABILITY_PENALTY_COPY,
 } from '../src/data/constants.js';
-import { getMachine, machineAllows, machineSuitability, machineTimeMult } from '../src/data/equipment.js';
+import { getMachine, machineAllows, machineCanMow, machineSuitability, machineTimeMult, MACHINES } from '../src/data/equipment.js';
 import { getTask } from '../src/data/tasks.js';
 import {
   durationOnMachine,
@@ -45,24 +48,23 @@ assert.equal(SUITABILITY_DAMAGING_QUALITY_HIT, 18);
 
 const start = createInitialState();
 const greensTask = getTask('cutGreens');
-const mowers = ['pushRotary', GREENSMASTER_ID, REELMASTER_ID, 'walkBehindReel', 'rideOnReel', 'premiumRideOn', 'fairwayUnit', 'ventrac'];
-for (const id of mowers) {
-  const machine = getMachine(id);
+const mowers = MACHINES.filter((machine) => machineCanMow(machine));
+for (const machine of mowers) {
   for (const surface of HOC_SURFACES) {
-    assert.equal(machineAllows(machine, surface, greensTask), true, `${id} can be assigned to ${surface}`);
-    assert.ok(machineSuitability(machine, surface), `${id} has suitability on ${surface}`);
+    assert.equal(machineAllows(machine, surface, greensTask), true, `${machine.id} can be assigned to ${surface}`);
+    assert.ok(machineSuitability(machine, surface), `${machine.id} has suitability on ${surface}`);
   }
 }
 
 let fleet = { ...start, cash: 200000 };
-for (const id of ['fairwayUnit', 'ventrac', 'rideOnReel', 'pushRotary']) {
+for (const id of [FAIRWAY_UNIT_ID, VENTRAC_ID, RIDE_ON_REEL_ID, 'greensmasterFlex2120']) {
   fleet = reducer(fleet, { type: 'BUY_MACHINE', machineId: id });
 }
 const greensCandidates = overrideCandidates(fleet, 'greens').map((machine) => machine.id);
 assert.ok(greensCandidates.includes(REELMASTER_ID));
-assert.ok(greensCandidates.includes('fairwayUnit'));
-assert.ok(greensCandidates.includes('ventrac'));
-assert.ok(greensCandidates.includes('pushRotary'));
+assert.ok(greensCandidates.includes(FAIRWAY_UNIT_ID));
+assert.ok(greensCandidates.includes(VENTRAC_ID));
+assert.ok(greensCandidates.includes('greensmasterFlex2120'));
 
 const over = reducer(fleet, { type: 'SET_MACHINE_OVERRIDE', surface: 'greens', machineId: REELMASTER_ID });
 assert.equal(over.machineOverride.greens, REELMASTER_ID);
@@ -109,7 +111,7 @@ assert.equal(planned.plannedTasks.length, 1);
 assert.equal(planned.plannedTasks[0].machineId, REELMASTER_ID);
 
 const native = machineNativeCeiling(getMachine(REELMASTER_ID), 'greens');
-assert.equal(native, 62);
+assert.equal(native, 70);
 const bonuses = surfaceCeiling(start, 'greens') - 68;
 assert.equal(jobCeiling(start, 'greens', REELMASTER_ID), native - SUITABILITY_DAMAGING_CEILING_PENALTY + bonuses);
 
@@ -124,7 +126,7 @@ damaged = reducer(damaged, { type: 'END_DAY' });
 assert.equal(holeSurface(damaged, 1, 'greens').quality, 70 - SUITABILITY_DAMAGING_QUALITY_HIT);
 assert.equal(holeSurface(damaged, 9, 'greens').quality, 70 - SUITABILITY_DAMAGING_QUALITY_HIT);
 let withFairway = { ...start, cash: 200000 };
-withFairway = reducer(withFairway, { type: 'BUY_MACHINE', machineId: 'fairwayUnit' });
+withFairway = reducer(withFairway, { type: 'BUY_MACHINE', machineId: FAIRWAY_UNIT_ID });
 assert.equal(surfaceCeiling(withFairway, 'greens'), surfaceCeiling(start, 'greens'), 'fairway unit must not raise the greens cap');
 
 const even = {
@@ -132,16 +134,16 @@ const even = {
   machineCondition: {
     ...fleet.machineCondition,
     [GREENSMASTER_ID]: 100,
-    rideOnReel: 100,
+    [RIDE_ON_REEL_ID]: 100,
   },
 };
 const player = even.workers[0];
 const walk = durationOnMachine(even, 'cutGreens', player, GREENSMASTER_ID);
-const trip = durationOnMachine(even, 'cutGreens', player, 'rideOnReel');
+const trip = durationOnMachine(even, 'cutGreens', player, RIDE_ON_REEL_ID);
 const setup = JOB_SETUP_MINUTES.green;
 const variableRatio = (trip - setup) / (walk - setup);
 assert.ok(Math.abs(variableRatio - MACHINE_TIME_MULT.ridingGreensTriplex) < 0.02);
-assert.equal(machineTimeMult(getMachine('rideOnReel')), MACHINE_TIME_MULT.ridingGreensTriplex);
+assert.equal(machineTimeMult(getMachine(RIDE_ON_REEL_ID)), MACHINE_TIME_MULT.ridingGreensTriplex);
 assert.equal(machineTimeMult(getMachine(GREENSMASTER_ID)), MACHINE_TIME_MULT.walkBehindReel);
 
 console.log(

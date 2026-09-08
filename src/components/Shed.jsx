@@ -28,6 +28,7 @@ import {
   WEAR_THRESHOLD,
 } from '../data/constants.js';
 import { MACHINES, getMachine } from '../data/equipment.js';
+import { upgradesForMachine } from '../data/upgrades.js';
 import { canLeaseMachine, leaseCost } from '../engine/budget.js';
 import { formatMoney } from '../engine/format.js';
 import {
@@ -40,12 +41,14 @@ import {
 import {
   canBuyFoley,
   canBuyMachine,
+  canBuyUpgrade,
   canGrindInHouse,
   canRepair,
   canSendGrind,
   claimedMinutesByMachine,
   conditionOf,
   machineDailyMinutesOf,
+  ownedUpgradeIds,
 } from '../engine/equipment.js';
 import { canBuyUsed, canSellMachine, salePrice } from '../engine/market.js';
 import { canBuyFuel, fuelCost, tankRoom } from '../engine/fuel.js';
@@ -55,10 +58,15 @@ import SectionTabs from './SectionTabs.jsx';
 const SURFACE_ORDER = ['greens', 'tees', 'fairways', 'rough'];
 
 function capability(machine, surface) {
-  const allow = machine.surfaces[surface];
+  const allow = machine?.surfaces?.[surface];
   if (allow === true) return 'yes';
   if (allow === 'roll') return 'roll only';
   return 'no — would damage the turf';
+}
+
+function coverageLine(machine) {
+  if (!machine?.coverageM2PerHr) return null;
+  return `Covers ${Math.round(machine.coverageM2PerHr).toLocaleString('en-US')} m²/h`;
 }
 
 export default function Shed({
@@ -76,8 +84,16 @@ export default function Shed({
   onBuyUsed,
   onSell,
   onBuyFuel,
+  onBuyUpgrade,
 }) {
   const shop = MACHINES.filter((machine) => !machine.ownedAtStart);
+  const shopGroups = [];
+  for (const machine of shop) {
+    const category = machine.category ?? 'Other';
+    const last = shopGroups.at(-1);
+    if (last?.category === category) last.machines.push(machine);
+    else shopGroups.push({ category, machines: [machine] });
+  }
   const foleyBuy = canBuyFoley(state);
   const [fuelLitres, setFuelLitres] = useState(String(FUEL_BULK_MIN_LITRES));
   const wanted = Number(fuelLitres);
@@ -161,7 +177,7 @@ export default function Shed({
           <h2 className="mt-10 font-condensed text-3xl">In the shed</h2>
           <div className="mt-3 space-y-4">
             {state.ownedMachines.map((id) => {
-              const machine = MACHINES.find((item) => item.id === id);
+              const machine = getMachine(id);
               const wear = state.machineWear[id] ?? 0;
               const condition = conditionOf(state, id);
               const claimed = claimedMinutesByMachine(state)[id] ?? 0;
@@ -171,12 +187,18 @@ export default function Shed({
               const grindHere = canGrindInHouse(state, id);
               const repair = canRepair(state, id);
               const sell = canSellMachine(state, id);
+              const fitted = ownedUpgradeIds(state, id);
+              const kits = upgradesForMachine(machine);
               return (
                 <section key={id} className="border-2 border-[var(--sand)] bg-[var(--soil)] p-4">
                   <h3 className="text-2xl font-semibold">{machineTitle(machine)}</h3>
                   {machineTypeLine(machine) ? (
                     <p className="text-sm text-[var(--sand)]">{machineTypeLine(machine)}</p>
                   ) : null}
+                  {coverageLine(machine) ? (
+                    <p className="mt-1 text-sm text-[var(--sand)]">{coverageLine(machine)}</p>
+                  ) : null}
+                  {machine?.description ? <p className="mt-1 text-sm text-[var(--sand)]">{machine.description}</p> : null}
                   <p className="mt-1 text-sm">{machineStatusLine(state, id)}</p>
                   <p className="mt-2">
                     Condition {condition} / {CONDITION_MAX}
@@ -196,6 +218,34 @@ export default function Shed({
                   <p className="mt-2 text-sm text-[var(--sand)]">
                     {SURFACE_ORDER.map((surface) => `${surface}: ${capability(machine, surface)}`).join(' · ')}
                   </p>
+                  {kits.length ? (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-sm font-semibold">Attachments</p>
+                      {kits.map((upgrade) => {
+                        const fittedAlready = fitted.includes(upgrade.id);
+                        const check = canBuyUpgrade(state, id, upgrade.id);
+                        return (
+                          <div key={upgrade.id} className="border border-[var(--sand)] p-2">
+                            <p className="text-sm font-semibold">{upgrade.name}</p>
+                            <p className="text-sm text-[var(--sand)]">{upgrade.description}</p>
+                            {fittedAlready ? (
+                              <p className="mt-1 text-sm">Fitted</p>
+                            ) : (
+                              <button
+                                type="button"
+                                disabled={!check.ok}
+                                title={check.ok ? undefined : check.reason}
+                                onClick={() => onBuyUpgrade?.(id, upgrade.id)}
+                                className="mt-2 border border-[var(--sand)] px-3 py-1 text-sm disabled:opacity-40"
+                              >
+                                {check.ok ? `Fit · ${formatMoney(upgrade.cost)}` : check.reason}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : null}
                   <div className="mt-3 flex flex-wrap gap-2">
                     {machine.reel ? (
                       <button
@@ -315,47 +365,59 @@ export default function Shed({
           ) : null}
           <h3 className="mt-6 text-2xl font-semibold">New stock</h3>
           <div className="mt-3 space-y-3">
-            {shop.map((machine) => {
-              const owned = state.ownedMachines.includes(machine.id);
-              const check = canBuyMachine(state, machine.id);
-              return (
-                <section key={machine.id} className="border border-[var(--sand)] p-4">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <h3 className="text-xl font-semibold">{machineTitle(machine)}</h3>
-                    <p>{owned ? 'Owned' : formatMoney(machine.cost)}</p>
-                  </div>
-                  {machineTypeLine(machine) ? (
-                    <p className="text-sm text-[var(--sand)]">{machineTypeLine(machine)}</p>
-                  ) : null}
-                  <p className="mt-1 text-sm">{owned ? machineStatusLine(state, machine.id) : MACHINE_STATUS_NEW}</p>
-                  <p className="mt-1 text-sm text-[var(--sand)]">
-                    {SURFACE_ORDER.map((surface) => `${surface}: ${capability(machine, surface)}`).join(' · ')}
-                  </p>
-                  {owned ? null : (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        disabled={!check.ok}
-                        title={check.reason}
-                        onClick={() => onBuy(machine.id)}
-                        className="bg-[var(--machine-orange)] px-3 py-2 font-semibold disabled:opacity-40"
-                      >
-                        {check.ok ? 'Buy' : check.reason}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!canLeaseMachine(state, machine.id).ok}
-                        title={canLeaseMachine(state, machine.id).reason}
-                        onClick={() => onLease(machine.id)}
-                        className="border border-[var(--sand)] px-3 py-2 disabled:opacity-40"
-                      >
-                        Lease · {formatMoney(leaseCost(machine.id))} / season ({LEASE_RATE * 100}%)
-                      </button>
-                    </div>
-                  )}
-                </section>
-              );
-            })}
+            {shopGroups.map((group) => (
+              <div key={group.category}>
+                <h4 className="mt-6 text-lg font-semibold">{group.category}</h4>
+                {group.machines.map((machine) => {
+                  const owned = state.ownedMachines.includes(machine.id);
+                  const check = canBuyMachine(state, machine.id);
+                  return (
+                    <section key={machine.id} className="mt-3 border border-[var(--sand)] p-4">
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <h3 className="text-xl font-semibold">{machineTitle(machine)}</h3>
+                        <p>{owned ? 'Owned' : formatMoney(machine.cost)}</p>
+                      </div>
+                      {machineTypeLine(machine) ? (
+                        <p className="text-sm text-[var(--sand)]">{machineTypeLine(machine)}</p>
+                      ) : null}
+                      {machine.tier ? <p className="text-sm text-[var(--sand)]">{machine.tier}</p> : null}
+                      {coverageLine(machine) ? (
+                        <p className="mt-1 text-sm text-[var(--sand)]">{coverageLine(machine)}</p>
+                      ) : null}
+                      {machine.description ? <p className="mt-1 text-sm">{machine.description}</p> : null}
+                      <p className="mt-1 text-sm">{owned ? machineStatusLine(state, machine.id) : MACHINE_STATUS_NEW}</p>
+                      {machine.utility || machine.ballPicker ? null : (
+                        <p className="mt-1 text-sm text-[var(--sand)]">
+                          {SURFACE_ORDER.map((surface) => `${surface}: ${capability(machine, surface)}`).join(' · ')}
+                        </p>
+                      )}
+                      {owned ? null : (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            disabled={!check.ok}
+                            title={check.reason}
+                            onClick={() => onBuy(machine.id)}
+                            className="bg-[var(--machine-orange)] px-3 py-2 font-semibold disabled:opacity-40"
+                          >
+                            {check.ok ? 'Buy' : check.reason}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={!canLeaseMachine(state, machine.id).ok}
+                            title={canLeaseMachine(state, machine.id).reason}
+                            onClick={() => onLease(machine.id)}
+                            className="border border-[var(--sand)] px-3 py-2 disabled:opacity-40"
+                          >
+                            Lease · {formatMoney(leaseCost(machine.id))} / season ({LEASE_RATE * 100}%)
+                          </button>
+                        </div>
+                      )}
+                    </section>
+                  );
+                })}
+              </div>
+            ))}
             <section className="border border-[var(--sand)] p-4">
               <h3 className="text-xl font-semibold">
                 {MACHINE_BRAND_FOLEY} {FOLEY_MODEL}

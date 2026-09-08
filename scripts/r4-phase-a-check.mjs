@@ -24,6 +24,7 @@ import {
   STARTING_MACHINE_ID,
   STARTING_MACHINE_IDS,
   USED_LISTING_COUNT,
+  WALK_BEHIND_ID,
   WALK_BEHIND_TIME_MULT,
 } from '../src/data/constants.js';
 import { durationForTask } from '../src/engine/assignment.js';
@@ -126,9 +127,9 @@ let used = reducer(createInitialState(), { type: 'PLAN_TASK', taskId: 'cutGreens
 used = reducer(used, { type: 'END_DAY' });
 assert.equal(used.machineCondition[GREENSMASTER_ID], GREENSMASTER_START_CONDITION - CONDITION_LOSS_PER_USE);
 
-let bought = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
-assert.equal(bought.machineCondition.walkBehindReel, NEW_PURCHASE_CONDITION);
-assert.equal(bought.machineDailyMinutes.walkBehindReel, MACHINE_DAILY_MINUTES);
+let bought = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: WALK_BEHIND_ID });
+assert.equal(bought.machineCondition[WALK_BEHIND_ID], NEW_PURCHASE_CONDITION);
+assert.equal(bought.machineDailyMinutes[WALK_BEHIND_ID], MACHINE_DAILY_MINUTES);
 assert.equal(
   durationForTask(bought, 'cutGreens'),
   Math.round(JOB_SETUP_MINUTES.green + variableJobMinutes(bought, 'cutGreens') * WALK_BEHIND_TIME_MULT),
@@ -143,7 +144,7 @@ const equipmentSrc = readFileSync(new URL('../src/engine/equipment.js', import.m
 assert.match(equipmentSrc, /conditionTimeMultiplier/);
 
 console.log('GATE A1 PASS named condition constants exported');
-console.log('GATE A2 PASS new game starters are condition 28 and 24');
+console.log('GATE A2 PASS new game starters are condition 28 and 28');
 console.log('GATE A3 PASS durationForTask includes machine timeMult and condition penalty');
 console.log('GATE A4 PASS condition 50 applies 1.25× time penalty in the engine');
 console.log('GATE A5 PASS old saves migrate missing condition to 80');

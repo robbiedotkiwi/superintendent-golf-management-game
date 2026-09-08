@@ -1,6 +1,6 @@
 import { getTask, taskUsesMachine } from '../data/tasks.js';
 import { AUTO_PICK_MINUTES, BALL_PICK_MINUTES, TASK_MINUTES } from '../data/constants.js';
-import { durationOnMachine, pickMachine, pickMachineForTask } from './equipment.js';
+import { durationOnMachine, pickMachine, pickMachineForTask, hasBallPicker } from './equipment.js';
 import { mowingMinutes } from './mowing.js';
 import { handWaterMinutes } from './moisture.js';
 import { isWorkerPresent, workerAllows } from './skills.js';
@@ -15,7 +15,7 @@ export function preferredStat(surface) {
 
 export function baseTaskMinutes(state, taskId) {
   const task = getTask(taskId);
-  if (taskId === 'pickBalls') return state.hasAutoPicker ? AUTO_PICK_MINUTES : BALL_PICK_MINUTES;
+  if (taskId === 'pickBalls') return hasBallPicker(state) ? AUTO_PICK_MINUTES : BALL_PICK_MINUTES;
   if (taskId === 'handWater') return handWaterMinutes(state);
   if (task?.mowing) return mowingMinutes(state, taskId);
   return TASK_MINUTES[taskId];

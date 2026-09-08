@@ -9,7 +9,11 @@ import {
   GRIND_AWAY_DAYS,
   REPAIR_MINUTES,
   STARTING_WEATHER,
+  AUTONOMOUS_ID,
+  PREMIUM_REEL_ID,
+  VENTRAC_ID,
   WALK_BEHIND_COST,
+  WALK_BEHIND_ID,
   WALK_BEHIND_TIME_MULT,
   WEAR_PER_USE,
   WEAR_THRESHOLD,
@@ -58,7 +62,7 @@ assert.equal(
 );
 assert.equal(pickMachine(start, getTask('cutGreens'))?.id, GREENSMASTER_ID);
 
-let bought = reducer(start, { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
+let bought = reducer(start, { type: 'BUY_MACHINE', machineId: WALK_BEHIND_ID });
 assert.equal(bought.cash, start.cash - WALK_BEHIND_COST);
 assert.equal(
   durationForTask(bought, 'cutGreens'),
@@ -66,10 +70,10 @@ assert.equal(
 );
 assert.ok(durationForTask(bought, 'cutGreens') < baseTime);
 
-const withVentrac = reducer({ ...createInitialState(), cash: 250000 }, { type: 'BUY_MACHINE', machineId: 'ventrac' });
-assert.ok(withVentrac.ownedMachines.includes('ventrac'));
+const withVentrac = reducer({ ...createInitialState(), cash: 250000 }, { type: 'BUY_MACHINE', machineId: VENTRAC_ID });
+assert.ok(withVentrac.ownedMachines.includes(VENTRAC_ID));
 const blocked = ineligibleMachines(withVentrac, getTask('cutGreens'));
-assert.ok(blocked.some((item) => item.machine.id === 'ventrac'));
+assert.ok(blocked.some((item) => item.machine.id === VENTRAC_ID));
 assert.match(blocked[0].reason, /damage/i);
 assert.equal(pickMachine(withVentrac, getTask('cutGreens'))?.id, GREENSMASTER_ID);
 
@@ -82,55 +86,55 @@ for (let i = 0; i < 10; i += 1) {
 }
 assert.equal(meanQuality(capped, 'greens'), surfaceCeiling(capped, 'greens'));
 
-let worn = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
+let worn = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: WALK_BEHIND_ID });
 worn = plan(worn, 'cutGreens');
 worn = end(worn);
-assert.equal(worn.machineWear.walkBehindReel, WEAR_PER_USE);
+assert.equal(worn.machineWear[WALK_BEHIND_ID], WEAR_PER_USE);
 
-assert.equal(wearMultiplier({ machineWear: { walkBehindReel: 0 } }, 'walkBehindReel'), 1);
-assert.ok(wearMultiplier({ machineWear: { walkBehindReel: WEAR_THRESHOLD + 1 } }, 'walkBehindReel') < 1);
+assert.equal(wearMultiplier({ machineWear: { [WALK_BEHIND_ID]: 0 } }, WALK_BEHIND_ID), 1);
+assert.ok(wearMultiplier({ machineWear: { [WALK_BEHIND_ID]: WEAR_THRESHOLD + 1 } }, WALK_BEHIND_ID) < 1);
 
-let dull = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
+let dull = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: WALK_BEHIND_ID });
 const sharpStart = meanQuality(dull, 'greens');
-dull.machineWear = { ...dull.machineWear, walkBehindReel: 0 };
+dull.machineWear = { ...dull.machineWear, [WALK_BEHIND_ID]: 0 };
 let sharp = plan({ ...dull }, 'cutGreens');
 sharp = end(sharp);
 const sharpGain = meanQuality(sharp, 'greens') - sharpStart;
 
-dull.machineWear = { ...dull.machineWear, walkBehindReel: WEAR_THRESHOLD + 1 };
+dull.machineWear = { ...dull.machineWear, [WALK_BEHIND_ID]: WEAR_THRESHOLD + 1 };
 let blunt = plan({ ...dull }, 'cutGreens');
 blunt = end(blunt);
 const bluntGain = meanQuality(blunt, 'greens') - sharpStart;
 assert.ok(bluntGain < sharpGain);
 
-let away = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
-away = reducer(away, { type: 'SEND_GRIND', machineId: 'walkBehindReel' });
-assert.equal(away.machineAwayUntil.walkBehindReel, away.day + GRIND_AWAY_DAYS);
-assert.equal(isMachineAvailable(away, 'walkBehindReel'), false);
+let away = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: WALK_BEHIND_ID });
+away = reducer(away, { type: 'SEND_GRIND', machineId: WALK_BEHIND_ID });
+assert.equal(away.machineAwayUntil[WALK_BEHIND_ID], away.day + GRIND_AWAY_DAYS);
+assert.equal(isMachineAvailable(away, WALK_BEHIND_ID), false);
 away = end(away);
-assert.equal(isMachineAvailable(away, 'walkBehindReel'), false);
+assert.equal(isMachineAvailable(away, WALK_BEHIND_ID), false);
 away = end(away);
-assert.equal(isMachineAvailable(away, 'walkBehindReel'), true);
+assert.equal(isMachineAvailable(away, WALK_BEHIND_ID), true);
 
 let foley = { ...createInitialState(), cash: 250000 };
-foley = reducer(foley, { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
+foley = reducer(foley, { type: 'BUY_MACHINE', machineId: WALK_BEHIND_ID });
 foley = reducer(foley, { type: 'BUY_FOLEY' });
-foley.machineWear = { ...foley.machineWear, walkBehindReel: 80 };
-foley = reducer(foley, { type: 'GRIND_IN_HOUSE', machineId: 'walkBehindReel' });
-assert.equal(foley.machineWear.walkBehindReel, 0);
+foley.machineWear = { ...foley.machineWear, [WALK_BEHIND_ID]: 80 };
+foley = reducer(foley, { type: 'GRIND_IN_HOUSE', machineId: WALK_BEHIND_ID });
+assert.equal(foley.machineWear[WALK_BEHIND_ID], 0);
 assert.equal(foley.workers[0].minutesUsed, FOLEY_GRIND_MINUTES);
 
-let broken = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
-broken.machineBroken = { ...broken.machineBroken, walkBehindReel: true };
-assert.equal(isMachineAvailable(broken, 'walkBehindReel'), false);
-broken = reducer(broken, { type: 'REPAIR_MACHINE', machineId: 'walkBehindReel' });
-assert.equal(broken.machineBroken.walkBehindReel, false);
+let broken = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: WALK_BEHIND_ID });
+broken.machineBroken = { ...broken.machineBroken, [WALK_BEHIND_ID]: true };
+assert.equal(isMachineAvailable(broken, WALK_BEHIND_ID), false);
+broken = reducer(broken, { type: 'REPAIR_MACHINE', machineId: WALK_BEHIND_ID });
+assert.equal(broken.machineBroken[WALK_BEHIND_ID], false);
 assert.equal(broken.workers[0].minutesUsed, REPAIR_MINUTES);
 
 let auto = { ...createInitialState(), cash: 250000, weather: STARTING_WEATHER };
-auto = reducer(auto, { type: 'BUY_MACHINE', machineId: 'autonomousMower' });
-assert.ok(auto.ownedMachines.includes('autonomousMower'));
-auto.autoWeek = { weekStart: auto.day, hits: [{ day: auto.day, minutes: 40 }] };
+auto = reducer(auto, { type: 'BUY_MACHINE', machineId: AUTONOMOUS_ID });
+assert.ok(auto.ownedMachines.includes(AUTONOMOUS_ID));
+auto.autoWeek = { weekStart: auto.day, hits: [{ day: auto.day, minutes: 450 }] };
 auto = plan(auto, 'cutGreens');
 auto = plan(auto, 'cutTees');
 const last = auto.plannedTasks[auto.plannedTasks.length - 1];
@@ -138,7 +142,7 @@ const resolved = reducer(auto, { type: 'END_DAY' });
 assert.ok(resolved.log.at(-1).interruptions > 0);
 assert.ok(resolved.log.at(-1).dropped.some((item) => item.taskId === last.taskId));
 
-const richCheck = canBuyMachine(createInitialState(), 'premiumRideOn');
+const richCheck = canBuyMachine(createInitialState(), PREMIUM_REEL_ID);
 assert.equal(richCheck.ok, false);
 assert.match(richCheck.reason, /Needs/);
 

@@ -381,7 +381,7 @@ function MachinePicker({ state, surface, onSetMachineOverride }) {
             return (
               <option key={machine.id} value={machine.id}>
                 {machineTitle(machine)}
-                {suitLabel ? ` · ${suitLabel}` : ''} · {machine.ceiling?.[surface] ?? '—'} · {machineTimeMult(machine)}× ·{' '}
+                {suitLabel ? ` · ${suitLabel}` : ''} · {machine.ceiling?.[surface] ?? '—'} · {machineTimeMult(machine, surface).toFixed(2)}× ·{' '}
                 {machineMinutesRemaining(state, machine.id)} min
               </option>
             );

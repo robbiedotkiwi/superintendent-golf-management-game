@@ -205,6 +205,8 @@ export function dismissVolunteer(state) {
 
 export function applyEarlyStartComplaints(state) {
   if (!state.earlyStart) return { state, warning: false, fine: 0 };
+  const silent = Object.values(state.machineUpgrades ?? {}).some((list) => (list ?? []).includes('ledLightKit'));
+  if (silent) return { state, warning: false, fine: 0 };
   const complaints = (state.neighbourComplaintsThisSeason ?? 0) + 1;
   let fine = 0;
   let warning = false;

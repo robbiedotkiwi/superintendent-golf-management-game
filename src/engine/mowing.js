@@ -1,6 +1,5 @@
 import {
   BASE_GAIN,
-  BASE_MINUTES,
   HOC_CHANGE_PENALTY,
   HOC_GAIN_MULT,
   HOC_RANGE,
@@ -27,6 +26,7 @@ import {
   TASK_MINUTES,
 } from '../data/constants.js';
 import { getTask } from '../data/tasks.js';
+import { BASE_MINUTES } from './courseArea.js';
 import { hocRangeFor, thatchWearMult, wearRecoveryMult } from './grass.js';
 
 export function hasHoc(surface) {

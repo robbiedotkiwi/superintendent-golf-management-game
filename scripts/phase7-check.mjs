@@ -17,6 +17,7 @@ import {
   STARTING_OPENING_CASH,
   STARTING_WEATHER,
   WALK_BEHIND_COST,
+  WALK_BEHIND_ID,
 } from '../src/data/constants.js';
 import {
   leaseCost,
@@ -41,7 +42,7 @@ function endKeep(state, extras = {}) {
 const start = createInitialState();
 assert.equal(start.cash, STARTING_OPENING_CASH);
 
-const bought = reducer(start, { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
+const bought = reducer(start, { type: 'BUY_MACHINE', machineId: WALK_BEHIND_ID });
 assert.equal(bought.cash, start.cash - WALK_BEHIND_COST);
 
 let season = {
@@ -55,11 +56,11 @@ assert.equal(season.season, 'summer');
 assert.ok(season.cash > 1000);
 assert.equal(season.cash, 1000 + seasonGrant(season.satisfaction, season.gmStanding));
 
-const leased = reducer(createInitialState(), { type: 'LEASE_MACHINE', machineId: 'walkBehindReel' });
-assert.ok(leased.ownedMachines.includes('walkBehindReel'));
-assert.ok(leased.leasedMachines.includes('walkBehindReel'));
+const leased = reducer(createInitialState(), { type: 'LEASE_MACHINE', machineId: WALK_BEHIND_ID });
+assert.ok(leased.ownedMachines.includes(WALK_BEHIND_ID));
+assert.ok(leased.leasedMachines.includes(WALK_BEHIND_ID));
 assert.equal(leased.cash, start.cash);
-assert.equal(leaseCost('walkBehindReel'), WALK_BEHIND_COST * LEASE_RATE);
+assert.equal(leaseCost(WALK_BEHIND_ID), WALK_BEHIND_COST * LEASE_RATE);
 let unpaid = {
   ...leased,
   day: DAYS_PER_SEASON,
@@ -67,8 +68,8 @@ let unpaid = {
   cash: 0,
 };
 unpaid = reducer(unpaid, { type: 'END_DAY' });
-assert.equal(unpaid.ownedMachines.includes('walkBehindReel'), false);
-assert.equal(unpaid.leasedMachines.includes('walkBehindReel'), false);
+assert.equal(unpaid.ownedMachines.includes(WALK_BEHIND_ID), false);
+assert.equal(unpaid.leasedMachines.includes(WALK_BEHIND_ID), false);
 
 let bunkers = {
   ...createInitialState(),

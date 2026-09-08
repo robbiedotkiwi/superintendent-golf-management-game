@@ -51,6 +51,7 @@ import {
   WEAR_THRESHOLD,
 } from '../data/constants.js';
 import {
+  canonicalMachineId,
   getMachine,
   MACHINES,
   machineAllows,
@@ -61,8 +62,9 @@ import {
   machineTimeMult,
   TURF_DAMAGE_REASON,
 } from '../data/equipment.js';
+import { getUpgrade, upgradeAppliesTo } from '../data/upgrades.js';
 import { getTask, taskUsesMachine } from '../data/tasks.js';
-import { hocFactor, mowingMinutes } from './mowing.js';
+import { hocFactor } from './mowing.js';
 import { setupMinutesFor, variableJobMinutes } from './jobs.js';
 import { handWaterMinutes } from './moisture.js';
 import { taskTimeMultiplier } from './projects.js';
@@ -103,11 +105,24 @@ export function machineDailyMinutesOf(state, machineId) {
 }
 
 export function migrateMachineMaps(state) {
-  const ownedMachines = state.ownedMachines ?? [...STARTING_MACHINE_IDS];
-  const machineCondition = { ...(state.machineCondition ?? {}) };
-  const machineDailyMinutes = { ...(state.machineDailyMinutes ?? {}) };
-  const machineHours = { ...(state.machineHours ?? {}) };
-  for (const id of ownedMachines) {
+  const rawOwned = state.ownedMachines ?? [...STARTING_MACHINE_IDS];
+  const seen = new Set();
+  const ownedMachines = [];
+  for (const id of rawOwned) {
+    const canon = canonicalMachineId(id);
+    if (!getMachine(canon) || seen.has(canon)) continue;
+    seen.add(canon);
+    ownedMachines.push(canon);
+  }
+  const owned = ownedMachines.length ? ownedMachines : [...STARTING_MACHINE_IDS];
+  const machineCondition = remapMachineMap(state.machineCondition);
+  const machineDailyMinutes = remapMachineMap(state.machineDailyMinutes);
+  const machineHours = remapMachineMap(state.machineHours);
+  const machineWear = remapMachineMap(state.machineWear);
+  const machineBroken = remapMachineMap(state.machineBroken);
+  const machineAwayUntil = remapMachineMap(state.machineAwayUntil);
+  const machineUpgrades = remapMachineMap(state.machineUpgrades);
+  for (const id of owned) {
     if (machineCondition[id] == null) machineCondition[id] = MIGRATED_MACHINE_CONDITION;
     else machineCondition[id] = clampCondition(machineCondition[id]);
     if (machineDailyMinutes[id] == null || !Number.isFinite(Number(machineDailyMinutes[id]))) {
@@ -120,8 +135,81 @@ export function migrateMachineMaps(state) {
     } else {
       machineHours[id] = Math.max(0, Math.round(Number(machineHours[id])));
     }
+    if (!Array.isArray(machineUpgrades[id])) machineUpgrades[id] = machineUpgrades[id] ? [].concat(machineUpgrades[id]) : [];
   }
-  return { ownedMachines, machineCondition, machineDailyMinutes, machineHours };
+  return {
+    ownedMachines: owned,
+    machineCondition,
+    machineDailyMinutes,
+    machineHours,
+    machineWear,
+    machineBroken,
+    machineAwayUntil,
+    machineUpgrades,
+  };
+}
+
+function remapMachineMap(map) {
+  const next = {};
+  for (const [id, value] of Object.entries(map ?? {})) {
+    const canon = canonicalMachineId(id);
+    if (canon == null) continue;
+    if (next[canon] == null) next[canon] = value;
+  }
+  return next;
+}
+
+export function ownedUpgradeIds(state, machineId) {
+  const id = canonicalMachineId(machineId);
+  const list = state.machineUpgrades?.[id];
+  return Array.isArray(list) ? list : [];
+}
+
+export function upgradeModifiers(state, machineId) {
+  let timeMult = 1;
+  let qualityMult = 1;
+  let fuelMult = 1;
+  let enablesRoll = false;
+  let silentEarly = false;
+  for (const id of ownedUpgradeIds(state, machineId)) {
+    const upgrade = getUpgrade(id);
+    if (!upgrade) continue;
+    timeMult *= upgrade.timeMult ?? 1;
+    qualityMult *= upgrade.qualityMult ?? 1;
+    fuelMult *= upgrade.fuelMult ?? 1;
+    if (upgrade.enablesRoll) enablesRoll = true;
+    if (upgrade.silentEarly) silentEarly = true;
+  }
+  return { timeMult, qualityMult, fuelMult, enablesRoll, silentEarly };
+}
+
+export function fleetHasSilentEarly(state) {
+  return (state.ownedMachines ?? []).some((id) => upgradeModifiers(state, id).silentEarly);
+}
+
+export function machineAllowsInState(state, machine, surface, task) {
+  if (!machine) return false;
+  if (task?.id === 'rollGreens' && machineCanMow(machine) && upgradeModifiers(state, machine.id).enablesRoll) {
+    return true;
+  }
+  return machineAllows(machine, surface, task);
+}
+
+export function ownedAutonomousMowers(state) {
+  return ownedMachineList(state).filter((machine) => machine.autonomous && !machine.ballPicker);
+}
+
+export function ownedBallPicker(state) {
+  return ownedMachineList(state).some((machine) => machine.ballPicker);
+}
+
+export function hasBallPicker(state) {
+  return Boolean(state.hasAutoPicker) || ownedBallPicker(state);
+}
+
+export function autonomousSurfacesOf(machine) {
+  if (!machine) return [];
+  return ['greens', 'tees', 'fairways', 'rough'].filter((surface) => machine.surfaces?.[surface] === true);
 }
 
 export function machineHoursOf(state, machineId) {
@@ -133,12 +221,14 @@ export function machineHoursOf(state, machineId) {
 }
 
 export function stampOwnedMachine(state, machineId, condition = NEW_PURCHASE_CONDITION, hours = HOURS_NEW) {
+  const id = canonicalMachineId(machineId);
   return {
-    ownedMachines: [...state.ownedMachines, machineId],
-    machineWear: { ...state.machineWear, [machineId]: 0 },
-    machineCondition: { ...(state.machineCondition ?? {}), [machineId]: clampCondition(condition) },
-    machineDailyMinutes: { ...(state.machineDailyMinutes ?? {}), [machineId]: MACHINE_DAILY_MINUTES },
-    machineHours: { ...(state.machineHours ?? {}), [machineId]: Math.max(0, Math.round(hours)) },
+    ownedMachines: [...state.ownedMachines, id],
+    machineWear: { ...state.machineWear, [id]: 0 },
+    machineCondition: { ...(state.machineCondition ?? {}), [id]: clampCondition(condition) },
+    machineDailyMinutes: { ...(state.machineDailyMinutes ?? {}), [id]: MACHINE_DAILY_MINUTES },
+    machineHours: { ...(state.machineHours ?? {}), [id]: Math.max(0, Math.round(hours)) },
+    machineUpgrades: { ...(state.machineUpgrades ?? {}), [id]: [] },
   };
 }
 
@@ -149,6 +239,7 @@ export function dropOwnedMachine(state, machineId) {
   const { [machineId]: _condition, ...machineCondition } = state.machineCondition ?? {};
   const { [machineId]: _daily, ...machineDailyMinutes } = state.machineDailyMinutes ?? {};
   const { [machineId]: _hours, ...machineHours } = state.machineHours ?? {};
+  const { [machineId]: _upgrades, ...machineUpgrades } = state.machineUpgrades ?? {};
   const removed = (state.plannedTasks ?? []).filter((item) => item.machineId === machineId);
   const refund = {};
   for (const item of removed) {
@@ -163,6 +254,7 @@ export function dropOwnedMachine(state, machineId) {
     machineCondition,
     machineDailyMinutes,
     machineHours,
+    machineUpgrades,
     plannedTasks: (state.plannedTasks ?? []).filter((item) => item.machineId !== machineId),
     workers: (state.workers ?? []).map((worker) => ({
       ...worker,
@@ -172,9 +264,11 @@ export function dropOwnedMachine(state, machineId) {
 }
 
 export function isMachineAvailable(state, machineId) {
-  if (!state.ownedMachines.includes(machineId)) return false;
-  if (state.machineBroken[machineId]) return false;
-  const awayUntil = state.machineAwayUntil[machineId];
+  const canon = canonicalMachineId(machineId);
+  const owned = (state.ownedMachines ?? []).some((id) => canonicalMachineId(id) === canon);
+  if (!owned) return false;
+  if (state.machineBroken?.[machineId] || state.machineBroken?.[canon]) return false;
+  const awayUntil = state.machineAwayUntil?.[machineId] ?? state.machineAwayUntil?.[canon];
   if (awayUntil && state.day < awayUntil) return false;
   return true;
 }
@@ -205,7 +299,7 @@ export function machineMinutesRemaining(state, machineId, ignoreTaskId) {
 export function allowingMachines(state, task) {
   if (!task?.surface) return [];
   return ownedMachineList(state).filter(
-    (machine) => isMachineAvailable(state, machine.id) && machineAllows(machine, task.surface, task),
+    (machine) => isMachineAvailable(state, machine.id) && machineAllowsInState(state, machine, task.surface, task),
   );
 }
 
@@ -218,7 +312,7 @@ export function normalizeMachineOverride(raw) {
   if (!raw || typeof raw !== 'object') return next;
   for (const surface of HOC_SURFACES) {
     const id = raw[surface];
-    next[surface] = typeof id === 'string' && id && id !== MACHINE_OVERRIDE_AUTO ? id : null;
+    next[surface] = typeof id === 'string' && id && id !== MACHINE_OVERRIDE_AUTO ? canonicalMachineId(id) : null;
   }
   return next;
 }
@@ -232,7 +326,7 @@ export function machineOverrideId(state, surface) {
 export function overrideCandidates(state, surface) {
   const task = getTask(CUT_TASK_BY_SURFACE[surface]);
   if (!task) return [];
-  return ownedMachineList(state).filter((machine) => machineAllows(machine, surface, task));
+  return ownedMachineList(state).filter((machine) => machineAllowsInState(state, machine, surface, task));
 }
 
 function overrideUsable(state, machineId, task, options = {}) {
@@ -240,7 +334,7 @@ function overrideUsable(state, machineId, task, options = {}) {
   const machine = getMachine(machineId);
   if (!machine || !task?.surface) return false;
   if (!isMachineAvailable(state, machineId)) return false;
-  if (!machineAllows(machine, task.surface, task)) return false;
+  if (!machineAllowsInState(state, machine, task.surface, task)) return false;
   if (minutesNeeded && machineMinutesRemaining(state, machineId, ignoreTaskId) < minutesNeeded(machineId)) {
     return false;
   }
@@ -254,8 +348,8 @@ function compareAutoMachines(state, surface, a, b) {
   const ceilA = a.ceiling?.[surface] ?? 0;
   const ceilB = b.ceiling?.[surface] ?? 0;
   if (ceilB !== ceilA) return ceilB - ceilA;
-  const specA = machineTimeMult(a);
-  const specB = machineTimeMult(b);
+  const specA = machineTimeMult(a, surface) * upgradeModifiers(state, a.id).timeMult;
+  const specB = machineTimeMult(b, surface) * upgradeModifiers(state, b.id).timeMult;
   if (specA !== specB) return specA - specB;
   const timeA = machineMultiplierFor(state, a.id);
   const timeB = machineMultiplierFor(state, b.id);
@@ -280,7 +374,7 @@ export function machineAssignment(state, surface, worker) {
 export function durationOnMachine(state, taskId, worker, machineId, holeIds) {
   const task = getTask(taskId);
   if (taskId === 'pickBalls') {
-    const base = state.hasAutoPicker ? AUTO_PICK_MINUTES : BALL_PICK_MINUTES;
+    const base = hasBallPicker(state) ? AUTO_PICK_MINUTES : BALL_PICK_MINUTES;
     return worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
   }
   if (taskId === 'handWater') {
@@ -294,7 +388,7 @@ export function durationOnMachine(state, taskId, worker, machineId, holeIds) {
   }
   const setup = setupMinutesFor(task);
   const variable = variableJobMinutes(state, taskId, holeIds);
-  const machine = machineId ? machineMultiplierFor(state, machineId) : 1;
+  const machine = machineId ? machineMultiplierFor(state, machineId, task?.surface) : 1;
   const extras = taskTimeMultiplier(state, task);
   const workerMult = worker ? workerTimeMultiplier(worker) : 1;
   return Math.round(setup + variable * machine * extras * workerMult);
@@ -352,10 +446,14 @@ export function machinePlanCheck(state, task, worker, machineId, holeIds) {
   return { ok: true, machine };
 }
 
-export function machineMultiplierFor(state, machineId) {
+export function machineMultiplierFor(state, machineId, surface) {
   const machine = getMachine(machineId);
   if (!machine) return 1;
-  return machineTimeMult(machine) * conditionTimeMultiplier(conditionOf(state, machineId));
+  return (
+    machineTimeMult(machine, surface) *
+    conditionTimeMultiplier(conditionOf(state, machineId)) *
+    upgradeModifiers(state, machineId).timeMult
+  );
 }
 
 export function suitabilityCeilingPenalty(suitability) {
@@ -376,7 +474,7 @@ export function jobCeiling(state, surface, machineId, record) {
 export function machineTimeMultiplier(state, task) {
   const machine = pickMachine(state, task);
   if (!machine) return 1;
-  return machineMultiplierFor(state, machine.id);
+  return machineMultiplierFor(state, machine.id, task?.surface);
 }
 
 export function surfaceCeiling(state, surface, record) {
@@ -436,21 +534,39 @@ export function wearMultiplier(state, machineId) {
 }
 
 export function ownsAutonomous(state) {
-  return isMachineAvailable(state, 'autonomousMower') || state.ownedMachines.includes('autonomousMower');
+  return ownedAutonomousMowers(state).length > 0;
 }
 
 export function autonomousReady(state) {
-  return state.ownedMachines.includes('autonomousMower') && isMachineAvailable(state, 'autonomousMower');
+  return ownedAutonomousMowers(state).some((machine) => isMachineAvailable(state, machine.id));
 }
 
 export function canBuyMachine(state, machineId) {
-  const machine = getMachine(machineId);
+  const id = canonicalMachineId(machineId);
+  const machine = getMachine(id);
   if (!machine || machine.ownedAtStart) return { ok: false, reason: 'Already in the shed.' };
-  if (state.ownedMachines.includes(machineId)) return { ok: false, reason: 'Already owned.' };
-  if ((state.pendingDeliveries ?? []).some((item) => item.machineId === machineId)) {
+  if (state.ownedMachines.includes(id)) return { ok: false, reason: 'Already owned.' };
+  if ((state.pendingDeliveries ?? []).some((item) => canonicalMachineId(item.machineId) === id)) {
     return { ok: false, reason: 'Already on a truck.' };
   }
   if (!needsCash(state, machine.cost).ok) return needsCash(state, machine.cost);
+  return { ok: true };
+}
+
+export function canBuyUpgrade(state, machineId, upgradeId) {
+  const id = canonicalMachineId(machineId);
+  const machine = getMachine(id);
+  const upgrade = getUpgrade(upgradeId);
+  if (!machine || !upgrade) return { ok: false, reason: 'Unknown upgrade.' };
+  if (!(state.ownedMachines ?? []).includes(id)) return { ok: false, reason: 'Not in the shed.' };
+  if (!upgradeAppliesTo(upgrade, machine)) return { ok: false, reason: 'Does not fit that machine.' };
+  const owned = ownedUpgradeIds(state, id);
+  if (owned.includes(upgrade.id)) return { ok: false, reason: 'Already fitted.' };
+  if (upgrade.slot && owned.some((item) => getUpgrade(item)?.slot === upgrade.slot)) {
+    return { ok: false, reason: 'That slot is already fitted.' };
+  }
+  const cash = needsCash(state, upgrade.cost);
+  if (!cash.ok) return cash;
   return { ok: true };
 }
 
@@ -547,18 +663,35 @@ export function recomputePlannedMinutes(state) {
 export function buyMachine(state, machineId) {
   const check = canBuyMachine(state, machineId);
   if (!check.ok) return state;
-  const machine = getMachine(machineId);
+  const id = canonicalMachineId(machineId);
+  const machine = getMachine(id);
   let next = {
     ...spendCash(state, machine.cost),
-    ...stampOwnedMachine(state, machineId, NEW_PURCHASE_CONDITION),
+    ...stampOwnedMachine(state, id, NEW_PURCHASE_CONDITION),
+    hasAutoPicker: machine.ballPicker ? true : state.hasAutoPicker,
   };
-  if (machine.autonomous) {
+  if (machine.autonomous && !machine.ballPicker) {
     const rng = createRng(next.rngSeed);
     const scheduled = ensureAutoWeek(next, rng, true);
     next = { ...scheduled.state, rngSeed: rng.seed };
   }
   next = bumpCapitalSpent(next, machine.cost);
   return recomputePlannedMinutes(next);
+}
+
+export function buyUpgrade(state, machineId, upgradeId) {
+  const check = canBuyUpgrade(state, machineId, upgradeId);
+  if (!check.ok) return state;
+  const id = canonicalMachineId(machineId);
+  const upgrade = getUpgrade(upgradeId);
+  const next = {
+    ...spendCash(state, upgrade.cost),
+    machineUpgrades: {
+      ...(state.machineUpgrades ?? {}),
+      [id]: [...ownedUpgradeIds(state, id), upgrade.id],
+    },
+  };
+  return recomputePlannedMinutes(bumpCapitalSpent(next, upgrade.cost));
 }
 
 export function buyFoley(state) {
@@ -643,7 +776,7 @@ export function applyConditionLoss(state, usedIds) {
 export function ensureAutoWeek(state, rng, force = false) {
   const weekStart = state.day - ((state.day - 1) % DAYS_PER_WEEK);
   if (!force && state.autoWeek?.weekStart === weekStart) return { state, rng };
-  if (!state.ownedMachines.includes('autonomousMower')) {
+  if (!ownedAutonomousMowers(state).length) {
     return { state: { ...state, autoWeek: { weekStart, hits: [] } }, rng };
   }
   const span = AUTO_INTERRUPT_MAX_COUNT - AUTO_INTERRUPT_MIN_COUNT;
@@ -666,12 +799,13 @@ export function ensureAutoWeek(state, rng, force = false) {
 }
 
 export function interruptionMinutesForDay(state) {
-  if (!state.ownedMachines.includes('autonomousMower')) return 0;
+  if (!ownedAutonomousMowers(state).length) return 0;
   return (state.autoWeek?.hits ?? []).filter((hit) => hit.day === state.day).reduce((sum, hit) => sum + hit.minutes, 0);
 }
 
 export {
   MACHINES,
+  canonicalMachineId,
   getMachine,
   machineAllows,
   machineCanMow,

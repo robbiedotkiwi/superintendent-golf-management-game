@@ -1,4 +1,5 @@
 import {
+  CUT_TASK_BY_SURFACE,
   CONDITION_WEIGHTS,
   DECAY_ACCELERATION,
   DECAY_ACCELERATION_BELOW,
@@ -55,15 +56,19 @@ import {
   applyWear,
   applyConditionLoss,
   autonomousReady,
+  autonomousSurfacesOf,
   ensureAutoWeek,
   interruptionMinutesForDay,
   isMachineAvailable,
   getMachine,
   jobCeiling,
   machineSuitability,
+  ownedAutonomousMowers,
+  ownedMachineList,
   pickMachineForTask,
   rollBreakdowns,
   surfaceCeiling,
+  upgradeModifiers,
   wearMultiplier,
 } from './equipment.js';
 import { applyEarlyStartComplaints, applyMorale, prepareMorningWorkers, wageBill } from './staff.js';
@@ -144,6 +149,10 @@ function workingState(state, holes) {
 
 function capacityOf(state) {
   return state.workers.reduce((total, worker) => total + worker.minutesToday, 0);
+}
+
+function ownedRoller(state) {
+  return ownedMachineList(state).find((machine) => machine.rollOnly && isMachineAvailable(state, machine.id));
 }
 
 export function resolveDay(state) {
@@ -285,8 +294,9 @@ export function resolveDay(state) {
     }
 
     if (machine && runMinutes > 0 && (task.mowing || task.id === 'rollGreens')) markUsed(machine.id);
-    if (task.id === 'rollGreens' && runMinutes > 0 && isMachineAvailable(state, 'greensRoller')) {
-      markUsed('greensRoller');
+    if (task.id === 'rollGreens' && runMinutes > 0) {
+      const roller = ownedRoller(state);
+      if (roller) markUsed(roller.id);
     }
 
     if (!taskAppliesQuality(task) || !task.surface) {
@@ -306,11 +316,18 @@ export function resolveDay(state) {
     let gain = task.mowing
       ? mowingGain(live, task.id, workerQualityMultiplier(worker))
       : BASE_GAIN * workerQualityMultiplier(worker);
-    if (task.id === 'rollGreens' && isMachineAvailable(state, 'greensRoller')) {
-      gain += ROLLER_GAIN_BONUS;
+    if (task.id === 'rollGreens') {
+      const roller = machine?.rollOnly ? machine : ownedRoller(state);
+      if (roller) {
+        gain += roller.rollGainBonus ?? ROLLER_GAIN_BONUS;
+        gain *= upgradeModifiers(state, roller.id).qualityMult;
+      } else if (machine && upgradeModifiers(state, machine.id).enablesRoll) {
+        gain += ROLLER_GAIN_BONUS;
+      }
     }
     if (machine) {
       gain *= wearMultiplier(state, machine.id);
+      gain *= upgradeModifiers(state, machine.id).qualityMult;
     }
     gain *= qualityRandomFactor(worker, rng);
     if (isAboveBand(moisture, task.surface)) gain *= WET_GAIN_MULT;
@@ -364,37 +381,40 @@ export function resolveDay(state) {
   }
 
   if (autonomousReady(state) && !MOWING_WEATHER.includes(state.weather)) {
-    markUsed('autonomousMower');
-    const autoBySurface = { fairways: 'cutFairways', rough: 'cutRough' };
-    for (const surface of ['fairways', 'rough']) {
-      if (worked.has(surface)) continue;
-      const live = workingState({ ...state, surfaceDefaults }, holes);
-      const qualityBefore = meanQuality(live, surface);
-      const gain = mowingGain(live, autoBySurface[surface], 1) * (isAboveBand(moisture, surface) ? WET_GAIN_MULT : 1);
-      const ceiling = surfaceCeiling({ ...live, fertiliserUntil }, surface);
-      holes = mapHoleSurfaces(holes, surface, (record, hole) => {
-        const qualityAfter = applyGain(record.quality, gain, ceiling);
-        return applyMowingAftermath(
-          { ...record, quality: qualityAfter },
+    for (const autoMachine of ownedAutonomousMowers(state)) {
+      if (!isMachineAvailable(state, autoMachine.id)) continue;
+      markUsed(autoMachine.id);
+      for (const surface of autonomousSurfacesOf(autoMachine)) {
+        const cutId = CUT_TASK_BY_SURFACE[surface];
+        if (!cutId || worked.has(surface)) continue;
+        const live = workingState({ ...state, surfaceDefaults }, holes);
+        const qualityBefore = meanQuality(live, surface);
+        const gain = mowingGain(live, cutId, 1) * (isAboveBand(moisture, surface) ? WET_GAIN_MULT : 1);
+        const ceiling = surfaceCeiling({ ...live, fertiliserUntil }, surface);
+        holes = mapHoleSurfaces(holes, surface, (record, hole) => {
+          const qualityAfter = applyGain(record.quality, gain, ceiling);
+          return applyMowingAftermath(
+            { ...record, quality: qualityAfter },
+            surface,
+            state.day,
+            wearIncremented,
+            surfaceSettings(live, hole.id, surface),
+            live,
+          );
+        });
+        worked.add(surface);
+        if (state.hasTurfRad) {
+          moistureReadDay = revealMoisture(moistureReadDay, surface, state.day, holeN);
+        }
+        done.push({
+          taskId: 'autonomousMower',
+          name: 'Autonomous cut',
           surface,
-          state.day,
-          wearIncremented,
-          surfaceSettings(live, hole.id, surface),
-          live,
-        );
-      });
-      worked.add(surface);
-      if (state.hasTurfRad) {
-        moistureReadDay = revealMoisture(moistureReadDay, surface, state.day, holeN);
+          minutes: 0,
+          before: qualityBefore,
+          after: meanQuality(workingState({ ...state, surfaceDefaults }, holes), surface),
+        });
       }
-      done.push({
-        taskId: 'autonomousMower',
-        name: 'Autonomous cut',
-        surface,
-        minutes: 0,
-        before: qualityBefore,
-        after: meanQuality(workingState({ ...state, surfaceDefaults }, holes), surface),
-      });
     }
   }
 

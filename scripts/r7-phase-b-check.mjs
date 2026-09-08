@@ -7,9 +7,9 @@ import { readFileSync } from 'node:fs';
 import {
   JOB_SETUP_MINUTES,
   JOB_SETUP_MINUTES_BY_TYPE,
-  PER_HOLE_MINUTES,
   SAVED_ROUTE_CAP,
 } from '../src/data/constants.js';
+import { PER_HOLE_MINUTES } from '../src/engine/courseArea.js';
 import { createInitialState, reducer, canPlanTask } from '../src/engine/gameState.js';
 import { durationForTask } from '../src/engine/assignment.js';
 import { jobMinutes, setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.js';
@@ -41,7 +41,9 @@ const lowNine = durationForTask(low, 'cutGreens', start.workers[0]);
 const defaultThree = durationForTask(start, 'cutGreens', start.workers[0], undefined, [1, 2, 3]);
 const lowThree = durationForTask(low, 'cutGreens', start.workers[0], undefined, [1, 2, 3]);
 assert.ok(lowNine > defaultNine);
-assert.ok(Math.abs((lowNine - setupMinutesFor('greens')) / (defaultNine - setupMinutesFor('greens')) - (lowThree - setupMinutesFor('greens')) / (defaultThree - setupMinutesFor('greens'))) < 0.02);
+const nineVar = variableJobMinutes(low, 'cutGreens') / variableJobMinutes(start, 'cutGreens');
+const threeVar = variableJobMinutes(low, 'cutGreens', [1, 2, 3]) / variableJobMinutes(start, 'cutGreens', [1, 2, 3]);
+assert.ok(Math.abs(nineVar - threeVar) < 0.02);
 assert.equal(setupMinutesFor('greens'), JOB_SETUP_MINUTES.green);
 
 let selected = reducer(start, { type: 'SET_SELECTED_HOLES', holes: [4, 7] });

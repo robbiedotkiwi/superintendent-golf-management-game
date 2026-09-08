@@ -19,6 +19,7 @@ import {
   STARTING_OPENING_CASH,
   STARTING_WEATHER,
   WALK_BEHIND_COST,
+  WALK_BEHIND_ID,
 } from '../src/data/constants.js';
 import { closeSeason, grantAdjustment, seasonGrant } from '../src/engine/budget.js';
 import { daysUntilSeasonEnd } from '../src/engine/calendar.js';
@@ -40,9 +41,9 @@ assert.equal(Object.hasOwn(start, 'maintenanceBudget'), false);
 assert.equal(Object.hasOwn(start, 'capitalBudget'), false);
 assert.equal(start.grantForecast, null);
 
-const bought = reducer(start, { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
+const bought = reducer(start, { type: 'BUY_MACHINE', machineId: WALK_BEHIND_ID });
 assert.equal(bought.cash, start.cash - WALK_BEHIND_COST);
-assert.ok(bought.ownedMachines.includes('walkBehindReel'));
+assert.ok(bought.ownedMachines.includes(WALK_BEHIND_ID));
 
 const covered = closeSeason({
   ...start,

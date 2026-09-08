@@ -33,6 +33,7 @@ import {
 } from '../data/constants.js';
 import { emptyDisease, emptyUntil } from './disease.js';
 import { migrateMachineMaps, normalizeMachineOverride } from './equipment.js';
+import { canonicalMachineId } from '../data/equipment.js';
 import { emptyYearRecord } from './history.js';
 import { emptyDaysSinceWorked } from './mail.js';
 import { createInitialHoles, createSurfaceDefaults, fanGroupedToHoles, isHoleModel, stampTreatmentsFromTypeWide } from './holes.js';
@@ -158,15 +159,17 @@ export function withDefaults(state) {
       panY: state.view?.panY ?? VIEW_PAN_Y_DEFAULT,
     },
     ownedMachines: machines.ownedMachines,
-    machineWear: state.machineWear ?? Object.fromEntries(STARTING_MACHINE_IDS.map((id) => [id, 0])),
-    machineBroken: state.machineBroken ?? {},
-    machineAwayUntil: state.machineAwayUntil ?? {},
+    machineWear: Object.keys(machines.machineWear ?? {}).length ? machines.machineWear : (state.machineWear ?? Object.fromEntries(STARTING_MACHINE_IDS.map((id) => [id, 0]))),
+    machineBroken: Object.keys(machines.machineBroken ?? {}).length ? machines.machineBroken : (state.machineBroken ?? {}),
+    machineAwayUntil: Object.keys(machines.machineAwayUntil ?? {}).length ? machines.machineAwayUntil : (state.machineAwayUntil ?? {}),
     machineCondition: machines.machineCondition,
     machineDailyMinutes: machines.machineDailyMinutes,
     machineHours: machines.machineHours,
+    machineUpgrades: machines.machineUpgrades ?? {},
     machineOverride: normalizeMachineOverride(state.machineOverride),
     pendingDeliveries: (Array.isArray(state.pendingDeliveries) ? state.pendingDeliveries : []).map((item) => ({
       ...item,
+      machineId: canonicalMachineId(item.machineId) ?? item.machineId,
       source: item.source ?? DELIVERY_SOURCE_USED,
       hours: Number.isFinite(Number(item.hours)) ? Math.max(0, Math.round(Number(item.hours))) : HOURS_MIGRATED,
     })),
@@ -178,6 +181,7 @@ export function withDefaults(state) {
       : SALESMAN_RELATIONSHIP_START,
     usedListings: (Array.isArray(state.usedListings) ? state.usedListings : []).map((item) => ({
       ...item,
+      machineId: canonicalMachineId(item.machineId) ?? item.machineId,
       hours: Number.isFinite(Number(item.hours)) ? Math.max(0, Math.round(Number(item.hours))) : HOURS_MIGRATED,
     })),
     activeSales: Array.isArray(state.activeSales) ? state.activeSales : [],
@@ -201,7 +205,7 @@ export function withDefaults(state) {
     fertiliserUntil: state.fertiliserUntil ?? emptyUntil(),
     satisfaction: state.satisfaction ?? SATISFACTION_START,
     gmStanding: state.gmStanding ?? GM_STANDING_START,
-    leasedMachines: state.leasedMachines ?? [],
+    leasedMachines: (state.leasedMachines ?? []).map((id) => canonicalMachineId(id)).filter(Boolean),
     loan: state.loan ?? null,
     lastSeasonRevenue: state.lastSeasonRevenue ?? 0,
     seasonRevenue: state.seasonRevenue ?? 0,

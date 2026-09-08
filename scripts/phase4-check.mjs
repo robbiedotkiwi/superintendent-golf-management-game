@@ -17,6 +17,7 @@ import {
   VOLUNTEER_DEFAULT_WEEKDAY,
   VOLUNTEER_ID,
   VOLUNTEER_MINUTES,
+  WALK_BEHIND_ID,
 } from '../src/data/constants.js';
 import { getTask } from '../src/data/tasks.js';
 import { assignWorker, durationForTask, workerAllows } from '../src/engine/assignment.js';
@@ -106,10 +107,10 @@ assert.ok(returned.minutesToday > 0);
 let mechanicState = createInitialState();
 const mechanicCand = mechanicState.candidates.find((item) => item.isMechanic);
 mechanicState = reducer(mechanicState, { type: 'HIRE_WORKER', candidateId: mechanicCand.id });
-mechanicState.machineBroken = { walkBehindReel: true };
-mechanicState.ownedMachines = [...mechanicState.ownedMachines, 'walkBehindReel'];
-assert.equal(canRepair(mechanicState, 'walkBehindReel').minutes, 0);
-mechanicState = reducer(mechanicState, { type: 'REPAIR_MACHINE', machineId: 'walkBehindReel' });
+mechanicState.machineBroken = { [WALK_BEHIND_ID]: true };
+mechanicState.ownedMachines = [...mechanicState.ownedMachines, WALK_BEHIND_ID];
+assert.equal(canRepair(mechanicState, WALK_BEHIND_ID).minutes, 0);
+mechanicState = reducer(mechanicState, { type: 'REPAIR_MACHINE', machineId: WALK_BEHIND_ID });
 assert.equal(mechanicState.workers.find((worker) => worker.id === PLAYER_ID).minutesUsed, 0);
 
 let moraleState = {

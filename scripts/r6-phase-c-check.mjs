@@ -3,8 +3,8 @@
  * Run: node scripts/r6-phase-c-check.mjs
  */
 import assert from 'node:assert/strict';
+import { BASE_MINUTES } from '../src/engine/courseArea.js';
 import {
-  BASE_MINUTES,
   DAY_LENGTH_MINUTES,
   DEFAULT_DAY_OVERLOAD_MINUTES,
   DEFAULT_DAY_OVERLOAD_RATIO,
@@ -36,9 +36,9 @@ assert.deepEqual(STARTING_MACHINE_IDS, [GREENSMASTER_ID, REELMASTER_ID]);
 assert.equal(GREENSMASTER_CEILING, 68);
 assert.equal(GREENSMASTER_TIME_MULT, 1);
 assert.equal(GREENSMASTER_START_CONDITION, 28);
-assert.equal(REELMASTER_CEILING, 62);
-assert.equal(REELMASTER_TIME_MULT, 0.35);
-assert.equal(REELMASTER_START_CONDITION, 24);
+assert.equal(REELMASTER_CEILING, 70);
+assert.equal(REELMASTER_TIME_MULT, 1);
+assert.equal(REELMASTER_START_CONDITION, 28);
 
 const greensmaster = getMachine(GREENSMASTER_ID);
 const reelmaster = getMachine(REELMASTER_ID);
@@ -66,7 +66,7 @@ assert.equal(canBuyMachine(start, PUSH_ROTARY_ID).ok, true);
 
 assert.equal(canPlanTask(start, 'cutFairways').ok, true);
 assert.ok(durationForTask(start, 'cutFairways') < DAY_LENGTH_MINUTES);
-assert.ok(durationForTask(start, 'cutRough') > DAY_LENGTH_MINUTES);
+assert.ok(durationForTask(start, 'cutRough') < DAY_LENGTH_MINUTES);
 
 assert.equal(
   durationForTask(start, 'cutGreens'),
@@ -106,9 +106,9 @@ assert.equal(
 console.log(
   `FULL_DAY_TOTAL=${dayTotal} DAY_LENGTH=${DAY_LENGTH_MINUTES} RATIO=${ratio.toFixed(3)} PERCENT=${percent}% TARGET=${DEFAULT_DAY_OVERLOAD_RATIO} BASE_MINUTES=${JSON.stringify(BASE_MINUTES)}`,
 );
-console.log('GATE C1 PASS new game owns Greensmaster 1000 at 28 and Reelmaster 3100 at 24');
+console.log('GATE C1 PASS new game owns Greensmaster 1026 at 28 and Groundsmaster 3200 at 28');
 console.log('GATE C2 PASS Phase 1 duration uses machine timeMult and condition penalty');
-console.log('GATE C3 PASS fairways can be cut on day 1 in under a day; rough cannot');
+console.log('GATE C3 PASS fairways and rough can both be cut on day 1 in under a day');
 console.log(`GATE C4 PASS full-day total ${dayTotal} is ${percent}% of ${DAY_LENGTH_MINUTES}`);
 console.log('GATE C5 PASS push rotary is purchasable and not owned at start');
 console.log('round 6 phase C checks passed');

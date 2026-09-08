@@ -2,7 +2,7 @@ import { getTask, SURFACE_LABELS } from '../data/tasks.js';
 import { calendarFromDay } from './calendar.js';
 import { buildForecast } from './weather.js';
 import { createRng } from './rng.js';
-import { buyFoley, buyMachine, grindInHouse, repairMachine, sendForGrind, machinePlanCheck, durationOnMachine, recomputePlannedMinutes, allowingMachines, pickMachine, pickMachineForTask, machineMinutesRemaining, MACHINE_BOOKED_REASON, NO_MACHINE_REASON, getMachine, normalizeMachineOverride, machineSuitability } from './equipment.js';
+import { buyFoley, buyMachine, buyUpgrade, grindInHouse, repairMachine, sendForGrind, machinePlanCheck, durationOnMachine, recomputePlannedMinutes, allowingMachines, pickMachine, pickMachineForTask, machineMinutesRemaining, MACHINE_BOOKED_REASON, NO_MACHINE_REASON, getMachine, normalizeMachineOverride, machineSuitability } from './equipment.js';
 import { machineAllows } from '../data/equipment.js';
 import { machineTitle } from './machineDisplay.js';
 import { assignWorker, certifiedPresent, workerById, workerAllows, isWorkerPresent } from './assignment.js';
@@ -206,6 +206,7 @@ export function createInitialState() {
     machineHours: Object.fromEntries(
       STARTING_MACHINE_IDS.map((id) => [id, STARTING_MACHINE_HOURS[id] ?? 0]),
     ),
+    machineUpgrades: {},
     machineOverride: normalizeMachineOverride(null),
     salesmanRelationship: SALESMAN_RELATIONSHIP_START,
     usedListings,
@@ -618,6 +619,8 @@ export function reducer(state, action) {
       return buyAutoPicker(state);
     case 'BUY_MACHINE':
       return buyMachine(state, action.machineId);
+    case 'BUY_UPGRADE':
+      return buyUpgrade(state, action.machineId, action.upgradeId);
     case 'BUY_USED':
       return buyUsed(state, action.listingId);
     case 'SELL_MACHINE':

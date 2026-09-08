@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
   CUT_TASK_BY_SURFACE,
+  FAIRWAY_UNIT_ID,
   HOC_SURFACES,
   MACHINE_OVERRIDE_AUTO,
   MACHINE_OVERRIDE_FALLBACK,
@@ -21,6 +22,8 @@ import {
   TURF_TAB_OTHER,
   TURF_TAB_POND,
   TURF_TABS,
+  VENTRAC_ID,
+  WALK_BEHIND_ID,
 } from '../src/data/constants.js';
 import { getMachine } from '../src/data/equipment.js';
 import { getTask } from '../src/data/tasks.js';
@@ -106,34 +109,34 @@ assert.ok(autoGreens);
 assert.equal(machineAssignment(start, 'greens').machine?.id, autoGreens.id);
 
 let both = { ...createInitialState(), cash: 250000 };
-both = reducer(both, { type: 'BUY_MACHINE', machineId: 'fairwayUnit' });
-both = reducer(both, { type: 'BUY_MACHINE', machineId: 'ventrac' });
-assert.ok(both.ownedMachines.includes('fairwayUnit'));
-assert.ok(both.ownedMachines.includes('ventrac'));
-assert.equal(pickMachine(both, getTask('cutRough'))?.id, 'ventrac', 'highest ceiling wins over a faster lower-ceiling unit');
+both = reducer(both, { type: 'BUY_MACHINE', machineId: FAIRWAY_UNIT_ID });
+both = reducer(both, { type: 'BUY_MACHINE', machineId: VENTRAC_ID });
+assert.ok(both.ownedMachines.includes(FAIRWAY_UNIT_ID));
+assert.ok(both.ownedMachines.includes(VENTRAC_ID));
+assert.equal(pickMachine(both, getTask('cutRough'))?.id, VENTRAC_ID, 'highest ceiling wins over a faster lower-ceiling unit');
 
 const greensOnly = overrideCandidates(both, 'greens').map((machine) => machine.id);
 assert.ok(greensOnly.includes(start.ownedMachines[0]));
-assert.equal(greensOnly.includes('ventrac'), true);
-assert.equal(greensOnly.includes('fairwayUnit'), true);
+assert.equal(greensOnly.includes(VENTRAC_ID), true);
+assert.equal(greensOnly.includes(FAIRWAY_UNIT_ID), true);
 
-let over = reducer(both, { type: 'SET_MACHINE_OVERRIDE', surface: 'rough', machineId: 'fairwayUnit' });
-assert.equal(over.machineOverride.rough, 'fairwayUnit');
-assert.equal(pickMachine(over, getTask('cutRough'))?.id, 'fairwayUnit');
+let over = reducer(both, { type: 'SET_MACHINE_OVERRIDE', surface: 'rough', machineId: FAIRWAY_UNIT_ID });
+assert.equal(over.machineOverride.rough, FAIRWAY_UNIT_ID);
+assert.equal(pickMachine(over, getTask('cutRough'))?.id, FAIRWAY_UNIT_ID);
 over = reducer(over, { type: 'END_DAY' });
-assert.equal(over.machineOverride.rough, 'fairwayUnit', 'override persists across days');
+assert.equal(over.machineOverride.rough, FAIRWAY_UNIT_ID, 'override persists across days');
 
-let fallback = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
-fallback = reducer(fallback, { type: 'SET_MACHINE_OVERRIDE', surface: 'greens', machineId: 'walkBehindReel' });
-assert.equal(pickMachineForTask(fallback, getTask('cutGreens'), fallback.workers[0])?.id, 'walkBehindReel');
+let fallback = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: WALK_BEHIND_ID });
+fallback = reducer(fallback, { type: 'SET_MACHINE_OVERRIDE', surface: 'greens', machineId: WALK_BEHIND_ID });
+assert.equal(pickMachineForTask(fallback, getTask('cutGreens'), fallback.workers[0])?.id, WALK_BEHIND_ID);
 fallback = {
   ...fallback,
-  machineBroken: { ...fallback.machineBroken, walkBehindReel: true },
+  machineBroken: { ...fallback.machineBroken, [WALK_BEHIND_ID]: true },
 };
 const assignment = machineAssignment(fallback, 'greens');
 assert.equal(assignment.machine?.id, start.ownedMachines[0]);
-assert.equal(assignment.fallbackReason, MACHINE_OVERRIDE_FALLBACK(machineTitle(getMachine('walkBehindReel'))));
-assert.notEqual(pickMachine(fallback, getTask('cutGreens'))?.id, 'walkBehindReel');
+assert.equal(assignment.fallbackReason, MACHINE_OVERRIDE_FALLBACK(machineTitle(getMachine(WALK_BEHIND_ID))));
+assert.notEqual(pickMachine(fallback, getTask('cutGreens'))?.id, WALK_BEHIND_ID);
 
 const migrated = migrateSave({
   day: 12,

@@ -68,7 +68,7 @@ const warn = plannedDayFuel(dryPlan);
 assert.ok(warn.shortfall > 0);
 assert.equal(warn.affected.taskId, 'cutGreens');
 
-let mid = reducer({ ...start, fuelLitres: 2 }, { type: 'PLAN_TASK', taskId: 'cutGreens' });
+let mid = reducer({ ...start, fuelLitres: 1.2 }, { type: 'PLAN_TASK', taskId: 'cutGreens' });
 mid = reducer(mid, { type: 'END_DAY' });
 const summary = mid.log.at(-1);
 assert.ok(summary.fuelStop);

@@ -6,10 +6,11 @@ import {
   FUEL_TANK_CAPACITY,
   MACHINE_CLASS_ROLLER,
   TYPE_GREENS_ROLLER,
+  TYPE_RIDE_ON_ROLLER,
 } from '../data/constants.js';
 import { getTask } from '../data/tasks.js';
 import { getMachine, machineClass } from '../data/equipment.js';
-import { pickMachineForTask } from './equipment.js';
+import { pickMachineForTask, upgradeModifiers } from './equipment.js';
 import { setupMinutesFor } from './jobs.js';
 import { needsCash, spendCash } from './cash.js';
 import { workerById } from './assignment.js';
@@ -26,13 +27,16 @@ export function fuelCost(litres) {
   return Math.round(Number(litres) * fuelPricePerLitre(litres));
 }
 
-export function burnLitresPerHour(machine) {
+export function burnLitresPerHour(machine, state) {
   if (!machine) return 0;
-  if (machine.rollOnly || machine.type === TYPE_GREENS_ROLLER) {
-    return FUEL_BURN_L_PER_HOUR[MACHINE_CLASS_ROLLER] ?? 0;
+  if (machine.electric || machine.fuelMult === 0) return 0;
+  const upgradeFuel = state ? upgradeModifiers(state, machine.id).fuelMult : 1;
+  if (machine.rollOnly || machine.type === TYPE_GREENS_ROLLER || machine.type === TYPE_RIDE_ON_ROLLER) {
+    return (FUEL_BURN_L_PER_HOUR[MACHINE_CLASS_ROLLER] ?? 0) * (machine.fuelMult ?? 1) * upgradeFuel;
   }
   const cls = machineClass(machine);
-  return (cls && FUEL_BURN_L_PER_HOUR[cls]) || 0;
+  const base = (cls && FUEL_BURN_L_PER_HOUR[cls]) || 0;
+  return base * (machine.fuelMult ?? 1) * upgradeFuel;
 }
 
 export function litresForMinutes(machine, minutes) {

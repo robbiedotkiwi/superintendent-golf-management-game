@@ -198,6 +198,7 @@ export default function App() {
           onOpenTurf={() => dispatch({ type: 'SET_SECTION', section: SECTION_TURF })}
           onCloseShed={() => dispatch({ type: 'SET_SECTION', section: SECTION_MAP })}
           onBuy={(machineId) => dispatch({ type: 'BUY_MACHINE', machineId })}
+          onBuyUpgrade={(machineId, upgradeId) => dispatch({ type: 'BUY_UPGRADE', machineId, upgradeId })}
           onBuyFoley={() => dispatch({ type: 'BUY_FOLEY' })}
           onBuyFuel={(litres) => dispatch({ type: 'BUY_FUEL', litres })}
           onSendGrind={(machineId) => dispatch({ type: 'SEND_GRIND', machineId })}
@@ -315,6 +316,7 @@ function GameScreen({
   onOpenTurf,
   onCloseShed,
   onBuy,
+  onBuyUpgrade,
   onBuyFoley,
   onBuyFuel,
   onSendGrind,
@@ -456,6 +458,7 @@ function GameScreen({
             onTab={(tab) => onTab(SECTION_SHED, tab)}
             onBack={onCloseShed}
             onBuy={onBuy}
+            onBuyUpgrade={onBuyUpgrade}
             onBuyFoley={onBuyFoley}
             onBuyFuel={onBuyFuel}
             onSendGrind={onSendGrind}

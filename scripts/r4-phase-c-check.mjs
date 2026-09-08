@@ -3,8 +3,8 @@
  * Run: node scripts/r4-phase-c-check.mjs
  */
 import assert from 'node:assert/strict';
+import { BASE_MINUTES } from '../src/engine/courseArea.js';
 import {
-  BASE_MINUTES,
   DAY_LENGTH_MINUTES,
   DEFAULT_DAY_OVERLOAD_MINUTES,
   DEFAULT_DAY_OVERLOAD_RATIO,
@@ -64,7 +64,7 @@ console.log(
   `FULL_DAY_TOTAL=${dayTotal} DAY_LENGTH=${DAY_LENGTH_MINUTES} RATIO=${ratio.toFixed(3)} PERCENT=${percent}% TARGET=${DEFAULT_DAY_OVERLOAD_RATIO} BASE_MINUTES=${JSON.stringify(BASE_MINUTES)}`,
 );
 console.log('GATE C1 PASS block cut is the fairway and rough default');
-console.log('GATE C2 PASS starting fleet is Greensmaster 1000 and Reelmaster 3100 at 28/24');
-console.log(`GATE C3 PASS full-day total ${dayTotal} is ${percent}% of ${DAY_LENGTH_MINUTES} (140% target)`);
+console.log('GATE C2 PASS starting fleet is Greensmaster 1026 and Groundsmaster 3200 at 28/28');
+console.log(`GATE C3 PASS full-day total ${dayTotal} is ${percent}% of ${DAY_LENGTH_MINUTES}`);
 console.log('GATE C4 PASS durationForTask includes machine timeMult and condition penalty');
 console.log('round 4 phase C checks passed');

@@ -3,12 +3,12 @@ import {
   HOC_RANGE,
   HOC_TIME_MULT,
   JOB_SETUP_MINUTES_BY_TYPE,
-  PER_HOLE_MINUTES,
   ROUTE_NAME_MAX,
   SAVED_ROUTE_CAP,
   TASK_MINUTES,
 } from '../data/constants.js';
 import { getTask } from '../data/tasks.js';
+import { PER_HOLE_MINUTES } from './courseArea.js';
 import { hocFactor, patternTimeMult } from './mowing.js';
 import { hocRangeFor } from './grass.js';
 import { defaultJobHoles, formatHoleSet, normalizeJobHoles, sameHoleSet } from './holes.js';

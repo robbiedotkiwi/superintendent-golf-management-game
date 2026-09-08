@@ -22,6 +22,7 @@ import {
   MACHINE_STATUS_USED,
   REELMASTER_ID,
   USED_DELIVERY_DAYS,
+  WALK_BEHIND_ID,
 } from '../src/data/constants.js';
 import { MACHINES, getMachine } from '../src/data/equipment.js';
 import { createInitialState, reducer } from '../src/engine/gameState.js';
@@ -52,7 +53,7 @@ for (const machine of MACHINES) {
   assert.equal(machineTypeLine(machine), machine.type);
 }
 
-assert.equal(machineTitle(getMachine(GREENSMASTER_ID)), 'Toro Greensmaster 1000');
+assert.equal(machineTitle(getMachine(GREENSMASTER_ID)), 'Toro Greensmaster 1026');
 assert.equal(machineTypeLine(getMachine(GREENSMASTER_ID)), 'walk-behind reel');
 
 const start = createInitialState();
@@ -82,8 +83,8 @@ assert.equal(arrived.pendingDeliveries.length, 0);
 assert.ok(arrived.ownedMachines.includes(listing.machineId));
 assert.equal(arrived.machineHours[listing.machineId], listing.hours);
 
-const boughtNew = reducer(start, { type: 'BUY_MACHINE', machineId: 'walkBehindReel' });
-assert.equal(machineStatusLine(boughtNew, 'walkBehindReel'), MACHINE_STATUS_NEW);
+const boughtNew = reducer(start, { type: 'BUY_MACHINE', machineId: WALK_BEHIND_ID });
+assert.equal(machineStatusLine(boughtNew, WALK_BEHIND_ID), MACHINE_STATUS_NEW);
 
 const migrated = migrateSave({
   day: 4,
