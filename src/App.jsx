@@ -459,6 +459,8 @@ function GameScreen({
         onToggleSound={onToggleSound}
         onDismissLockHint={onDismissLockHint}
         onSelectDay={onSelectDay}
+        onBookCasual={onBookCasual}
+        onUnbookCasual={onUnbookCasual}
       />
       <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
         {view === SECTION_SHED ? (

@@ -196,8 +196,10 @@ export function canEditPlanDay(state, day = planningDayOf(state)) {
 }
 
 export function canBookCasual(state, casualId, day) {
-  const edit = canEditPlanDay(state, day);
-  if (!edit.ok) return edit;
+  if (day < state.day) return { ok: false, reason: 'That day is already over.' };
+  if (weekStartDay(day) !== weekStartDay(state.day)) {
+    return { ok: false, reason: 'Book this week only.' };
+  }
   const casual = (state.casualPool ?? []).find((item) => item.id === casualId);
   if (!casual) return { ok: false, reason: 'That casual is not on the bench.' };
   const booked = casualDaysBooked(state, casualId);

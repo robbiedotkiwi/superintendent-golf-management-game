@@ -85,6 +85,8 @@ assert.equal(ran.log.at(-1).fuelStop, null);
 assert.equal(ran.weekPlan.locked, true);
 assert.equal(canEditPlanDay(ran, ran.day).ok, true);
 assert.equal(canEditPlanDay(ran, ran.day + 1).ok, false);
+assert.equal(canBookCasual(ran, casual.id, ran.day).ok, true);
+assert.equal(canBookCasual(ran, casual.id, ran.day + 1).ok, true);
 
 const shed = read('src/components/Shed.jsx');
 assert.doesNotMatch(shed, /FUEL_TANK_CAPACITY/);
