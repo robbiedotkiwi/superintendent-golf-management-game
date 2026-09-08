@@ -57,6 +57,10 @@ export default function DaySummary({ summary, onContinue }) {
                   ? `${item.taskId} needed reassignment`
                   : item.reason === 'fuel'
                     ? `${item.taskId} stopped — tank empty${item.holes?.length ? ` · holes ${item.holes.join(', ')} untouched` : ''}`
+                    : item.reason === 'weather'
+                      ? `${item.taskId} dropped — weather was not what you planned for`
+                    : item.reason === 'crew'
+                      ? `${item.taskId} dropped — no one was on for it`
                     : `${item.taskId} ran out of time after interruptions (${item.minutes} min)`}
               </li>
             ))}
@@ -64,13 +68,7 @@ export default function DaySummary({ summary, onContinue }) {
         ) : (
           <p>Nothing dropped.</p>
         )}
-        {summary.fuelStop?.remainingHoles?.length ? (
-          <p className="mt-2">
-            {summary.fuelStop.name} ran the tank dry. Finished holes{' '}
-            {summary.fuelStop.completedHoles.join(', ') || 'none'}. Left untouched:{' '}
-            {summary.fuelStop.remainingHoles.join(', ')}.
-          </p>
-        ) : null}
+        {summary.fuelSpend ? <p className="mt-3">Fuel {formatMoney(summary.fuelSpend)}</p> : null}
         {summary.wages ? <p className="mt-3">Wages {formatMoney(summary.wages)}</p> : null}
         {summary.gmWarning ? <p className="mt-2">GM warning: neighbours are complaining about the early start.</p> : null}
         {summary.neighbourFine ? <p className="mt-2">Fine {formatMoney(summary.neighbourFine)} for the early starts.</p> : null}

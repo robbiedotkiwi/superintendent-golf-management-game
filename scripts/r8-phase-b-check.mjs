@@ -6,6 +6,7 @@
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import {
+  DAYS_PER_SEASON,
   FORECAST_FUEL_LOOKBACK_DAYS,
   POND_DOSE_COST,
   PUSH_ROTARY_ID,
@@ -41,7 +42,7 @@ assert.match(forecastSrc, /FORECAST_FUEL_LOOKBACK_DAYS/);
 const start = createInitialState();
 assert.deepEqual(start.fuelSpendLog, []);
 const remaining = daysUntilSeasonEnd(start.day);
-assert.equal(remaining, 30);
+assert.equal(remaining, DAYS_PER_SEASON);
 
 const hired = {
   ...start,
@@ -67,7 +68,8 @@ const leased = seasonCashForecast({ ...start, leasedMachines: [PUSH_ROTARY_ID] }
 assert.equal(leased.leases[0].amount, leaseCost(PUSH_ROTARY_ID));
 
 const dosing = seasonCashForecast(start);
-assert.equal(dosing.dosing.amount, POND_DOSE_COST * 4);
+assert.ok(dosing.dosing.amount >= POND_DOSE_COST);
+assert.equal(dosing.dosing.amount % POND_DOSE_COST, 0);
 
 const loaned = seasonCashForecast({
   ...start,

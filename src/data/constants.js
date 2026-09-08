@@ -335,6 +335,11 @@ export const MOISTURE_RAIN_ADD = {
   storm: 10,
   frost: 0,
 };
+export const MOISTURE_ET_HEAT = {
+  cool: 0.82,
+  mild: 1,
+  hot: 1.28,
+};
 export const MOISTURE_WIND_ET_PER = 0.012;
 export const MOISTURE_HAND_WATER_ADD = 10;
 export const MOISTURE_OVERLAY_OPACITY = 0.55;
@@ -465,9 +470,15 @@ export const TEE_MARKER_OFFSET = 0;
 export const TEE_MARKER_RADIUS = HOLE_NUMBER_RADIUS;
 export const TEE_MARKER_FONT = 22;
 
-export const DAYS_PER_SEASON = 30;
+export const DAYS_PER_WEEK = 7;
+export const SEASON_WEEKS = 12;
+export const SEASON_MONTHS = 3;
+export const WEEKS_PER_MONTH = 4;
+export const DAYS_PER_SEASON = SEASON_WEEKS * DAYS_PER_WEEK;
 export const SEASON_ORDER = ['spring', 'summer', 'autumn', 'winter'];
 export const DAYS_PER_YEAR = DAYS_PER_SEASON * SEASON_ORDER.length;
+export const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+export const LAST_MONTH_DAYS = WEEKS_PER_MONTH * DAYS_PER_WEEK;
 export const GRACE_FINE_DAYS = 5;
 export const GRACE_NO_STORM_DAYS = 10;
 export const GRACE_NO_BREAKDOWN_DAYS = 10;
@@ -493,6 +504,11 @@ export const WEATHER_STORM = 'storm';
 export const WEATHER_FROST = 'frost';
 
 export const STARTING_WEATHER = WEATHER_FINE;
+export const HEAT_COOL = 'cool';
+export const HEAT_MILD = 'mild';
+export const HEAT_HOT = 'hot';
+export const HEAT_ORDER = [HEAT_COOL, HEAT_MILD, HEAT_HOT];
+export const STARTING_HEAT = HEAT_MILD;
 export const STARTING_RNG_SEED = 1;
 export const FORECAST_DAYS = 7;
 export const FORECAST_ACCURACY = [0.9, 0.8, 0.65, 0.5, 0.4, 0.3, 0.25];
@@ -513,7 +529,13 @@ export const WEATHER_WEIGHTS = {
   winter: { fine: 15, overcast: 25, rain: 15, heavyRain: 5, storm: 5, frost: 35 },
 };
 
-export const DAYS_PER_WEEK = 7;
+export const HEAT_WEIGHTS = {
+  spring: { cool: 0.25, mild: 0.5, hot: 0.25 },
+  summer: { cool: 0.08, mild: 0.37, hot: 0.55 },
+  autumn: { cool: 0.3, mild: 0.5, hot: 0.2 },
+  winter: { cool: 0.62, mild: 0.33, hot: 0.05 },
+};
+
 export const WEAR_PER_USE = 8;
 export const WEAR_THRESHOLD = 60;
 export const WEAR_GAIN_PENALTY = 0.3;
@@ -817,7 +839,6 @@ export const VOLUNTEER_MINUTES = 240;
 export const VOLUNTEER_DAY = 3;
 export const GM_UNLOCK_CREW_DAY = VOLUNTEER_DAY;
 export const GM_UNLOCK_OFFICE_DAY = 7;
-export const FUEL_LOW_FRACTION = 0.25;
 export const SATISFACTION_MOVE_POINTS = 10;
 export const GM_WAGE_WEEK_DAYS = DAYS_PER_WEEK;
 export const VOLUNTEER_LEGACY_WEEKDAY = 6;
@@ -837,6 +858,9 @@ export const MECHANIC_WAGE = nzPrice(90, 5);
 export const WAGE_BASE = nzPrice(45, 5);
 export const WAGE_PER_SKILL = nzPrice(12, 5);
 export const CANDIDATE_COUNT = 3;
+export const CASUAL_POOL_COUNT = 3;
+export const CASUAL_MAX_DAYS_PER_WEEK = 2;
+export const CASUAL_WAGE_MULT = 1.75;
 export const WEAR_MECHANIC_FACTOR = 0.5;
 
 export const POND_CAPACITY = 8000;
@@ -958,11 +982,7 @@ export const STARTING_OPENING_CASH = STARTING_CASH + STARTING_MAINTENANCE_BUDGET
 export const SEASON_GRANT_BASE = 30000;
 export const GRANT_FORECAST_LEAD_DAYS = 7;
 export const FORECAST_FUEL_LOOKBACK_DAYS = 7;
-export const FUEL_TANK_CAPACITY = 400;
-export const FUEL_START = 250;
 export const FUEL_PRICE_PER_L = 2.9;
-export const FUEL_BULK_PRICE_PER_L = 2.35;
-export const FUEL_BULK_MIN_LITRES = 200;
 export const FUEL_BURN_L_PER_HOUR = {
   [MACHINE_CLASS_PUSH_ROTARY]: 1.2,
   [MACHINE_CLASS_WALK_BEHIND_REEL]: 1.5,
@@ -1081,7 +1101,7 @@ export const RANGE_X = 2154;
 export const RANGE_Y = 640;
 export const RANGE_WIDTH = 200;
 export const RANGE_HEIGHT = 120;
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 export const SOUND_DEFAULT_ON = false;
 export const SOUND_MOWER_FREQ = 90;
 export const SOUND_BIRD_FREQ = 1800;

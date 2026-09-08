@@ -130,7 +130,8 @@ assert.equal(typeof officeBadgeCount(mid), 'number');
 
 const sidebar = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
 assert.match(sidebar, /Day \{state\.day\}/);
-assert.match(sidebar, /Today \{WEATHER_LABELS\[state\.weather\]\} · Tomorrow/);
+assert.match(sidebar, /WEATHER_LABELS\[state\.weather\]/);
+assert.match(sidebar, /Tomorrow/);
 assert.match(sidebar, /Condition/);
 assert.match(sidebar, /label="Turf"/);
 assert.match(sidebar, /label="Office"/);
@@ -143,7 +144,7 @@ assert.match(sidebar, /onToggleMoistureOverlay/);
 assert.match(sidebar, /Turn sound off/);
 assert.match(sidebar, /overflow-hidden/);
 assert.doesNotMatch(sidebar, /overflow-y-auto/);
-assert.doesNotMatch(sidebar, /ForecastStrip/);
+assert.match(sidebar, /ForecastStrip/);
 assert.match(sidebar, /formatMoney\(state\.cash\)/);
 assert.doesNotMatch(sidebar, /SURFACE_KEYS/);
 assert.doesNotMatch(sidebar, /Satisfaction/);

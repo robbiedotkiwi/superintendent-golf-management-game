@@ -6,6 +6,12 @@ import {
   FROST_SHORT_MINUTES,
   GRACE_FINE_DAYS,
   GRACE_NO_STORM_DAYS,
+  HEAT_COOL,
+  HEAT_HOT,
+  HEAT_MILD,
+  HEAT_ORDER,
+  HEAT_WEIGHTS,
+  STARTING_HEAT,
   STARTING_MINUTES_USED,
   STARTING_WIND_DIR,
   STARTING_WIND_SPEED,
@@ -13,6 +19,7 @@ import {
   WEATHER_FROST,
   WEATHER_HEAVY_RAIN,
   WEATHER_OVERCAST,
+  WEATHER_RAIN,
   WEATHER_STORM,
   WEATHER_WEIGHTS,
   WIND_DIRECTIONS,
@@ -83,19 +90,46 @@ export function rollWind(rng) {
   return { windSpeed, windDir };
 }
 
+export function heatRank(heat) {
+  const index = HEAT_ORDER.indexOf(heat);
+  return index < 0 ? HEAT_ORDER.indexOf(HEAT_MILD) : index;
+}
+
+export function clampHeat(heat) {
+  return HEAT_ORDER.includes(heat) ? heat : HEAT_MILD;
+}
+
+export function applyHeatForWeather(heat, type) {
+  if (type === WEATHER_FROST) return HEAT_COOL;
+  if ((type === WEATHER_RAIN || type === WEATHER_HEAVY_RAIN || type === WEATHER_STORM) && heat === HEAT_HOT) {
+    return HEAT_MILD;
+  }
+  return clampHeat(heat);
+}
+
+export function pickHeat(season, type, rng, exclude = null) {
+  const rolled = pickWeather(HEAT_WEIGHTS[season] ?? HEAT_WEIGHTS.spring, rng, exclude);
+  return applyHeatForWeather(rolled, type);
+}
+
 export function rollTrueDay(season, rng, day) {
   if (day != null && day <= GRACE_FINE_DAYS) {
-    return { type: WEATHER_FINE, ...rollWind(rng) };
+    return { type: WEATHER_FINE, heat: HEAT_MILD, ...rollWind(rng) };
   }
   const exclude = day != null ? weatherGraceExclusions(day) : null;
   const type = applyWeatherGrace(pickWeather(WEATHER_WEIGHTS[season], rng, exclude), day ?? Number.POSITIVE_INFINITY);
-  return { type, ...rollWind(rng) };
+  return { type, heat: pickHeat(season, type, rng), ...rollWind(rng) };
 }
 
 export function corruptDay(trueDay, accuracy, season, rng, day) {
   const type =
     rng.next() < accuracy ? trueDay.type : pickWeather(WEATHER_WEIGHTS[season], rng, trueDay.type);
-  return { ...trueDay, type: applyWeatherGrace(type, day ?? Number.POSITIVE_INFINITY) };
+  const heat =
+    rng.next() < accuracy
+      ? trueDay.heat
+      : pickHeat(season, type, rng, trueDay.heat);
+  const nextType = applyWeatherGrace(type, day ?? Number.POSITIVE_INFINITY);
+  return { ...trueDay, type: nextType, heat: applyHeatForWeather(heat ?? trueDay.heat, nextType) };
 }
 
 export function forecastOpacity(index) {
@@ -132,6 +166,7 @@ export function buildForecast(state, rng) {
     weatherQueue: queue,
     forecastStrip,
     forecast: forecastStrip[0]?.type ?? state.forecast,
+    forecastHeat: forecastStrip[0]?.heat ?? state.forecastHeat ?? STARTING_HEAT,
     windSpeed: state.windSpeed ?? STARTING_WIND_SPEED,
     windDir: state.windDir ?? STARTING_WIND_DIR,
   };
@@ -153,10 +188,13 @@ export function rollMorningWithRng(state, season, rng) {
   const forecastStrip = deriveForecastStrip(nextQueue, state.day, rng);
   return {
     weather,
+    heat: applyHeatForWeather(today?.heat ?? STARTING_HEAT, weather),
     forecast: forecastStrip[0].type,
+    forecastHeat: forecastStrip[0]?.heat ?? STARTING_HEAT,
     weatherQueue: nextQueue.map((item, index) => ({
       ...item,
       type: applyWeatherGrace(item.type, state.day + 1 + index),
+      heat: applyHeatForWeather(item.heat ?? STARTING_HEAT, applyWeatherGrace(item.type, state.day + 1 + index)),
     })),
     forecastStrip,
     windSpeed: today?.windSpeed ?? STARTING_WIND_SPEED,

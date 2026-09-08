@@ -79,11 +79,11 @@ for (let i = 0; i < BUNKER_NEGLECT_DAYS; i += 1) bunkers = endKeep(bunkers);
 assert.ok(bunkers.inbox.some((item) => item.kind === 'bunkers' && item.from === 'golfer' && !item.read));
 
 assert.equal(canPlanTask(createInitialState(), 'gmMeeting').ok, false);
-let meetDay = { ...createInitialState(), day: 7 };
+let meetDay = { ...createInitialState(), day: 7, planningDay: 7 };
 assert.equal(canPlanTask(meetDay, 'gmMeeting').ok, true);
 const skipped = endKeep(meetDay);
 assert.equal(skipped.gmStanding, GM_STANDING_START - GM_MEETING_SKIP_STANDING);
-meetDay = reducer({ ...createInitialState(), day: 7 }, { type: 'PLAN_TASK', taskId: 'gmMeeting' });
+meetDay = reducer({ ...createInitialState(), day: 7, planningDay: 7 }, { type: 'PLAN_TASK', taskId: 'gmMeeting' });
 assert.equal(meetDay.plannedTasks[0].minutes, GM_MEETING_MINUTES);
 const attended = endKeep(meetDay);
 assert.equal(attended.gmStanding, GM_STANDING_START);

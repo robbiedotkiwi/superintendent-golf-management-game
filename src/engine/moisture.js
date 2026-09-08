@@ -9,6 +9,7 @@ import {
   MOISTURE_BAND,
   MOISTURE_DATA_FRESH_DAYS,
   MOISTURE_ET_BASE,
+  MOISTURE_ET_HEAT,
   MOISTURE_ET_SEASON,
   MOISTURE_ET_WEATHER,
   MOISTURE_HAND_WATER_ADD,
@@ -122,11 +123,12 @@ function etMultiplier(state, surface) {
   const factor = hocFactor(surface, state.surfaceDefaults?.[surface]?.hoc, state);
   const season = MOISTURE_ET_SEASON[state.season] ?? 1;
   const weather = MOISTURE_ET_WEATHER[state.weather] ?? 1;
+  const heat = MOISTURE_ET_HEAT[state.heat] ?? 1;
   const wind = state.windSpeed ?? STARTING_WIND_SPEED;
   const windMult = WINDY_WEATHER.includes(state.weather)
     ? 1 + Math.max(0, wind - WIND_SPEED_MIN) * MOISTURE_WIND_ET_PER
     : 1;
-  return season * weather * HOC_WATER_MULT(factor) * windMult;
+  return season * weather * heat * HOC_WATER_MULT(factor) * windMult;
 }
 
 function irrigationAdd(state, surface) {

@@ -17,7 +17,7 @@ export default function SeasonStart({ state, onConfirm }) {
     <section className="mt-4 border border-[var(--sand)] p-4">
       <h2 className="font-condensed text-4xl font-bold">{season} tournaments</h2>
       <p className="mt-2 text-[var(--sand)]">
-        Dates land in {season} so you can plan the {TOURNAMENT_PREP_DAYS} days before.
+        Every season has a tournament in the last month. Extra dates also land in that last month, with {TOURNAMENT_PREP_DAYS} days to prep.
         {state.tournamentSetupDeadline ? ` Deadline: day ${state.tournamentSetupDeadline}.` : ''}
         {winter
           ? ` Winter is optional and risky — rain on the day caps the result at Acceptable. At most ${TOURNAMENT_WINTER_MAX}.`

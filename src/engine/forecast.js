@@ -5,6 +5,7 @@ import { daysUntilSeasonEnd, seasonEndDay } from './calendar.js';
 import { cashOnHand } from './cash.js';
 import { wageBill } from './staff.js';
 import { daysSincePondDose } from './irrigation.js';
+import { weekDays, weekPlanOf } from './week.js';
 
 function paidWorkers(state) {
   return (state.workers ?? []).filter((worker) => !worker.isVolunteer && (worker.wage ?? 0) > 0);
@@ -12,13 +13,32 @@ function paidWorkers(state) {
 
 export function wageForecastLines(state) {
   const days = daysUntilSeasonEnd(state.day);
-  return paidWorkers(state).map((worker) => ({
-    id: worker.id,
-    label: worker.name,
-    days,
-    daily: worker.wage,
-    amount: worker.wage * days,
-  }));
+  const permanent = paidWorkers(state)
+    .filter((worker) => !worker.isCasual)
+    .map((worker) => ({
+      id: worker.id,
+      label: worker.name,
+      days,
+      daily: worker.wage,
+      amount: worker.wage * days,
+    }));
+  const plan = weekPlanOf(state);
+  const casuals = (state.casualPool ?? [])
+    .map((casual) => {
+      const booked = weekDays(state.day).filter(
+        (day) => day >= state.day && (plan.days?.[day]?.casualIds ?? []).includes(casual.id),
+      );
+      if (!booked.length) return null;
+      return {
+        id: casual.id,
+        label: `${casual.name} (casual)`,
+        days: booked.length,
+        daily: casual.wage,
+        amount: casual.wage * booked.length,
+      };
+    })
+    .filter(Boolean);
+  return [...permanent, ...casuals];
 }
 
 export function leaseForecastLines(state) {
@@ -89,10 +109,15 @@ export function expectedGrant(state) {
   return seasonGrant(state.satisfaction, state.gmStanding);
 }
 
+function casualWageOnDay(state, day) {
+  const ids = new Set(weekPlanOf(state).days?.[day]?.casualIds ?? []);
+  return (state.casualPool ?? []).reduce((total, casual) => (ids.has(casual.id) ? total + (casual.wage ?? 0) : total), 0);
+}
+
 function firstNegativeDay(state, fuel) {
   const end = seasonEndDay(state.day);
   const remaining = daysUntilSeasonEnd(state.day);
-  const dailyWage = wageBill(state.workers);
+  const dailyWage = wageBill((state.workers ?? []).filter((worker) => !worker.isCasual));
   const dailyFuel = remaining > 0 ? fuel / remaining : 0;
   const leases = leaseForecastLines(state).reduce((total, line) => total + line.amount, 0);
   const grant = expectedGrant(state);
@@ -100,7 +125,7 @@ function firstNegativeDay(state, fuel) {
   const doseDays = new Set(pondDoseDueDays(state));
   let cash = cashOnHand(state);
   for (let day = state.day; day <= end; day += 1) {
-    cash -= dailyWage + dailyFuel;
+    cash -= dailyWage + dailyFuel + casualWageOnDay(state, day);
     if (doseDays.has(day)) cash -= POND_DOSE_COST;
     if (day === end) {
       cash -= leases;

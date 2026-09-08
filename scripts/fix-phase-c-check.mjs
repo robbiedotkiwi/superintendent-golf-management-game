@@ -27,7 +27,7 @@ assert.match(sidebar, /Condition/);
 assert.match(sidebar, /shrink-0 border-t/);
 assert.match(sidebar, /<TimeBar/);
 assert.match(sidebar, /START_DAY_LABEL|Start day/);
-assert.doesNotMatch(sidebar, /ForecastStrip/);
+assert.match(sidebar, /ForecastStrip/);
 assert.doesNotMatch(sidebar, /Satisfaction/);
 assert.doesNotMatch(sidebar, /Budgets/);
 assert.doesNotMatch(sidebar, /SURFACE_KEYS/);

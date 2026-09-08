@@ -89,13 +89,13 @@ assert.equal(maxTournamentsForSeason('spring'), TOURNAMENT_SEASON_MAX);
 assert.equal(maxTournamentsForSeason('winter'), TOURNAMENT_WINTER_MAX);
 
 assert.equal(createInitialState().pendingTournamentSetup, false);
-assert.equal(createInitialState().tournaments.length, 0);
+assert.equal(createInitialState().tournaments.length, 1);
 
 let booked = reducer(withSetup(createInitialState()), { type: 'SET_TOURNAMENTS', count: 2 });
 assert.equal(booked.pendingTournamentSetup, false);
-assert.equal(booked.tournaments.length, 2);
+assert.equal(booked.tournaments.filter((item) => item.season === 'summer').length, 2);
 assert.deepEqual(
-  booked.tournaments.map((item) => item.day),
+  booked.tournaments.filter((item) => item.season === 'summer').map((item) => item.day),
   scheduleTournamentDays(comingSeasonStartDay(1), 2, 'summer'),
 );
 assert.equal(booked.gmStanding, GM_STANDING_START);
@@ -103,9 +103,9 @@ assert.equal(daysUntilNextTournament(booked), booked.tournaments[0].day - booked
 assert.equal(nextTournament(booked).day, booked.tournaments[0].day);
 
 const none = reducer(withSetup(createInitialState()), { type: 'SET_TOURNAMENTS', count: 0 });
-assert.equal(none.tournaments.length, 0);
+assert.equal(none.tournaments.filter((item) => item.season === 'summer').length, 0);
 assert.equal(none.gmStanding, GM_STANDING_START);
-assert.equal(daysUntilNextTournament(none), null);
+assert.equal(nextTournament(none)?.season, 'spring');
 
 const weighted = surfaces({ greens: 100, tees: 0, fairways: 0, bunkers: 0, rough: 0 });
 assert.equal(tournamentScore(weighted), 100 * TOURNAMENT_WEIGHTS.greens);
@@ -162,23 +162,24 @@ assert.equal(paid.state.cash, TOURNAMENT_EXCELLENT_PAY);
 assert.equal(paid.state.satisfaction, 50 + TOURNAMENT_EXCELLENT_SAT);
 assert.equal(paid.state.tournaments[0].done, true);
 
-const tday = booked.tournaments[0].day;
+const tday = booked.tournaments.find((item) => item.season === 'summer').day;
 assert.equal(inPrepWindow(booked), false);
 assert.equal(canPlanTask(booked, 'doubleCutGreens').ok, false);
 assert.equal(canPlanTask(booked, 'extraRoll').ok, false);
 assert.equal(canPlanTask(booked, 'edgeBunkers').ok, false);
 
-const tooEarly = { ...booked, day: tday - TOURNAMENT_PREP_DAYS - 1, season: 'summer' };
+const tooEarly = { ...booked, day: tday - TOURNAMENT_PREP_DAYS - 1, planningDay: tday - TOURNAMENT_PREP_DAYS - 1, season: 'summer' };
 assert.equal(inPrepWindow(tooEarly), false);
 assert.equal(canPlanTask(tooEarly, 'extraRoll').ok, false);
 
-const onDay = { ...booked, day: tday, weather: WEATHER_FINE, season: 'summer' };
+const onDay = { ...booked, day: tday, planningDay: tday, weather: WEATHER_FINE, season: 'summer' };
 assert.equal(inPrepWindow(onDay), false);
 assert.equal(canPlanTask(onDay, 'extraRoll').ok, false);
 
 const prepDay = {
   ...booked,
   day: tday - 1,
+  planningDay: tday - 1,
   season: 'summer',
   weather: WEATHER_FINE,
   irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
@@ -218,8 +219,8 @@ assert.equal(afterPrep.tournamentPrepScore, 0);
 
 let winter = withSetup(createInitialState(), 'winter', 91);
 winter = reducer(winter, { type: 'SET_TOURNAMENTS', count: 3 });
-assert.equal(winter.tournaments.length, TOURNAMENT_WINTER_MAX);
-assert.equal(winter.tournaments[0].risky, true);
+assert.equal(winter.tournaments.filter((item) => item.season === 'winter').length, TOURNAMENT_WINTER_MAX);
+assert.equal(winter.tournaments.find((item) => item.season === 'winter').risky, true);
 const winterRainShare =
   WEATHER_WEIGHTS.winter.rain + WEATHER_WEIGHTS.winter.heavyRain + WEATHER_WEIGHTS.winter.storm;
 assert.ok(WEATHER_WEIGHTS.winter.fine < WEATHER_WEIGHTS.spring.fine);
@@ -266,7 +267,7 @@ let nextSeason = {
 };
 nextSeason = reducer(nextSeason, { type: 'END_DAY' });
 assert.equal(nextSeason.pendingTournamentSetup, false);
-assert.equal(nextSeason.tournaments.length, 0);
+assert.ok(nextSeason.tournaments.some((item) => item.season === 'summer'));
 assert.ok(nextSeason.inbox.some((item) => item.kind === 'tournamentMissed'));
 
 const kept = reducer(
@@ -279,7 +280,7 @@ const kept = reducer(
 );
 const afterSeason = reducer(kept, { type: 'END_DAY' });
 assert.equal(afterSeason.season, 'summer');
-assert.equal(afterSeason.tournaments.length, 2);
+assert.equal(afterSeason.tournaments.filter((item) => item.season === 'summer').length, 2);
 
 const weather = readFileSync(new URL('../src/components/WeatherStrip.jsx', import.meta.url), 'utf8');
 assert.match(weather, /daysUntilNextTournament/);

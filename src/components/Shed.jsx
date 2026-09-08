@@ -7,10 +7,7 @@ import {
   FOLEY_GRIND_MINUTES,
   FOLEY_MODEL,
   FOLEY_TYPE,
-  FUEL_BULK_MIN_LITRES,
-  FUEL_BULK_PRICE_PER_L,
   FUEL_PRICE_PER_L,
-  FUEL_TANK_CAPACITY,
   GRIND_AWAY_COST,
   GRIND_AWAY_DAYS,
   LEASE_RATE,
@@ -51,8 +48,6 @@ import {
   ownedUpgradeIds,
 } from '../engine/equipment.js';
 import { canBuyUsed, canSellMachine, salePrice } from '../engine/market.js';
-import { canBuyFuel, fuelCost, tankRoom } from '../engine/fuel.js';
-import { useState } from 'react';
 import SectionTabs from './SectionTabs.jsx';
 
 const SURFACE_ORDER = ['greens', 'tees', 'fairways', 'rough'];
@@ -83,7 +78,6 @@ export default function Shed({
   onStopLease,
   onBuyUsed,
   onSell,
-  onBuyFuel,
   onBuyUpgrade,
 }) {
   const shop = MACHINES.filter((machine) => !machine.ownedAtStart);
@@ -95,11 +89,6 @@ export default function Shed({
     else shopGroups.push({ category, machines: [machine] });
   }
   const foleyBuy = canBuyFoley(state);
-  const [fuelLitres, setFuelLitres] = useState(String(FUEL_BULK_MIN_LITRES));
-  const wanted = Number(fuelLitres);
-  const fuelCheck = canBuyFuel(state, wanted);
-  const room = tankRoom(state);
-  const fillCheck = canBuyFuel(state, room);
 
   return (
     <div className="h-full overflow-y-auto bg-[var(--soil)] px-6 py-5 text-[var(--paint)]">
@@ -117,40 +106,9 @@ export default function Shed({
       {tab === SHED_TAB_YARD ? (
         <>
           <h2 className="font-condensed text-3xl">Fuel</h2>
-          <p className="mt-2">
-            Tank {Math.round(state.fuelLitres ?? 0)} / {FUEL_TANK_CAPACITY} L
+          <p className="mt-2 text-sm text-[var(--sand)]">
+            No tank. Mowing and rolling take {`$${FUEL_PRICE_PER_L.toFixed(2)}`} / L off cash when the job runs.
           </p>
-          <p className="mt-1 text-sm text-[var(--sand)]">
-            {`$${FUEL_PRICE_PER_L.toFixed(2)}`} / L · bulk {`$${FUEL_BULK_PRICE_PER_L.toFixed(2)}`} / L from {FUEL_BULK_MIN_LITRES} L
-          </p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <input
-              type="number"
-              min="1"
-              max={room}
-              value={fuelLitres}
-              onChange={(event) => setFuelLitres(event.target.value)}
-              className="w-24 border border-[var(--sand)] bg-[var(--soil)] px-2 py-1 text-[var(--paint)]"
-            />
-            <button
-              type="button"
-              disabled={!fuelCheck.ok}
-              title={fuelCheck.ok ? undefined : fuelCheck.reason}
-              onClick={() => onBuyFuel(wanted)}
-              className="border border-[var(--sand)] px-3 py-2 disabled:opacity-40"
-            >
-              Buy {Number.isFinite(wanted) ? wanted : 0} L · {fuelCheck.ok ? formatMoney(fuelCheck.cost) : formatMoney(fuelCost(wanted || 0))}
-            </button>
-            <button
-              type="button"
-              disabled={!fillCheck.ok}
-              title={fillCheck.ok ? undefined : fillCheck.reason}
-              onClick={() => onBuyFuel(room)}
-              className="border border-[var(--sand)] px-3 py-2 disabled:opacity-40"
-            >
-              Fill tank · {room} L
-            </button>
-          </div>
           <h2 className="mt-10 font-condensed text-3xl">{DELIVERIES_HEADING}</h2>
           <div className="mt-3 space-y-3">
             {(state.pendingDeliveries ?? []).length === 0 ? (

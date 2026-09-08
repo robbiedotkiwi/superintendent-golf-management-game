@@ -35,7 +35,7 @@ import {
   WEATHER_HEAVY_RAIN,
 } from '../data/constants.js';
 import { PLAYER_ID } from '../data/constants.js';
-import { generateCandidates } from '../data/staff.js';
+import { generateCandidates, generateCasuals } from '../data/staff.js';
 import { getTask, taskAppliesQuality } from '../data/tasks.js';
 import { workerById, workerQualityMultiplier, qualityRandomFactor } from './assignment.js';
 import { tickGm } from './gm.js';
@@ -72,6 +72,7 @@ import {
   wearMultiplier,
 } from './equipment.js';
 import { applyEarlyStartComplaints, applyMorale, prepareMorningWorkers, wageBill } from './staff.js';
+import { activateDayPlan, getDayTasks, lockWeek, rollNewWeek, setDayTasks, weekStartDay } from './week.js';
 import { createRng } from './rng.js';
 import { applyFertiliser, applySpray, emptyDisease, resolveDisease, syncHoleDisease } from './disease.js';
 import { resolveIrrigation } from './irrigation.js';
@@ -96,6 +97,8 @@ import {
   comingSeasonStartDay,
   isTournamentPromptDay,
   seasonEndDay,
+  seasonStartDay,
+  seasonTournament,
 } from './tournament.js';
 import { tickProjects } from './projects.js';
 import { buildYearReview, emptyYearRecord, hiredIds, recordYearDay } from './history.js';
@@ -156,6 +159,7 @@ function ownedRoller(state) {
 }
 
 export function resolveDay(state) {
+  state = activateDayPlan(setDayTasks(state, state.day, state.plannedTasks ?? getDayTasks(state, state.day)));
   const rng = createRng(state.rngSeed);
   const dosePlanned = (state.plannedTasks ?? []).some((item) => item.taskId === POND_DOSE_TASK);
   const irrigation = resolveIrrigation({
@@ -188,10 +192,7 @@ export function resolveDay(state) {
   let planned = [...state.plannedTasks];
   const extra = interruptionMinutesForDay(state);
   let plannedMinutes = planned.reduce((sum, item) => sum + item.minutes, 0);
-  let fuelLitres = Number(state.fuelLitres) || 0;
   let fuelBurned = 0;
-  let fuelCutShort = false;
-  let fuelStop = null;
   while (extra > 0 && plannedMinutes + extra > capacityOf(state) && planned.length) {
     const item = planned.pop();
     plannedMinutes -= item.minutes;
@@ -208,10 +209,6 @@ export function resolveDay(state) {
   let moistureReadDay = state.moistureReadDay ?? emptyMoistureReadDay(holeN);
 
   for (const plannedTask of planned) {
-    if (fuelCutShort) {
-      dropped.push({ ...plannedTask, reason: 'fuel' });
-      continue;
-    }
     if (plannedTask.needsReassignment || !workerById(state, plannedTask.workerId)) {
       dropped.push({ ...plannedTask, reason: 'unassigned' });
       continue;
@@ -226,32 +223,9 @@ export function resolveDay(state) {
       machine,
       minutes: plannedTask.minutes,
       holes: jobHoles,
-      fuelLitres,
     });
-    fuelLitres = fuel.fuelLitres;
     fuelBurned += fuel.burned;
-    if (fuel.stopped) {
-      fuelCutShort = true;
-      fuelStop = {
-        taskId: plannedTask.taskId,
-        name: task.name,
-        completedHoles: fuel.completedHoles,
-        remainingHoles: fuel.remainingHoles,
-      };
-      if (fuel.runMinutes < plannedTask.minutes) {
-        dropped.push({
-          ...plannedTask,
-          minutes: plannedTask.minutes - fuel.runMinutes,
-          holes: fuel.remainingHoles,
-          reason: 'fuel',
-        });
-      }
-      jobHoles = fuel.completedHoles;
-      if (!jobHoles.length && jobBurnsFuel(task, machine)) {
-        continue;
-      }
-    }
-    const runMinutes = fuel.stopped ? fuel.runMinutes : plannedTask.minutes;
+    const runMinutes = plannedTask.minutes;
     if (task.kind === 'spray' && task.surface) {
       const sprayed = applySpray({ ...state, disease, sprayedUntil, holes }, task.surface, jobHoles);
       disease = sprayed.disease;
@@ -518,7 +492,8 @@ export function resolveDay(state) {
     );
   }
   workers = applyMorale(workers);
-  cash = cash - wageBill(state.workers) - irrigation.mainsCost;
+  const fuelSpend = replaceBurnSpend(fuelBurned);
+  cash = cash - wageBill(state.workers) - irrigation.mainsCost - fuelSpend;
   const complaint = applyEarlyStartComplaints({ ...state, cash, workers, holes, surfaceDefaults });
   cash = complaint.state.cash;
 
@@ -589,8 +564,7 @@ export function resolveDay(state) {
     plannedTasks: [],
     lastDayJobs,
     lastRepeatDropped: [],
-    fuelLitres,
-    fuelSpendLog: [...(state.fuelSpendLog ?? []), { day: state.day, spend: replaceBurnSpend(fuelBurned) }].slice(-30),
+    fuelSpendLog: [...(state.fuelSpendLog ?? []), { day: state.day, spend: fuelSpend }].slice(-30),
     workers,
     satisfaction: tournament.state.satisfaction,
     gmStanding,
@@ -603,7 +577,7 @@ export function resolveDay(state) {
       {
         condition: courseCondition({ holes, surfaceDefaults }),
         maintenanceSpent:
-          wageBill(state.workers) + irrigation.mainsCost + materialsSpent + (complaint.fine ?? 0),
+          wageBill(state.workers) + irrigation.mainsCost + materialsSpent + fuelSpend + (complaint.fine ?? 0),
       },
     ),
   };
@@ -624,9 +598,13 @@ export function resolveDay(state) {
       tournamentSetupDeadline: null,
       tournamentSetupStartDay: null,
       tournamentPrepScore: 0,
-      tournaments: ignored
-        ? []
-        : (next.tournaments ?? []).filter((item) => item.season === calendar.season || item.day >= next.day),
+      tournaments: (() => {
+        const kept = ignored
+          ? []
+          : (next.tournaments ?? []).filter((item) => item.season === calendar.season || item.day >= next.day);
+        if (kept.some((item) => item.season === calendar.season)) return kept;
+        return [...kept, ...seasonTournament(seasonStartDay(next.day), calendar.season)];
+      })(),
     };
     seasonClose = closeSeason(next);
     next = seasonClose.state;
@@ -656,18 +634,35 @@ export function resolveDay(state) {
   next = built.state;
   const scheduled = ensureAutoWeek(next, rng);
   next = scheduled.state;
+  const predicted = next.forecastStrip?.[0];
   const morning = rollMorningWithRng(next, calendar.season, rng);
   next = {
     ...next,
     weather: morning.weather,
+    heat: morning.heat,
     forecast: morning.forecast,
+    forecastHeat: morning.forecastHeat,
+    forecastCall: predicted
+      ? { type: predicted.type, heat: predicted.heat ?? null }
+      : null,
     weatherQueue: morning.weatherQueue,
     forecastStrip: morning.forecastStrip,
     windSpeed: morning.windSpeed,
     windDir: morning.windDir,
     rngSeed: rng.seed,
-    workers: prepareMorningWorkers({ ...next, weather: morning.weather }, morning.weather, rng),
+    workers: prepareMorningWorkers(
+      { ...next, weather: morning.weather, workers: (next.workers ?? []).filter((worker) => !worker.isCasual) },
+      morning.weather,
+      rng,
+    ),
   };
+
+  if (weekStartDay(next.day) !== weekStartDay(state.day)) {
+    next = rollNewWeek(next, next.day, generateCasuals(rng));
+  } else {
+    next = lockWeek(next);
+  }
+  next = activateDayPlan(next);
 
   if (isTournamentPromptDay(next.day) && !next.pendingTournamentSetup) {
     const setupSeason = comingSeason(next.day);
@@ -705,10 +700,12 @@ export function resolveDay(state) {
   const summary = {
     day: state.day,
     weather: state.weather,
+    heat: state.heat,
     done,
     skipped,
     dropped,
-    fuelStop,
+    fuelStop: null,
+    fuelSpend,
     interruptions: extra,
     breakdowns,
     wages: wageBill(state.workers),

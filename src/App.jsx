@@ -58,6 +58,7 @@ import {
 import { playBirds, playMower, prefersReducedMotion } from './engine/sound.js';
 import { clearSave, hasSave, loadGame, saveGame } from './engine/save.js';
 import { currentGmMessage } from './engine/gm.js';
+import { planViewState } from './engine/week.js';
 
 function paletteStyle() {
   return {
@@ -126,9 +127,10 @@ export default function App() {
     }
   }, [playout, state.log]);
 
-  const minutesRemaining = useMemo(() => combinedMinutesRemaining(state), [state]);
-  const minutesUsed = useMemo(() => combinedMinutesUsed(state), [state]);
-  const minutesCapacity = useMemo(() => combinedMinutesCapacity(state), [state]);
+  const plan = useMemo(() => planViewState(state), [state]);
+  const minutesRemaining = useMemo(() => combinedMinutesRemaining(plan), [plan]);
+  const minutesUsed = useMemo(() => combinedMinutesUsed(plan), [plan]);
+  const minutesCapacity = useMemo(() => combinedMinutesCapacity(plan), [plan]);
   const condition = useMemo(() => Math.round(courseCondition(state)), [state]);
 
   function handleNewGame() {
@@ -163,6 +165,7 @@ export default function App() {
       ) : (
         <GameScreen
           state={state}
+          plan={plan}
           selected={selected}
           summary={summary}
           playout={playout}
@@ -200,7 +203,6 @@ export default function App() {
           onBuy={(machineId) => dispatch({ type: 'BUY_MACHINE', machineId })}
           onBuyUpgrade={(machineId, upgradeId) => dispatch({ type: 'BUY_UPGRADE', machineId, upgradeId })}
           onBuyFoley={() => dispatch({ type: 'BUY_FOLEY' })}
-          onBuyFuel={(litres) => dispatch({ type: 'BUY_FUEL', litres })}
           onSendGrind={(machineId) => dispatch({ type: 'SEND_GRIND', machineId })}
           onGrindInHouse={(machineId) => dispatch({ type: 'GRIND_IN_HOUSE', machineId })}
           onRepair={(machineId) => dispatch({ type: 'REPAIR_MACHINE', machineId })}
@@ -212,6 +214,9 @@ export default function App() {
           onDismissVolunteer={() => dispatch({ type: 'DISMISS_VOLUNTEER' })}
           onVolunteerDay={(weekday) => dispatch({ type: 'SET_VOLUNTEER_WEEKDAY', weekday })}
           onEarlyStart={(value) => dispatch({ type: 'SET_EARLY_START', value })}
+          onSelectDay={(day) => dispatch({ type: 'SET_PLANNING_DAY', day })}
+          onBookCasual={(casualId, day) => dispatch({ type: 'BOOK_CASUAL', casualId, day })}
+          onUnbookCasual={(casualId, day) => dispatch({ type: 'UNBOOK_CASUAL', casualId, day })}
           onSetWorker={(taskId, workerId) => dispatch({ type: 'SET_TASK_WORKER', taskId, workerId })}
           onSetHoc={(surface, hoc) => dispatch({ type: 'SET_HOC', surface, hoc })}
           onSetPattern={(surface, pattern) => dispatch({ type: 'SET_PATTERN', surface, pattern })}
@@ -288,6 +293,7 @@ function EntryScreen({ savePresent, onNewGame, onContinue }) {
 
 function GameScreen({
   state,
+  plan = state,
   selected,
   summary,
   playout,
@@ -318,7 +324,6 @@ function GameScreen({
   onBuy,
   onBuyUpgrade,
   onBuyFoley,
-  onBuyFuel,
   onSendGrind,
   onGrindInHouse,
   onRepair,
@@ -330,6 +335,9 @@ function GameScreen({
   onDismissVolunteer,
   onVolunteerDay,
   onEarlyStart,
+  onSelectDay,
+  onBookCasual,
+  onUnbookCasual,
   onSetWorker,
   onSetHoc,
   onSetPattern,
@@ -437,6 +445,7 @@ function GameScreen({
         minutesRemaining={minutesRemaining}
         minutesUsed={minutesUsed}
         minutesCapacity={minutesCapacity}
+        plannedTasks={plan.plannedTasks}
         onRemove={onRemove}
         onEndDay={watching ? () => {} : () => setStartDayOpen(true)}
         playoutActive={watching || startDayOpen}
@@ -449,6 +458,7 @@ function GameScreen({
         onToggleMoistureOverlay={onToggleMoistureOverlay}
         onToggleSound={onToggleSound}
         onDismissLockHint={onDismissLockHint}
+        onSelectDay={onSelectDay}
       />
       <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
         {view === SECTION_SHED ? (
@@ -460,7 +470,6 @@ function GameScreen({
             onBuy={onBuy}
             onBuyUpgrade={onBuyUpgrade}
             onBuyFoley={onBuyFoley}
-            onBuyFuel={onBuyFuel}
             onSendGrind={onSendGrind}
             onGrindInHouse={onGrindInHouse}
             onRepair={onRepair}
@@ -481,6 +490,8 @@ function GameScreen({
           onDismissVolunteer={onDismissVolunteer}
           onVolunteerDay={onVolunteerDay}
             onEarlyStart={onEarlyStart}
+            onBookCasual={onBookCasual}
+            onUnbookCasual={onUnbookCasual}
           />
         ) : view === SECTION_OFFICE ? (
           <Office
@@ -505,7 +516,7 @@ function GameScreen({
           />
         ) : view === SECTION_TURF ? (
           <Turf
-            state={state}
+            state={plan}
             tab={tabs[SECTION_TURF]}
             onTab={(tab) => onTab(SECTION_TURF, tab)}
             onBack={onCloseShed}
@@ -549,7 +560,7 @@ function GameScreen({
             />
             {!watching ? (
               <MapSelectionBar
-                state={state}
+                state={plan}
                 onSelectHoles={onSelectHoles}
                 onToggleHole={onToggleHole}
                 onSaveRoute={onSaveRoute}
@@ -562,7 +573,7 @@ function GameScreen({
             {SURFACE_KEYS.includes(selected) && !watching ? (
               <MapJobPopover
                 surface={selected}
-                state={state}
+                state={plan}
                 holes={state.selectedHoles}
                 onPlan={onPlan}
                 onRemove={onRemove}
@@ -590,7 +601,7 @@ function GameScreen({
               <div className="pointer-events-auto absolute bottom-3 left-3 z-20 w-80 max-h-[40%] overflow-y-auto border-2 border-[var(--sand)] bg-[var(--soil)] p-3">
                 <PlanList
                   compact
-                  state={state}
+                  state={plan}
                   onReorder={onReorder}
                   onRemove={onRemove}
                 />
@@ -606,6 +617,7 @@ function GameScreen({
           onRemove={onRemove}
           onReorder={onReorder}
           onSetIrrigation={onSetIrrigation}
+          onSelectDay={onSelectDay}
           onConfirm={() => {
             onCloseShed();
             onEndDay();

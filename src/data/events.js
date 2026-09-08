@@ -9,6 +9,12 @@ export const WEATHER_LABELS = {
   frost: 'Frost',
 };
 
+export const HEAT_LABELS = {
+  cool: 'Cool',
+  mild: 'Mild',
+  hot: 'Hot',
+};
+
 export function weatherCopy(type) {
   switch (type) {
     case 'fine':

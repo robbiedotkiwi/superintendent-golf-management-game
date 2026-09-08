@@ -4,6 +4,8 @@ import {
   CREW_TAB_LABELS,
   CREW_TAB_ROSTER,
   CREW_TABS,
+  CASUAL_MAX_DAYS_PER_WEEK,
+  CASUAL_WAGE_MULT,
   DAYS_PER_WEEK,
   FIRING_MORALE_HIT,
   FIRING_SEVERANCE_DAYS,
@@ -18,6 +20,7 @@ import { useState } from 'react';
 import { canFireWorker, dayOfWeek, severanceCost } from '../engine/staff.js';
 import { workerAbsenceReason } from '../engine/availability.js';
 import { formatMoney } from '../engine/format.js';
+import { canBookCasual, casualDaysBooked, weekDays, weekdayLabel } from '../engine/week.js';
 import SectionTabs from './SectionTabs.jsx';
 
 export default function Crew({
@@ -31,8 +34,10 @@ export default function Crew({
   onDismissVolunteer,
   onVolunteerDay,
   onEarlyStart,
+  onBookCasual,
+  onUnbookCasual,
 }) {
-  const paid = state.workers.filter((worker) => !worker.isVolunteer);
+  const paid = state.workers.filter((worker) => !worker.isVolunteer && !worker.isCasual);
   const [confirmFireId, setConfirmFireId] = useState(null);
   const [confirmVolunteerGone, setConfirmVolunteerGone] = useState(false);
 
@@ -191,6 +196,47 @@ export default function Crew({
       )}
       </>
       )}
+
+      <h2 className="mt-10 font-condensed text-3xl">Casuals</h2>
+      <p className="mt-2 text-sm text-[var(--sand)]">
+        Book up to {CASUAL_MAX_DAYS_PER_WEEK} days this week at {CASUAL_WAGE_MULT}× a regular wage. They only cost the days they work.
+      </p>
+      <div className="mt-3 space-y-4">
+        {(state.casualPool ?? []).map((casual) => {
+          const booked = casualDaysBooked(state, casual.id);
+          return (
+            <section key={casual.id} className="border-2 border-[var(--sand)] p-4">
+              <h3 className="text-2xl font-semibold">{casual.name}</h3>
+              <p>
+                Speed {casual.speedSkill} · Quality {casual.qualitySkill} · {formatMoney(casual.wage)}/day
+              </p>
+              <p className="text-sm text-[var(--sand)]">
+                {booked.length ? `Booked ${booked.map((day) => weekdayLabel(day)).join(', ')}` : 'Not booked this week'}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {weekDays(state.day).map((day) => {
+                  const on = booked.includes(day);
+                  const check = on ? { ok: true } : canBookCasual(state, casual.id, day);
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      disabled={!on && !check.ok}
+                      title={check.ok ? undefined : check.reason}
+                      onClick={() => (on ? onUnbookCasual(casual.id, day) : onBookCasual(casual.id, day))}
+                      className={`border px-3 py-1 disabled:opacity-40 ${
+                        on ? 'border-[var(--machine-orange)] bg-[var(--machine-orange)]' : 'border-[var(--sand)]'
+                      }`}
+                    >
+                      {weekdayLabel(day)}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          );
+        })}
+      </div>
         </>
       ) : null}
 

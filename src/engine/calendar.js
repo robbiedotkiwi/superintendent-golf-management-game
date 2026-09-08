@@ -1,4 +1,12 @@
-import { DAYS_PER_SEASON, DAYS_PER_YEAR, GRACE_NO_DISEASE_SEASON, SEASON_ORDER, STARTING_YEAR } from '../data/constants.js';
+import {
+  DAYS_PER_SEASON,
+  DAYS_PER_WEEK,
+  DAYS_PER_YEAR,
+  GRACE_NO_DISEASE_SEASON,
+  SEASON_ORDER,
+  SEASON_WEEKS,
+  STARTING_YEAR,
+} from '../data/constants.js';
 
 export function calendarFromDay(day) {
   const index = day - 1;
@@ -25,4 +33,12 @@ export function seasonEndDay(day) {
 
 export function daysUntilSeasonEnd(day) {
   return seasonEndDay(day) - day + 1;
+}
+
+export function weekOfSeason(day) {
+  return Math.floor(((day - 1) % DAYS_PER_SEASON) / DAYS_PER_WEEK) + 1;
+}
+
+export function seasonWeekCount() {
+  return SEASON_WEEKS;
 }

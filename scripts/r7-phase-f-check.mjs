@@ -52,7 +52,7 @@ import { isPondDoseCurrent, resolveIrrigation } from '../src/engine/irrigation.j
 import { migrateSave } from '../src/engine/save.js';
 import { applyWeatherToWorkers } from '../src/engine/weather.js';
 
-assert.equal(SAVE_VERSION, 3);
+assert.equal(SAVE_VERSION, 4);
 assert.equal(FERTILISER_DAYS, 21);
 assert.equal(FERTILISER_CEILING_BONUS, 5);
 assert.equal(SPRAY_SUPPRESS_DAYS, 14);

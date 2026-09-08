@@ -46,7 +46,7 @@ function certify(state) {
   return next;
 }
 
-const afterGrace = { day: DAYS_PER_SEASON + 1, season: 'summer' };
+const afterGrace = { day: DAYS_PER_SEASON + 1, planningDay: DAYS_PER_SEASON + 1, season: 'summer' };
 
 const start = createInitialState();
 assert.equal(start.workers.find((worker) => worker.id === PLAYER_ID).sprayCertified, false);

@@ -5,6 +5,7 @@ import { logTournament } from './history.js';
 import { calendarFromDay } from './calendar.js';
 import {
   DAYS_PER_SEASON,
+  LAST_MONTH_DAYS,
   SATISFACTION_MAX,
   SATISFACTION_MIN,
   TOURNAMENT_ACCEPTABLE_MIN,
@@ -112,8 +113,20 @@ export function maxTournamentsForSeason(season) {
 export function scheduleTournamentDays(startDay, count, season) {
   const n = Math.min(Math.max(count, 0), maxTournamentsForSeason(season));
   if (n <= 0) return [];
-  const spacing = Math.floor(DAYS_PER_SEASON / (n + 1));
-  return Array.from({ length: n }, (_, index) => startDay + spacing * (index + 1));
+  const monthStart = startDay + DAYS_PER_SEASON - LAST_MONTH_DAYS;
+  const spacing = Math.floor(LAST_MONTH_DAYS / (n + 1));
+  return Array.from({ length: n }, (_, index) => monthStart + spacing * (index + 1));
+}
+
+export function seasonTournament(startDay, season) {
+  const days = scheduleTournamentDays(startDay, 1, season);
+  if (!days.length) return [];
+  return days.map((day) => ({
+    day,
+    done: false,
+    season,
+    risky: season === 'winter',
+  }));
 }
 
 export function nextTournament(state) {

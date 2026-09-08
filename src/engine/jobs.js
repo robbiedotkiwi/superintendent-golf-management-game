@@ -13,6 +13,7 @@ import { PER_HOLE_MINUTES } from './courseArea.js';
 import { hocFactor, patternTimeMult } from './mowing.js';
 import { hocRangeFor } from './grass.js';
 import { defaultJobHoles, formatHoleSet, normalizeJobHoles, sameHoleSet } from './holes.js';
+import { getDayTasks, planningDayOf } from './week.js';
 
 function surfaceOf(taskOrSurface) {
   return typeof taskOrSurface === 'string' ? taskOrSurface : taskOrSurface?.surface;
@@ -90,7 +91,7 @@ export function jobMinutes(state, taskId, holeIds) {
 export function findPlannedJob(state, taskId, holeIds) {
   const task = getTask(taskId);
   const holes = jobHolesFor(state, task, holeIds);
-  return (state.plannedTasks ?? []).find(
+  return getDayTasks(state, planningDayOf(state)).find(
     (item) => item.taskId === taskId && sameHoleSet(item.holes ?? [], holes),
   );
 }

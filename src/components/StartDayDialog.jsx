@@ -1,7 +1,9 @@
-import { FUEL_TANK_CAPACITY, START_DAY_LABEL } from '../data/constants.js';
+import { START_DAY_LABEL } from '../data/constants.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import { skippedOverdueSurfaces, unusedTimeCopy } from '../engine/badges.js';
+import { formatMoney } from '../engine/format.js';
 import { plannedDayFuel } from '../engine/fuel.js';
+import { combinedMinutesRemaining } from '../engine/gameState.js';
 import { IRRIGATED_SURFACES, pondDoseBriefing } from '../engine/irrigation.js';
 import ForecastStrip from './ForecastStrip.jsx';
 import IrrigationMmSlider from './IrrigationMmSlider.jsx';
@@ -13,11 +15,12 @@ export default function StartDayDialog({
   onRemove,
   onReorder,
   onSetIrrigation,
+  onSelectDay,
   onConfirm,
   onBack,
 }) {
   const overdue = skippedOverdueSurfaces(state);
-  const unused = unusedTimeCopy(minutesRemaining);
+  const unused = unusedTimeCopy(combinedMinutesRemaining(state));
   const fuel = plannedDayFuel(state);
   const pondBriefing = pondDoseBriefing(state);
 
@@ -32,13 +35,8 @@ export default function StartDayDialog({
         ) : null}
         <p className="mt-3 text-lg">{unused}</p>
         <p className="mt-2">
-          Tank {Math.round(fuel.tank)} / {FUEL_TANK_CAPACITY} L
+          Fuel {fuel.used.toFixed(1)} L · {formatMoney(fuel.cost)} off cash when this day runs.
         </p>
-        {fuel.shortfall > 0 && fuel.affected ? (
-          <p className="mt-2 text-lg">
-            Short {fuel.shortfall.toFixed(1)} L. {fuel.affected.name} will run the tank dry.
-          </p>
-        ) : null}
 
         <h3 className="mt-6 font-condensed text-2xl">The plan</h3>
         <PlanList state={state} onReorder={onReorder} onRemove={onRemove} />
@@ -65,8 +63,8 @@ export default function StartDayDialog({
           ))}
         </div>
 
-        <h3 className="mt-6 font-condensed text-2xl">Forecast</h3>
-        <ForecastStrip state={state} />
+        <h3 className="mt-6 font-condensed text-2xl">This week</h3>
+        <ForecastStrip state={state} onSelectDay={onSelectDay} />
 
         <div className="mt-8 flex flex-wrap gap-3">
           <button

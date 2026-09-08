@@ -11,8 +11,6 @@ import {
   DELIVERY_SOURCE_USED,
   HOURS_MIGRATED,
   STARTING_MACHINE_IDS,
-  FUEL_START,
-  FUEL_TANK_CAPACITY,
   STARTING_RNG_SEED,
   STARTING_WIND_DIR,
   STARTING_WIND_SPEED,
@@ -30,6 +28,7 @@ import {
   SAVED_ROUTE_CAP,
   SALESMAN_RELATIONSHIP_MIN,
   SALESMAN_RELATIONSHIP_START,
+  STARTING_HEAT,
 } from '../data/constants.js';
 import { emptyDisease, emptyUntil } from './disease.js';
 import { migrateMachineMaps, normalizeMachineOverride } from './equipment.js';
@@ -42,7 +41,9 @@ import { createRng } from './rng.js';
 import { buildForecast } from './weather.js';
 import { normalizeSection, normalizeTabs } from './section.js';
 import { allGmSeen, allSectionUnlocks } from './gm.js';
+import { generateCasuals } from '../data/staff.js';
 import { migrateVolunteerWeekday } from './staff.js';
+import { emptyWeekPlan, weekStartDay } from './week.js';
 import { migrateIrrigation } from './irrigation.js';
 import { hocRangeFor, normalizeGrass } from './grass.js';
 import { clampHoc } from './mowing.js';
@@ -248,11 +249,6 @@ export function withDefaults(state) {
     skipPlayout: Boolean(state.skipPlayout ?? PLAYOUT_SKIP_DEFAULT),
     lastMainsCost: Number.isFinite(Number(state.lastMainsCost)) ? Number(state.lastMainsCost) : 0,
     lastDeliveryDay: Number.isInteger(state.lastDeliveryDay) ? state.lastDeliveryDay : null,
-    fuelLitres: (() => {
-      const n = Number(state.fuelLitres);
-      if (!Number.isFinite(n)) return FUEL_START;
-      return Math.min(FUEL_TANK_CAPACITY, Math.max(0, n));
-    })(),
     firingHistory: (Array.isArray(state.firingHistory) ? state.firingHistory : []).map((item) => ({
       day: item.day,
       workerId: item.workerId,
@@ -265,6 +261,29 @@ export function withDefaults(state) {
       .filter((entry) => Number.isInteger(entry?.day) && Number.isFinite(Number(entry?.spend)))
       .map((entry) => ({ day: entry.day, spend: Number(entry.spend) })),
     volunteerWeekday: migrateVolunteerWeekday(state.volunteerWeekday),
+    heat: state.heat ?? STARTING_HEAT,
+    forecastHeat: state.forecastHeat ?? state.forecastStrip?.[0]?.heat ?? STARTING_HEAT,
+    forecastCall: state.forecastCall ?? null,
+    planningDay: Number.isInteger(state.planningDay) ? state.planningDay : (state.day ?? 1),
+    weekPlan: (() => {
+      const start = weekStartDay(state.day ?? 1);
+      const existing = state.weekPlan;
+      if (existing && weekStartDay(existing.weekStart ?? start) === start && existing.days) {
+        return existing;
+      }
+      const plan = emptyWeekPlan(state.day ?? 1);
+      const today = state.day ?? 1;
+      plan.days[today] = {
+        tasks: plannedTasks,
+        irrigation: state.irrigation ?? null,
+        casualIds: [],
+      };
+      return plan;
+    })(),
+    casualPool: Array.isArray(state.casualPool) && state.casualPool.length
+      ? state.casualPool
+      : generateCasuals(createRng((state.rngSeed ?? STARTING_RNG_SEED) + 17)),
+    morningDrops: Array.isArray(state.morningDrops) ? state.morningDrops : [],
     section: normalizeSection(state.section),
     tabs: normalizeTabs(state.tabs),
     log: Array.isArray(state.log) ? state.log : [],
@@ -273,6 +292,7 @@ export function withDefaults(state) {
   delete next.customPresets;
   delete next.nextPresetId;
   delete next.pondDosing;
+  delete next.fuelLitres;
   return next;
 }
 

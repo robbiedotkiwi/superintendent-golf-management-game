@@ -6,8 +6,6 @@
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import {
-  FUEL_LOW_FRACTION,
-  FUEL_TANK_CAPACITY,
   GM_UNLOCK_CREW_DAY,
   GM_UNLOCK_OFFICE_DAY,
   SATISFACTION_MOVE_POINTS,
@@ -24,7 +22,6 @@ import {
   GM_MSG_DAY7,
   GM_TRIGGER_BREAKDOWN,
   GM_TRIGGER_CASH,
-  GM_TRIGGER_FUEL,
   GM_TRIGGER_OVERDUE,
   GM_TRIGGER_RAIN,
   GM_TRIGGER_SAT,
@@ -39,7 +36,6 @@ const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 assert.equal(GM_UNLOCK_CREW_DAY, 3);
 assert.equal(GM_UNLOCK_CREW_DAY, VOLUNTEER_DAY);
 assert.equal(GM_UNLOCK_OFFICE_DAY, 7);
-assert.equal(FUEL_LOW_FRACTION, 0.25);
 assert.equal(SATISFACTION_MOVE_POINTS, 10);
 
 const start = createInitialState();
@@ -66,11 +62,6 @@ const clean = { ...start, gmQueue: [], gmSeen: {}, sectionUnlocks: { crew: true,
 const rain = tickGm({ ...clean, weather: WEATHER_RAIN });
 assert.ok(rain.gmSeen[GM_TRIGGER_RAIN]);
 assert.ok(tickGm(rain, {}).gmQueue.filter((id) => id === GM_TRIGGER_RAIN).length <= 1);
-
-const fuel = tickGm({ ...clean, fuelLitres: FUEL_TANK_CAPACITY * FUEL_LOW_FRACTION - 1 });
-assert.ok(fuel.gmSeen[GM_TRIGGER_FUEL]);
-const fuelAgain = tickGm({ ...fuel, fuelLitres: 10 });
-assert.equal(fuelAgain.gmQueue.filter((id) => id === GM_TRIGGER_FUEL).length, fuel.gmQueue.filter((id) => id === GM_TRIGGER_FUEL).length);
 
 const overdue = tickGm({
   ...clean,

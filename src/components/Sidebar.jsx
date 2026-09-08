@@ -7,17 +7,23 @@ import {
   SECTION_SHED_DESCRIPTION,
   SECTION_TURF,
   SECTION_TURF_DESCRIPTION,
+  SEASON_WEEKS,
   SIDEBAR_NAV_GAP,
   SIDEBAR_WIDTH,
   START_DAY_LABEL,
 } from '../data/constants.js';
-import { WEATHER_LABELS } from '../data/events.js';
+import { HEAT_LABELS, WEATHER_LABELS } from '../data/events.js';
 import { qualityColor } from '../engine/color.js';
 import { sectionBadge } from '../engine/badges.js';
+import { weekOfSeason } from '../engine/calendar.js';
 import { formatMoney } from '../engine/format.js';
 import { GM_LOCK_HINT, isSectionLocked } from '../engine/gm.js';
 import { pondDoseBriefing } from '../engine/irrigation.js';
+import { getTask } from '../data/tasks.js';
+import { heatRank } from '../engine/weather.js';
 import { fitCourse } from '../engine/view.js';
+import { planningDayOf, weekdayLabel } from '../engine/week.js';
+import ForecastStrip from './ForecastStrip.jsx';
 import TimeBar from './TimeBar.jsx';
 
 function LockIcon() {
@@ -72,6 +78,8 @@ export default function Sidebar({
   onToggleMoistureOverlay,
   onToggleSound,
   onDismissLockHint,
+  onSelectDay,
+  plannedTasks,
 }) {
   const turf = sectionBadge(state, 'turf');
   const office = sectionBadge(state, 'office');
@@ -79,6 +87,11 @@ export default function Sidebar({
   const shed = sectionBadge(state, 'shed');
   const tomorrow = WEATHER_LABELS[state.forecast] ?? state.forecast;
   const pondBriefing = pondDoseBriefing(state);
+  const planDay = planningDayOf(state);
+  const called = state.forecastCall;
+  const hotter = called && heatRank(state.heat) > heatRank(called.heat);
+  const rainMiss = called && called.type !== state.weather;
+  const drops = state.morningDrops ?? [];
 
   return (
     <aside
@@ -89,18 +102,39 @@ export default function Sidebar({
         <header>
           <div className="font-condensed text-4xl font-bold leading-none">Day {state.day}</div>
           <p className="mt-1 text-sm leading-tight">
-            {state.season} · {state.year}
+            {state.season} · {state.year} · week {weekOfSeason(state.day)}/{SEASON_WEEKS}
             <span className="text-xs">
               {' '}
-              · Today {WEATHER_LABELS[state.weather]} · Tomorrow {tomorrow}
+              · {WEATHER_LABELS[state.weather]} · {HEAT_LABELS[state.heat] ?? state.heat} · Tomorrow {tomorrow}
             </span>
           </p>
+          {planDay !== state.day ? (
+            <p className="mt-1 text-xs text-[var(--machine-orange)]">Planning {weekdayLabel(planDay)}</p>
+          ) : null}
         </header>
         {pondBriefing ? (
           <p className="mt-2 text-sm text-[var(--machine-orange)]" data-morning-briefing="pond-dose">
             {pondBriefing}
           </p>
         ) : null}
+        {hotter || rainMiss ? (
+          <p className="mt-2 text-xs text-[var(--machine-orange)]">
+            {hotter ? 'Hotter than last night’s forecast. ' : ''}
+            {rainMiss
+              ? `Called ${WEATHER_LABELS[called.type] ?? called.type}, got ${WEATHER_LABELS[state.weather]}.`
+              : ''}
+          </p>
+        ) : null}
+        {drops.length ? (
+          <p className="mt-2 text-xs text-[var(--machine-orange)]">
+            Morning dump:{' '}
+            {drops
+              .map((item) => `${getTask(item.taskId)?.name ?? item.taskId}`)
+              .join(' · ')}
+          </p>
+        ) : null}
+
+        <ForecastStrip state={state} onSelectDay={onSelectDay} />
 
         <div className="mt-3">
           <div className="text-xs text-[var(--sand)]">Condition</div>
@@ -161,7 +195,7 @@ export default function Sidebar({
           remaining={minutesRemaining}
           used={minutesUsed}
           capacity={minutesCapacity}
-          plannedTasks={state.plannedTasks ?? []}
+          plannedTasks={plannedTasks ?? state.plannedTasks ?? []}
           onRemove={onRemove}
         />
         <button

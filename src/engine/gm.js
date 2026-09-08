@@ -1,6 +1,4 @@
 import {
-  FUEL_LOW_FRACTION,
-  FUEL_TANK_CAPACITY,
   GM_UNLOCK_CREW_DAY,
   GM_UNLOCK_OFFICE_DAY,
   GM_WAGE_WEEK_DAYS,
@@ -61,7 +59,7 @@ export const GM_MESSAGES = {
   },
   [GM_TRIGGER_FUEL]: {
     from: 'The GM',
-    body: "Tank's getting low. Fuel's in the shed. Ride-ons drink it. Running dry mid-job leaves holes half done.",
+    body: "Fuel comes off the books every time you mow. Watch the week, don't burn cash on a day the forecast already told you to sit still.",
   },
   [GM_TRIGGER_OVERDUE]: {
     from: 'The GM',
@@ -137,7 +135,6 @@ export function tickGm(state, extras = {}) {
     next = enqueueGm(next, GM_MSG_DAY7);
   }
   if (MOWING_WEATHER.includes(next.weather)) next = enqueueGm(next, GM_TRIGGER_RAIN);
-  if ((next.fuelLitres ?? 0) < FUEL_TANK_CAPACITY * FUEL_LOW_FRACTION) next = enqueueGm(next, GM_TRIGGER_FUEL);
   if (overdueSurfaces(next).length) next = enqueueGm(next, GM_TRIGGER_OVERDUE);
   if (extras.breakdowns?.length) next = enqueueGm(next, GM_TRIGGER_BREAKDOWN);
   const weekWages = wageBill(next.workers ?? []) * GM_WAGE_WEEK_DAYS;

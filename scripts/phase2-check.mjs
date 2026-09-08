@@ -5,6 +5,7 @@
 import assert from 'node:assert/strict';
 import {
   DAY_LENGTH_MINUTES,
+  DAYS_PER_SEASON,
   DAYS_PER_YEAR,
   FROST_SHORT_MINUTES,
   STARTING_SEASON,
@@ -35,7 +36,7 @@ function withWeather(state, weather) {
   };
 }
 
-const day31 = calendarFromDay(31);
+const day31 = calendarFromDay(DAYS_PER_SEASON + 1);
 assert.equal(day31.season, 'summer');
 assert.equal(day31.year, 1);
 
@@ -44,13 +45,13 @@ assert.equal(day121.season, STARTING_SEASON);
 assert.equal(day121.year, 2);
 
 let walked = createInitialState();
-while (walked.day < 31) walked = end(walked);
-assert.equal(walked.day, 31);
+while (walked.day < DAYS_PER_SEASON + 1) walked = end(walked);
+assert.equal(walked.day, DAYS_PER_SEASON + 1);
 assert.equal(walked.season, 'summer');
 assert.equal(walked.year, 1);
 
 while (walked.day < DAYS_PER_YEAR + 1) walked = end(walked);
-assert.equal(walked.day, 121);
+assert.equal(walked.day, DAYS_PER_YEAR + 1);
 assert.equal(walked.season, STARTING_SEASON);
 assert.equal(walked.year, 2);
 

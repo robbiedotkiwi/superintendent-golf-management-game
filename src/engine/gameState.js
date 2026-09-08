@@ -8,6 +8,21 @@ import { machineTitle } from './machineDisplay.js';
 import { assignWorker, certifiedPresent, workerById, workerAllows, isWorkerPresent } from './assignment.js';
 import { findPlannedJob, jobHolesFor, applyRoute, canSaveRoute } from './jobs.js';
 import {
+  getDayTasks,
+  planningDayOf,
+  planViewState,
+  canEditPlanDay,
+  setDayTasks,
+  bookCasual,
+  unbookCasual,
+  upsertDayPlan,
+  emptyWeekPlan,
+  weekStartDay,
+  irrigationForPlanDay,
+  workersForPlanDay,
+} from './week.js';
+import { generateCandidates, generateCasuals } from '../data/staff.js';
+import {
   applyEarlyStartComplaints,
   dismissVolunteer,
   fireWorker,
@@ -15,7 +30,6 @@ import {
   setVolunteerWeekday,
   trainWorker,
 } from './staff.js';
-import { generateCandidates } from '../data/staff.js';
 import { emptyDisease, emptyUntil } from './disease.js';
 import {
   allGreenIds,
@@ -34,12 +48,12 @@ import {
   inPrepWindow,
   maxTournamentsForSeason,
   scheduleTournamentDays,
+  seasonTournament,
 } from './tournament.js';
 import { clampStanding } from './satisfaction.js';
 import { buyAutoPicker, startGrassConversion, startProject } from './projects.js';
 import { bumpCapitalSpent, emptyYearRecord } from './history.js';
 import { spendCash } from './cash.js';
-import { buyFuel } from './fuel.js';
 import { dismissGm, emptySectionUnlocks, GM_MSG_DAY1, isSectionLocked } from './gm.js';
 import { resolveDay } from './simulation.js';
 import {
@@ -57,7 +71,6 @@ import {
   PLAYER_SPEED_SKILL,
   PLAYER_WAGE,
   STARTING_OPENING_CASH,
-  FUEL_START,
   STARTING_DAY,
   STARTING_DAYS_WORKED_RUNNING,
   STARTING_MACHINE_CONDITION,
@@ -72,6 +85,7 @@ import {
   STARTING_QUALITY_TEES,
   STARTING_RNG_SEED,
   STARTING_WEATHER,
+  STARTING_HEAT,
   SUITABILITY_DAMAGING,
   TASK_MINUTES,
   VOLUNTEER_DEFAULT_WEEKDAY,
@@ -125,6 +139,7 @@ export function createInitialState() {
   const forecast = buildForecast({ day: STARTING_DAY, weather: STARTING_WEATHER }, rng);
   const rngSeed = rng.seed;
   const candidates = generateCandidates(rng);
+  const casualPool = generateCasuals(rng);
   const usedListings = rollUsedListings(
     {
       ownedMachines: [...STARTING_MACHINE_IDS],
@@ -140,12 +155,13 @@ export function createInitialState() {
     season: calendar.season,
     year: calendar.year,
     cash: STARTING_OPENING_CASH,
-    fuelLitres: FUEL_START,
     fuelSpendLog: [],
     holes: createInitialHoles(HOLE_COUNT, { grass }),
     surfaceDefaults: createSurfaceDefaults(undefined, grass),
     grass,
     weather: STARTING_WEATHER,
+    heat: STARTING_HEAT,
+    forecastCall: null,
     ...forecast,
     rngSeed,
     workers: [
@@ -189,6 +205,9 @@ export function createInitialState() {
     },
     plannedTasks: [],
     nextPlanId: 1,
+    planningDay: STARTING_DAY,
+    weekPlan: emptyWeekPlan(STARTING_DAY),
+    morningDrops: [],
     selectedHoles: [],
     savedRoutes: [],
     nextRouteId: 1,
@@ -217,6 +236,7 @@ export function createInitialState() {
     autoWeek: { weekStart: STARTING_DAY, hits: [] },
     candidates,
     candidatesSeason: calendar.season,
+    casualPool,
     volunteerWeekday: VOLUNTEER_DEFAULT_WEEKDAY,
     volunteerDayChangedThisSeason: false,
     earlyStart: false,
@@ -251,7 +271,7 @@ export function createInitialState() {
     tournamentSetupSeason: null,
     tournamentSetupDeadline: null,
     tournamentSetupStartDay: null,
-    tournaments: [],
+    tournaments: seasonTournament(STARTING_DAY, calendar.season),
     tournamentPrepScore: 0,
     projects: [],
     hasDrivingRange: false,
@@ -301,6 +321,9 @@ export function combinedMinutesUsed(state) {
 }
 
 export function canPlanTask(state, taskId, workerId, options = {}) {
+  const edit = canEditPlanDay(state);
+  if (!edit.ok) return edit;
+  state = planViewState(state);
   const task = getTask(taskId);
   if (!task) return { ok: false, reason: 'Unknown job.' };
   const holes =
@@ -317,15 +340,15 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
     return { ok: false, reason: `Clear debris first (${TASK_MINUTES.clearDebris} min).` };
   }
 
-  if (task.id === 'gmMeeting' && !meetingDue(state.day)) {
-    return { ok: false, reason: 'No GM meeting today.' };
+  if (task.id === 'gmMeeting' && !meetingDue(planningDayOf(state))) {
+    return { ok: false, reason: 'No GM meeting that day.' };
   }
 
   if (task.id === 'pickBalls' && !state.hasDrivingRange) {
     return { ok: false, reason: 'No driving range yet.' };
   }
 
-  if (task.kind === 'prep' && !inPrepWindow(state)) {
+  if (task.kind === 'prep' && !inPrepWindow({ ...state, day: planningDayOf(state) })) {
     return { ok: false, reason: 'Prep only in the three days before a tournament.' };
   }
 
@@ -425,28 +448,50 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
   return { ok: true, minutes, workerId: worker.id, machineId: machineCheck.machine?.id ?? null, holes, suitability };
 }
 
-function removePlannedTask(state, taskId, planId) {
-  const planned = planId
-    ? state.plannedTasks.find((item) => item.planId === planId)
-    : state.plannedTasks.find((item) => item.taskId === taskId);
-  if (!planned) return state;
+function commitDayTasks(state, tasks) {
+  const day = planningDayOf(state);
+  const next = setDayTasks(state, day, tasks);
+  if (day !== state.day) return next;
+  const used = {};
+  for (const item of tasks) {
+    used[item.workerId] = (used[item.workerId] ?? 0) + (item.minutes ?? 0);
+  }
   return {
-    ...state,
-    plannedTasks: state.plannedTasks.filter((item) => (planId ? item.planId !== planId : item.taskId !== taskId)),
-    workers: state.workers.map((item) =>
-      item.id === planned.workerId ? { ...item, minutesUsed: item.minutesUsed - planned.minutes } : item,
+    ...next,
+    plannedTasks: tasks,
+    workers: next.workers.map((worker) =>
+      worker.isCasual ? worker : { ...worker, minutesUsed: used[worker.id] ?? 0 },
     ),
   };
 }
 
+function removePlannedTask(state, taskId, planId) {
+  const day = planningDayOf(state);
+  const tasks = getDayTasks(state, day);
+  const planned = planId
+    ? tasks.find((item) => item.planId === planId)
+    : tasks.find((item) => item.taskId === taskId);
+  if (!planned) return state;
+  return commitDayTasks(
+    state,
+    tasks.filter((item) => (planId ? item.planId !== planId : item.taskId !== taskId)),
+  );
+}
+
+function recomputePlanningDay(state) {
+  const view = planViewState(state);
+  const next = recomputePlannedMinutes(view);
+  return commitDayTasks(state, next.plannedTasks);
+}
+
 function dropUnfittableMowing(state, surface) {
+  const view = planViewState(state);
   let next = state;
-  for (const planned of [...state.plannedTasks]) {
+  for (const planned of [...view.plannedTasks]) {
     const task = getTask(planned.taskId);
     if (!task?.mowing || task.surface !== surface) continue;
-    const worker = next.workers.find((item) => item.id === planned.workerId);
-    const current = next.plannedTasks.find((item) => item.taskId === planned.taskId);
-    if (!worker || !current) continue;
+    const worker = view.workers.find((item) => item.id === planned.workerId);
+    if (!worker) continue;
     if (worker.minutesUsed > worker.minutesToday) {
       next = removePlannedTask(next, planned.taskId);
     }
@@ -463,7 +508,7 @@ function applySurfacePatch(state, surface, patch) {
       [surface]: { ...current, ...patch },
     },
   };
-  return dropUnfittableMowing(recomputePlannedMinutes(next), surface);
+  return dropUnfittableMowing(recomputePlanningDay(next), surface);
 }
 
 export function reducer(state, action) {
@@ -480,28 +525,23 @@ export function reducer(state, action) {
         confirmDamaging: action.confirmDamaging,
       });
       if (!task || !check.ok) return state;
-      return {
-        ...state,
-        nextPlanId: (state.nextPlanId ?? 1) + 1,
-        plannedTasks: [
-          ...state.plannedTasks,
-          {
-            planId: state.nextPlanId ?? 1,
-            taskId: action.taskId,
-            surface: task.surface,
-            workerId: check.workerId,
-            minutes: check.minutes,
-            machineId: check.machineId ?? null,
-            holes: check.holes ?? [],
-            ...(action.taskId === 'handWater'
-              ? { greens: [...(action.holes ?? state.handWaterTargets ?? [])] }
-              : {}),
-          },
-        ],
-        workers: state.workers.map((item) =>
-          item.id === check.workerId ? { ...item, minutesUsed: item.minutesUsed + check.minutes } : item,
-        ),
-      };
+      const day = planningDayOf(state);
+      const tasks = [
+        ...getDayTasks(state, day),
+        {
+          planId: state.nextPlanId ?? 1,
+          taskId: action.taskId,
+          surface: task.surface,
+          workerId: check.workerId,
+          minutes: check.minutes,
+          machineId: check.machineId ?? null,
+          holes: check.holes ?? [],
+          ...(action.taskId === 'handWater'
+            ? { greens: [...(action.holes ?? state.handWaterTargets ?? [])] }
+            : {}),
+        },
+      ];
+      return commitDayTasks({ ...state, nextPlanId: (state.nextPlanId ?? 1) + 1 }, tasks);
     }
     case 'SET_SELECTED_HOLES': {
       const holes = Array.isArray(action.holes) ? [...new Set(action.holes.map(Number))].sort((a, b) => a - b) : [];
@@ -627,8 +667,15 @@ export function reducer(state, action) {
       return sellMachine(state, action.machineId);
     case 'BUY_FOLEY':
       return buyFoley(state);
-    case 'BUY_FUEL':
-      return buyFuel(state, action.litres);
+    case 'SET_PLANNING_DAY': {
+      const day = Number(action.day);
+      if (!Number.isInteger(day) || weekStartDay(day) !== weekStartDay(state.day)) return state;
+      return { ...state, planningDay: day };
+    }
+    case 'BOOK_CASUAL':
+      return bookCasual(state, action.casualId, action.day ?? planningDayOf(state));
+    case 'UNBOOK_CASUAL':
+      return unbookCasual(state, action.casualId, action.day ?? planningDayOf(state));
     case 'SEND_GRIND':
       return sendForGrind(state, action.machineId);
     case 'GRIND_IN_HOUSE':
@@ -636,19 +683,20 @@ export function reducer(state, action) {
     case 'REPAIR_MACHINE':
       return repairMachine(state, action.machineId);
     case 'MOVE_TASK': {
-      const list = [...state.plannedTasks];
+      const list = [...getDayTasks(state, planningDayOf(state))];
       const index = list.findIndex((item) => item.taskId === action.taskId);
       const nextIndex = index + action.direction;
       if (index < 0 || nextIndex < 0 || nextIndex >= list.length) return state;
       const swap = list[index];
       list[index] = list[nextIndex];
       list[nextIndex] = swap;
-      return { ...state, plannedTasks: list };
+      return commitDayTasks(state, list);
     }
     case 'REORDER_TASKS': {
       const order = action.order;
-      if (!Array.isArray(order) || order.length !== state.plannedTasks.length) return state;
-      const byId = new Map(state.plannedTasks.map((item) => [item.taskId, item]));
+      const current = getDayTasks(state, planningDayOf(state));
+      if (!Array.isArray(order) || order.length !== current.length) return state;
+      const byId = new Map(current.map((item) => [item.taskId, item]));
       const next = [];
       for (const taskId of order) {
         const item = byId.get(taskId);
@@ -657,7 +705,7 @@ export function reducer(state, action) {
         byId.delete(taskId);
       }
       if (byId.size > 0) return state;
-      return { ...state, plannedTasks: next };
+      return commitDayTasks(state, next);
     }
     case 'HIRE_WORKER': {
       const candidate = state.candidates.find((item) => item.id === action.candidateId);
@@ -675,41 +723,30 @@ export function reducer(state, action) {
     case 'SET_EARLY_START':
       return { ...state, earlyStart: Boolean(action.value) };
     case 'SET_TASK_WORKER': {
-      const planned = state.plannedTasks.find((item) => item.taskId === action.taskId);
-      const worker = workerById(state, action.workerId);
+      const view = planViewState(state);
+      const planned = view.plannedTasks.find((item) => item.taskId === action.taskId);
+      const worker = view.workers.find((item) => item.id === action.workerId);
       const task = planned ? getTask(planned.taskId) : null;
       if (!planned || !worker || !task) return state;
       if (!workerAllows(worker, task.surface) || !isWorkerPresent(worker)) return state;
       if (task.requiresSpray && !worker.sprayCertified) return state;
       const probe = {
-        ...state,
-        plannedTasks: state.plannedTasks.filter((item) => item.taskId !== planned.taskId),
+        ...view,
+        plannedTasks: view.plannedTasks.filter((item) => item.taskId !== planned.taskId),
       };
       const machineCheck = machinePlanCheck(probe, task, worker, undefined, planned.holes);
       if (!machineCheck.ok) return state;
       const minutes = durationOnMachine(probe, planned.taskId, worker, machineCheck.machine?.id, planned.holes);
-      if (worker.minutesToday - worker.minutesUsed + (planned.workerId === worker.id ? planned.minutes : 0) < minutes) {
+      const already = planned.workerId === worker.id ? planned.minutes : 0;
+      if (worker.minutesToday - worker.minutesUsed + already < minutes) {
         return state;
       }
-      let next = {
-        ...state,
-        workers: state.workers.map((item) => {
-          if (item.id === planned.workerId) return { ...item, minutesUsed: item.minutesUsed - planned.minutes };
-          return item;
-        }),
-      };
-      next = {
-        ...next,
-        plannedTasks: next.plannedTasks.map((item) =>
-          item.taskId === action.taskId
-            ? { ...item, workerId: worker.id, minutes, machineId: machineCheck.machine?.id ?? null, needsReassignment: false }
-            : item,
-        ),
-        workers: next.workers.map((item) =>
-          item.id === worker.id ? { ...item, minutesUsed: item.minutesUsed + minutes } : item,
-        ),
-      };
-      return next;
+      const tasks = view.plannedTasks.map((item) =>
+        item.taskId === action.taskId
+          ? { ...item, workerId: worker.id, minutes, machineId: machineCheck.machine?.id ?? null, needsReassignment: false }
+          : item,
+      );
+      return commitDayTasks(state, tasks);
     }
     case 'SET_HOC': {
       if (!hasHoc(action.surface)) return state;
@@ -756,7 +793,7 @@ export function reducer(state, action) {
         const task = getTask(CUT_TASK_BY_SURFACE[surface]);
         if (!machine || !machineAllows(machine, surface, task)) return state;
       }
-      return recomputePlannedMinutes({
+      return recomputePlanningDay({
         ...state,
         machineOverride: { ...normalizeMachineOverride(state.machineOverride), [surface]: machineId },
       });
@@ -765,10 +802,14 @@ export function reducer(state, action) {
       if (!IRRIGATED_SURFACES.includes(action.surface)) return state;
       const mm =
         action.mm != null ? action.mm : migrateIrrigationValue(action.surface, action.policy);
-      return {
-        ...state,
-        irrigation: { ...state.irrigation, [action.surface]: clampIrrigationMm(action.surface, mm) },
-      };
+      const value = clampIrrigationMm(action.surface, mm);
+      const day = planningDayOf(state);
+      const edit = canEditPlanDay(state, day);
+      if (!edit.ok && day !== state.day) return state;
+      const irrigation = { ...irrigationForPlanDay(state, day), [action.surface]: value };
+      let next = upsertDayPlan(state, day, { irrigation });
+      if (day === state.day) next = { ...next, irrigation: { ...next.irrigation, [action.surface]: value } };
+      return next;
     }
     case 'BUY_AERATOR': {
       const check = canBuyAerator(state);
@@ -792,17 +833,17 @@ export function reducer(state, action) {
       const allowed = new Set(allGreenIds(holes));
       const targets = [...new Set((action.targets ?? []).filter((id) => allowed.has(id)))].sort((a, b) => a - b);
       let next = { ...state, handWaterTargets: targets };
-      if (next.plannedTasks.some((item) => item.taskId === 'handWater')) {
+      if (getDayTasks(next, planningDayOf(next)).some((item) => item.taskId === 'handWater')) {
         if (targets.length === 0) return removePlannedTask(next, 'handWater');
-        next = {
-          ...next,
-          plannedTasks: next.plannedTasks.map((item) =>
+        next = commitDayTasks(
+          next,
+          getDayTasks(next, planningDayOf(next)).map((item) =>
             item.taskId === 'handWater' ? { ...item, greens: targets } : item,
           ),
-        };
-        next = recomputePlannedMinutes(next);
-        const planned = next.plannedTasks.find((item) => item.taskId === 'handWater');
-        const worker = planned ? next.workers.find((item) => item.id === planned.workerId) : null;
+        );
+        next = recomputePlanningDay(next);
+        const planned = getDayTasks(next, planningDayOf(next)).find((item) => item.taskId === 'handWater');
+        const worker = planned ? workersForPlanDay(next, planningDayOf(next)).find((item) => item.id === planned.workerId) : null;
         if (worker && worker.minutesUsed > worker.minutesToday) {
           return removePlannedTask(next, 'handWater');
         }

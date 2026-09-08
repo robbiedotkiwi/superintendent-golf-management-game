@@ -1,5 +1,7 @@
 import {
   CANDIDATE_COUNT,
+  CASUAL_POOL_COUNT,
+  CASUAL_WAGE_MULT,
   MECHANIC_WAGE,
   QUALITY_SKILL_BASE,
   SKILL_MAX,
@@ -63,6 +65,26 @@ export function generateCandidates(rng) {
   const used = new Set();
   const types = ['fast', 'careful', 'mechanic'];
   return types.slice(0, CANDIDATE_COUNT).map((type) => specialist(rng, used, type));
+}
+
+export function generateCasuals(rng) {
+  const used = new Set();
+  return Array.from({ length: CASUAL_POOL_COUNT }, () => {
+    const speedSkill = 2 + Math.floor(rng.next() * 3);
+    const qualitySkill = 2 + Math.floor(rng.next() * 3);
+    return {
+      id: `casual-${Math.floor(rng.next() * 1e9)}`,
+      name: pickName(rng, used),
+      speedSkill,
+      qualitySkill,
+      wage: Math.round(dailyWage(speedSkill, qualitySkill, false) * CASUAL_WAGE_MULT),
+      sprayCertified: false,
+      isMechanic: false,
+      isVolunteer: false,
+      isCasual: true,
+      allowedSurfaces: 'all',
+    };
+  });
 }
 
 export { QUALITY_SKILL_BASE };

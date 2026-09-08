@@ -26,8 +26,8 @@ assert.equal(GRACE_NO_STORM_DAYS, 10);
 assert.equal(GRACE_NO_BREAKDOWN_DAYS, 10);
 assert.equal(GRACE_NO_DISEASE_SEASON, 1);
 assert.equal(seasonNumberFromDay(1), 1);
-assert.equal(seasonNumberFromDay(30), 1);
-assert.equal(seasonNumberFromDay(31), 2);
+assert.equal(seasonNumberFromDay(DAYS_PER_SEASON), 1);
+assert.equal(seasonNumberFromDay(DAYS_PER_SEASON + 1), 2);
 assert.equal(inDiseaseGrace(DAYS_PER_SEASON), true);
 assert.equal(inDiseaseGrace(DAYS_PER_SEASON + 1), false);
 

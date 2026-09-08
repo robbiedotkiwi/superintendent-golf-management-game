@@ -32,7 +32,7 @@ assert.equal(GRANT_BONUS_THRESHOLD, 5);
 assert.equal(GRANT_BONUS_AMOUNT, 4000);
 assert.equal(GRANT_PENALTY_AMOUNT, 4000);
 assert.equal(STARTING_OPENING_CASH, STARTING_CASH + STARTING_MAINTENANCE_BUDGET + STARTING_CAPITAL_BUDGET);
-assert.equal(daysUntilSeasonEnd(24), GRANT_FORECAST_LEAD_DAYS);
+assert.equal(daysUntilSeasonEnd(DAYS_PER_SEASON - GRANT_FORECAST_LEAD_DAYS + 1), GRANT_FORECAST_LEAD_DAYS);
 assert.equal(seasonGrant(62, 50), 33600);
 
 const start = createInitialState();

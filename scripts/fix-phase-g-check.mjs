@@ -15,30 +15,30 @@ import { comingSeason, isTournamentPromptDay, tournamentPromptDay } from '../src
 const start = createInitialState();
 assert.equal(start.day, STARTING_DAY);
 assert.equal(start.pendingTournamentSetup, false);
-assert.equal(start.tournaments.length, 0);
+assert.equal(start.tournaments.length, 1);
 assert.ok(!start.inbox.some((item) => item.kind === 'tournamentRequest'));
 
 const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
 assert.doesNotMatch(app, /SeasonStart/);
 assert.doesNotMatch(app, /pendingTournamentSetup/);
 
+const promptDay = DAYS_PER_SEASON - TOURNAMENT_SETUP_LEAD_DAYS;
 assert.equal(TOURNAMENT_SETUP_LEAD_DAYS, 7);
-assert.equal(tournamentPromptDay(STARTING_DAY), DAYS_PER_SEASON - TOURNAMENT_SETUP_LEAD_DAYS);
-assert.equal(tournamentPromptDay(STARTING_DAY), 23);
-assert.equal(isTournamentPromptDay(23), true);
-assert.equal(comingSeason(23), 'summer');
+assert.equal(tournamentPromptDay(STARTING_DAY), promptDay);
+assert.equal(tournamentPromptDay(STARTING_DAY), 77);
+assert.equal(isTournamentPromptDay(promptDay), true);
+assert.equal(comingSeason(promptDay), 'summer');
 
 let rolling = {
   ...start,
+  day: promptDay - 2,
   irrigation: { greens: 'off', tees: 'off', fairways: 'off' },
 };
-for (let i = 0; i < 21; i += 1) {
-  rolling = reducer(rolling, { type: 'END_DAY' });
-  assert.equal(rolling.pendingTournamentSetup, false, `day ${rolling.day} should not prompt yet`);
-}
-assert.equal(rolling.day, 22);
 rolling = reducer(rolling, { type: 'END_DAY' });
-assert.equal(rolling.day, 23);
+assert.equal(rolling.day, promptDay - 1);
+assert.equal(rolling.pendingTournamentSetup, false);
+rolling = reducer(rolling, { type: 'END_DAY' });
+assert.equal(rolling.day, promptDay);
 assert.equal(rolling.pendingTournamentSetup, true);
 assert.equal(rolling.tournamentSetupSeason, 'summer');
 const request = rolling.inbox.find((item) => item.kind === 'tournamentRequest');
@@ -57,9 +57,9 @@ let ignored = rolling;
 while (ignored.day < DAYS_PER_SEASON + 1) {
   ignored = reducer(ignored, { type: 'END_DAY' });
 }
-assert.equal(ignored.day, 31);
+assert.equal(ignored.day, DAYS_PER_SEASON + 1);
 assert.equal(ignored.pendingTournamentSetup, false);
-assert.equal(ignored.tournaments.length, 0);
+assert.ok(ignored.tournaments.some((item) => item.season === 'summer' && !item.done));
 assert.ok(ignored.inbox.some((item) => item.kind === 'tournamentMissed'));
 
 console.log('fix phase G checks passed');
