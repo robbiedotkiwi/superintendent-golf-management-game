@@ -85,7 +85,8 @@ import {
   STARTING_QUALITY_TEES,
   STARTING_RNG_SEED,
   STARTING_WEATHER,
-  STARTING_HEAT,
+  STARTING_TEMP_MIN,
+  STARTING_TEMP_MAX,
   SUITABILITY_DAMAGING,
   TASK_MINUTES,
   VOLUNTEER_DEFAULT_WEEKDAY,
@@ -160,7 +161,8 @@ export function createInitialState() {
     surfaceDefaults: createSurfaceDefaults(undefined, grass),
     grass,
     weather: STARTING_WEATHER,
-    heat: STARTING_HEAT,
+    tempMin: STARTING_TEMP_MIN,
+    tempMax: STARTING_TEMP_MAX,
     forecastCall: null,
     ...forecast,
     rngSeed,
@@ -282,6 +284,7 @@ export function createInitialState() {
     saveVersion: SAVE_VERSION,
     soundEnabled: SOUND_DEFAULT_ON,
     tutorialDone: true,
+    coldWeatherTipDone: false,
     gmQueue: [GM_MSG_DAY1],
     gmSeen: { [GM_MSG_DAY1]: true },
     sectionUnlocks: emptySectionUnlocks(),
@@ -866,6 +869,8 @@ export function reducer(state, action) {
       return { ...state, soundEnabled: !state.soundEnabled };
     case 'DISMISS_TUTORIAL':
       return { ...state, tutorialDone: true };
+    case 'DISMISS_COLD_WEATHER_TIP':
+      return { ...state, coldWeatherTipDone: true };
     case 'DISMISS_GM':
       return dismissGm(state);
     case 'DISMISS_LOCK_HINT':

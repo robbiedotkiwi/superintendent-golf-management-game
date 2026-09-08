@@ -222,7 +222,7 @@ winter = reducer(winter, { type: 'SET_TOURNAMENTS', count: 3 });
 assert.equal(winter.tournaments.filter((item) => item.season === 'winter').length, TOURNAMENT_WINTER_MAX);
 assert.equal(winter.tournaments.find((item) => item.season === 'winter').risky, true);
 const winterRainShare =
-  WEATHER_WEIGHTS.winter.rain + WEATHER_WEIGHTS.winter.heavyRain + WEATHER_WEIGHTS.winter.storm;
+  WEATHER_WEIGHTS.winter.rain + WEATHER_WEIGHTS.winter.storm;
 assert.ok(WEATHER_WEIGHTS.winter.fine < WEATHER_WEIGHTS.spring.fine);
 assert.equal(tournamentResult(excellent, WEATHER_RAIN).band, 'acceptable');
 assert.ok(winterRainShare > 0);

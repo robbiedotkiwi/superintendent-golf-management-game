@@ -20,7 +20,6 @@ import {
   RAIN_POND_M3,
   STARTING_IRRIGATION,
   STORM_POND_M3,
-  WEATHER_HEAVY_RAIN,
   WEATHER_RAIN,
   WEATHER_STORM,
 } from '../data/constants.js';
@@ -89,7 +88,7 @@ export function projectedPondVolume(state) {
 
 export function rainFill(weather) {
   if (weather === WEATHER_RAIN) return RAIN_POND_M3;
-  if (weather === WEATHER_HEAVY_RAIN || weather === WEATHER_STORM) return STORM_POND_M3;
+  if (weather === WEATHER_STORM) return STORM_POND_M3;
   return 0;
 }
 

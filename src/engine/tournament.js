@@ -24,12 +24,11 @@ import {
   TOURNAMENT_SEASON_MAX,
   TOURNAMENT_WEIGHTS,
   TOURNAMENT_WINTER_MAX,
-  WEATHER_HEAVY_RAIN,
   WEATHER_RAIN,
   WEATHER_STORM,
 } from '../data/constants.js';
 
-const RAIN_DAYS = [WEATHER_RAIN, WEATHER_HEAVY_RAIN, WEATHER_STORM];
+const RAIN_DAYS = [WEATHER_RAIN, WEATHER_STORM];
 
 function qualityOf(input, type) {
   if (Array.isArray(input?.holes) || Array.isArray(input)) {

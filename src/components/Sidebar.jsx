@@ -12,7 +12,7 @@ import {
   SIDEBAR_WIDTH,
   START_DAY_LABEL,
 } from '../data/constants.js';
-import { HEAT_LABELS, WEATHER_LABELS } from '../data/events.js';
+import { WEATHER_LABELS } from '../data/events.js';
 import { qualityColor } from '../engine/color.js';
 import { sectionBadge } from '../engine/badges.js';
 import { weekOfSeason } from '../engine/calendar.js';
@@ -20,7 +20,7 @@ import { formatMoney } from '../engine/format.js';
 import { GM_LOCK_HINT, isSectionLocked } from '../engine/gm.js';
 import { pondDoseBriefing } from '../engine/irrigation.js';
 import { getTask } from '../data/tasks.js';
-import { heatRank } from '../engine/weather.js';
+import { formatTempRange, isHotterThanCall } from '../engine/weather.js';
 import { fitCourse } from '../engine/view.js';
 import { canBookCasual, casualDaysBooked, planningDayOf, weekdayLabel } from '../engine/week.js';
 import ForecastStrip from './ForecastStrip.jsx';
@@ -91,7 +91,7 @@ export default function Sidebar({
   const pondBriefing = pondDoseBriefing(state);
   const planDay = planningDayOf(state);
   const called = state.forecastCall;
-  const hotter = called && heatRank(state.heat) > heatRank(called.heat);
+  const hotter = isHotterThanCall(state);
   const rainMiss = called && called.type !== state.weather;
   const drops = state.morningDrops ?? [];
 
@@ -107,7 +107,7 @@ export default function Sidebar({
             {state.season} · {state.year} · week {weekOfSeason(state.day)}/{SEASON_WEEKS}
             <span className="text-xs">
               {' '}
-              · {WEATHER_LABELS[state.weather]} · {HEAT_LABELS[state.heat] ?? state.heat} · Tomorrow {tomorrow}
+              · {WEATHER_LABELS[state.weather]} · {formatTempRange(state.tempMin, state.tempMax)} · Tomorrow {tomorrow}
             </span>
           </p>
           {planDay !== state.day ? (

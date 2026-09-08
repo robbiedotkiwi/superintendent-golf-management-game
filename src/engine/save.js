@@ -28,7 +28,7 @@ import {
   SAVED_ROUTE_CAP,
   SALESMAN_RELATIONSHIP_MIN,
   SALESMAN_RELATIONSHIP_START,
-  STARTING_HEAT,
+  STARTING_WEATHER,
 } from '../data/constants.js';
 import { emptyDisease, emptyUntil } from './disease.js';
 import { migrateMachineMaps, normalizeMachineOverride } from './equipment.js';
@@ -38,7 +38,7 @@ import { emptyDaysSinceWorked } from './mail.js';
 import { createInitialHoles, createSurfaceDefaults, fanGroupedToHoles, isHoleModel, stampTreatmentsFromTypeWide } from './holes.js';
 import { migrateMoisture } from './moisture.js';
 import { createRng } from './rng.js';
-import { buildForecast } from './weather.js';
+import { applyTempsForWeather, buildForecast, canonicalWeather, tempsFromLegacyHeat } from './weather.js';
 import { normalizeSection, normalizeTabs } from './section.js';
 import { allGmSeen, allSectionUnlocks } from './gm.js';
 import { generateCasuals } from '../data/staff.js';
@@ -76,6 +76,26 @@ function migrateHoleState(state) {
     };
   }
   return { holes: null, surfaceDefaults: null, grass };
+}
+
+function migrateTemps(source, weather) {
+  const temps =
+    Number.isFinite(Number(source?.tempMin)) && Number.isFinite(Number(source?.tempMax))
+      ? { tempMin: Number(source.tempMin), tempMax: Number(source.tempMax) }
+      : tempsFromLegacyHeat(source?.heat);
+  return applyTempsForWeather(temps, weather);
+}
+
+function migrateWeatherDay(item, fallbackWeather) {
+  const source = item && typeof item === 'object' ? item : {};
+  const type = canonicalWeather(source.type ?? fallbackWeather);
+  return { ...source, type, ...migrateTemps(source, type) };
+}
+
+function migrateForecastCall(call) {
+  if (!call || typeof call !== 'object') return null;
+  const type = canonicalWeather(call.type);
+  return { type, ...migrateTemps(call, type) };
 }
 
 export function migrateCash(state) {
@@ -124,6 +144,10 @@ export function withDefaults(state) {
     windDir = built.windDir;
     rngSeed = rng.seed;
   }
+  weatherQueue = (weatherQueue ?? []).map((item) => migrateWeatherDay(item, state.weather));
+  forecastStrip = (forecastStrip ?? []).map((item) => migrateWeatherDay(item, state.weather));
+  const weather = canonicalWeather(state.weather ?? STARTING_WEATHER);
+  const temps = migrateTemps(state, weather);
   const machines = migrateMachineMaps({
     ...state,
     ownedMachines: state.ownedMachines ?? [...STARTING_MACHINE_IDS],
@@ -148,7 +172,9 @@ export function withDefaults(state) {
     nextRouteId: Number.isInteger(state.nextRouteId) && state.nextRouteId > 0 ? state.nextRouteId : 1,
     lastDayJobs: Array.isArray(state.lastDayJobs) ? state.lastDayJobs : [],
     lastRepeatDropped: Array.isArray(state.lastRepeatDropped) ? state.lastRepeatDropped : [],
-    forecast,
+    forecast: canonicalWeather(forecast),
+    weather,
+    ...temps,
     weatherQueue,
     forecastStrip,
     windSpeed,
@@ -233,6 +259,7 @@ export function withDefaults(state) {
     saveVersion: SAVE_VERSION,
     soundEnabled: state.soundEnabled ?? SOUND_DEFAULT_ON,
     tutorialDone: state.sectionUnlocks == null ? true : Boolean(state.tutorialDone),
+    coldWeatherTipDone: Boolean(state.coldWeatherTipDone),
     gmQueue: state.sectionUnlocks == null ? [] : (Array.isArray(state.gmQueue) ? state.gmQueue : []),
     gmSeen: state.sectionUnlocks == null ? allGmSeen() : (state.gmSeen && typeof state.gmSeen === 'object' ? state.gmSeen : {}),
     sectionUnlocks: state.sectionUnlocks == null
@@ -261,9 +288,7 @@ export function withDefaults(state) {
       .filter((entry) => Number.isInteger(entry?.day) && Number.isFinite(Number(entry?.spend)))
       .map((entry) => ({ day: entry.day, spend: Number(entry.spend) })),
     volunteerWeekday: migrateVolunteerWeekday(state.volunteerWeekday),
-    heat: state.heat ?? STARTING_HEAT,
-    forecastHeat: state.forecastHeat ?? state.forecastStrip?.[0]?.heat ?? STARTING_HEAT,
-    forecastCall: state.forecastCall ?? null,
+    forecastCall: migrateForecastCall(state.forecastCall),
     planningDay: Number.isInteger(state.planningDay) ? state.planningDay : (state.day ?? 1),
     weekPlan: (() => {
       const start = weekStartDay(state.day ?? 1);

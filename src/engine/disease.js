@@ -13,7 +13,6 @@ import {
   SPRAY_SUPPRESS_DAYS,
   STARTING_DISEASE_PRESSURE,
   WET_DISEASE_MULT,
-  WEATHER_HEAVY_RAIN,
   WEATHER_RAIN,
   WEATHER_STORM,
 } from '../data/constants.js';
@@ -24,7 +23,7 @@ import { diseaseRiskMult } from './grass.js';
 
 export const DISEASE_SURFACES = ['greens', 'tees', 'fairways', 'rough'];
 
-const WET_WEATHER = [WEATHER_RAIN, WEATHER_HEAVY_RAIN, WEATHER_STORM];
+const WET_WEATHER = [WEATHER_RAIN, WEATHER_STORM];
 
 export function emptyDisease() {
   return DISEASE_SURFACES.reduce((next, surface) => {

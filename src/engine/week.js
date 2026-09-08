@@ -2,10 +2,10 @@ import {
   CASUAL_MAX_DAYS_PER_WEEK,
   DAYS_PER_WEEK,
   EARLY_START_MINUTES,
-  HEAT_MILD,
   MOWING_WEATHER,
   STARTING_DAY,
-  STARTING_HEAT,
+  STARTING_TEMP_MAX,
+  STARTING_TEMP_MIN,
   VOLUNTEER_DEFAULT_WEEKDAY,
   VOLUNTEER_MINUTES,
   WEEKDAY_LABELS,
@@ -68,7 +68,8 @@ export function forecastEntryForDay(state, day) {
   if (day === state.day) {
     return {
       type: state.weather,
-      heat: state.heat ?? STARTING_HEAT,
+      tempMin: state.tempMin ?? STARTING_TEMP_MIN,
+      tempMax: state.tempMax ?? STARTING_TEMP_MAX,
       windSpeed: state.windSpeed,
       windDir: state.windDir,
       actual: true,
@@ -81,7 +82,8 @@ export function forecastEntryForDay(state, day) {
   }
   return {
     type: state.weather,
-    heat: state.heat ?? STARTING_HEAT,
+    tempMin: state.tempMin ?? STARTING_TEMP_MIN,
+    tempMax: state.tempMax ?? STARTING_TEMP_MAX,
     actual: false,
   };
 }
@@ -90,8 +92,12 @@ export function weatherForPlanDay(state, day) {
   return forecastEntryForDay(state, day).type ?? state.weather;
 }
 
-export function heatForPlanDay(state, day) {
-  return forecastEntryForDay(state, day).heat ?? state.heat ?? HEAT_MILD;
+export function tempsForPlanDay(state, day) {
+  const entry = forecastEntryForDay(state, day);
+  return {
+    tempMin: entry.tempMin ?? state.tempMin ?? STARTING_TEMP_MIN,
+    tempMax: entry.tempMax ?? state.tempMax ?? STARTING_TEMP_MAX,
+  };
 }
 
 export function irrigationForPlanDay(state, day) {
@@ -152,7 +158,8 @@ export function planViewState(state) {
   return {
     ...state,
     weather: entry.type ?? state.weather,
-    heat: entry.heat ?? state.heat ?? HEAT_MILD,
+    tempMin: entry.tempMin ?? state.tempMin ?? STARTING_TEMP_MIN,
+    tempMax: entry.tempMax ?? state.tempMax ?? STARTING_TEMP_MAX,
     windSpeed: entry.windSpeed ?? state.windSpeed,
     windDir: entry.windDir ?? state.windDir,
     plannedTasks: getDayTasks(state, day),

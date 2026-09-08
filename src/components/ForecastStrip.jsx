@@ -2,13 +2,12 @@ import {
   FORECAST_DAYS,
   WEATHER_FINE,
   WEATHER_FROST,
-  WEATHER_HEAVY_RAIN,
   WEATHER_OVERCAST,
   WEATHER_RAIN,
   WEATHER_STORM,
 } from '../data/constants.js';
-import { HEAT_LABELS, WEATHER_LABELS } from '../data/events.js';
-import { forecastOpacity } from '../engine/weather.js';
+import { WEATHER_LABELS } from '../data/events.js';
+import { forecastOpacity, formatTempRange } from '../engine/weather.js';
 import {
   canEditPlanDay,
   forecastEntryForDay,
@@ -35,7 +34,7 @@ function WeatherIcon({ type }) {
       </svg>
     );
   }
-  if (type === WEATHER_RAIN || type === WEATHER_HEAVY_RAIN) {
+  if (type === WEATHER_RAIN) {
     return (
       <svg {...common}>
         <path d="M7 14h11a4 4 0 0 0 0-8 5.5 5.5 0 0 0-10.4-1.5A4.5 4.5 0 0 0 7 14z" />
@@ -82,7 +81,7 @@ export default function ForecastStrip({ state, onSelectDay }) {
           const edit = canEditPlanDay(state, day);
           const forecastIndex = day - state.day - 1;
           const opacity = past ? 0.45 : day === state.day ? 1 : forecastOpacity(Math.max(0, forecastIndex));
-          const heat = HEAT_LABELS[entry.heat] ?? '';
+          const heat = formatTempRange(entry.tempMin, entry.tempMax);
           const weather = WEATHER_LABELS[entry.type] ?? entry.type;
           return (
             <button

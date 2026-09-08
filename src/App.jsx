@@ -59,6 +59,8 @@ import { playBirds, playMower, prefersReducedMotion } from './engine/sound.js';
 import { clearSave, hasSave, loadGame, saveGame } from './engine/save.js';
 import { currentGmMessage } from './engine/gm.js';
 import { planViewState } from './engine/week.js';
+import { isColdWeather } from './engine/weather.js';
+import { COLD_WEATHER_TIP_TITLE, coldWeatherCopy } from './data/events.js';
 
 function paletteStyle() {
   return {
@@ -255,6 +257,7 @@ export default function App() {
           onBuyPicker={() => dispatch({ type: 'BUY_AUTO_PICKER' })}
           onToggleSound={() => dispatch({ type: 'TOGGLE_SOUND' })}
           onDismissTutorial={() => dispatch({ type: 'DISMISS_TUTORIAL' })}
+          onDismissColdWeatherTip={() => dispatch({ type: 'DISMISS_COLD_WEATHER_TIP' })}
           onDismissGm={() => dispatch({ type: 'DISMISS_GM' })}
           onDismissLockHint={() => dispatch({ type: 'DISMISS_LOCK_HINT' })}
           onDismissYearReview={() => dispatch({ type: 'DISMISS_YEAR_REVIEW' })}
@@ -369,6 +372,7 @@ function GameScreen({
   onBuyPicker,
   onToggleSound,
   onDismissTutorial,
+  onDismissColdWeatherTip,
   onDismissGm,
   onDismissLockHint,
   onDismissYearReview,
@@ -437,6 +441,20 @@ function GameScreen({
         }
         if (!state.dismissed && !state.tutorialDone && !state.pendingYearReview && !summary && !watching) {
           return <Tutorial onDismiss={onDismissTutorial} />;
+        }
+        if (
+          !state.dismissed &&
+          !state.coldWeatherTipDone &&
+          isColdWeather(state) &&
+          !state.pendingYearReview &&
+          !summary &&
+          !watching
+        ) {
+          return (
+            <Tutorial title={COLD_WEATHER_TIP_TITLE} onDismiss={onDismissColdWeatherTip}>
+              <p className="mt-4 text-lg">{coldWeatherCopy(state.tempMin)}</p>
+            </Tutorial>
+          );
         }
         return null;
       })()}

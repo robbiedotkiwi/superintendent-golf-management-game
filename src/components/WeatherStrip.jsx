@@ -4,14 +4,14 @@ import {
   TASK_MINUTES,
   WEATHER_STORM,
 } from '../data/constants.js';
-import { HEAT_LABELS, WEATHER_LABELS, weatherCopy } from '../data/events.js';
+import { WEATHER_LABELS, weatherCopy } from '../data/events.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import { durationForTask } from '../engine/assignment.js';
 import { canPlanTask } from '../engine/gameState.js';
 import { DISEASE_SURFACES } from '../engine/disease.js';
 import { meetingDue } from '../engine/mail.js';
 import { daysUntilNextTournament, nextTournament } from '../engine/tournament.js';
-import { heatRank } from '../engine/weather.js';
+import { formatTempRange, isHotterThanCall } from '../engine/weather.js';
 import { getTask } from '../data/tasks.js';
 import { planningDayOf, weekdayLabel } from '../engine/week.js';
 
@@ -50,7 +50,7 @@ export default function WeatherStrip({ state, onPlan, onRemove }) {
   const planDay = planningDayOf(state);
   const planningToday = planDay === state.day;
   const called = state.forecastCall;
-  const hotter = called && heatRank(state.heat) > heatRank(called.heat);
+  const hotter = isHotterThanCall(state);
   const rainMiss = called && called.type !== state.weather;
   const drops = state.morningDrops ?? [];
 
@@ -60,15 +60,17 @@ export default function WeatherStrip({ state, onPlan, onRemove }) {
         {planningToday ? 'Today' : `Planning ${weekdayLabel(planDay)}`}
         {': '}
         <span className="text-[var(--paint)]">
-          {WEATHER_LABELS[state.weather]} · {HEAT_LABELS[state.heat] ?? state.heat}
+          {WEATHER_LABELS[state.weather]} · {formatTempRange(state.tempMin, state.tempMax)}
         </span>
         {' — '}
         {weatherCopy(state.weather)}
       </p>
       <p>
         Tomorrow: <span className="text-[var(--paint)]">{WEATHER_LABELS[state.forecast]}</span>
-        {state.forecastHeat ? (
-          <span className="ml-2 text-sm">{HEAT_LABELS[state.forecastHeat]}</span>
+        {state.forecast != null ? (
+          <span className="ml-2 text-sm">
+            {formatTempRange(state.forecastStrip?.[0]?.tempMin, state.forecastStrip?.[0]?.tempMax)}
+          </span>
         ) : null}
         <span className="ml-2 text-sm">forecast</span>
       </p>

@@ -323,7 +323,6 @@ export const MOISTURE_ET_WEATHER = {
   fine: 1.3,
   overcast: 0.75,
   rain: 0.2,
-  heavyRain: 0,
   storm: 0,
   frost: 0.4,
 };
@@ -331,15 +330,13 @@ export const MOISTURE_RAIN_ADD = {
   fine: 0,
   overcast: 0,
   rain: 4,
-  heavyRain: 8,
   storm: 10,
   frost: 0,
 };
-export const MOISTURE_ET_HEAT = {
-  cool: 0.82,
-  mild: 1,
-  hot: 1.28,
-};
+export const MOISTURE_ET_TEMP_LOW_C = 8;
+export const MOISTURE_ET_TEMP_HIGH_C = 24;
+export const MOISTURE_ET_TEMP_LOW = 0.82;
+export const MOISTURE_ET_TEMP_HIGH = 1.28;
 export const MOISTURE_WIND_ET_PER = 0.012;
 export const MOISTURE_HAND_WATER_ADD = 10;
 export const MOISTURE_OVERLAY_OPACITY = 0.55;
@@ -499,16 +496,32 @@ export const GRASS_GROWTH_MM_PER_DAY = {
 export const WEATHER_FINE = 'fine';
 export const WEATHER_OVERCAST = 'overcast';
 export const WEATHER_RAIN = 'rain';
-export const WEATHER_HEAVY_RAIN = 'heavyRain';
 export const WEATHER_STORM = 'storm';
 export const WEATHER_FROST = 'frost';
+export const WEATHER_HEAVY_RAIN_LEGACY = 'heavyRain';
 
 export const STARTING_WEATHER = WEATHER_FINE;
-export const HEAT_COOL = 'cool';
-export const HEAT_MILD = 'mild';
-export const HEAT_HOT = 'hot';
-export const HEAT_ORDER = [HEAT_COOL, HEAT_MILD, HEAT_HOT];
-export const STARTING_HEAT = HEAT_MILD;
+export const STARTING_TEMP_MIN = 11;
+export const STARTING_TEMP_MAX = 19;
+export const TEMP_ABS_MIN = -2;
+export const TEMP_ABS_MAX = 32;
+export const TEMP_SPAN_MIN = 5;
+export const FROST_TEMP_MIN_CAP = 2;
+export const COLD_TEMP_C = 5;
+export const TEMP_HOTTER_DELTA = 3;
+export const TEMP_RANGES = {
+  spring: { minLo: 6, minHi: 13, maxLo: 16, maxHi: 21 },
+  summer: { minLo: 12, minHi: 18, maxLo: 22, maxHi: 28 },
+  autumn: { minLo: 7, minHi: 13, maxLo: 15, maxHi: 21 },
+  winter: { minLo: 2, minHi: 9, maxLo: 11, maxHi: 16 },
+};
+export const TEMP_WEATHER_SHIFT = {
+  [WEATHER_FINE]: { min: 0, max: 1 },
+  [WEATHER_OVERCAST]: { min: 0, max: -1 },
+  [WEATHER_RAIN]: { min: -1, max: -3 },
+  [WEATHER_STORM]: { min: -2, max: -4 },
+  [WEATHER_FROST]: { min: -6, max: -5 },
+};
 export const STARTING_RNG_SEED = 1;
 export const FORECAST_DAYS = 7;
 export const FORECAST_ACCURACY = [0.9, 0.8, 0.65, 0.5, 0.4, 0.3, 0.25];
@@ -519,21 +532,14 @@ export const WIND_DIRECTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 export const STARTING_WIND_SPEED = 8;
 export const STARTING_WIND_DIR = 'SW';
 export const FROST_SHORT_MINUTES = 120;
-export const HEAVY_RAIN_BUNKER_LOSS = 10;
-export const MOWING_WEATHER = [WEATHER_RAIN, WEATHER_HEAVY_RAIN, WEATHER_STORM];
+export const STORM_BUNKER_LOSS = 10;
+export const MOWING_WEATHER = [WEATHER_RAIN, WEATHER_STORM];
 
 export const WEATHER_WEIGHTS = {
-  spring: { fine: 35, overcast: 25, rain: 20, heavyRain: 8, storm: 7, frost: 5 },
-  summer: { fine: 40, overcast: 20, rain: 15, heavyRain: 12, storm: 13, frost: 0 },
-  autumn: { fine: 25, overcast: 25, rain: 25, heavyRain: 10, storm: 10, frost: 5 },
-  winter: { fine: 15, overcast: 25, rain: 15, heavyRain: 5, storm: 5, frost: 35 },
-};
-
-export const HEAT_WEIGHTS = {
-  spring: { cool: 0.25, mild: 0.5, hot: 0.25 },
-  summer: { cool: 0.08, mild: 0.37, hot: 0.55 },
-  autumn: { cool: 0.3, mild: 0.5, hot: 0.2 },
-  winter: { cool: 0.62, mild: 0.33, hot: 0.05 },
+  spring: { fine: 35, overcast: 25, rain: 20, storm: 15, frost: 5 },
+  summer: { fine: 40, overcast: 20, rain: 15, storm: 25, frost: 0 },
+  autumn: { fine: 25, overcast: 25, rain: 25, storm: 20, frost: 5 },
+  winter: { fine: 15, overcast: 25, rain: 15, storm: 10, frost: 35 },
 };
 
 export const WEAR_PER_USE = 8;

@@ -6,7 +6,7 @@ import {
   DECAY_BASE,
   GAIN_DIMINISH,
   GAIN_DIMINISH_ABOVE,
-  HEAVY_RAIN_BUNKER_LOSS,
+  STORM_BUNKER_LOSS,
   HOLE_COUNT,
   BASE_GAIN,
   HOC_STRESS_DAMAGE,
@@ -32,7 +32,7 @@ import {
   SATISFACTION_MIN,
   GRANT_FORECAST_LEAD_DAYS,
   WET_GAIN_MULT,
-  WEATHER_HEAVY_RAIN,
+  WEATHER_STORM,
 } from '../data/constants.js';
 import { PLAYER_ID } from '../data/constants.js';
 import { generateCandidates, generateCasuals } from '../data/staff.js';
@@ -412,10 +412,10 @@ export function resolveDay(state) {
     }
   }
 
-  if (state.weather === WEATHER_HEAVY_RAIN) {
+  if (state.weather === WEATHER_STORM) {
     holes = mapHoleSurfaces(holes, 'bunkers', (record) => ({
       ...record,
-      quality: clampQuality(record.quality - HEAVY_RAIN_BUNKER_LOSS),
+      quality: clampQuality(record.quality - STORM_BUNKER_LOSS),
     }));
   }
 
@@ -639,11 +639,11 @@ export function resolveDay(state) {
   next = {
     ...next,
     weather: morning.weather,
-    heat: morning.heat,
+    tempMin: morning.tempMin,
+    tempMax: morning.tempMax,
     forecast: morning.forecast,
-    forecastHeat: morning.forecastHeat,
     forecastCall: predicted
-      ? { type: predicted.type, heat: predicted.heat ?? null }
+      ? { type: predicted.type, tempMin: predicted.tempMin ?? null, tempMax: predicted.tempMax ?? null }
       : null,
     weatherQueue: morning.weatherQueue,
     forecastStrip: morning.forecastStrip,
@@ -700,7 +700,8 @@ export function resolveDay(state) {
   const summary = {
     day: state.day,
     weather: state.weather,
-    heat: state.heat,
+    tempMin: state.tempMin,
+    tempMax: state.tempMax,
     done,
     skipped,
     dropped,
