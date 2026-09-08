@@ -34,8 +34,8 @@ const banned = [
   /Math\.round\((?:maintenance|capital)\)/,
   /Capped at \$\{(?!formatMoney)/,
   /\{(?:machine\.cost|spec\.cost|worker\.wage|candidate\.wage|task\.materialsCost|summary\.wages|summary\.mainsCost|summary\.neighbourFine|summary\.tournament\.pay|item\.pay|state\.loan\.repay|state\.lastSnap\.pay)\}/,
-  /\{(?:AERATOR_COST|FOLEY_GRINDER_COST|GRIND_AWAY_COST|TRAINING_COST|AUTO_PICKER_COST|GREENS_SENSORS_COST|TURFRAD_COST|GREENS_ROLLER_COST)\}/,
-  /\$\{(?:AERATOR_COST|FOLEY_GRINDER_COST|GRIND_AWAY_COST|TRAINING_COST|AUTO_PICKER_COST|GREENS_SENSORS_COST|TURFRAD_COST|machine\.cost|spec\.cost|task\.materialsCost)\}/,
+  /\{(?:AERATOR_COST|FOLEY_GRINDER_COST|GRIND_AWAY_COST|TRAINING_COST|AUTO_PICKER_COST|GREENS_SENSORS_COST|TURFRAD_COST|WEATHER_STATION_COST|GREENS_ROLLER_COST)\}/,
+  /\$\{(?:AERATOR_COST|FOLEY_GRINDER_COST|GRIND_AWAY_COST|TRAINING_COST|AUTO_PICKER_COST|GREENS_SENSORS_COST|TURFRAD_COST|WEATHER_STATION_COST|machine\.cost|spec\.cost|task\.materialsCost)\}/,
 ];
 
 const hits = [];

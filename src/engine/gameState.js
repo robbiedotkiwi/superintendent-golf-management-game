@@ -1,6 +1,6 @@
 import { getTask, SURFACE_LABELS } from '../data/tasks.js';
 import { calendarFromDay } from './calendar.js';
-import { buildForecast } from './weather.js';
+import { buildForecast, canBuyWeatherStation } from './weather.js';
 import { createRng } from './rng.js';
 import { buyFoley, buyMachine, buyUpgrade, grindInHouse, repairMachine, sendForGrind, machinePlanCheck, durationOnMachine, recomputePlannedMinutes, allowingMachines, pickMachine, pickMachineForTask, machineMinutesRemaining, MACHINE_BOOKED_REASON, NO_MACHINE_REASON, getMachine, normalizeMachineOverride, machineSuitability } from './equipment.js';
 import { machineAllows } from '../data/equipment.js';
@@ -104,6 +104,7 @@ import {
   AERATOR_COST,
   GREENS_SENSORS_COST,
   TURFRAD_COST,
+  WEATHER_STATION_COST,
   MACHINE_DAILY_MINUTES,
   SALESMAN_RELATIONSHIP_START,
   SAVE_VERSION,
@@ -253,6 +254,7 @@ export function createInitialState() {
     handWaterTargets: allGreenIds(HOLE_COUNT),
     hasGreensSensors: false,
     hasTurfRad: false,
+    hasWeatherStation: false,
     moistureOverlay: false,
     disease: emptyDisease(),
     sprayedUntil: emptyUntil(),
@@ -836,6 +838,11 @@ export function reducer(state, action) {
       const check = canBuyTurfRad(state);
       if (!check.ok) return state;
       return bumpCapitalSpent(spendCash({ ...state, hasTurfRad: true }, TURFRAD_COST), TURFRAD_COST);
+    }
+    case 'BUY_WEATHER_STATION': {
+      const check = canBuyWeatherStation(state);
+      if (!check.ok) return state;
+      return bumpCapitalSpent(spendCash({ ...state, hasWeatherStation: true }, WEATHER_STATION_COST), WEATHER_STATION_COST);
     }
     case 'TOGGLE_MOISTURE_OVERLAY':
       return { ...state, moistureOverlay: !state.moistureOverlay };

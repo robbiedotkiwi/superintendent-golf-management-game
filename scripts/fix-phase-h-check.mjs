@@ -131,6 +131,7 @@ assert.equal(old.moisture.tees, MOISTURE_START.tees);
 assert.equal(moistureStatus(old, 'greens').kind, 'hidden');
 assert.equal(old.hasGreensSensors, false);
 assert.equal(old.hasTurfRad, false);
+assert.equal(old.hasWeatherStation, false);
 
 const turf = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
 assert.match(turf, /MoistureLine/);

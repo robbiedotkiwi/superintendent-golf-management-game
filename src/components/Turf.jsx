@@ -64,6 +64,7 @@ import { formatMoney } from '../engine/format.js';
 import { canBuyAerator, irrigationDemand, IRRIGATED_SURFACES, pondCapacity, pondDoseBriefing, pondPercent } from '../engine/irrigation.js';
 import { canBuyGreensSensors, canBuyTurfRad, moistureStatus } from '../engine/moisture.js';
 import IrrigationMmSlider from './IrrigationMmSlider.jsx';
+import WeatherStation from './WeatherStation.jsx';
 import PondLevelBar from './PondLevelBar.jsx';
 import WeekDayPicker from './WeekDayPicker.jsx';
 import { daysSinceLastWorked, isNeglected } from '../engine/neglect.js';
@@ -163,6 +164,7 @@ export default function Turf({
   onBuyAerator,
   onBuyGreensSensors,
   onBuyTurfRad,
+  onBuyWeatherStation,
   onSetHandWaterTargets,
   onSetMachineOverride,
   onToggleHole,
@@ -232,6 +234,7 @@ export default function Turf({
           <p className="text-sm text-[var(--sand)]">
             Nightly draw {demand.total.toFixed(1)} m³. Rough is never watered.
           </p>
+          <WeatherStation state={state} onBuyWeatherStation={onBuyWeatherStation} />
           {IRRIGATED_SURFACES.map((surface) => (
             <IrrigationSurface
               key={surface}

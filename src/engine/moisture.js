@@ -19,12 +19,14 @@ import {
   MOISTURE_OVERLAY_OK_MIX_HIGH,
   MOISTURE_OVERLAY_OK_MIX_LOW,
   MOISTURE_OVERLAY_WET_MIX,
+  MOISTURE_PER_MM,
   MOISTURE_RAIN_ADD,
   MOISTURE_START,
   MOISTURE_SURFACES,
   MOISTURE_WIND_ET_PER,
   STARTING_WIND_SPEED,
   TURFRAD_COST,
+  IRRIGATION_SURFACE_KEY,
   WEATHER_FINE,
   WEATHER_OVERCAST,
   WIND_SPEED_MIN,
@@ -129,6 +131,19 @@ function etMultiplier(state, surface) {
     ? 1 + Math.max(0, wind - WIND_SPEED_MIN) * MOISTURE_WIND_ET_PER
     : 1;
   return season * weather * heat * HOC_WATER_MULT(factor) * windMult;
+}
+
+export function surfaceEtPoints(state, surface) {
+  const base = MOISTURE_ET_BASE[surface];
+  if (!base) return 0;
+  return base * etMultiplier(state, surface);
+}
+
+export function surfaceEtMm(state, surface) {
+  const key = IRRIGATION_SURFACE_KEY[surface];
+  const per = MOISTURE_PER_MM[key];
+  if (!per) return 0;
+  return surfaceEtPoints(state, surface) / per;
 }
 
 function irrigationAdd(state, surface) {
@@ -317,6 +332,7 @@ export function migrateMoisture(state) {
     handWaterTargets: targets,
     hasGreensSensors: Boolean(state.hasGreensSensors),
     hasTurfRad: Boolean(state.hasTurfRad),
+    hasWeatherStation: Boolean(state.hasWeatherStation),
     moistureOverlay: Boolean(state.moistureOverlay),
   };
 }

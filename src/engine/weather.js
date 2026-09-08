@@ -29,13 +29,26 @@ import {
   WEATHER_OVERCAST,
   WEATHER_RAIN,
   WEATHER_STORM,
+  WEATHER_RH,
+  WEATHER_RH_MAX,
+  WEATHER_RH_MIN,
+  WEATHER_RH_WIND_DROP_PER,
+  WEATHER_STATION_COST,
   WEATHER_WEIGHTS,
   WIND_DIRECTIONS,
   WIND_SPEED_MAX,
   WIND_SPEED_MIN,
 } from '../data/constants.js';
 import { calendarFromDay } from './calendar.js';
+import { needsCash } from './cash.js';
 import { createRng } from './rng.js';
+
+const MAGNUS_A = 17.62;
+const MAGNUS_B = 243.12;
+const TETENS_A = 17.27;
+const TETENS_B = 237.3;
+const TETENS_ES0 = 0.6108;
+const WINDY_WEATHER = [WEATHER_FINE, WEATHER_OVERCAST];
 
 function exclusionSet(exclude) {
   if (exclude == null) return new Set();
@@ -166,6 +179,54 @@ export function isHotterThanCall(state) {
   const actualMax = Number(state?.tempMax);
   if (!Number.isFinite(calledMax) || !Number.isFinite(actualMax)) return false;
   return actualMax >= calledMax + TEMP_HOTTER_DELTA;
+}
+
+function clampRh(value) {
+  return Math.min(WEATHER_RH_MAX, Math.max(WEATHER_RH_MIN, Math.round(value)));
+}
+
+export function relativeHumidity(state) {
+  const weather = canonicalWeather(state?.weather);
+  const base = WEATHER_RH[weather] ?? 60;
+  const wind = Number(state?.windSpeed);
+  if (WINDY_WEATHER.includes(weather) && Number.isFinite(wind)) {
+    const drop = Math.max(0, wind - WIND_SPEED_MIN) * WEATHER_RH_WIND_DROP_PER;
+    return clampRh(base - drop);
+  }
+  return clampRh(base);
+}
+
+export function dewPointC(tempC, rh) {
+  const t = Number(tempC);
+  const humidity = Math.max(1, Math.min(100, Number(rh)));
+  if (!Number.isFinite(t)) return 0;
+  const gamma = Math.log(humidity / 100) + (MAGNUS_A * t) / (MAGNUS_B + t);
+  return (MAGNUS_B * gamma) / (MAGNUS_A - gamma);
+}
+
+export function saturationVapourKpa(tempC) {
+  const t = Number(tempC);
+  if (!Number.isFinite(t)) return 0;
+  return TETENS_ES0 * Math.exp((TETENS_A * t) / (t + TETENS_B));
+}
+
+export function vapourPressureDeficitKpa(tempC, dewPoint) {
+  return Math.max(0, saturationVapourKpa(tempC) - saturationVapourKpa(dewPoint));
+}
+
+export function stationAtmosphere(state) {
+  const tempMin = Number(state?.tempMin);
+  const tempMax = Number(state?.tempMax);
+  const mean = (tempMin + tempMax) / 2;
+  const rh = relativeHumidity(state);
+  const dewPoint = dewPointC(Number.isFinite(mean) ? mean : STARTING_TEMP_MIN, rh);
+  const vpd = vapourPressureDeficitKpa(Number.isFinite(tempMax) ? tempMax : STARTING_TEMP_MAX, dewPoint);
+  return { rh, dewPoint, vpd, tempMin, tempMax };
+}
+
+export function canBuyWeatherStation(state) {
+  if (state.hasWeatherStation) return { ok: false, reason: 'A weather station is already on the course.' };
+  return needsCash(state, WEATHER_STATION_COST);
 }
 
 export function rollTrueDay(season, rng, day) {

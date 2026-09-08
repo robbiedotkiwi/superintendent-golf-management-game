@@ -7,6 +7,7 @@ import { combinedMinutesRemaining } from '../engine/gameState.js';
 import { IRRIGATED_SURFACES, pondDoseBriefing } from '../engine/irrigation.js';
 import ForecastStrip from './ForecastStrip.jsx';
 import IrrigationMmSlider from './IrrigationMmSlider.jsx';
+import { WeatherStationReadout } from './WeatherStation.jsx';
 import PlanList from './PlanList.jsx';
 
 export default function StartDayDialog({
@@ -54,6 +55,9 @@ export default function StartDayDialog({
 
         <h3 className="mt-6 font-condensed text-2xl">Tonight's irrigation</h3>
         <p className="mt-1 text-sm text-[var(--sand)]">Rain tomorrow wastes tonight's water.</p>
+        <div className="mt-2">
+          <WeatherStationReadout state={state} />
+        </div>
         <div className="mt-2 space-y-2">
           {IRRIGATED_SURFACES.map((surface) => (
             <div key={surface} className="border border-[var(--sand)] p-2">

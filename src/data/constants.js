@@ -299,6 +299,7 @@ export const WET_GAIN_MULT = 0.85;
 export const MOISTURE_DATA_FRESH_DAYS = 2;
 export const GREENS_SENSORS_COST = nzPrice(12000, 1000);
 export const TURFRAD_COST = nzPrice(20000, 1000);
+export const WEATHER_STATION_COST = nzPrice(7000, 1000);
 export const GREEN_DRYING_FACTOR_MIN = 0.8;
 export const GREEN_DRYING_FACTOR_MAX = 1.3;
 export const MOISTURE_MIN = 0;
@@ -326,6 +327,16 @@ export const MOISTURE_ET_WEATHER = {
   storm: 0,
   frost: 0.4,
 };
+export const WEATHER_RH = {
+  fine: 48,
+  overcast: 68,
+  rain: 90,
+  storm: 95,
+  frost: 84,
+};
+export const WEATHER_RH_WIND_DROP_PER = 0.7;
+export const WEATHER_RH_MIN = 28;
+export const WEATHER_RH_MAX = 98;
 export const MOISTURE_RAIN_ADD = {
   fine: 0,
   overcast: 0,

@@ -7,6 +7,7 @@ import {
   projectedPondVolume,
 } from '../engine/irrigation.js';
 import { holeCount } from '../engine/holes.js';
+import { surfaceEtMm } from '../engine/moisture.js';
 import { planningDayOf, weekdayLabel } from '../engine/week.js';
 
 function formatIrrigationMm(value) {
@@ -24,6 +25,14 @@ export default function IrrigationMmSlider({ state, surface, onSetIrrigation }) 
   const projected = projectedPondVolume(state);
   const mains = demand.total > (state.pond?.volume ?? 0);
   const night = weekdayLabel(planningDayOf(state));
+  const etMm = state.hasWeatherStation ? surfaceEtMm(state, surface) : null;
+  const etDelta = etMm == null ? null : mm - etMm;
+  let etCopy = null;
+  if (etMm != null) {
+    if (Math.abs(etDelta) < 0.35) etCopy = 'near replacement';
+    else if (etDelta > 0) etCopy = 'more than replacement';
+    else etCopy = 'short of replacement';
+  }
 
   return (
     <label className="mt-2 block">
@@ -39,6 +48,12 @@ export default function IrrigationMmSlider({ state, surface, onSetIrrigation }) 
         className="mt-2 w-full"
         aria-label={`${surface} irrigation millimetres`}
       />
+      {etMm != null ? (
+        <p className="mt-2 text-sm" data-irrigation-et={surface}>
+          Station ET {formatIrrigationMm(etMm)} · you set {formatIrrigationMm(mm)}
+          {etCopy ? ` · ${etCopy}` : ''}
+        </p>
+      ) : null}
       <p className="mt-2 text-sm" data-irrigation-m3={surface}>
         Draw {draw.toFixed(1)} m³ tonight
       </p>
