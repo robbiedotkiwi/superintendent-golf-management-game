@@ -14,12 +14,11 @@ import {
   VENTRAC_ID,
   WALK_BEHIND_COST,
   WALK_BEHIND_ID,
-  WALK_BEHIND_TIME_MULT,
   WEAR_PER_USE,
   WEAR_THRESHOLD,
 } from '../src/data/constants.js';
 import { getTask } from '../src/data/tasks.js';
-import { durationForTask } from '../src/engine/assignment.js';
+import { durationForTask, mowingOperatorTimeMultiplier } from '../src/engine/assignment.js';
 import {
   canBuyMachine,
   ineligibleMachines,
@@ -57,7 +56,12 @@ const start = createInitialState();
 const baseTime = durationForTask(start, 'cutGreens');
 assert.equal(
   baseTime,
-  Math.round(setupMinutesFor('greens', 9) + variableJobMinutes(start, 'cutGreens') * machineMultiplierFor(start, GREENSMASTER_ID)),
+  Math.round(
+    setupMinutesFor('greens', 9) +
+      variableJobMinutes(start, 'cutGreens') *
+        machineMultiplierFor(start, GREENSMASTER_ID) *
+        mowingOperatorTimeMultiplier(),
+  ),
 );
 assert.equal(pickMachine(start, getTask('cutGreens'))?.id, GREENSMASTER_ID);
 
@@ -65,9 +69,15 @@ let bought = reducer(start, { type: 'BUY_MACHINE', machineId: WALK_BEHIND_ID });
 assert.equal(bought.cash, start.cash - WALK_BEHIND_COST);
 assert.equal(
   durationForTask(bought, 'cutGreens'),
-  Math.round(setupMinutesFor('greens', 9) + variableJobMinutes(bought, 'cutGreens') * WALK_BEHIND_TIME_MULT),
+  Math.round(
+    setupMinutesFor('greens', 9) +
+      variableJobMinutes(bought, 'cutGreens') *
+        machineMultiplierFor(bought, WALK_BEHIND_ID, 'greens') *
+        mowingOperatorTimeMultiplier(),
+  ),
 );
-assert.ok(durationForTask(bought, 'cutGreens') < baseTime);
+assert.equal(pickMachine(bought, getTask('cutGreens'))?.id, WALK_BEHIND_ID);
+assert.notEqual(durationForTask(bought, 'cutGreens'), baseTime);
 
 const withVentrac = reducer({ ...createInitialState(), cash: 250000 }, { type: 'BUY_MACHINE', machineId: VENTRAC_ID });
 assert.ok(withVentrac.ownedMachines.includes(VENTRAC_ID));

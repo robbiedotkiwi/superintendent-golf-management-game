@@ -14,6 +14,7 @@ import {
   MACHINE_BRAND_FOLEY,
   MACHINE_STATUS_NEW,
   MACHINE_STATUS_USED,
+  AUTONOMOUS_MOW_EFFICIENCY,
   REPAIR_MINUTES,
   SALESMAN_RELATIONSHIP_MAX,
   SHED_TAB_BUY,
@@ -45,6 +46,7 @@ import {
   claimedMinutesByMachine,
   conditionOf,
   machineDailyMinutesOf,
+  mowConditionEfficiency,
   ownedUpgradeIds,
 } from '../engine/equipment.js';
 import { canBuyUsed, canSellMachine, salePrice } from '../engine/market.js';
@@ -159,7 +161,11 @@ export default function Shed({
                   {machine?.description ? <p className="mt-1 text-sm text-[var(--sand)]">{machine.description}</p> : null}
                   <p className="mt-1 text-sm">{machineStatusLine(state, id)}</p>
                   <p className="mt-2">
-                    Condition {condition} / {CONDITION_MAX}
+                    Condition {condition} / {CONDITION_MAX} · {Math.round(mowConditionEfficiency(condition) * 100)}%
+                    mow
+                    {machine?.autonomous
+                      ? ` · ${Math.round(AUTONOMOUS_MOW_EFFICIENCY * 100)}% auto base`
+                      : ''}
                     {condition < CONDITION_SLOW_THRESHOLD ? ' — slower cuts.' : ''}
                   </p>
                   <p className="mt-1 text-sm text-[var(--sand)]">

@@ -26,12 +26,14 @@ import {
   WALK_BEHIND_ID,
   WALK_BEHIND_TIME_MULT,
 } from '../src/data/constants.js';
-import { durationForTask } from '../src/engine/assignment.js';
+import { durationForTask, mowingOperatorTimeMultiplier } from '../src/engine/assignment.js';
 import {
   conditionOf,
   conditionTimeMultiplier,
   machineMultiplierFor,
   machineTimeMultiplier,
+  mowConditionEfficiency,
+  mowConditionTimeMultiplier,
 } from '../src/engine/equipment.js';
 import { createInitialState, reducer } from '../src/engine/gameState.js';
 import { mowingMinutes } from '../src/engine/mowing.js';
@@ -53,6 +55,9 @@ assert.equal(SALESMAN_RELATIONSHIP_START, 50);
 assert.equal(conditionTimeMultiplier(CONDITION_MAX), 1);
 assert.equal(conditionTimeMultiplier(CONDITION_MIN), 1 + CONDITION_MAX * CONDITION_TIME_PENALTY_PER_POINT);
 assert.equal(conditionTimeMultiplier(50), 1.25);
+assert.equal(mowConditionEfficiency(CONDITION_MIN), 0.9);
+assert.equal(mowConditionEfficiency(50), 1);
+assert.equal(mowConditionEfficiency(CONDITION_MAX), 1.1);
 
 const start = createInitialState();
 assert.deepEqual(start.ownedMachines, STARTING_MACHINE_IDS);
@@ -71,7 +76,13 @@ const greensTask = getTask('cutGreens');
 assert.equal(machineTimeMultiplier(start, greensTask), machineMultiplierFor(start, GREENSMASTER_ID));
 assert.equal(
   durationForTask(start, 'cutGreens'),
-  Math.round(setupMinutesFor('greens', 9) + variableJobMinutes(start, 'cutGreens') * GREENSMASTER_TIME_MULT * conditionTimeMultiplier(GREENSMASTER_START_CONDITION)),
+  Math.round(
+    setupMinutesFor('greens', 9) +
+      variableJobMinutes(start, 'cutGreens') *
+        GREENSMASTER_TIME_MULT *
+        mowConditionTimeMultiplier(GREENSMASTER_START_CONDITION) *
+        mowingOperatorTimeMultiplier(),
+  ),
 );
 
 const worn = {
@@ -82,10 +93,16 @@ const mint = {
   ...start,
   machineCondition: { ...start.machineCondition, [GREENSMASTER_ID]: CONDITION_MAX },
 };
-assert.equal(machineTimeMultiplier(worn, greensTask), 1.25);
+assert.equal(machineTimeMultiplier(worn, greensTask), mowConditionTimeMultiplier(50));
 assert.equal(
   durationForTask(worn, 'cutGreens'),
-  Math.round(setupMinutesFor('greens', 9) + variableJobMinutes(worn, 'cutGreens') * GREENSMASTER_TIME_MULT * conditionTimeMultiplier(50)),
+  Math.round(
+    setupMinutesFor('greens', 9) +
+      variableJobMinutes(worn, 'cutGreens') *
+        GREENSMASTER_TIME_MULT *
+        mowConditionTimeMultiplier(50) *
+        mowingOperatorTimeMultiplier(),
+  ),
 );
 assert.ok(durationForTask(worn, 'cutGreens') > durationForTask(mint, 'cutGreens'));
 
@@ -131,7 +148,13 @@ assert.equal(bought.machineCondition[WALK_BEHIND_ID], NEW_PURCHASE_CONDITION);
 assert.equal(bought.machineDailyMinutes[WALK_BEHIND_ID], MACHINE_DAILY_MINUTES);
 assert.equal(
   durationForTask(bought, 'cutGreens'),
-  Math.round(setupMinutesFor('greens', 9) + variableJobMinutes(bought, 'cutGreens') * WALK_BEHIND_TIME_MULT),
+  Math.round(
+    setupMinutesFor('greens', 9) +
+      variableJobMinutes(bought, 'cutGreens') *
+        WALK_BEHIND_TIME_MULT *
+        mowConditionTimeMultiplier(NEW_PURCHASE_CONDITION) *
+        mowingOperatorTimeMultiplier(),
+  ),
 );
 
 const shedSrc = readFileSync(new URL('../src/components/Shed.jsx', import.meta.url), 'utf8');
@@ -144,8 +167,8 @@ assert.match(equipmentSrc, /conditionTimeMultiplier/);
 
 console.log('GATE A1 PASS named condition constants exported');
 console.log('GATE A2 PASS new game starters are condition 28 and 28');
-console.log('GATE A3 PASS durationForTask includes machine timeMult and condition penalty');
-console.log('GATE A4 PASS condition 50 applies 1.25× time penalty in the engine');
+console.log('GATE A3 PASS durationForTask includes mow operator, coverage and ±10% condition');
+console.log('GATE A4 PASS condition 50 is even for mowing; 0/100 is −10%/+10%');
 console.log('GATE A5 PASS old saves migrate missing condition to 80');
 console.log('GATE A6 PASS mowing drops condition by CONDITION_LOSS_PER_USE');
 console.log('GATE A7 PASS shed shows condition');

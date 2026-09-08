@@ -5,7 +5,7 @@ import { mowingMinutes } from './mowing.js';
 import { handWaterMinutes } from './moisture.js';
 import { isWorkerPresent, workerAllows } from './skills.js';
 
-export { workerAllows, isWorkerPresent, workerTimeMultiplier } from './skills.js';
+export { workerAllows, isWorkerPresent, workerTimeMultiplier, mowingSpeedEfficiency, mowingOperatorTimeMultiplier } from './skills.js';
 export { workerQualityMultiplier, qualityRandomFactor } from './skills.js';
 
 export function preferredStat(surface) {

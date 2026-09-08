@@ -178,7 +178,7 @@ export const SAVE_ROUTE_LABEL = 'Save route';
 export const REPEAT_LAST_LABEL = 'Repeat last';
 export const ROUTE_NAME_MAX = 24;
 
-export const DEFAULT_DAY_OVERLOAD_MINUTES = 1052;
+export const DEFAULT_DAY_OVERLOAD_MINUTES = 1227;
 export const DEFAULT_DAY_OVERLOAD_RATIO = DEFAULT_DAY_OVERLOAD_MINUTES / DAY_LENGTH_MINUTES;
 
 export const BASE_GAIN = 6;
@@ -817,6 +817,11 @@ export const EVENT_DECLINE_STANDING = 3;
 
 export const SPEED_SKILL_BASE = 1.3;
 export const SPEED_SKILL_STEP = 0.1;
+export const MOW_SPEED_EFFICIENCY_AT_1 = 0.5;
+export const MOW_SPEED_EFFICIENCY_AT_5 = 0.7;
+export const MOW_CONDITION_EFFICIENCY_AT_0 = 0.9;
+export const MOW_CONDITION_EFFICIENCY_AT_100 = 1.1;
+export const AUTONOMOUS_MOW_EFFICIENCY = 0.9;
 export const QUALITY_SKILL_BASE = 0.7;
 export const QUALITY_SKILL_STEP = 0.1;
 export const QUALITY_RANDOM_AT_1 = 0.2;

@@ -21,11 +21,11 @@ import {
   TASK_MINUTES,
 } from '../src/data/constants.js';
 import { getMachine } from '../src/data/equipment.js';
-import { durationForTask } from '../src/engine/assignment.js';
+import { durationForTask, mowingOperatorTimeMultiplier } from '../src/engine/assignment.js';
 import {
   canBuyMachine,
-  conditionTimeMultiplier,
   machineMultiplierFor,
+  mowConditionTimeMultiplier,
 } from '../src/engine/equipment.js';
 import { canPlanTask, createInitialState } from '../src/engine/gameState.js';
 import { mowingMinutes } from '../src/engine/mowing.js';
@@ -69,19 +69,29 @@ assert.ok(durationForTask(start, 'cutRough') < DAY_LENGTH_MINUTES);
 
 assert.equal(
   durationForTask(start, 'cutGreens'),
-  Math.round(setupMinutesFor('greens', 9) + variableJobMinutes(start, 'cutGreens') * machineMultiplierFor(start, GREENSMASTER_ID)),
+  Math.round(
+    setupMinutesFor('greens', 9) +
+      variableJobMinutes(start, 'cutGreens') *
+        machineMultiplierFor(start, GREENSMASTER_ID) *
+        mowingOperatorTimeMultiplier(),
+  ),
 );
 assert.equal(
   durationForTask(start, 'cutFairways'),
-  Math.round(setupMinutesFor('fairways', 9) + variableJobMinutes(start, 'cutFairways') * machineMultiplierFor(start, REELMASTER_ID)),
+  Math.round(
+    setupMinutesFor('fairways', 9) +
+      variableJobMinutes(start, 'cutFairways') *
+        machineMultiplierFor(start, REELMASTER_ID) *
+        mowingOperatorTimeMultiplier(),
+  ),
 );
 assert.equal(
   machineMultiplierFor(start, GREENSMASTER_ID),
-  GREENSMASTER_TIME_MULT * conditionTimeMultiplier(GREENSMASTER_START_CONDITION),
+  GREENSMASTER_TIME_MULT * mowConditionTimeMultiplier(GREENSMASTER_START_CONDITION),
 );
 assert.equal(
   machineMultiplierFor(start, REELMASTER_ID),
-  REELMASTER_TIME_MULT * conditionTimeMultiplier(REELMASTER_START_CONDITION),
+  REELMASTER_TIME_MULT * mowConditionTimeMultiplier(REELMASTER_START_CONDITION),
 );
 
 const player = start.workers[0];

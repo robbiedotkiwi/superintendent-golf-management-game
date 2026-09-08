@@ -18,10 +18,16 @@ import {
 } from '../data/constants.js';
 import { useState } from 'react';
 import { canFireWorker, dayOfWeek, severanceCost } from '../engine/staff.js';
+import { mowingSpeedEfficiency } from '../engine/skills.js';
 import { workerAbsenceReason } from '../engine/availability.js';
 import { formatMoney } from '../engine/format.js';
 import { canBookCasual, casualDaysBooked, weekDays, weekdayLabel } from '../engine/week.js';
 import SectionTabs from './SectionTabs.jsx';
+
+function mowSpeedLabel(speedSkill) {
+  if (speedSkill == null) return 'Speed —';
+  return `Speed ${speedSkill} · ${Math.round(mowingSpeedEfficiency(speedSkill) * 100)}% mow`;
+}
 
 export default function Crew({
   state,
@@ -71,7 +77,7 @@ export default function Crew({
             <h3 className={`text-2xl font-semibold ${reason ? 'line-through' : ''}`}>{worker.name}</h3>
             {reason ? <p className="text-sm text-[var(--sand)]">{reason}</p> : null}
             <p>
-              Speed {worker.speedSkill} · Quality {worker.qualitySkill} · Morale {Math.round(worker.morale)} · Wage {formatMoney(worker.wage)}/day
+              {mowSpeedLabel(worker.speedSkill)} · Quality {worker.qualitySkill} · Morale {Math.round(worker.morale)} · Wage {formatMoney(worker.wage)}/day
               {worker.isMechanic ? ' · Mechanic' : ''}
               {worker.sprayCertified ? ' · Spray ticket' : ''}
             </p>
@@ -148,7 +154,7 @@ export default function Crew({
             {reason ? <p className="text-sm text-[var(--sand)]">{reason}</p> : null}
             <p className="mt-2">
               Comes on day {state.volunteerWeekday ?? VOLUNTEER_DEFAULT_WEEKDAY} of each {DAYS_PER_WEEK}-day week
-              with {VOLUNTEER_MINUTES} min. Speed {volunteer?.speedSkill} · Quality {volunteer?.qualitySkill} — all
+              with {VOLUNTEER_MINUTES} min. {mowSpeedLabel(volunteer?.speedSkill)} · Quality {volunteer?.qualitySkill} — all
               surfaces, half a day. Wage {formatMoney(PLAYER_WAGE)}.
             </p>
           </>
@@ -210,7 +216,7 @@ export default function Crew({
             <section key={casual.id} className="border-2 border-[var(--sand)] p-4">
               <h3 className="text-2xl font-semibold">{casual.name}</h3>
               <p>
-                Speed {casual.speedSkill} · Quality {casual.qualitySkill} · {formatMoney(casual.wage)}/day
+                {mowSpeedLabel(casual.speedSkill)} · Quality {casual.qualitySkill} · {formatMoney(casual.wage)}/day
               </p>
               <p className="text-sm text-[var(--sand)]">
                 {booked.length ? `Booked ${booked.map((day) => weekdayLabel(day)).join(', ')}` : 'Not booked this week'}
@@ -251,7 +257,7 @@ export default function Crew({
           <section key={candidate.id} className="border border-[var(--sand)] p-4">
             <h3 className="text-xl font-semibold">{candidate.name}</h3>
             <p>
-              Speed {candidate.speedSkill} · Quality {candidate.qualitySkill} · {formatMoney(candidate.wage)}/day
+              {mowSpeedLabel(candidate.speedSkill)} · Quality {candidate.qualitySkill} · {formatMoney(candidate.wage)}/day
               {candidate.isMechanic ? ' · Mechanic' : ''}
             </p>
             <button

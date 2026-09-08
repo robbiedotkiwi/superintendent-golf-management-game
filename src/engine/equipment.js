@@ -34,6 +34,8 @@ import {
   GRIND_AWAY_DAYS,
   MACHINE_DAILY_MINUTES,
   MIGRATED_MACHINE_CONDITION,
+  MOW_CONDITION_EFFICIENCY_AT_0,
+  MOW_CONDITION_EFFICIENCY_AT_100,
   NEW_PURCHASE_CONDITION,
   PLAYER_ID,
   QUALITY_MAX,
@@ -69,7 +71,7 @@ import { jobHolesFor, setupMinutesFor, variableJobMinutes } from './jobs.js';
 import { handWaterMinutes } from './moisture.js';
 import { taskTimeMultiplier } from './projects.js';
 import { bumpCapitalSpent } from './history.js';
-import { workerTimeMultiplier } from './skills.js';
+import { workerTimeMultiplier, mowingOperatorTimeMultiplier } from './skills.js';
 import { hasMechanic } from './staff.js';
 import { createRng } from './rng.js';
 import { needsCash, spendCash } from './cash.js';
@@ -86,6 +88,16 @@ export function clampCondition(value) {
 
 export function conditionTimeMultiplier(condition) {
   return 1 + (CONDITION_MAX - clampCondition(condition)) * CONDITION_TIME_PENALTY_PER_POINT;
+}
+
+export function mowConditionEfficiency(condition) {
+  const at0 = Math.round(MOW_CONDITION_EFFICIENCY_AT_0 * 100);
+  const at100 = Math.round(MOW_CONDITION_EFFICIENCY_AT_100 * 100);
+  return (at0 * CONDITION_MAX + clampCondition(condition) * (at100 - at0)) / (100 * CONDITION_MAX);
+}
+
+export function mowConditionTimeMultiplier(condition) {
+  return 1 / mowConditionEfficiency(condition);
 }
 
 export function startingConditionFor(machineId) {
@@ -391,7 +403,12 @@ export function durationOnMachine(state, taskId, worker, machineId, holeIds) {
   const variable = variableJobMinutes(state, taskId, holeIds);
   const machine = machineId ? machineMultiplierFor(state, machineId, task?.surface) : 1;
   const extras = taskTimeMultiplier(state, task);
-  const workerMult = worker ? workerTimeMultiplier(worker) : 1;
+  const spec = machineId ? getMachine(machineId) : null;
+  const workerMult = task.mowing
+    ? mowingOperatorTimeMultiplier(worker, { autonomous: Boolean(spec?.autonomous) })
+    : worker
+      ? workerTimeMultiplier(worker)
+      : 1;
   return Math.round(setup + variable * machine * extras * workerMult);
 }
 
@@ -450,9 +467,13 @@ export function machinePlanCheck(state, task, worker, machineId, holeIds) {
 export function machineMultiplierFor(state, machineId, surface) {
   const machine = getMachine(machineId);
   if (!machine) return 1;
+  const mowCondition = machineCanMow(machine) || Boolean(machine.autonomous);
+  const conditionMult = mowCondition
+    ? mowConditionTimeMultiplier(conditionOf(state, machineId))
+    : conditionTimeMultiplier(conditionOf(state, machineId));
   return (
     machineTimeMult(machine, surface) *
-    conditionTimeMultiplier(conditionOf(state, machineId)) *
+    conditionMult *
     upgradeModifiers(state, machineId).timeMult
   );
 }

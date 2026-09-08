@@ -56,8 +56,8 @@ const one = reducer(start, { type: 'PLAN_TASK', taskId: 'cutGreens', holes: [1] 
 const oneMin = one.plannedTasks[0].minutes;
 const nine = reducer(start, { type: 'PLAN_TASK', taskId: 'cutGreens', holes: [1, 2, 3, 4, 5, 6, 7, 8, 9] });
 const nineMin = nine.plannedTasks[0].minutes;
-assert.equal(oneMin, 27);
-assert.equal(nineMin, 196);
+assert.equal(oneMin, 32);
+assert.equal(nineMin, 239);
 
 let thu = reducer(start, { type: 'SET_PLANNING_DAY', day: 4 });
 assert.equal(thu.planningDay, 4);
