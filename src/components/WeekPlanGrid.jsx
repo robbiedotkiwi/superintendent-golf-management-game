@@ -215,9 +215,7 @@ export default function WeekPlanGrid({
               const assignable = people.filter((worker) => workerAllows(worker, row.surface));
               const workerLabel = row.mixedWorker
                 ? 'mixed'
-                : assignedOwnMower
-                  ? `${assignedWorker.name} · own mower`
-                  : assignedWorker?.name ?? '—';
+                : assignedWorker?.name ?? '—';
               const machineLabel = assignedOwnMower
                 ? 'Own mower'
                 : row.mixedMachine
