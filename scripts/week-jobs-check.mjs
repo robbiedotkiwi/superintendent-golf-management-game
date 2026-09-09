@@ -89,6 +89,7 @@ assert.match(irrigationSrc, /data-irrigation-table/);
 assert.match(turfSrc, /IrrigationWeekTab/);
 assert.match(dialogSrc, /Start \{weekday\}/);
 assert.match(appSrc, /simViewState/);
+assert.match(appSrc, /today=\{today\}/);
 assert.doesNotMatch(dialogSrc, /onSelectDay/);
 
 let state = withFineWeek(createInitialState());
