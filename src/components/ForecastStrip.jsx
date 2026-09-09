@@ -64,9 +64,9 @@ function WeatherIcon({ type }) {
   );
 }
 
-export default function ForecastStrip({ state, onSelectDay }) {
+export default function ForecastStrip({ state, onSelectDay, selectedDay }) {
   const days = weekDays(state.day);
-  const selected = planningDayOf(state);
+  const selected = selectedDay ?? planningDayOf(state);
   const plan = weekPlanOf(state);
   const rolling = state.forecastStrip ?? [];
 
@@ -77,10 +77,12 @@ export default function ForecastStrip({ state, onSelectDay }) {
           const entry = forecastEntryForDay(state, day);
           const jobs = getDayTasks(state, day).length;
           const past = day < state.day;
-          const selectedDay = day === selected;
+          const isToday = day === state.day;
+          const selectedDayChip = day === selected;
+          const planningAhead = selectedDayChip && day > state.day;
           const edit = canEditPlanDay(state, day);
           const forecastIndex = day - state.day - 1;
-          const opacity = past ? 0.45 : day === state.day ? 1 : forecastOpacity(Math.max(0, forecastIndex));
+          const opacity = past ? 0.45 : isToday ? 1 : forecastOpacity(Math.max(0, forecastIndex));
           const heat = formatTempRange(entry.tempMin, entry.tempMax);
           const weather = WEATHER_LABELS[entry.type] ?? entry.type;
           return (
@@ -89,13 +91,24 @@ export default function ForecastStrip({ state, onSelectDay }) {
               type="button"
               disabled={!onSelectDay || past}
               onClick={() => onSelectDay?.(day)}
+              data-forecast-day={day}
+              data-today={isToday || undefined}
+              data-planning-ahead={planningAhead || undefined}
               className={`flex min-w-0 flex-1 flex-col items-center rounded-sm px-0.5 py-1 text-center text-[10px] leading-tight text-[var(--paint)] ${
-                selectedDay ? 'bg-[var(--machine-orange)] text-[var(--paint)]' : 'border border-[var(--sand)]/40'
+                isToday
+                  ? 'bg-[var(--machine-orange)] text-[var(--paint)]'
+                  : planningAhead
+                    ? 'border border-dashed border-[var(--machine-orange)] bg-[var(--machine-orange)]/15'
+                    : selectedDayChip
+                      ? 'bg-[var(--machine-orange)] text-[var(--paint)]'
+                      : 'border border-[var(--sand)]/40'
               } disabled:cursor-default`}
               style={{ opacity }}
               title={`${weekdayLabel(day)} ${day}${edit.ok ? '' : ` · ${edit.reason}`}`}
             >
               <div className="font-semibold">{weekdayLabel(day)}</div>
+              {isToday ? <div className="text-[9px] font-semibold">Today</div> : null}
+              {planningAhead ? <div className="text-[9px] font-semibold">Planning</div> : null}
               <WeatherIcon type={entry.type} />
               <div className="truncate">{weather}</div>
               <div className="text-[var(--sand)]">{heat}</div>

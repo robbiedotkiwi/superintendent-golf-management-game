@@ -80,6 +80,7 @@ import { GreensMoistureList, MoistureLine } from './MoistureReadout.jsx';
 import SectionTabs from './SectionTabs.jsx';
 import HoleSelector from './HoleSelector.jsx';
 import WeekPlanGrid from './WeekPlanGrid.jsx';
+import IrrigationWeekTab from './IrrigationWeekTab.jsx';
 import CutPatternsTab from './CutPatternsTab.jsx';
 import { turfTabLabels, visibleTurfTabs } from '../engine/section.js';
 import {
@@ -201,9 +202,12 @@ export default function Turf({
           onPlan={onPlan}
           onRemove={onRemove}
           onSelectDay={onSelectDay}
-          onSetIrrigation={onSetIrrigation}
           onSetWorker={onSetWorker}
         />
+      ) : null}
+
+      {tab === TURF_TAB_IRRIGATION ? (
+        <IrrigationWeekTab state={state} onSetIrrigation={onSetIrrigation} onSelectDay={onSelectDay} />
       ) : null}
 
       {tab === TURF_TAB_PATTERNS ? (

@@ -1167,7 +1167,7 @@ export const TURF_TABS = [
   TURF_TAB_INPUTS,
   TURF_TAB_OTHER,
 ];
-export const TURF_PRIMARY_TABS = [TURF_TAB_WEEK, TURF_TAB_PATTERNS];
+export const TURF_PRIMARY_TABS = [TURF_TAB_WEEK, TURF_TAB_IRRIGATION, TURF_TAB_PATTERNS];
 export const TURF_TAB_DEFAULT = TURF_TAB_MOWING;
 export const TURF_TAB_LABELS = {
   [TURF_TAB_MOWING]: 'Mowing',
@@ -1177,6 +1177,7 @@ export const TURF_TAB_LABELS = {
 };
 export const TURF_PRIMARY_TAB_LABELS = {
   [TURF_TAB_WEEK]: 'Week plan',
+  [TURF_TAB_IRRIGATION]: 'Irrigation',
   [TURF_TAB_PATTERNS]: 'Cut patterns',
 };
 export const PLAN_THIS_CUT_LABEL = 'Plan this cut';

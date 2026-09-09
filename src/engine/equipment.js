@@ -24,6 +24,7 @@ import {
   CONDITION_MIN,
   CONDITION_TIME_PENALTY_PER_POINT,
   CUT_TASK_BY_SURFACE,
+  DAY_LENGTH_MINUTES,
   DAYS_PER_WEEK,
   HOC_SURFACES,
   MACHINE_OVERRIDE_AUTO,
@@ -145,7 +146,7 @@ export function migrateMachineMaps(state) {
     if (machineHours[id] == null || !Number.isFinite(Number(machineHours[id]))) {
       machineHours[id] = STARTING_MACHINE_HOURS[id] ?? HOURS_MIGRATED;
     } else {
-      machineHours[id] = Math.max(0, Math.round(Number(machineHours[id])));
+      machineHours[id] = Math.max(0, Number(machineHours[id]));
     }
     if (!Array.isArray(machineUpgrades[id])) machineUpgrades[id] = machineUpgrades[id] ? [].concat(machineUpgrades[id]) : [];
   }
@@ -787,15 +788,28 @@ export function rollBreakdowns(state, usedIds, rng) {
   return { machineBroken, breakdowns };
 }
 
-export function applyWear(state, usedIds) {
+export function applyWear(state, usedMinutesByMachine) {
   const machineWear = { ...state.machineWear };
-  for (const id of usedIds) {
+  for (const [id, minutes] of Object.entries(usedMinutesByMachine ?? {})) {
     const machine = getMachine(id);
     if (!machine?.reel) continue;
-    const step = hasMechanic(state) ? WEAR_PER_USE * WEAR_MECHANIC_FACTOR : WEAR_PER_USE;
+    const run = Math.max(0, Number(minutes) || 0);
+    if (run <= 0) continue;
+    const perDay = hasMechanic(state) ? WEAR_PER_USE * WEAR_MECHANIC_FACTOR : WEAR_PER_USE;
+    const step = perDay * (run / DAY_LENGTH_MINUTES);
     machineWear[id] = Math.min(WEAR_MAX, (machineWear[id] ?? 0) + step);
   }
   return machineWear;
+}
+
+export function applyMachineHours(state, usedMinutesByMachine) {
+  const machineHours = { ...(state.machineHours ?? {}) };
+  for (const [id, minutes] of Object.entries(usedMinutesByMachine ?? {})) {
+    const run = Math.max(0, Number(minutes) || 0);
+    if (run <= 0) continue;
+    machineHours[id] = (Number(machineHours[id]) || 0) + run / 60;
+  }
+  return machineHours;
 }
 
 export function applyConditionLoss(state, usedIds) {

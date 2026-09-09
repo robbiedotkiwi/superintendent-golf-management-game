@@ -1,4 +1,5 @@
 import {
+  DAY_LENGTH_MINUTES,
   CUT_TASK_BY_SURFACE,
   CONDITION_WEIGHTS,
   DECAY_ACCELERATION,
@@ -57,6 +58,7 @@ import {
 import { calendarFromDay, daysUntilSeasonEnd } from './calendar.js';
 import {
   applyWear,
+  applyMachineHours,
   applyConditionLoss,
   autonomousReady,
   autonomousSurfacesOf,
@@ -186,6 +188,7 @@ export function resolveDay(state) {
   const lastDayJobs = snapshotDayJobs(state.plannedTasks);
   const done = [];
   const usedMachineIds = [];
+  const usedMinutesByMachine = {};
   const dropped = [...(state.morningDrops ?? [])];
 
   let disease = emptyDisease();
@@ -207,8 +210,11 @@ export function resolveDay(state) {
     dropped.push(item);
   }
 
-  function markUsed(id) {
-    if (id && !usedMachineIds.includes(id)) usedMachineIds.push(id);
+  function markUsed(id, minutes = 0) {
+    if (!id) return;
+    if (!usedMachineIds.includes(id)) usedMachineIds.push(id);
+    const run = Number(minutes) || 0;
+    if (run > 0) usedMinutesByMachine[id] = (usedMinutesByMachine[id] ?? 0) + run;
   }
 
   const wearIncremented = new Set();
@@ -279,10 +285,10 @@ export function resolveDay(state) {
       moistureReadDay = revealMoisture(moistureReadDay, task.surface, state.day, holeN);
     }
 
-    if (machine && runMinutes > 0 && (task.mowing || task.id === 'rollGreens')) markUsed(machine.id);
+    if (machine && runMinutes > 0 && (task.mowing || task.id === 'rollGreens')) markUsed(machine.id, runMinutes);
     if (task.id === 'rollGreens' && runMinutes > 0) {
       const roller = ownedRoller(state);
-      if (roller) markUsed(roller.id);
+      if (roller) markUsed(roller.id, runMinutes);
     }
 
     if (!taskAppliesQuality(task) || !task.surface) {
@@ -493,7 +499,12 @@ export function resolveDay(state) {
     }));
   }
 
-  const machineWear = applyWear(state, usedMachineIds);
+  const wearMinutes = { ...usedMinutesByMachine };
+  for (const id of usedMachineIds) {
+    if (wearMinutes[id] == null) wearMinutes[id] = DAY_LENGTH_MINUTES;
+  }
+  const machineWear = applyWear(state, wearMinutes);
+  const machineHours = applyMachineHours(state, usedMinutesByMachine);
   const machineCondition = applyConditionLoss(state, usedMachineIds);
   const wornState = { ...state, machineWear, machineCondition };
   const { machineBroken, breakdowns } = rollBreakdowns(wornState, usedMachineIds, rng);
@@ -577,6 +588,7 @@ export function resolveDay(state) {
     sprayedUntil,
     fertiliserUntil,
     machineWear,
+    machineHours,
     machineCondition,
     machineBroken,
     plannedTasks: [],

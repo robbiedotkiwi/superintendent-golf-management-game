@@ -26,7 +26,8 @@ import {
 } from '../data/constants.js';
 
 export function visibleTurfTabs() {
-  return TURF_SHOW_LEGACY_TABS ? [...TURF_PRIMARY_TABS, ...TURF_TABS] : [...TURF_PRIMARY_TABS];
+  if (!TURF_SHOW_LEGACY_TABS) return [...TURF_PRIMARY_TABS];
+  return [...TURF_PRIMARY_TABS, ...TURF_TABS.filter((tab) => !TURF_PRIMARY_TABS.includes(tab))];
 }
 
 export function turfTabLabels() {
@@ -57,7 +58,7 @@ function normalizeTurfTab(tab) {
   if (tab === 'summary' || tab === 'presets') {
     return TURF_SHOW_LEGACY_TABS ? TURF_TAB_MOWING : TURF_TAB_WEEK;
   }
-  if (tab === TURF_TAB_WEEK || tab === TURF_TAB_PATTERNS) return tab;
+  if (visibleTurfTabs().includes(tab)) return tab;
   if (TURF_TABS.includes(tab)) {
     return TURF_SHOW_LEGACY_TABS ? tab : TURF_TAB_WEEK;
   }

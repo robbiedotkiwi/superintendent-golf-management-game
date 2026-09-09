@@ -48,6 +48,20 @@ export function planningDayOf(state) {
   return day;
 }
 
+export function dayLengthMinutes(state, day) {
+  const weather = weatherForPlanDay(state, day);
+  return minutesTodayForWeather(weather) + (state.earlyStart ? EARLY_START_MINUTES : 0);
+}
+
+export function planDayChrome(state, day) {
+  const selected = planningDayOf(state);
+  return {
+    isToday: day === state.day,
+    isSelected: day === selected,
+    isPlanningAhead: day === selected && day > state.day,
+  };
+}
+
 export function weekPlanOf(state) {
   const start = weekStartDay(state.day);
   const plan = state.weekPlan;
@@ -116,8 +130,7 @@ export function casualDaysBooked(state, casualId) {
 }
 
 export function workersForPlanDay(state, day) {
-  const weather = weatherForPlanDay(state, day);
-  const paidBase = minutesTodayForWeather(weather) + (state.earlyStart ? EARLY_START_MINUTES : 0);
+  const paidBase = dayLengthMinutes(state, day);
   const weekday = dayOfWeek(day);
   const volunteerDay = state.volunteerWeekday ?? VOLUNTEER_DEFAULT_WEEKDAY;
   const tasks = getDayTasks(state, day);
@@ -167,6 +180,10 @@ export function planViewState(state) {
     workers: workersForPlanDay(state, day),
     irrigation: irrigationForPlanDay(state, day),
   };
+}
+
+export function simViewState(state) {
+  return planViewState({ ...state, planningDay: state.day });
 }
 
 export function isFuturePlanDay(state, day = planningDayOf(state)) {
@@ -284,13 +301,23 @@ export function dropInvalidDayTasks(state, day) {
     kept.push(item);
   }
   const used = {};
+  const usedMachine = {};
   const fitted = [];
+  const dayLen = dayLengthMinutes(state, day);
   for (const item of kept) {
     const worker = workers.find((entry) => entry.id === item.workerId);
     const already = used[item.workerId] ?? 0;
     if (!worker || already + item.minutes > worker.minutesToday) {
-      dropped.push({ ...item, reason: 'time' });
+      dropped.push({ ...item, reason: 'time', fit: 'person' });
       continue;
+    }
+    if (item.machineId) {
+      const alreadyMachine = usedMachine[item.machineId] ?? 0;
+      if (alreadyMachine + item.minutes > dayLen) {
+        dropped.push({ ...item, reason: 'time', fit: 'machine' });
+        continue;
+      }
+      usedMachine[item.machineId] = alreadyMachine + item.minutes;
     }
     used[item.workerId] = already + item.minutes;
     fitted.push(item);

@@ -1,9 +1,8 @@
 import { useMemo, useState } from 'react';
 import { PLAYER_ID } from '../data/constants.js';
-import { SURFACE_LABELS } from '../data/tasks.js';
 import { allowingMachines } from '../engine/equipment.js';
 import { machineTitle, catalogMachineTitle } from '../engine/machineDisplay.js';
-import { canEditPlanDay, weekDays, weekdayLabel } from '../engine/week.js';
+import { canEditPlanDay, planDayChrome, weekDays, weekdayLabel } from '../engine/week.js';
 import {
   capacityBarsForPerson,
   courseHolesFor,
@@ -11,15 +10,14 @@ import {
   defaultWorkerId,
   displayCellMinutes,
   EVERYONE_ID,
-  irrigationCells,
   isEveryonePlanner,
   jobsThatWontFit,
+  machineCapacityForDay,
   rosterPeople,
   rosterWorker,
   rowsForPerson,
 } from '../engine/weekGrid.js';
 import { workerAllows, workerBringsOwnMower } from '../engine/skills.js';
-import { IRRIGATED_SURFACES, clampIrrigationMm, irrigationMmRange } from '../engine/irrigation.js';
 import ForecastStrip from './ForecastStrip.jsx';
 
 function fillPercent(used, capacity) {
@@ -71,26 +69,32 @@ function PersonBars({ state, day, workerId }) {
   );
 }
 
-function IrrigationDayCell({ cell, surface, onSetIrrigation, locked }) {
-  const range = irrigationMmRange(surface);
-  if (!range) return null;
+function MachineBars({ state, day, workerId }) {
+  const machines = machineCapacityForDay(state, day, workerId);
+  if (!machines.length) return null;
   return (
-    <label className="block text-center text-[11px]">
-      <span className="sr-only">{SURFACE_LABELS[surface]} {weekdayLabel(cell.day)}</span>
-      <div className="font-condensed text-lg font-bold leading-none">{cell.mm} mm</div>
-      <input
-        type="range"
-        min={range.min}
-        max={range.max}
-        step={range.step}
-        value={cell.mm}
-        disabled={locked}
-        onChange={(event) => onSetIrrigation(surface, clampIrrigationMm(surface, Number(event.target.value)), cell.day)}
-        className="mt-1 w-full"
-        aria-label={`${SURFACE_LABELS[surface]} irrigation millimetres ${weekdayLabel(cell.day)}`}
-        data-irrigation-input={`${surface}-${cell.day}`}
-      />
-    </label>
+    <div className="mt-2 space-y-1" data-machine-capacity-day={day}>
+      {machines.map((machine) => (
+        <div key={machine.id} data-capacity-machine={machine.id} data-overfill={machine.overfilled || undefined}>
+          <div className={`flex justify-between gap-1 text-[10px] leading-tight ${machine.overfilled ? 'text-red-500' : ''}`}>
+            <span className="truncate">
+              {catalogMachineTitle(machine.id)} — {Math.round(machine.used)}/{machine.capacity}
+            </span>
+          </div>
+          <div className="h-1.5 overflow-hidden bg-[var(--paint)]/20">
+            <div
+              className={`h-full ${machine.overfilled ? 'bg-red-600' : 'bg-[var(--sand)]'}`}
+              style={{ width: `${fillPercent(machine.used, machine.capacity)}%` }}
+            />
+          </div>
+          {machine.wontFit ? (
+            <p className="text-[10px] font-semibold text-red-500" data-machine-wont-fit={machine.id}>
+              {machine.wontFit} job{machine.wontFit === 1 ? '' : 's'} won&apos;t fit
+            </p>
+          ) : null}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -99,7 +103,6 @@ export default function WeekPlanGrid({
   onPlan,
   onRemove,
   onSelectDay,
-  onSetIrrigation,
   onSetWorker,
 }) {
   const days = weekDays(state.day);
@@ -182,19 +185,34 @@ export default function WeekPlanGrid({
           <thead>
             <tr>
               <th className="sticky left-0 z-10 min-w-[14rem] border border-[var(--sand)] bg-[var(--soil)] p-2">Job</th>
-              {days.map((day) => (
-                <th
-                  key={day}
-                  className={`min-w-[7.5rem] border border-[var(--sand)] p-2 align-top ${
-                    day === state.day ? 'bg-[var(--machine-orange)]/20' : ''
-                  } ${day < state.day ? 'opacity-40' : ''}`}
-                >
-                  <div className="font-semibold">{weekdayLabel(day)}</div>
-                  <div className="mt-2">
-                    <PersonBars state={state} day={day} workerId={plannerId} />
-                  </div>
-                </th>
-              ))}
+              {days.map((day) => {
+                const chrome = planDayChrome(state, day);
+                return (
+                  <th
+                    key={day}
+                    className={`min-w-[7.5rem] border border-[var(--sand)] p-2 align-top ${
+                      chrome.isToday ? 'bg-[var(--machine-orange)]/20' : ''
+                    } ${chrome.isPlanningAhead ? 'outline outline-1 outline-dashed outline-[var(--machine-orange)]' : ''} ${
+                      day < state.day ? 'opacity-40' : ''
+                    }`}
+                    data-day-col={day}
+                    data-today={chrome.isToday || undefined}
+                    data-planning-ahead={chrome.isPlanningAhead || undefined}
+                  >
+                    <div className="font-semibold">{weekdayLabel(day)}</div>
+                    {chrome.isToday ? (
+                      <div className="text-[10px] font-semibold text-[var(--machine-orange)]">Today</div>
+                    ) : null}
+                    {chrome.isPlanningAhead ? (
+                      <div className="text-[10px] font-semibold text-[var(--machine-orange)]">Planning</div>
+                    ) : null}
+                    <div className="mt-2">
+                      <PersonBars state={state} day={day} workerId={plannerId} />
+                      <MachineBars state={state} day={day} workerId={plannerId} />
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -352,46 +370,6 @@ export default function WeekPlanGrid({
           </tbody>
         </table>
       </div>
-      <table className="w-full min-w-[64rem] border-collapse text-left text-sm" data-irrigation-table>
-        <thead>
-          <tr>
-            <th className="sticky left-0 z-10 min-w-[14rem] border border-[var(--sand)] bg-[var(--soil)] p-2">Irrigation</th>
-            {days.map((day) => (
-              <th
-                key={day}
-                className={`min-w-[7.5rem] border border-[var(--sand)] p-2 ${
-                  day === state.day ? 'bg-[var(--machine-orange)]/20' : ''
-                } ${day < state.day ? 'opacity-40' : ''}`}
-              >
-                {weekdayLabel(day)}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {IRRIGATED_SURFACES.map((surface) => (
-            <tr key={`irrigate-${surface}`} data-grid-row={`irrigate-${surface}`}>
-              <th className="sticky left-0 z-10 border border-[var(--sand)] bg-[var(--soil)] p-2 align-top">
-                <div className="font-semibold">Irrigate {SURFACE_LABELS[surface]}</div>
-                <p className="mt-1 text-xs text-[var(--sand)]">Nightly millimetres. Not a timed job.</p>
-              </th>
-              {irrigationCells(state, surface).map((cell) => {
-                const edit = canEditPlanDay(state, cell.day);
-                return (
-                  <td key={cell.day} className="border border-[var(--sand)] p-2 align-top">
-                    <IrrigationDayCell
-                      cell={cell}
-                      surface={surface}
-                      onSetIrrigation={onSetIrrigation}
-                      locked={!edit.ok}
-                    />
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   );
 }

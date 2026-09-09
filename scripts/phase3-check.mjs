@@ -14,6 +14,7 @@ import {
   VENTRAC_ID,
   WALK_BEHIND_COST,
   WALK_BEHIND_ID,
+  DAY_LENGTH_MINUTES,
   WEAR_PER_USE,
   WEAR_THRESHOLD,
 } from '../src/data/constants.js';
@@ -97,8 +98,9 @@ assert.ok(meanQuality(capped, 'greens') <= surfaceCeiling(capped, 'greens') + 1e
 
 let worn = reducer(createInitialState(), { type: 'BUY_MACHINE', machineId: WALK_BEHIND_ID });
 worn = plan(worn, 'cutGreens');
+const wornMinutes = worn.plannedTasks[0].minutes;
 worn = end(worn);
-assert.equal(worn.machineWear[WALK_BEHIND_ID], WEAR_PER_USE);
+assert.ok(Math.abs(worn.machineWear[WALK_BEHIND_ID] - WEAR_PER_USE * (wornMinutes / DAY_LENGTH_MINUTES)) < 1e-6);
 
 assert.equal(wearMultiplier({ machineWear: { [WALK_BEHIND_ID]: 0 } }, WALK_BEHIND_ID), 1);
 assert.ok(wearMultiplier({ machineWear: { [WALK_BEHIND_ID]: WEAR_THRESHOLD + 1 } }, WALK_BEHIND_ID) < 1);

@@ -7,6 +7,7 @@ import { daysSinceLastWorked } from './neglect.js';
 import { workerAllows, workerBringsOwnMower } from './skills.js';
 import {
   dropInvalidDayTasks,
+  dayLengthMinutes,
   getDayTasks,
   irrigationForPlanDay,
   weekDays,
@@ -19,11 +20,15 @@ export const EVERYONE_ID = 'all';
 export const WEEK_GRID_JOBS = [
   { taskId: 'cutGreens', surface: 'greens', label: 'Mow greens' },
   { taskId: 'rollGreens', surface: 'greens', label: 'Roll greens' },
+  { taskId: 'changeCups', surface: 'greens', label: 'Change cups' },
+  { taskId: 'handWater', surface: 'greens', label: 'Hand water' },
+  { taskId: 'checkMoistureGreens', surface: 'greens', label: 'Measure moisture — greens' },
   { taskId: 'cutTees', surface: 'tees', label: 'Mow tees' },
+  { taskId: 'checkMoistureTees', surface: 'tees', label: 'Measure moisture — tees' },
   { taskId: 'cutFairways', surface: 'fairways', label: 'Mow fairways' },
+  { taskId: 'checkMoistureFairways', surface: 'fairways', label: 'Measure moisture — fairways' },
   { taskId: 'cutRough', surface: 'rough', label: 'Mow rough' },
   { taskId: 'rakeBunkers', surface: 'bunkers', label: 'Rake bunkers' },
-  { taskId: 'handWater', surface: 'greens', label: 'Hand water' },
   { taskId: 'sprayGreens', surface: 'greens', label: 'Spray greens' },
   { taskId: 'sprayTees', surface: 'tees', label: 'Spray tees' },
   { taskId: 'sprayFairways', surface: 'fairways', label: 'Spray fairways' },
@@ -201,6 +206,51 @@ export function jobsThatWontFit(state, day, workerId = null) {
   const dropped = dropInvalidDayTasks(state, day).dropped.filter((item) => item.reason === 'time');
   if (!workerId) return dropped;
   return dropped.filter((item) => item.workerId === workerId);
+}
+
+export function jobsThatWontFitOnMachine(state, day, machineId) {
+  return dropInvalidDayTasks(state, day).dropped.filter(
+    (item) => item.reason === 'time' && item.fit === 'machine' && item.machineId === machineId,
+  );
+}
+
+export function machineCapacityForDay(state, day, plannerId) {
+  const capacity = dayLengthMinutes(state, day);
+  const minutesByMachine = {};
+  for (const item of getDayTasks(state, day)) {
+    if (!item.machineId) continue;
+    minutesByMachine[item.machineId] = (minutesByMachine[item.machineId] ?? 0) + (item.minutes ?? 0);
+  }
+  const showIds = new Set(
+    Object.entries(minutesByMachine)
+      .filter(([, used]) => used > 0)
+      .map(([id]) => id),
+  );
+  if (!isEveryonePlanner(plannerId)) {
+    const worker = rosterWorker(state, plannerId);
+    if (worker) {
+      for (const job of WEEK_GRID_JOBS) {
+        const task = getTask(job.taskId);
+        if (!taskUsesMachine(task) || !workerAllows(worker, job.surface)) continue;
+        const machineId = resolvePlanMachineId(state, task, worker);
+        if (machineId) showIds.add(machineId);
+      }
+    }
+  }
+  return [...showIds]
+    .sort((a, b) => (minutesByMachine[b] ?? 0) - (minutesByMachine[a] ?? 0) || a.localeCompare(b))
+    .map((id) => {
+      const used = minutesByMachine[id] ?? 0;
+      return {
+        id,
+        used,
+        capacity,
+        overfilled: used > capacity,
+        over: Math.max(0, used - capacity),
+        fill: capacity > 0 ? used / capacity : 0,
+        wontFit: jobsThatWontFitOnMachine(state, day, id).length,
+      };
+    });
 }
 
 export function rowsForPerson(state, workerId) {

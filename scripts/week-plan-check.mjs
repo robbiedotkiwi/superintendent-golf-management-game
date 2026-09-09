@@ -78,16 +78,19 @@ const mowingSrc = readFileSync(new URL('../src/engine/mowing.js', import.meta.ur
 const gridSrc = readFileSync(new URL('../src/components/WeekPlanGrid.jsx', import.meta.url), 'utf8');
 const weekGridSrc = readFileSync(new URL('../src/engine/weekGrid.js', import.meta.url), 'utf8');
 const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+const irrigationSrc = readFileSync(new URL('../src/components/IrrigationWeekTab.jsx', import.meta.url), 'utf8');
 assert.doesNotMatch(assignSrc, /durationForTask|mowingMinutes|baseTaskMinutes/);
 assert.doesNotMatch(mowingSrc, /function mowingMinutes/);
 assert.doesNotMatch(weekGridSrc, /jobMinutes/);
 assert.doesNotMatch(turfSrc, /jobMinutes/);
 assert.match(gridSrc, /useState\(PLAYER_ID\)/);
 assert.match(gridSrc, /if \(everyone\) return/);
-assert.match(gridSrc, /data-irrigation-table/);
-assert.match(gridSrc, /data-irrigation-input/);
+assert.doesNotMatch(gridSrc, /data-irrigation-table/);
+assert.match(irrigationSrc, /data-irrigation-table/);
+assert.match(irrigationSrc, /data-irrigation-input/);
+assert.match(turfSrc, /IrrigationWeekTab/);
 assert.match(gridSrc, /onSetWorker/);
-console.log('GATE WP0 PASS durationForTask and mowingMinutes are gone; irrigation is its own table');
+console.log('GATE WP0 PASS durationForTask and mowingMinutes are gone; irrigation is its own tab');
 
 let state = withFineWeek(createInitialState());
 const player = rosterWorker(state, PLAYER_ID);
@@ -163,9 +166,10 @@ const overfilled = reducer(state, { type: 'SET_TASK_WORKER', taskId: 'rakeBunker
 assert.equal(getDayTasks(overfilled, 1).find((item) => item.taskId === 'rakeBunkers')?.workerId, PLAYER_ID);
 console.log('GATE WP5 PASS row worker reassigns matching days and SET_TASK_WORKER allows overfill');
 
-assert.match(gridSrc, /data-irrigation-table/);
-assert.doesNotMatch(gridSrc.slice(gridSrc.indexOf('rows.map'), gridSrc.indexOf('data-irrigation-table')), /IRRIGATED_SURFACES/);
-console.log('GATE WP6 PASS irrigation stays on its own table while a person is selected');
+assert.doesNotMatch(gridSrc, /data-irrigation-table/);
+assert.match(irrigationSrc, /data-irrigation-table/);
+assert.match(turfSrc, /tab === TURF_TAB_IRRIGATION/);
+console.log('GATE WP6 PASS irrigation is on its own tab, not the person job grid');
 
 assert.equal(CASUAL_OWN_MOWER_VS_CASUAL, 1.5);
 assert.equal(CASUAL_OWN_MOWER_WAGE_MULT, CASUAL_WAGE_MULT * 1.5);

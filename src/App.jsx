@@ -59,7 +59,7 @@ import {
 import { playBirds, playMower, prefersReducedMotion } from './engine/sound.js';
 import { clearSave, hasSave, loadGame, saveGame } from './engine/save.js';
 import { currentGmMessage } from './engine/gm.js';
-import { planViewState } from './engine/week.js';
+import { planViewState, simViewState } from './engine/week.js';
 import { isColdWeather } from './engine/weather.js';
 import { COLD_WEATHER_TIP_TITLE, coldWeatherCopy } from './data/events.js';
 
@@ -131,9 +131,10 @@ export default function App() {
   }, [playout, state.log]);
 
   const plan = useMemo(() => planViewState(state), [state]);
-  const minutesRemaining = useMemo(() => combinedMinutesRemaining(plan), [plan]);
-  const minutesUsed = useMemo(() => combinedMinutesUsed(plan), [plan]);
-  const minutesCapacity = useMemo(() => combinedMinutesCapacity(plan), [plan]);
+  const today = useMemo(() => simViewState(state), [state]);
+  const minutesRemaining = useMemo(() => combinedMinutesRemaining(today), [today]);
+  const minutesUsed = useMemo(() => combinedMinutesUsed(today), [today]);
+  const minutesCapacity = useMemo(() => combinedMinutesCapacity(today), [today]);
   const condition = useMemo(() => Math.round(courseCondition(state)), [state]);
 
   function handleNewGame() {
@@ -474,7 +475,7 @@ function GameScreen({
         minutesRemaining={minutesRemaining}
         minutesUsed={minutesUsed}
         minutesCapacity={minutesCapacity}
-        plannedTasks={plan.plannedTasks}
+        plannedTasks={today.plannedTasks}
         onRemove={onRemove}
         onEndDay={watching ? () => {} : () => setStartDayOpen(true)}
         playoutActive={watching || startDayOpen}
@@ -547,7 +548,7 @@ function GameScreen({
           />
         ) : view === SECTION_TURF ? (
           <Turf
-            state={plan}
+            state={state}
             tab={tabs[SECTION_TURF]}
             onTab={(tab) => onTab(SECTION_TURF, tab)}
             onBack={onCloseShed}
@@ -635,7 +636,7 @@ function GameScreen({
               <div className="pointer-events-auto absolute bottom-3 left-3 z-20 w-80 max-h-[40%] overflow-y-auto border-2 border-[var(--sand)] bg-[var(--soil)] p-3">
                 <PlanList
                   compact
-                  state={plan}
+                  state={today}
                   onReorder={onReorder}
                   onRemove={onRemove}
                 />
@@ -646,12 +647,11 @@ function GameScreen({
       </div>
       {startDayOpen && !watching ? (
         <StartDayDialog
-          state={state}
+          state={today}
           minutesRemaining={minutesRemaining}
           onRemove={onRemove}
           onReorder={onReorder}
           onSetIrrigation={onSetIrrigation}
-          onSelectDay={onSelectDay}
           onConfirm={() => {
             onCloseShed();
             onEndDay();
