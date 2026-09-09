@@ -21,14 +21,13 @@ import {
   TASK_MINUTES,
 } from '../src/data/constants.js';
 import { getMachine } from '../src/data/equipment.js';
-import { durationForTask, mowingOperatorTimeMultiplier } from '../src/engine/assignment.js';
+import { durationOnMachine, mowingOperatorTimeMultiplier } from '../src/engine/assignment.js';
 import {
   canBuyMachine,
   machineMultiplierFor,
   mowConditionTimeMultiplier,
 } from '../src/engine/equipment.js';
 import { canPlanTask, createInitialState } from '../src/engine/gameState.js';
-import { mowingMinutes } from '../src/engine/mowing.js';
 import { setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.js';
 
 assert.deepEqual(STARTING_MACHINE_IDS, [GREENSMASTER_ID, REELMASTER_ID]);
@@ -64,11 +63,11 @@ assert.equal(start.machineCondition[REELMASTER_ID], REELMASTER_START_CONDITION);
 assert.equal(canBuyMachine(start, PUSH_ROTARY_ID).ok, true);
 
 assert.equal(canPlanTask(start, 'cutFairways').ok, true);
-assert.ok(durationForTask(start, 'cutFairways') < DAY_LENGTH_MINUTES);
-assert.ok(durationForTask(start, 'cutRough') < DAY_LENGTH_MINUTES);
+assert.ok(durationOnMachine(start, 'cutFairways') < DAY_LENGTH_MINUTES);
+assert.ok(durationOnMachine(start, 'cutRough') < DAY_LENGTH_MINUTES);
 
 assert.equal(
-  durationForTask(start, 'cutGreens'),
+  durationOnMachine(start, 'cutGreens'),
   Math.round(
     setupMinutesFor('greens', 9) +
       variableJobMinutes(start, 'cutGreens') *
@@ -77,7 +76,7 @@ assert.equal(
   ),
 );
 assert.equal(
-  durationForTask(start, 'cutFairways'),
+  durationOnMachine(start, 'cutFairways'),
   Math.round(
     setupMinutesFor('fairways', 9) +
       variableJobMinutes(start, 'cutFairways') *
@@ -96,20 +95,20 @@ assert.equal(
 
 const player = start.workers[0];
 const tasks = ['cutGreens', 'rollGreens', 'changeCups', 'cutTees', 'cutFairways', 'cutRough', 'rakeBunkers'];
-const dayTotal = tasks.reduce((sum, taskId) => sum + durationForTask(start, taskId, player), 0);
+const dayTotal = tasks.reduce((sum, taskId) => sum + durationOnMachine(start, taskId, player), 0);
 const ratio = dayTotal / DAY_LENGTH_MINUTES;
 const percent = Math.round(ratio * 100);
 assert.equal(dayTotal, DEFAULT_DAY_OVERLOAD_MINUTES);
 assert.equal(percent, Math.round(DEFAULT_DAY_OVERLOAD_RATIO * 100));
 assert.equal(
   dayTotal,
-  durationForTask(start, 'cutGreens', player) +
-    durationForTask(start, 'rollGreens', player) +
-    durationForTask(start, 'changeCups', player) +
-    durationForTask(start, 'cutTees', player) +
-    durationForTask(start, 'cutFairways', player) +
-    durationForTask(start, 'cutRough', player) +
-    durationForTask(start, 'rakeBunkers', player),
+  durationOnMachine(start, 'cutGreens', player) +
+    durationOnMachine(start, 'rollGreens', player) +
+    durationOnMachine(start, 'changeCups', player) +
+    durationOnMachine(start, 'cutTees', player) +
+    durationOnMachine(start, 'cutFairways', player) +
+    durationOnMachine(start, 'cutRough', player) +
+    durationOnMachine(start, 'rakeBunkers', player),
 );
 
 console.log(

@@ -559,6 +559,7 @@ function GameScreen({
             onSetAngle={onSetAngle}
             onSetAutoRotate={onSetAutoRotate}
             onSetIrrigation={onSetIrrigation}
+            onSetWorker={onSetWorker}
             onBuyAerator={onBuyAerator}
             onBuyGreensSensors={onBuyGreensSensors}
             onBuyTurfRad={onBuyTurfRad}

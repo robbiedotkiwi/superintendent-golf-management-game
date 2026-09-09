@@ -33,7 +33,6 @@ import {
   nzPrice,
 } from '../src/data/constants.js';
 import { PER_HOLE_MINUTES } from '../src/engine/courseArea.js';
-import { durationForTask } from '../src/engine/assignment.js';
 import { durationOnMachine } from '../src/engine/equipment.js';
 import { createInitialState } from '../src/engine/gameState.js';
 import { GREENSMASTER_ID, REELMASTER_ID } from '../src/data/constants.js';
@@ -46,13 +45,13 @@ assert.equal(GREENSMASTER_START_CONDITION, 28);
 
 const start = createInitialState();
 const player = start.workers[0];
-const greens = durationForTask(start, 'cutGreens', player);
-const tees = durationForTask(start, 'cutTees', player);
-const fairways = durationForTask(start, 'cutFairways', player);
+const greens = durationOnMachine(start, 'cutGreens', player);
+const tees = durationOnMachine(start, 'cutTees', player);
+const fairways = durationOnMachine(start, 'cutFairways', player);
 const rough = durationOnMachine(start, 'cutRough', player, REELMASTER_ID);
-const cups = durationForTask(start, 'changeCups', player);
-const bunkers = durationForTask(start, 'rakeBunkers', player);
-const rolling = durationForTask(start, 'rollGreens', player);
+const cups = durationOnMachine(start, 'changeCups', player);
+const bunkers = durationOnMachine(start, 'rakeBunkers', player);
+const rolling = durationOnMachine(start, 'rollGreens', player);
 const admin = GM_MEETING_MINUTES * WEEKLY_ADMIN_JOBS;
 
 assert.ok(greens < DAY_LENGTH_MINUTES);

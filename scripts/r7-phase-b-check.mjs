@@ -12,7 +12,7 @@ import {
 } from '../src/data/constants.js';
 import { PER_HOLE_MINUTES } from '../src/engine/courseArea.js';
 import { createInitialState, reducer, canPlanTask } from '../src/engine/gameState.js';
-import { durationForTask } from '../src/engine/assignment.js';
+import { durationOnMachine } from '../src/engine/assignment.js';
 import { jobMinutes, setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.js';
 import { defaultJobHoles, frontNineIds, holeSurface } from '../src/engine/holes.js';
 
@@ -31,9 +31,9 @@ assert.deepEqual(three.plannedTasks[0].holes, [1, 2, 3]);
 const nine = reducer(start, { type: 'PLAN_TASK', taskId: 'cutGreens' });
 assert.deepEqual(nine.plannedTasks[0].holes, [1, 2, 3, 4, 5, 6, 7, 8, 9]);
 
-const oneMin = durationForTask(start, 'cutGreens', start.workers[0], undefined, [1]);
-const threeMin = durationForTask(start, 'cutGreens', start.workers[0], undefined, [1, 2, 3]);
-const nineMin = durationForTask(start, 'cutGreens', start.workers[0]);
+const oneMin = durationOnMachine(start, 'cutGreens', start.workers[0], undefined, [1]);
+const threeMin = durationOnMachine(start, 'cutGreens', start.workers[0], undefined, [1, 2, 3]);
+const nineMin = durationOnMachine(start, 'cutGreens', start.workers[0]);
 assert.ok(nineMin < threeMin * 3, 'nine holes in one job is cheaper than three jobs of three');
 assert.ok(nineMin > oneMin * 6, 'nine greens should take most of nine times one green');
 assert.ok(nineMin < oneMin * 9, 'one hitch is shared across the nine');
@@ -43,10 +43,10 @@ assert.equal(
 );
 
 const low = reducer(start, { type: 'SET_HOC', surface: 'greens', hoc: 2.5 });
-const defaultNine = durationForTask(start, 'cutGreens', start.workers[0]);
-const lowNine = durationForTask(low, 'cutGreens', start.workers[0]);
-const defaultThree = durationForTask(start, 'cutGreens', start.workers[0], undefined, [1, 2, 3]);
-const lowThree = durationForTask(low, 'cutGreens', start.workers[0], undefined, [1, 2, 3]);
+const defaultNine = durationOnMachine(start, 'cutGreens', start.workers[0]);
+const lowNine = durationOnMachine(low, 'cutGreens', start.workers[0]);
+const defaultThree = durationOnMachine(start, 'cutGreens', start.workers[0], undefined, [1, 2, 3]);
+const lowThree = durationOnMachine(low, 'cutGreens', start.workers[0], undefined, [1, 2, 3]);
 assert.ok(lowNine > defaultNine);
 const nineVar = variableJobMinutes(low, 'cutGreens') / variableJobMinutes(start, 'cutGreens');
 const threeVar = variableJobMinutes(low, 'cutGreens', [1, 2, 3]) / variableJobMinutes(start, 'cutGreens', [1, 2, 3]);

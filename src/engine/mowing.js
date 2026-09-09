@@ -4,7 +4,6 @@ import {
   HOC_GAIN_MULT,
   HOC_RANGE,
   HOC_STRESS_THRESHOLD,
-  HOC_TIME_MULT,
   MOISTURE_HIDDEN,
   MOISTURE_SURFACES,
   PATTERN_ANGLE_DEFAULT,
@@ -75,16 +74,6 @@ export function patternTimeMult(surface, pattern) {
 export function mowingBaseMinutes(taskId, surface) {
   if (taskId === 'doubleCutGreens') return TASK_MINUTES.doubleCutGreens;
   return BASE_MINUTES[surface];
-}
-
-export function mowingMinutes(state, taskId) {
-  const task = getTask(taskId);
-  const surface = task?.surface;
-  if (!task?.mowing || !surface) return TASK_MINUTES[taskId];
-  const height = state.surfaceDefaults?.[surface]?.hoc ?? hocRangeFor(state, surface)?.default ?? HOC_RANGE[surface]?.default;
-  const pattern = state.surfaceDefaults?.[surface]?.pattern ?? PATTERN_DEFAULT;
-  const factor = hocFactor(surface, height, state);
-  return Math.round(mowingBaseMinutes(taskId, surface) * HOC_TIME_MULT(factor) * patternTimeMult(surface, pattern));
 }
 
 export function mowingGain(state, taskId, workerQualityFactor = 1) {

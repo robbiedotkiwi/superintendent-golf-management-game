@@ -11,7 +11,7 @@ import {
   REELMASTER_ID,
   STARTING_MACHINE_ID,
 } from '../src/data/constants.js';
-import { durationForTask } from '../src/engine/assignment.js';
+import { durationOnMachine } from '../src/engine/assignment.js';
 import {
   MACHINE_BOOKED_REASON,
   NO_MACHINE_REASON,
@@ -32,7 +32,7 @@ assert.equal(machineMinutesRemaining(start, STARTING_MACHINE_ID), MACHINE_DAILY_
 
 const greens = reducer(start, { type: 'PLAN_TASK', taskId: 'cutGreens' });
 assert.equal(greens.plannedTasks[0].machineId, GREENSMASTER_ID);
-assert.equal(greens.plannedTasks[0].minutes, durationForTask(start, 'cutGreens'));
+assert.equal(greens.plannedTasks[0].minutes, durationOnMachine(start, 'cutGreens'));
 assert.equal(claimedMinutesByMachine(greens)[GREENSMASTER_ID], greens.plannedTasks[0].minutes);
 assert.equal(
   machineMinutesRemaining(greens, GREENSMASTER_ID),
@@ -99,13 +99,13 @@ assert.match(shedSrc, /claimedMinutesByMachine/);
 
 const task = getTask('cutGreens');
 assert.equal(pickMachineForTask(start, task, start.workers[0])?.id, STARTING_MACHINE_ID);
-assert.equal(durationForTask(start, 'cutGreens', start.workers[0]), durationForTask(start, 'cutGreens'));
+assert.equal(durationOnMachine(start, 'cutGreens', start.workers[0]), durationOnMachine(start, 'cutGreens'));
 
 console.log('GATE B1 PASS MACHINE_DAILY_MINUTES is 480');
 console.log('GATE B2 PASS planning stores machineId and claims minutes');
 console.log('GATE B3 PASS one worker still fails on worker minutes (phase 1 reason)');
 console.log('GATE B4 PASS a second worker cannot over-claim the same mower');
-console.log('GATE B5 PASS PLAN_TASK, canPlanTask, assignWorker and durationForTask share the claim check');
+console.log('GATE B5 PASS PLAN_TASK, canPlanTask, assignWorker and durationOnMachine share the claim check');
 console.log('GATE B6 PASS a second machine can take the leftover cut');
 console.log('GATE B7 PASS shed shows claimed / daily minutes');
 console.log('round 4 phase B checks passed');

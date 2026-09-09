@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { describeJob, findPlannedJob, formatHoleSet } from '../engine/jobs.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import PlanConfirmButton from './PlanConfirmButton.jsx';
-import { durationForTask } from '../engine/assignment.js';
+import { durationOnMachine } from '../engine/assignment.js';
 import HoleSelector from './HoleSelector.jsx';
 
 export { selectAllHoles, selectFrontNine } from './HoleSelector.jsx';
@@ -98,7 +98,7 @@ export default function MapSelectionBar({
         {Object.entries(CHECK_MOISTURE_BY_SURFACE).map(([surface, taskId]) => {
           const holes = selected.length ? selected : undefined;
           const planned = findPlannedJob(state, taskId, holes);
-          const minutes = planned?.minutes ?? durationForTask(state, taskId, undefined, undefined, holes);
+          const minutes = planned?.minutes ?? durationOnMachine(state, taskId, undefined, undefined, holes);
           if (planned) {
             return (
               <button

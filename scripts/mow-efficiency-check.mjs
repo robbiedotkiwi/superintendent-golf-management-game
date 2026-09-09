@@ -21,7 +21,7 @@ import {
   SPEED_SKILL_BASE,
   SPEED_SKILL_STEP,
 } from '../src/data/constants.js';
-import { durationForTask, mowingOperatorTimeMultiplier, mowingSpeedEfficiency } from '../src/engine/assignment.js';
+import { mowingOperatorTimeMultiplier, mowingSpeedEfficiency } from '../src/engine/assignment.js';
 import {
   conditionTimeMultiplier,
   durationOnMachine,
@@ -68,9 +68,9 @@ function expectedMow(state, taskId, worker, holes) {
   );
 }
 
-assert.equal(durationForTask(start, 'cutGreens'), expectedMow(start, 'cutGreens'));
-assert.equal(durationForTask(start, 'cutGreens', player), expectedMow(start, 'cutGreens', player));
-assert.equal(durationForTask(start, 'cutGreens', player), durationForTask(start, 'cutGreens'));
+assert.equal(durationOnMachine(start, 'cutGreens'), expectedMow(start, 'cutGreens'));
+assert.equal(durationOnMachine(start, 'cutGreens', player), expectedMow(start, 'cutGreens', player));
+assert.equal(durationOnMachine(start, 'cutGreens', player), durationOnMachine(start, 'cutGreens'));
 assert.equal(
   machineMultiplierFor(start, GREENSMASTER_ID),
   GREENSMASTER_TIME_MULT * mowConditionTimeMultiplier(GREENSMASTER_START_CONDITION),
@@ -84,28 +84,28 @@ const wrecked = {
   ...start,
   machineCondition: { ...start.machineCondition, [GREENSMASTER_ID]: CONDITION_MIN },
 };
-assert.ok(durationForTask(wrecked, 'cutGreens', player) > durationForTask(mint, 'cutGreens', player));
-assert.ok(durationForTask(start, 'cutGreens', slow) > durationForTask(start, 'cutGreens', player));
-assert.ok(durationForTask(start, 'cutGreens', fast) < durationForTask(start, 'cutGreens', player));
+assert.ok(durationOnMachine(wrecked, 'cutGreens', player) > durationOnMachine(mint, 'cutGreens', player));
+assert.ok(durationOnMachine(start, 'cutGreens', slow) > durationOnMachine(start, 'cutGreens', player));
+assert.ok(durationOnMachine(start, 'cutGreens', fast) < durationOnMachine(start, 'cutGreens', player));
 
 const rollSetup = setupMinutesFor('greens', 9);
 const rollVar = variableJobMinutes(start, 'rollGreens');
 assert.equal(
-  durationForTask(start, 'rollGreens', slow),
+  durationOnMachine(start, 'rollGreens', slow),
   Math.round(rollSetup + rollVar * workerTimeMultiplier(slow)),
 );
 assert.equal(
-  durationForTask(start, 'rollGreens', fast),
+  durationOnMachine(start, 'rollGreens', fast),
   Math.round(rollSetup + rollVar * workerTimeMultiplier(fast)),
 );
 const cupsSetup = setupMinutesFor('greens', 9);
 const cupsVar = variableJobMinutes(start, 'changeCups');
 assert.equal(
-  durationForTask(start, 'changeCups', fast),
+  durationOnMachine(start, 'changeCups', fast),
   Math.round(cupsSetup + cupsVar * workerTimeMultiplier(fast)),
 );
 assert.notEqual(
-  durationForTask(start, 'changeCups', fast),
+  durationOnMachine(start, 'changeCups', fast),
   Math.round(cupsSetup + cupsVar * mowingOperatorTimeMultiplier(fast)),
 );
 assert.equal(workerTimeMultiplier(player), SPEED_SKILL_BASE - PLAYER_SPEED_SKILL * SPEED_SKILL_STEP);
@@ -125,14 +125,14 @@ assert.equal(
 );
 assert.ok(mowingOperatorTimeMultiplier(null, { autonomous: true }) < mowingOperatorTimeMultiplier(player));
 
-const oneMin = durationForTask(start, 'cutGreens', player, undefined, [1]);
-const nineMin = durationForTask(start, 'cutGreens', player);
+const oneMin = durationOnMachine(start, 'cutGreens', player, undefined, [1]);
+const nineMin = durationOnMachine(start, 'cutGreens', player);
 console.log(`ONE_GREEN=${oneMin} NINE_GREENS=${nineMin}`);
 console.log(
-  `SPEED1=${durationForTask(start, 'cutGreens', slow)} SPEED3=${nineMin} SPEED5=${durationForTask(start, 'cutGreens', fast)}`,
+  `SPEED1=${durationOnMachine(start, 'cutGreens', slow)} SPEED3=${nineMin} SPEED5=${durationOnMachine(start, 'cutGreens', fast)}`,
 );
 console.log(
-  `COND0=${durationForTask(wrecked, 'cutGreens', player)} COND28=${nineMin} COND100=${durationForTask(mint, 'cutGreens', player)}`,
+  `COND0=${durationOnMachine(wrecked, 'cutGreens', player)} COND28=${nineMin} COND100=${durationOnMachine(mint, 'cutGreens', player)}`,
 );
 
 const crewSrc = readFileSync(new URL('../src/components/Crew.jsx', import.meta.url), 'utf8');

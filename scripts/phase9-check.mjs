@@ -23,7 +23,7 @@ import {
   JOB_SETUP_MINUTES,
 } from '../src/data/constants.js';
 import { holesForCount } from '../src/data/course.js';
-import { durationForTask } from '../src/engine/assignment.js';
+import { durationOnMachine } from '../src/engine/assignment.js';
 import { surfaceCeiling } from '../src/engine/equipment.js';
 import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
 import { holeCount } from '../src/engine/holes.js';
@@ -74,8 +74,8 @@ assert.equal(done.projects.length, 0);
 assert.equal(holesForCount(done.holes).length, EXPANDED_HOLE_COUNT);
 assert.equal(holesForCount(HOLE_COUNT).length, HOLE_COUNT);
 
-const nineMin = durationForTask(start, 'cutGreens', start.workers[0]);
-const eighteenMin = durationForTask({ ...start, holes: EXPANDED_HOLE_COUNT }, 'cutGreens', start.workers[0]);
+const nineMin = durationOnMachine(start, 'cutGreens', start.workers[0]);
+const eighteenMin = durationOnMachine({ ...start, holes: EXPANDED_HOLE_COUNT }, 'cutGreens', start.workers[0]);
 const setup = JOB_SETUP_MINUTES.green;
 assert.ok(eighteenMin > nineMin);
 assert.ok(Math.abs(eighteenMin - (setup + (nineMin - setup) * TASK_TIME_MULT_18)) <= 1);

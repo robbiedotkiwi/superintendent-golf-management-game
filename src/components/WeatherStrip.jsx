@@ -6,7 +6,7 @@ import {
 } from '../data/constants.js';
 import { WEATHER_LABELS, weatherCopy } from '../data/events.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
-import { durationForTask } from '../engine/assignment.js';
+import { durationOnMachine } from '../engine/assignment.js';
 import { canPlanTask } from '../engine/gameState.js';
 import { DISEASE_SURFACES } from '../engine/disease.js';
 import { meetingDue } from '../engine/mail.js';
@@ -44,7 +44,7 @@ export default function WeatherStrip({ state, onPlan, onRemove }) {
   const meetingCheck = canPlanTask(state, 'gmMeeting');
   const balls = state.plannedTasks.find((item) => item.taskId === 'pickBalls');
   const ballsCheck = canPlanTask(state, 'pickBalls');
-  const ballMinutes = durationForTask(state, 'pickBalls');
+  const ballMinutes = durationOnMachine(state, 'pickBalls');
   const until = daysUntilNextTournament(state);
   const upcoming = nextTournament(state);
   const planDay = planningDayOf(state);

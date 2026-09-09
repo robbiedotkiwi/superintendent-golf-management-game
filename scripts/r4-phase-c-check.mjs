@@ -20,7 +20,7 @@ import {
   STARTING_MACHINE_IDS,
   TASK_MINUTES,
 } from '../src/data/constants.js';
-import { durationForTask } from '../src/engine/assignment.js';
+import { durationOnMachine } from '../src/engine/assignment.js';
 import { createInitialState } from '../src/engine/gameState.js';
 import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
 
@@ -43,20 +43,20 @@ assert.equal(start.machineCondition[REELMASTER_ID], REELMASTER_START_CONDITION);
 
 const player = start.workers[0];
 const tasks = ['cutGreens', 'rollGreens', 'changeCups', 'cutTees', 'cutFairways', 'cutRough', 'rakeBunkers'];
-const dayTotal = tasks.reduce((sum, taskId) => sum + durationForTask(start, taskId, player), 0);
+const dayTotal = tasks.reduce((sum, taskId) => sum + durationOnMachine(start, taskId, player), 0);
 const ratio = dayTotal / DAY_LENGTH_MINUTES;
 const percent = Math.round(ratio * 100);
 
 assert.equal(dayTotal, DEFAULT_DAY_OVERLOAD_MINUTES);
 assert.equal(
   dayTotal,
-  durationForTask(start, 'cutGreens', player) +
-    durationForTask(start, 'rollGreens', player) +
-    durationForTask(start, 'changeCups', player) +
-    durationForTask(start, 'cutTees', player) +
-    durationForTask(start, 'cutFairways', player) +
-    durationForTask(start, 'cutRough', player) +
-    durationForTask(start, 'rakeBunkers', player),
+  durationOnMachine(start, 'cutGreens', player) +
+    durationOnMachine(start, 'rollGreens', player) +
+    durationOnMachine(start, 'changeCups', player) +
+    durationOnMachine(start, 'cutTees', player) +
+    durationOnMachine(start, 'cutFairways', player) +
+    durationOnMachine(start, 'cutRough', player) +
+    durationOnMachine(start, 'rakeBunkers', player),
 );
 assert.equal(percent, Math.round(DEFAULT_DAY_OVERLOAD_RATIO * 100));
 
@@ -66,5 +66,5 @@ console.log(
 console.log('GATE C1 PASS block cut is the fairway and rough default');
 console.log('GATE C2 PASS starting fleet is Greensmaster 1026 and Groundsmaster 3200 at 28/28');
 console.log(`GATE C3 PASS full-day total ${dayTotal} is ${percent}% of ${DAY_LENGTH_MINUTES}`);
-console.log('GATE C4 PASS durationForTask includes machine timeMult and condition penalty');
+console.log('GATE C4 PASS durationOnMachine includes machine timeMult and condition penalty');
 console.log('round 4 phase C checks passed');

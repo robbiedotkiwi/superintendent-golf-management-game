@@ -3,7 +3,7 @@ import {
   SUITABILITY_LABELS,
   SUITABILITY_PENALTY_COPY,
 } from '../data/constants.js';
-import { durationForTask, assignWorker, certifiedPresent, workerById, workerAllows } from '../engine/assignment.js';
+import { durationOnMachine, assignWorker, certifiedPresent, workerById, workerAllows } from '../engine/assignment.js';
 import { workerAbsenceReason } from '../engine/availability.js';
 import { getMachine, ineligibleMachines, machineSuitability, pickMachineForTask } from '../engine/equipment.js';
 import { machineTitle } from '../engine/machineDisplay.js';
@@ -98,7 +98,7 @@ export default function TaskPanel({ surface, state, holes, onPlan, onRemove, onS
                 </div>
               ) : (
                 (() => {
-                  const minutes = durationForTask(state, task.id, assigned, undefined, jobHoles);
+                  const minutes = durationOnMachine(state, task.id, assigned, undefined, jobHoles);
                   return (
                     <PlanConfirmButton
                       state={state}

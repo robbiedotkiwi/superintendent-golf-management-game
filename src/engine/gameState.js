@@ -22,6 +22,7 @@ import {
   workersForPlanDay,
 } from './week.js';
 import { generateCandidates, generateCasuals } from '../data/staff.js';
+import { rosterWorker } from './weekGrid.js';
 import {
   applyEarlyStartComplaints,
   dismissVolunteer,
@@ -763,10 +764,11 @@ export function reducer(state, action) {
       const day = actionPlanDay(state, action);
       const view = planViewState({ ...state, planningDay: day });
       const planned = view.plannedTasks.find((item) => item.taskId === action.taskId);
-      const worker = view.workers.find((item) => item.id === action.workerId);
+      const worker =
+        view.workers.find((item) => item.id === action.workerId) ?? rosterWorker(state, action.workerId);
       const task = planned ? getTask(planned.taskId) : null;
       if (!planned || !worker || !task) return state;
-      if (!workerAllows(worker, task.surface) || !isWorkerPresent(worker)) return state;
+      if (!workerAllows(worker, task.surface)) return state;
       if (task.requiresSpray && !worker.sprayCertified) return state;
       const probe = {
         ...view,
@@ -774,11 +776,7 @@ export function reducer(state, action) {
       };
       const machineCheck = machinePlanCheck(probe, task, worker, undefined, planned.holes);
       if (!machineCheck.ok) return state;
-      const minutes = durationOnMachine(probe, planned.taskId, worker, machineCheck.machine?.id, planned.holes);
-      const already = planned.workerId === worker.id ? planned.minutes : 0;
-      if (worker.minutesToday - worker.minutesUsed + already < minutes) {
-        return state;
-      }
+      const minutes = durationOnMachine(probe, planned.taskId, worker, machineCheck.machine?.id ?? null, planned.holes);
       const tasks = view.plannedTasks.map((item) =>
         item.taskId === action.taskId
           ? {

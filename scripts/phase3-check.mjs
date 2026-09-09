@@ -18,7 +18,7 @@ import {
   WEAR_THRESHOLD,
 } from '../src/data/constants.js';
 import { getTask } from '../src/data/tasks.js';
-import { durationForTask, mowingOperatorTimeMultiplier } from '../src/engine/assignment.js';
+import { durationOnMachine, mowingOperatorTimeMultiplier } from '../src/engine/assignment.js';
 import {
   canBuyMachine,
   ineligibleMachines,
@@ -33,7 +33,6 @@ import {
   createInitialState,
   reducer,
 } from '../src/engine/gameState.js';
-import { mowingMinutes } from '../src/engine/mowing.js';
 import { setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.js';
 import { applyWeatherToWorkers } from '../src/engine/weather.js';
 import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
@@ -53,7 +52,7 @@ function end(state) {
 }
 
 const start = createInitialState();
-const baseTime = durationForTask(start, 'cutGreens');
+const baseTime = durationOnMachine(start, 'cutGreens');
 assert.equal(
   baseTime,
   Math.round(
@@ -68,7 +67,7 @@ assert.equal(pickMachine(start, getTask('cutGreens'))?.id, GREENSMASTER_ID);
 let bought = reducer(start, { type: 'BUY_MACHINE', machineId: WALK_BEHIND_ID });
 assert.equal(bought.cash, start.cash - WALK_BEHIND_COST);
 assert.equal(
-  durationForTask(bought, 'cutGreens'),
+  durationOnMachine(bought, 'cutGreens'),
   Math.round(
     setupMinutesFor('greens', 9) +
       variableJobMinutes(bought, 'cutGreens') *
@@ -77,7 +76,7 @@ assert.equal(
   ),
 );
 assert.equal(pickMachine(bought, getTask('cutGreens'))?.id, WALK_BEHIND_ID);
-assert.notEqual(durationForTask(bought, 'cutGreens'), baseTime);
+assert.notEqual(durationOnMachine(bought, 'cutGreens'), baseTime);
 
 const withVentrac = reducer({ ...createInitialState(), cash: 250000 }, { type: 'BUY_MACHINE', machineId: VENTRAC_ID });
 assert.ok(withVentrac.ownedMachines.includes(VENTRAC_ID));

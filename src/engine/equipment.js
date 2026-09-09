@@ -398,12 +398,18 @@ export function durationOnMachine(state, taskId, worker, machineId, holeIds) {
     const base = TASK_MINUTES[taskId] ?? 0;
     return worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
   }
+  let resolvedId = machineId;
+  if (resolvedId === undefined) {
+    if (workerBringsOwnMower(worker, task.surface)) resolvedId = null;
+    else if (taskUsesMachine(task)) resolvedId = pickMachine(state, task)?.id ?? null;
+    else resolvedId = null;
+  }
   const holes = jobHolesFor(state, task, holeIds);
   const setup = setupMinutesFor(task, holes.length);
   const variable = variableJobMinutes(state, taskId, holeIds);
-  const machine = machineId ? machineMultiplierFor(state, machineId, task?.surface) : 1;
+  const machine = resolvedId ? machineMultiplierFor(state, resolvedId, task?.surface) : 1;
   const extras = taskTimeMultiplier(state, task);
-  const spec = machineId ? getMachine(machineId) : null;
+  const spec = resolvedId ? getMachine(resolvedId) : null;
   const workerMult = task.mowing
     ? mowingOperatorTimeMultiplier(worker, { autonomous: Boolean(spec?.autonomous) })
     : worker

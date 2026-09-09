@@ -40,7 +40,7 @@ assert.doesNotMatch(turf, /ForecastStrip|forecast-strip/);
 const timebar = readFileSync(new URL('../src/components/TimeBar.jsx', import.meta.url), 'utf8');
 assert.match(timebar, /bg-\[var\(--paint\)\]\/20/);
 assert.match(timebar, /onRemove\(planned\.taskId\)/);
-assert.match(timebar, /\{remaining\}/);
+assert.match(timebar, /timeBarLabel/);
 assert.match(timebar, /\{capacity\}/);
 assert.doesNotMatch(timebar, /Start day/);
 

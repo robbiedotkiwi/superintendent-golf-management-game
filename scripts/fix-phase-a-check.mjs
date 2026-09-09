@@ -20,10 +20,11 @@ import {
   STARTING_WEATHER,
   TASK_MINUTES,
 } from '../src/data/constants.js';
-import { durationForTask } from '../src/engine/assignment.js';
+import { durationOnMachine } from '../src/engine/assignment.js';
 import { surfaceCeiling } from '../src/engine/equipment.js';
 import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { hocFactor, inHocStressBand, mowingMinutes } from '../src/engine/mowing.js';
+import { hocFactor, inHocStressBand } from '../src/engine/mowing.js';
+import { variableJobMinutes } from '../src/engine/jobs.js';
 import { hocRangeFor } from '../src/engine/grass.js';
 import { migrateSave } from '../src/engine/save.js';
 import { applyWeatherToWorkers } from '../src/engine/weather.js';
@@ -96,9 +97,9 @@ assert.equal(courseSettings(old, 'greens').pattern, PATTERN_STRIPES);
 assert.equal(old.view.panX, 0);
 assert.equal(typeof holeSurface(old, 1, 'greens').moisture, 'number');
 
-const defaultTime = mowingMinutes(start, 'cutGreens');
+const defaultTime = durationOnMachine(start, 'cutGreens');
 const defaultCeiling = surfaceCeiling(start, 'greens');
-assert.ok(mowingMinutes(lowered, 'cutGreens') > defaultTime);
+assert.ok(durationOnMachine(lowered, 'cutGreens') > defaultTime);
 assert.ok(surfaceCeiling(lowered, 'greens') > defaultCeiling);
 
 assert.equal(inHocStressBand('greens', HOC_RANGE.greens.default), false);
@@ -121,8 +122,10 @@ assert.match(panel, /HOC_STRESS_DAMAGE/);
 assert.doesNotMatch(panel, /LEVEL_KEYS|LEVEL_LABELS|usesQualityLevel/);
 
 const diamond = reducer(start, { type: 'SET_PATTERN', surface: 'greens', pattern: PATTERN_DIAMOND });
-const diamondTime = mowingMinutes(diamond, 'cutGreens');
-assert.ok(Math.abs(diamondTime / defaultTime - PATTERN_TIME_MULT[PATTERN_DIAMOND]) < 0.05);
+assert.ok(durationOnMachine(diamond, 'cutGreens') > defaultTime);
+assert.ok(
+  Math.abs(variableJobMinutes(diamond, 'cutGreens') / variableJobMinutes(start, 'cutGreens') - PATTERN_TIME_MULT[PATTERN_DIAMOND]) < 0.05,
+);
 
 function cutGreensDays(seed, days) {
   let state = seed;
@@ -150,7 +153,7 @@ assert.ok(meanQuality(rotated, 'greens') > meanQuality(grain, 'greens'));
 
 const player = start.workers[0];
 const dayTotal = ['cutGreens', 'rollGreens', 'changeCups', 'cutTees', 'cutFairways', 'cutRough', 'rakeBunkers'].reduce(
-  (sum, taskId) => sum + durationForTask(start, taskId, player),
+  (sum, taskId) => sum + durationOnMachine(start, taskId, player),
   0,
 );
 assert.equal(dayTotal, DEFAULT_DAY_OVERLOAD_MINUTES);

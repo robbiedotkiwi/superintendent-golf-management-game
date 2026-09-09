@@ -22,7 +22,7 @@ import {
   WALK_BEHIND_ID,
 } from '../src/data/constants.js';
 import { getTask } from '../src/data/tasks.js';
-import { assignWorker, durationForTask, workerAllows } from '../src/engine/assignment.js';
+import { assignWorker, durationOnMachine, workerAllows } from '../src/engine/assignment.js';
 import { canRepair } from '../src/engine/equipment.js';
 import {
   combinedMinutesRemaining,
@@ -85,8 +85,8 @@ fast.workers = [
 ];
 const player = fast.workers.find((worker) => worker.id === PLAYER_ID);
 const speedy = fast.workers.find((worker) => worker.id === 'fast');
-const slowTime = durationForTask(fast, 'cutFairways', player);
-const fastTime = durationForTask(fast, 'cutFairways', speedy);
+const slowTime = durationOnMachine(fast, 'cutFairways', player);
+const fastTime = durationOnMachine(fast, 'cutFairways', speedy);
 assert.ok(fastTime < slowTime);
 
 const greensTask = getTask('cutGreens');

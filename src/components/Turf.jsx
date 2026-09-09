@@ -49,7 +49,8 @@ import {
   WEATHER_STORM,
 } from '../data/constants.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
-import { certifiedPresent, durationForTask } from '../engine/assignment.js';
+import { certifiedPresent } from '../engine/assignment.js';
+import { durationOnMachine } from '../engine/equipment.js';
 import { findPlannedJob } from '../engine/jobs.js';
 import {
   machineAssignment,
@@ -118,7 +119,7 @@ function formatExpiry(until, day) {
 function PlanJob({ state, taskId, onPlan, onRemove, label, extra, className }) {
   const holes = jobHolesFromSelection(state);
   const planned = findPlannedJob(state, taskId, holes);
-  const minutes = planned?.minutes ?? durationForTask(state, taskId, undefined, undefined, holes);
+  const minutes = planned?.minutes ?? durationOnMachine(state, taskId, undefined, undefined, holes);
   if (planned) {
     return (
       <button type="button" onClick={() => onRemove(taskId, planned.planId)} className={className ?? 'mt-3 border border-[var(--sand)] px-3 py-2'}>
@@ -165,6 +166,7 @@ export default function Turf({
   onSetAngle,
   onSetAutoRotate,
   onSetIrrigation,
+  onSetWorker,
   onBuyAerator,
   onBuyGreensSensors,
   onBuyTurfRad,
@@ -200,6 +202,7 @@ export default function Turf({
           onRemove={onRemove}
           onSelectDay={onSelectDay}
           onSetIrrigation={onSetIrrigation}
+          onSetWorker={onSetWorker}
         />
       ) : null}
 
@@ -429,7 +432,7 @@ function PlanThisCut({ state, surface, onPlan, onRemove }) {
   if (!taskId) return null;
   const holes = jobHolesFromSelection(state);
   const planned = findPlannedJob(state, taskId, holes);
-  const minutes = planned?.minutes ?? durationForTask(state, taskId, undefined, undefined, holes);
+  const minutes = planned?.minutes ?? durationOnMachine(state, taskId, undefined, undefined, holes);
   if (planned) {
     return (
       <button type="button" onClick={() => onRemove(taskId, planned.planId)} className="mt-3 border border-[var(--sand)] px-3 py-2">
@@ -659,7 +662,7 @@ function MowingSurface({
   const threshold = stressThresholdHeight(surface, state);
   const cutId = CUT_TASK_BY_SURFACE[surface];
   const holes = jobHolesFromSelection(state);
-  const minutes = cutId ? durationForTask(state, cutId, undefined, undefined, holes) : null;
+  const minutes = cutId ? durationOnMachine(state, cutId, undefined, undefined, holes) : null;
   const typicalCuts = BASELINE_MOW_FREQUENCY_PER_WEEK[surface];
   return (
     <section className="border border-[var(--sand)] p-3">
@@ -877,7 +880,7 @@ function BunkerTab({ state, onPlan, onRemove }) {
   const days = daysSinceLastWorked(state, 'bunkers');
   const planned = findPlannedJob(state, 'rakeBunkers');
   const check = canPlanTask(state, 'rakeBunkers');
-  const minutes = planned?.minutes ?? durationForTask(state, 'rakeBunkers');
+  const minutes = planned?.minutes ?? durationOnMachine(state, 'rakeBunkers');
   return (
     <section className="border border-[var(--sand)] p-3">
       <h3 className="text-lg font-semibold">Bunkers</h3>

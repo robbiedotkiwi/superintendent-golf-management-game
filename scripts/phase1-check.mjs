@@ -21,7 +21,7 @@ import {
   createInitialState,
   reducer,
 } from '../src/engine/gameState.js';
-import { durationForTask } from '../src/engine/assignment.js';
+import { durationOnMachine } from '../src/engine/assignment.js';
 import { surfaceCeiling } from '../src/engine/equipment.js';
 import { mowingGain } from '../src/engine/mowing.js';
 import { applyDecay, applyGain, clampQuality } from '../src/engine/simulation.js';
@@ -44,10 +44,10 @@ function end(state) {
 
 let state = createInitialState();
 const startMinutes = combinedMinutesRemaining(state);
-const greensTime = durationForTask(state, 'cutGreens');
-const teesTime = durationForTask(state, 'cutTees');
-const fairwaysTime = durationForTask(state, 'cutFairways');
-const roughTime = durationForTask(state, 'cutRough');
+const greensTime = durationOnMachine(state, 'cutGreens');
+const teesTime = durationOnMachine(state, 'cutTees');
+const fairwaysTime = durationOnMachine(state, 'cutFairways');
+const roughTime = durationOnMachine(state, 'cutRough');
 
 state = plan(state, 'cutGreens');
 assert.equal(state.plannedTasks.length, 1);
@@ -113,7 +113,7 @@ assert.equal(applyGain(ceiling, BASE_GAIN, ceiling), ceiling);
 assert.equal(applyDecay(DECAY_BASE / DECAY_ACCELERATION, STARTING_SEASON), QUALITY_MIN);
 
 const mid = plan(createInitialState(), 'rollGreens');
-assert.equal(mid.plannedTasks[0].minutes, durationForTask(createInitialState(), 'rollGreens'));
+assert.equal(mid.plannedTasks[0].minutes, durationOnMachine(createInitialState(), 'rollGreens'));
 const json = JSON.parse(JSON.stringify(mid));
 assert.deepEqual(json.plannedTasks, mid.plannedTasks);
 assert.equal(combinedMinutesRemaining(json), combinedMinutesRemaining(mid));

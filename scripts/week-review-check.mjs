@@ -15,10 +15,9 @@ import {
   VOLUNTEER_ID,
   WEATHER_FINE,
 } from '../src/data/constants.js';
-import { claimedMinutesByMachine, conditionOf } from '../src/engine/equipment.js';
+import { claimedMinutesByMachine, conditionOf, durationOnMachine } from '../src/engine/equipment.js';
 import { createInitialState, reducer } from '../src/engine/gameState.js';
 import { meanQuality } from '../src/engine/holes.js';
-import { jobMinutes } from '../src/engine/jobs.js';
 import { daysSinceLastWorked } from '../src/engine/neglect.js';
 import { canBookCasual, getDayTasks, weekDays, weekStartDay } from '../src/engine/week.js';
 import {
@@ -140,18 +139,20 @@ const playerRows = rowsForPerson(state, PLAYER_ID).map((row) => row.taskId);
 const volunteerRows = rowsForPerson(state, VOLUNTEER_ID).map((row) => row.taskId);
 const allRows = rowsForPerson(state, 'all').map((row) => row.taskId);
 assert.ok(playerRows.includes('cutGreens'));
-assert.ok(!playerRows.includes('rakeBunkers'));
+assert.ok(playerRows.includes('rakeBunkers'), 'person mode still shows jobs taken by someone else');
 assert.ok(volunteerRows.includes('rakeBunkers'));
 assert.ok(allRows.includes('cutGreens') && allRows.includes('rakeBunkers'));
-console.log('GATE WR4 PASS person filter shows only that worker’s rows, all restores');
+console.log('GATE WR4 PASS person mode shows jobs that person can do, including taken cells');
 
 state = withFineWeek(createInitialState());
 state = plan(state, 'cutGreens', 1, PLAYER_ID);
 const greensRow = deriveJobRow(state, { taskId: 'cutGreens', surface: 'greens', label: 'Mow greens' });
 const monday = greensRow.cells.find((cell) => cell.day === 1);
+const player = state.workers.find((worker) => worker.id === PLAYER_ID);
 assert.ok(monday.planned);
-assert.equal(monday.minutes, jobMinutes(state, 'cutGreens', monday.tasks[0].holes));
-console.log('GATE WR5 PASS cell minutes match jobMinutes');
+assert.equal(monday.minutes, monday.tasks[0].minutes);
+assert.equal(monday.minutes, durationOnMachine(state, 'cutGreens', player, monday.machineId, monday.holes));
+console.log('GATE WR5 PASS cell minutes match durationOnMachine for the assigned person');
 
 state = withFineWeek(createInitialState());
 const own = ownMowerOf(state);
