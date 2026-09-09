@@ -207,14 +207,18 @@ export default function WeekPlanGrid({
               const chosen = rowDefault(row);
               const locked = Boolean(row.lockReason);
               const chosenWorker = rosterWorker(state, chosen.workerId);
-              const rowOwnMower = workerBringsOwnMower(chosenWorker, row.surface);
+              const assignedWorker = rosterWorker(state, row.workerId);
+              const assignedOwnMower = Boolean(
+                !row.mixedWorker && workerBringsOwnMower(assignedWorker, row.surface),
+              );
+              const rowOwnMower = assignedOwnMower || workerBringsOwnMower(chosenWorker, row.surface);
               const assignable = people.filter((worker) => workerAllows(worker, row.surface));
               const workerLabel = row.mixedWorker
                 ? 'mixed'
-                : rosterWorker(state, row.workerId)?.ownMower
-                  ? `${rosterWorker(state, row.workerId).name} · own mower`
-                  : rosterWorker(state, row.workerId)?.name ?? '—';
-              const machineLabel = rowOwnMower
+                : assignedOwnMower
+                  ? `${assignedWorker.name} · own mower`
+                  : assignedWorker?.name ?? '—';
+              const machineLabel = assignedOwnMower
                 ? 'Own mower'
                 : row.mixedMachine
                   ? 'mixed'
@@ -223,7 +227,7 @@ export default function WeekPlanGrid({
                     : row.usesMachine
                       ? 'Auto'
                       : '—';
-              const machines = row.usesMachine && !rowOwnMower ? allowingMachines(state, row.task) : [];
+              const machines = row.usesMachine && !assignedOwnMower ? allowingMachines(state, row.task) : [];
               return (
                 <tr
                   key={row.taskId}
@@ -263,7 +267,7 @@ export default function WeekPlanGrid({
                         ))}
                       </select>
                     </label>
-                    {row.usesMachine && !rowOwnMower ? (
+                    {row.usesMachine && !assignedOwnMower ? (
                       <label className="mt-2 block text-xs text-[var(--sand)]">
                         Machine
                         <select
