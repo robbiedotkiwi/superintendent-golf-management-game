@@ -170,6 +170,7 @@ export default function App() {
         <GameScreen
           state={state}
           plan={plan}
+          today={today}
           selected={selected}
           summary={summary}
           playout={playout}
@@ -303,6 +304,7 @@ function EntryScreen({ savePresent, onNewGame, onContinue }) {
 function GameScreen({
   state,
   plan = state,
+  today = state,
   selected,
   summary,
   playout,
