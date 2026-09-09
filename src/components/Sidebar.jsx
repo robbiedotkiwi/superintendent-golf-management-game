@@ -156,6 +156,7 @@ export default function Sidebar({
                     }`}
                   >
                     {casual.name} · {formatMoney(casual.wage)}
+                    {casual.ownMower ? ' · own mower' : ''}
                   </button>
                 );
               })}

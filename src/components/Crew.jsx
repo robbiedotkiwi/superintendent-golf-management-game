@@ -217,7 +217,11 @@ export default function Crew({
               <h3 className="text-2xl font-semibold">{casual.name}</h3>
               <p>
                 {mowSpeedLabel(casual.speedSkill)} · Quality {casual.qualitySkill} · {formatMoney(casual.wage)}/day
+                {casual.ownMower ? ' · brings own mower' : ''}
               </p>
+              {casual.ownMower ? (
+                <p className="text-sm text-[var(--sand)]">Fairways, rough and surrounds only. Does not take one of your machines.</p>
+              ) : null}
               <p className="text-sm text-[var(--sand)]">
                 {booked.length ? `Booked ${booked.map((day) => weekdayLabel(day)).join(', ')}` : 'Not booked this week'}
               </p>

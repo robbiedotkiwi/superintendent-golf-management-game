@@ -883,6 +883,11 @@ export const CANDIDATE_COUNT = 3;
 export const CASUAL_POOL_COUNT = 3;
 export const CASUAL_MAX_DAYS_PER_WEEK = 2;
 export const CASUAL_WAGE_MULT = 1.75;
+export const CASUAL_OWN_MOWER_WAGE_MULT = 2.4;
+export const CASUAL_WASHOUT_WAGE_MULT = 0.8;
+export const CASUAL_OWN_MOWER_SURFACES = ['fairways', 'rough', 'surrounds'];
+export const OWN_MOWER_QUALITY_MULT = 0.85;
+export const OWN_MOWER_CEILING = GROUNDSMASTER_CEILING - 8;
 export const WEAR_MECHANIC_FACTOR = 0.5;
 
 export const POND_CAPACITY = 8000;

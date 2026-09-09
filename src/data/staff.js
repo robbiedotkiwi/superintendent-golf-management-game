@@ -1,5 +1,7 @@
 import {
   CANDIDATE_COUNT,
+  CASUAL_OWN_MOWER_SURFACES,
+  CASUAL_OWN_MOWER_WAGE_MULT,
   CASUAL_POOL_COUNT,
   CASUAL_WAGE_MULT,
   MECHANIC_WAGE,
@@ -69,20 +71,23 @@ export function generateCandidates(rng) {
 
 export function generateCasuals(rng) {
   const used = new Set();
-  return Array.from({ length: CASUAL_POOL_COUNT }, () => {
+  return Array.from({ length: CASUAL_POOL_COUNT }, (_, index) => {
+    const ownMower = index === CASUAL_POOL_COUNT - 1;
     const speedSkill = 2 + Math.floor(rng.next() * 3);
     const qualitySkill = 2 + Math.floor(rng.next() * 3);
+    const wageMult = ownMower ? CASUAL_OWN_MOWER_WAGE_MULT : CASUAL_WAGE_MULT;
     return {
       id: `casual-${Math.floor(rng.next() * 1e9)}`,
       name: pickName(rng, used),
       speedSkill,
       qualitySkill,
-      wage: Math.round(dailyWage(speedSkill, qualitySkill, false) * CASUAL_WAGE_MULT),
+      wage: Math.round(dailyWage(speedSkill, qualitySkill, false) * wageMult),
       sprayCertified: false,
       isMechanic: false,
       isVolunteer: false,
       isCasual: true,
-      allowedSurfaces: 'all',
+      ownMower,
+      allowedSurfaces: ownMower ? [...CASUAL_OWN_MOWER_SURFACES] : 'all',
     };
   });
 }

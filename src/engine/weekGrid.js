@@ -3,9 +3,11 @@ import { getTask, SURFACE_LABELS, taskUsesMachine } from '../data/tasks.js';
 import { allowingMachines, NO_MACHINE_REASON } from './equipment.js';
 import { defaultJobHoles } from './holes.js';
 import { migrateIrrigationValue } from './irrigation.js';
+import { jobMinutes } from './jobs.js';
 import { daysSinceLastWorked } from './neglect.js';
-import { workerAllows } from './skills.js';
+import { workerAllows, workerBringsOwnMower } from './skills.js';
 import {
+  dropInvalidDayTasks,
   getDayTasks,
   irrigationForPlanDay,
   weekDays,
@@ -56,7 +58,10 @@ export function workerAvailableOnDay(state, workerId, day) {
 export function jobLockReason(state, taskId) {
   const task = getTask(taskId);
   if (!task) return 'Unknown job.';
-  if (task.mowing && !allowingMachines(state, task).length) return NO_MACHINE_REASON;
+  if (task.mowing && !allowingMachines(state, task).length) {
+    const ownMower = rosterPeople(state).some((worker) => workerBringsOwnMower(worker, task.surface));
+    if (!ownMower) return NO_MACHINE_REASON;
+  }
   if (task.requiresSpray) {
     const certified = rosterPeople(state).some(
       (worker) => worker.sprayCertified && workerAllows(worker, task.surface),
@@ -91,6 +96,7 @@ export function deriveJobRow(state, job) {
     const tasks = tasksOnDay(state, day, job.taskId);
     const task = tasks[0] ?? null;
     const available = task ? workerAvailableOnDay(state, task.workerId, day) : false;
+    const holes = task?.holes ?? courseHolesFor(state, job.taskId);
     return {
       day,
       weekday: weekdayLabel(day),
@@ -99,6 +105,7 @@ export function deriveJobRow(state, job) {
       unassigned: Boolean(task) && !available,
       workerId: task?.workerId ?? null,
       machineId: task?.machineId ?? null,
+      minutes: task ? jobMinutes(state, job.taskId, holes) : 0,
       past: day < state.day,
     };
   });
@@ -154,6 +161,31 @@ export function personCapacityForDay(state, day) {
       fill: capacity > 0 ? used / capacity : 0,
     };
   });
+}
+
+export function jobsThatWontFit(state, day, workerId = null) {
+  const dropped = dropInvalidDayTasks(state, day).dropped.filter((item) => item.reason === 'time');
+  if (!workerId) return dropped;
+  return dropped.filter((item) => item.workerId === workerId);
+}
+
+export function rowsForPerson(state, workerId) {
+  const rows = deriveWeekGrid(state);
+  if (!workerId || workerId === 'all') return rows;
+  const worker = rosterWorker(state, workerId);
+  if (!worker) return [];
+  return rows.filter((row) => {
+    const assigned = row.cells.some((cell) => cell.tasks.some((task) => task.workerId === workerId));
+    if (assigned) return true;
+    const empty = row.cells.every((cell) => !cell.planned);
+    return empty && workerAllows(worker, row.surface);
+  });
+}
+
+export function capacityBarsForPerson(state, day, workerId) {
+  const bars = personCapacityForDay(state, day);
+  if (!workerId || workerId === 'all') return bars;
+  return bars.filter((item) => item.id === workerId);
 }
 
 export function defaultWorkerId(state, row) {

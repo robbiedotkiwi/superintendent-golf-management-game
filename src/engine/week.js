@@ -148,6 +148,7 @@ export function workersForPlanDay(state, day) {
     daysWorkedRunning: 0,
     sprayCertified: Boolean(casual.sprayCertified),
     allowedSurfaces: casual.allowedSurfaces ?? 'all',
+    ownMower: Boolean(casual.ownMower),
   }));
   return [...permanent, ...casuals];
 }

@@ -71,7 +71,7 @@ import { jobHolesFor, setupMinutesFor, variableJobMinutes } from './jobs.js';
 import { handWaterMinutes } from './moisture.js';
 import { taskTimeMultiplier } from './projects.js';
 import { bumpCapitalSpent } from './history.js';
-import { workerTimeMultiplier, mowingOperatorTimeMultiplier } from './skills.js';
+import { workerTimeMultiplier, mowingOperatorTimeMultiplier, workerBringsOwnMower } from './skills.js';
 import { hasMechanic } from './staff.js';
 import { createRng } from './rng.js';
 import { needsCash, spendCash } from './cash.js';
@@ -447,6 +447,9 @@ export function pickMachineForTask(state, task, worker, ignoreTaskId, holeIds) {
 }
 
 export function machinePlanCheck(state, task, worker, machineId, holeIds) {
+  if (workerBringsOwnMower(worker, task?.surface)) {
+    return { ok: true, machine: null, ownMower: true };
+  }
   if (machineId) {
     if (!isMachineAvailable(state, machineId) || !state.ownedMachines?.includes(machineId)) {
       return { ok: false, reason: 'That machine is not available.', machine: null };
@@ -658,7 +661,10 @@ export function recomputePlannedMinutes(state) {
     }
     const probe = { ...state, plannedTasks };
     let machineId = null;
-    if (task?.mowing) {
+    const ownMower = planned.ownMower || workerBringsOwnMower(worker, task?.surface);
+    if (ownMower) {
+      machineId = null;
+    } else if (task?.mowing) {
       const machine = pickMachineForTask(probe, task, worker, undefined, planned.holes);
       if (!machine) continue;
       machineId = machine.id;
@@ -666,7 +672,7 @@ export function recomputePlannedMinutes(state) {
       machineId = pickMachineForTask(probe, task, worker, undefined, planned.holes)?.id ?? null;
     }
     const minutes = durationOnMachine(probe, planned.taskId, worker, machineId, planned.holes);
-    plannedTasks.push({ ...planned, minutes, machineId });
+    plannedTasks.push({ ...planned, minutes, machineId, ownMower: Boolean(ownMower) });
   }
   const newByWorker = {};
   for (const planned of plannedTasks) {

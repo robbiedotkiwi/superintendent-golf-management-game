@@ -31,6 +31,8 @@ import {
   SATISFACTION_MAX,
   SATISFACTION_MIN,
   GRANT_FORECAST_LEAD_DAYS,
+  OWN_MOWER_CEILING,
+  OWN_MOWER_QUALITY_MULT,
   WET_GAIN_MULT,
   WEATHER_STORM,
 } from '../data/constants.js';
@@ -38,6 +40,7 @@ import { PLAYER_ID } from '../data/constants.js';
 import { generateCandidates, generateCasuals } from '../data/staff.js';
 import { getTask, taskAppliesQuality } from '../data/tasks.js';
 import { workerById, workerQualityMultiplier, qualityRandomFactor } from './assignment.js';
+import { workerBringsOwnMower } from './skills.js';
 import { tickGm } from './gm.js';
 import { consumeJobFuel, jobBurnsFuel, replaceBurnSpend } from './fuel.js';
 import { applyMowingAftermath, hocStressApplies, mowingGain, rotatePatternAngle } from './mowing.js';
@@ -72,7 +75,7 @@ import {
   wearMultiplier,
 } from './equipment.js';
 import { applyEarlyStartComplaints, applyMorale, prepareMorningWorkers, wageBill } from './staff.js';
-import { activateDayPlan, getDayTasks, lockWeek, rollNewWeek, setDayTasks, weekStartDay } from './week.js';
+import { activateDayPlan, casualsBookedOn, getDayTasks, lockWeek, rollNewWeek, setDayTasks, weekStartDay } from './week.js';
 import { createRng } from './rng.js';
 import { applyFertiliser, applySpray, emptyDisease, resolveDisease, syncHoleDisease } from './disease.js';
 import { resolveIrrigation } from './irrigation.js';
@@ -107,6 +110,7 @@ import { GM_MEETING_SKIP_STANDING } from '../data/constants.js';
 import { tickMarket, rollUsedListings } from './market.js';
 import { tickEvents } from './events.js';
 import { jobHolesFor, snapshotDayJobs } from './jobs.js';
+import { buildWeekReview, snapshotWeekStart, weekSummariesOf } from './weekReview.js';
 
 export function clampQuality(value) {
   return Math.min(QUALITY_MAX, Math.max(QUALITY_MIN, value));
@@ -159,6 +163,10 @@ function ownedRoller(state) {
 }
 
 export function resolveDay(state) {
+  const plannedJobs = getDayTasks(state, state.day).map((item) => ({ ...item }));
+  const casualWages = casualsBookedOn(state, state.day).reduce((sum, casual) => sum + (casual.wage ?? 0), 0);
+  const satisfactionBefore = state.satisfaction ?? 0;
+  const gmStandingBefore = state.gmStanding ?? 0;
   state = activateDayPlan(setDayTasks(state, state.day, state.plannedTasks ?? getDayTasks(state, state.day)));
   const rng = createRng(state.rngSeed);
   const dosePlanned = (state.plannedTasks ?? []).some((item) => item.taskId === POND_DOSE_TASK);
@@ -178,7 +186,7 @@ export function resolveDay(state) {
   const lastDayJobs = snapshotDayJobs(state.plannedTasks);
   const done = [];
   const usedMachineIds = [];
-  const dropped = [];
+  const dropped = [...(state.morningDrops ?? [])];
 
   let disease = emptyDisease();
   for (const surface of Object.keys(disease)) {
@@ -214,9 +222,13 @@ export function resolveDay(state) {
       continue;
     }
     const task = getTask(plannedTask.taskId);
-    const machine = plannedTask.machineId
-      ? getMachine(plannedTask.machineId)
-      : pickMachineForTask(state, task, workerById(state, plannedTask.workerId), undefined, plannedTask.holes);
+    const worker = workerById(state, plannedTask.workerId) ?? state.workers[0];
+    const ownMower = Boolean(plannedTask.ownMower) || workerBringsOwnMower(worker, task.surface);
+    const machine = ownMower
+      ? null
+      : plannedTask.machineId
+        ? getMachine(plannedTask.machineId)
+        : pickMachineForTask(state, task, worker, undefined, plannedTask.holes);
     let jobHoles = jobHolesFor(state, task, plannedTask.holes);
     const fuel = consumeJobFuel({
       task,
@@ -285,7 +297,6 @@ export function resolveDay(state) {
       continue;
     }
 
-    const worker = workerById(state, plannedTask.workerId) ?? state.workers[0];
     const live = workingState({ ...state, surfaceDefaults }, holes);
     let gain = task.mowing
       ? mowingGain(live, task.id, workerQualityMultiplier(worker))
@@ -302,6 +313,8 @@ export function resolveDay(state) {
     if (machine) {
       gain *= wearMultiplier(state, machine.id);
       gain *= upgradeModifiers(state, machine.id).qualityMult;
+    } else if (ownMower && task.mowing) {
+      gain *= OWN_MOWER_QUALITY_MULT;
     }
     gain *= qualityRandomFactor(worker, rng);
     if (isAboveBand(moisture, task.surface)) gain *= WET_GAIN_MULT;
@@ -312,7 +325,12 @@ export function resolveDay(state) {
       if (jobHoles.length && !jobHoles.includes(hole.id)) return record;
       const ceiling = machine
         ? jobCeiling({ ...live, fertiliserUntil, holes }, task.surface, machine.id, record)
-        : surfaceCeiling({ ...live, fertiliserUntil, holes }, task.surface, record);
+        : ownMower
+          ? Math.min(
+              OWN_MOWER_CEILING,
+              surfaceCeiling({ ...live, fertiliserUntil, holes }, task.surface, record),
+            )
+          : surfaceCeiling({ ...live, fertiliserUntil, holes }, task.surface, record);
       let qualityAfter = applyGain(record.quality, gain, ceiling);
       if (task.mowing && suitability === SUITABILITY_DAMAGING) {
         qualityAfter = clampQuality(qualityAfter - SUITABILITY_DAMAGING_QUALITY_HIT);
@@ -658,7 +676,31 @@ export function resolveDay(state) {
   };
 
   if (weekStartDay(next.day) !== weekStartDay(state.day)) {
+    const dayJobs = {
+      day: state.day,
+      planned: plannedJobs,
+      done,
+      skipped,
+      dropped,
+      wages: wageBill(state.workers),
+      casualWages,
+      fuelSpend,
+      mainsCost: irrigation.mainsCost,
+      materialsSpent,
+      neighbourFine: complaint.fine ?? 0,
+    };
+    const review = buildWeekReview({
+      start: state.weekStartSnapshot ?? snapshotWeekStart(state),
+      end: next,
+      summaries: weekSummariesOf(state.log, state.day, dayJobs),
+    });
+    next = {
+      ...next,
+      pendingWeekReview: true,
+      lastWeekReview: review,
+    };
     next = rollNewWeek(next, next.day, generateCasuals(rng));
+    next = { ...next, weekStartSnapshot: snapshotWeekStart(next) };
   } else {
     next = lockWeek(next);
   }
@@ -702,6 +744,7 @@ export function resolveDay(state) {
     weather: state.weather,
     tempMin: state.tempMin,
     tempMax: state.tempMax,
+    planned: plannedJobs,
     done,
     skipped,
     dropped,
@@ -710,6 +753,7 @@ export function resolveDay(state) {
     interruptions: extra,
     breakdowns,
     wages: wageBill(state.workers),
+    casualWages,
     gmWarning: complaint.warning,
     neighbourFine: complaint.fine,
     mainsCost: irrigation.mainsCost,
@@ -728,7 +772,12 @@ export function resolveDay(state) {
     after: cloneHoles(holes),
     conditionBefore,
     conditionAfter: courseCondition({ holes, surfaceDefaults }),
+    satisfactionBefore,
+    satisfactionAfter: next.satisfaction,
+    gmStandingBefore,
+    gmStandingAfter: next.gmStanding,
   };
 
   return { state: next, summary };
 }
+

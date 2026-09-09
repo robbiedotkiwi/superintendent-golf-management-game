@@ -5,7 +5,7 @@ import { createRng } from './rng.js';
 import { buyFoley, buyMachine, buyUpgrade, grindInHouse, repairMachine, sendForGrind, machinePlanCheck, durationOnMachine, recomputePlannedMinutes, allowingMachines, pickMachine, pickMachineForTask, machineMinutesRemaining, MACHINE_BOOKED_REASON, NO_MACHINE_REASON, getMachine, normalizeMachineOverride, machineSuitability } from './equipment.js';
 import { machineAllows } from '../data/equipment.js';
 import { machineTitle } from './machineDisplay.js';
-import { assignWorker, certifiedPresent, workerById, workerAllows, isWorkerPresent } from './assignment.js';
+import { assignWorker, certifiedPresent, workerById, workerAllows, workerBringsOwnMower, isWorkerPresent } from './assignment.js';
 import { findPlannedJob, jobHolesFor, applyRoute, canSaveRoute } from './jobs.js';
 import {
   getDayTasks,
@@ -55,6 +55,7 @@ import { buyAutoPicker, startGrassConversion, startProject } from './projects.js
 import { bumpCapitalSpent, emptyYearRecord } from './history.js';
 import { spendCash } from './cash.js';
 import { dismissGm, emptySectionUnlocks, GM_MSG_DAY1, isSectionLocked } from './gm.js';
+import { snapshotWeekStart } from './weekReview.js';
 import { resolveDay } from './simulation.js';
 import {
   CUT_TASK_BY_SURFACE,
@@ -152,7 +153,7 @@ export function createInitialState() {
     rng,
   );
   const grass = startingGrass();
-  return {
+  const state = {
     day: STARTING_DAY,
     season: calendar.season,
     year: calendar.year,
@@ -216,6 +217,8 @@ export function createInitialState() {
     nextRouteId: 1,
     lastDayJobs: [],
     lastWeek: null,
+    lastWeekReview: null,
+    pendingWeekReview: false,
     lastRepeatDropped: [],
     log: [],
     ownedMachines: [...STARTING_MACHINE_IDS],
@@ -306,6 +309,7 @@ export function createInitialState() {
     section: SECTION_MAP,
     tabs: defaultSectionTabs(),
   };
+  return { ...state, weekStartSnapshot: snapshotWeekStart(state) };
 }
 
 export const initialState = createInitialState();
@@ -380,15 +384,18 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
     return { ok: false, reason: 'Mowing is off today.' };
   }
 
-  if (task.mowing && !allowingMachines(state, task).length) {
-    return { ok: false, reason: NO_MACHINE_REASON };
-  }
-
   const requested = workerId
     ? workerById(state, workerId) ?? roster.find((item) => item.id === workerId) ?? null
     : null;
   if (requested && !workerAllows(requested, task.surface)) {
     return { ok: false, reason: 'No one available for that job.' };
+  }
+
+  const ownMowerReady = requested
+    ? workerBringsOwnMower(requested, task.surface)
+    : roster.some((item) => workerBringsOwnMower(item, task.surface));
+  if (task.mowing && !allowingMachines(state, task).length && !ownMowerReady) {
+    return { ok: false, reason: NO_MACHINE_REASON };
   }
 
   const worker = requested ?? assignWorker(state, task, holes);
@@ -463,9 +470,18 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
       workerId: worker.id,
       machineId: machineCheck.machine?.id ?? null,
       holes,
+      ownMower: Boolean(machineCheck.ownMower),
     };
   }
-  return { ok: true, minutes, workerId: worker.id, machineId: machineCheck.machine?.id ?? null, holes, suitability };
+  return {
+    ok: true,
+    minutes,
+    workerId: worker.id,
+    machineId: machineCheck.ownMower ? null : machineCheck.machine?.id ?? null,
+    holes,
+    suitability,
+    ownMower: Boolean(machineCheck.ownMower),
+  };
 }
 
 function commitDayTasks(state, tasks, day = planningDayOf(state)) {
@@ -555,6 +571,7 @@ export function reducer(state, action) {
           workerId: check.workerId,
           minutes: check.minutes,
           machineId: check.machineId ?? null,
+          ownMower: Boolean(check.ownMower),
           holes: check.holes ?? [],
           ...(action.taskId === 'handWater'
             ? { greens: [...(action.holes ?? state.handWaterTargets ?? [])] }
@@ -764,7 +781,14 @@ export function reducer(state, action) {
       }
       const tasks = view.plannedTasks.map((item) =>
         item.taskId === action.taskId
-          ? { ...item, workerId: worker.id, minutes, machineId: machineCheck.machine?.id ?? null, needsReassignment: false }
+          ? {
+              ...item,
+              workerId: worker.id,
+              minutes,
+              machineId: machineCheck.machine?.id ?? null,
+              ownMower: Boolean(workerBringsOwnMower(worker, task.surface)),
+              needsReassignment: false,
+            }
           : item,
       );
       return commitDayTasks(state, tasks, day);
@@ -892,6 +916,8 @@ export function reducer(state, action) {
       return { ...state, lockHint: null };
     case 'DISMISS_YEAR_REVIEW':
       return { ...state, pendingYearReview: false };
+    case 'DISMISS_WEEK_REVIEW':
+      return { ...state, pendingWeekReview: false };
     case 'LEASE_MACHINE':
       return leaseMachine(state, action.machineId);
     case 'STOP_LEASE':

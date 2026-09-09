@@ -37,6 +37,7 @@ export function jobBurnsFuel(task, machine) {
 
 export function machineForPlanned(state, planned) {
   const task = getTask(planned.taskId);
+  if (planned.ownMower) return null;
   if (planned.machineId) return getMachine(planned.machineId);
   return pickMachineForTask(state, task, workerById(state, planned.workerId), undefined, planned.holes);
 }

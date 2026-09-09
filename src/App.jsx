@@ -13,6 +13,7 @@ import Tutorial from './components/Tutorial.jsx';
 import GmTalk from './components/GmTalk.jsx';
 import Turf from './components/Turf.jsx';
 import YearReview from './components/YearReview.jsx';
+import WeekReview from './components/WeekReview.jsx';
 import Shed from './components/Shed.jsx';
 import {
   HOLE_COUNT,
@@ -263,6 +264,7 @@ export default function App() {
           onDismissGm={() => dispatch({ type: 'DISMISS_GM' })}
           onDismissLockHint={() => dispatch({ type: 'DISMISS_LOCK_HINT' })}
           onDismissYearReview={() => dispatch({ type: 'DISMISS_YEAR_REVIEW' })}
+          onDismissWeekReview={() => dispatch({ type: 'DISMISS_WEEK_REVIEW' })}
           onNewGame={handleNewGame}
         />
       )}
@@ -379,6 +381,7 @@ function GameScreen({
   onDismissGm,
   onDismissLockHint,
   onDismissYearReview,
+  onDismissWeekReview,
   onNewGame,
 }) {
   const view = state.section ?? SECTION_MAP;
@@ -434,15 +437,18 @@ function GameScreen({
   return (
     <div className="flex h-screen max-h-screen overflow-hidden bg-[var(--soil)] text-[var(--paint)]">
       {state.dismissed && !watching ? <GameOver onNewGame={onNewGame} /> : null}
-      {!state.dismissed && state.pendingYearReview && !summary && !watching ? (
+      {!state.dismissed && state.pendingWeekReview && !summary && !watching ? (
+        <WeekReview review={state.lastWeekReview} onContinue={onDismissWeekReview} />
+      ) : null}
+      {!state.dismissed && state.pendingYearReview && !state.pendingWeekReview && !summary && !watching ? (
         <YearReview review={state.lastYearReview} onContinue={onDismissYearReview} />
       ) : null}
       {(() => {
         const gm = currentGmMessage(state);
-        if (!state.dismissed && gm && !state.pendingYearReview && !summary && !watching) {
+        if (!state.dismissed && gm && !state.pendingYearReview && !state.pendingWeekReview && !summary && !watching) {
           return <GmTalk message={gm} onDismiss={onDismissGm} />;
         }
-        if (!state.dismissed && !state.tutorialDone && !state.pendingYearReview && !summary && !watching) {
+        if (!state.dismissed && !state.tutorialDone && !state.pendingYearReview && !state.pendingWeekReview && !summary && !watching) {
           return <Tutorial onDismiss={onDismissTutorial} />;
         }
         if (
@@ -450,6 +456,7 @@ function GameScreen({
           !state.coldWeatherTipDone &&
           isColdWeather(state) &&
           !state.pendingYearReview &&
+          !state.pendingWeekReview &&
           !summary &&
           !watching
         ) {

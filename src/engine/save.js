@@ -44,6 +44,7 @@ import { allGmSeen, allSectionUnlocks } from './gm.js';
 import { generateCasuals } from '../data/staff.js';
 import { migrateVolunteerWeekday, migrateVolunteerWorker } from './staff.js';
 import { emptyWeekPlan, weekStartDay } from './week.js';
+import { snapshotWeekStart } from './weekReview.js';
 import { migrateIrrigation } from './irrigation.js';
 import { hocRangeFor, normalizeGrass } from './grass.js';
 import { clampHoc } from './mowing.js';
@@ -271,6 +272,8 @@ export function withDefaults(state) {
     lockHint: null,
     pendingYearReview: Boolean(state.pendingYearReview),
     lastYearReview: state.lastYearReview ?? null,
+    pendingWeekReview: Boolean(state.pendingWeekReview),
+    lastWeekReview: state.lastWeekReview ?? null,
     yearRecord: state.yearRecord ?? emptyYearRecord(state.year ?? 1, []),
     playoutSpeed: PLAYOUT_SPEEDS.includes(state.playoutSpeed) ? state.playoutSpeed : PLAYOUT_SPEED_DEFAULT,
     skipPlayout: Boolean(state.skipPlayout ?? PLAYOUT_SKIP_DEFAULT),
@@ -290,6 +293,7 @@ export function withDefaults(state) {
     volunteerWeekday: migrateVolunteerWeekday(state.volunteerWeekday),
     forecastCall: migrateForecastCall(state.forecastCall),
     lastWeek: state.lastWeek ?? null,
+    weekStartSnapshot: state.weekStartSnapshot ?? null,
     planningDay: Number.isInteger(state.planningDay) ? state.planningDay : (state.day ?? 1),
     weekPlan: (() => {
       const start = weekStartDay(state.day ?? 1);
@@ -306,15 +310,23 @@ export function withDefaults(state) {
       };
       return plan;
     })(),
-    casualPool: Array.isArray(state.casualPool) && state.casualPool.length
+    casualPool: (Array.isArray(state.casualPool) && state.casualPool.length
       ? state.casualPool
-      : generateCasuals(createRng((state.rngSeed ?? STARTING_RNG_SEED) + 17)),
+      : generateCasuals(createRng((state.rngSeed ?? STARTING_RNG_SEED) + 17))
+    ).map((casual) => ({
+      ...casual,
+      ownMower: Boolean(casual.ownMower),
+      allowedSurfaces: casual.ownMower
+        ? (Array.isArray(casual.allowedSurfaces) ? casual.allowedSurfaces : ['fairways', 'rough', 'surrounds'])
+        : (casual.allowedSurfaces ?? 'all'),
+    })),
     morningDrops: Array.isArray(state.morningDrops) ? state.morningDrops : [],
     section: normalizeSection(state.section),
     tabs: normalizeTabs(state.tabs),
     log: Array.isArray(state.log) ? state.log : [],
     workers: Array.isArray(state.workers) ? state.workers.map(migrateVolunteerWorker) : [],
   };
+  if (!next.weekStartSnapshot) next.weekStartSnapshot = snapshotWeekStart(next);
   delete next.customPresets;
   delete next.nextPresetId;
   delete next.pondDosing;

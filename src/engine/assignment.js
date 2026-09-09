@@ -3,9 +3,9 @@ import { AUTO_PICK_MINUTES, BALL_PICK_MINUTES, TASK_MINUTES } from '../data/cons
 import { durationOnMachine, pickMachine, pickMachineForTask, hasBallPicker } from './equipment.js';
 import { mowingMinutes } from './mowing.js';
 import { handWaterMinutes } from './moisture.js';
-import { isWorkerPresent, workerAllows } from './skills.js';
+import { isWorkerPresent, workerAllows, workerBringsOwnMower } from './skills.js';
 
-export { workerAllows, isWorkerPresent, workerTimeMultiplier, mowingSpeedEfficiency, mowingOperatorTimeMultiplier } from './skills.js';
+export { workerAllows, workerBringsOwnMower, isWorkerPresent, workerTimeMultiplier, mowingSpeedEfficiency, mowingOperatorTimeMultiplier } from './skills.js';
 export { workerQualityMultiplier, qualityRandomFactor } from './skills.js';
 
 export function preferredStat(surface) {
@@ -36,8 +36,9 @@ export function assignWorker(state, task, holeIds) {
     .filter((worker) => (task.requiresSpray ? worker.sprayCertified : true))
     .sort((a, b) => b[stat] - a[stat] || b.speedSkill - a.speedSkill);
   for (const worker of ranked) {
-    if (task.mowing && !pickMachineForTask(state, task, worker, undefined, holeIds)) continue;
-    const machine = pickMachineForTask(state, task, worker, undefined, holeIds);
+    const ownMower = workerBringsOwnMower(worker, task.surface);
+    if (task.mowing && !ownMower && !pickMachineForTask(state, task, worker, undefined, holeIds)) continue;
+    const machine = ownMower ? null : pickMachineForTask(state, task, worker, undefined, holeIds);
     const minutes = durationForTask(state, task.id, worker, machine?.id, holeIds);
     if (worker.minutesToday - worker.minutesUsed >= minutes) return worker;
   }

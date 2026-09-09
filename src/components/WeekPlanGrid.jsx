@@ -4,14 +4,16 @@ import { allowingMachines } from '../engine/equipment.js';
 import { machineTitle, catalogMachineTitle } from '../engine/machineDisplay.js';
 import { canEditPlanDay, weekDays, weekdayLabel } from '../engine/week.js';
 import {
+  capacityBarsForPerson,
   courseHolesFor,
   defaultWorkerId,
-  deriveWeekGrid,
   irrigationCells,
-  personCapacityForDay,
+  jobsThatWontFit,
   rosterPeople,
   rosterWorker,
+  rowsForPerson,
 } from '../engine/weekGrid.js';
+import { workerAllows, workerBringsOwnMower } from '../engine/skills.js';
 import { IRRIGATED_SURFACES, clampIrrigationMm, irrigationMmRange } from '../engine/irrigation.js';
 import ForecastStrip from './ForecastStrip.jsx';
 
@@ -20,14 +22,24 @@ function fillPercent(used, capacity) {
   return Math.min(100, (used / capacity) * 100);
 }
 
-function PersonBars({ state, day }) {
-  const people = personCapacityForDay(state, day);
+function PersonBars({ state, day, workerId }) {
+  const people = capacityBarsForPerson(state, day, workerId);
+  const wontFit = jobsThatWontFit(state, day, workerId === 'all' ? null : workerId);
   const provisional = day > state.day;
   if (!people.length) {
-    return <p className="text-[10px] text-[var(--sand)]">No one on</p>;
+    return (
+      <div data-capacity-day={day} data-wont-fit={wontFit.length}>
+        <p className="text-[10px] text-[var(--sand)]">{workerId && workerId !== 'all' ? 'Not on' : 'No one on'}</p>
+        {wontFit.length ? (
+          <p className="mt-1 text-[10px] font-semibold text-red-500" data-wont-fit-line>
+            {wontFit.length} job{wontFit.length === 1 ? '' : 's'} won&apos;t fit
+          </p>
+        ) : null}
+      </div>
+    );
   }
   return (
-    <div className="space-y-1" data-capacity-day={day} data-provisional={provisional || undefined}>
+    <div className="space-y-1" data-capacity-day={day} data-provisional={provisional || undefined} data-wont-fit={wontFit.length}>
       {people.map((person) => (
         <div key={person.id} data-capacity-person={person.id} data-overfill={person.overfilled || undefined}>
           <div className="flex justify-between gap-1 text-[10px] leading-tight">
@@ -38,12 +50,17 @@ function PersonBars({ state, day }) {
           </div>
           <div className="h-1.5 overflow-hidden bg-[var(--paint)]/20">
             <div
-              className={`h-full ${person.overfilled ? 'bg-[var(--machine-orange)]' : 'bg-[var(--sand)]'}`}
+              className={`h-full ${person.overfilled ? 'bg-red-600' : 'bg-[var(--sand)]'}`}
               style={{ width: `${fillPercent(person.used, person.capacity)}%` }}
             />
           </div>
         </div>
       ))}
+      {wontFit.length ? (
+        <p className="text-[10px] font-semibold text-red-500" data-wont-fit-line>
+          {wontFit.length} job{wontFit.length === 1 ? '' : 's'} won&apos;t fit
+        </p>
+      ) : null}
       {provisional ? <p className="text-[10px] text-[var(--sand)]">Provisional</p> : null}
     </div>
   );
@@ -79,13 +96,14 @@ export default function WeekPlanGrid({
   onSetIrrigation,
 }) {
   const days = weekDays(state.day);
-  const rows = useMemo(() => deriveWeekGrid(state), [state]);
+  const [personFilter, setPersonFilter] = useState('all');
+  const rows = useMemo(() => rowsForPerson(state, personFilter), [state, personFilter]);
   const [defaults, setDefaults] = useState({});
 
   function rowDefault(row) {
     const saved = defaults[row.taskId];
     return {
-      workerId: saved?.workerId ?? defaultWorkerId(state, row),
+      workerId: saved?.workerId ?? (personFilter !== 'all' ? personFilter : defaultWorkerId(state, row)),
       machineId: saved?.machineId ?? row.machineId ?? '',
     };
   }
@@ -107,10 +125,11 @@ export default function WeekPlanGrid({
       return;
     }
     const chosen = rowDefault(row);
+    const worker = rosterWorker(state, chosen.workerId);
     onPlan(row.taskId, courseHolesFor(state, row.taskId), {
       day: cell.day,
       workerId: chosen.workerId,
-      machineId: chosen.machineId || undefined,
+      machineId: workerBringsOwnMower(worker, row.surface) ? undefined : chosen.machineId || undefined,
       confirmDamaging: true,
     });
   }
@@ -120,6 +139,26 @@ export default function WeekPlanGrid({
   return (
     <div className="space-y-3" data-week-grid>
       <ForecastStrip state={state} onSelectDay={onSelectDay} />
+      <label className="flex items-center gap-2 text-sm">
+        <span className="text-[var(--sand)]">Show</span>
+        <select
+          className="border border-[var(--sand)] bg-[var(--soil)] px-2 py-1"
+          value={personFilter}
+          onChange={(event) => setPersonFilter(event.target.value)}
+          aria-label="Filter week plan by person"
+          data-person-filter
+        >
+          <option value="all">Everyone</option>
+          {people.map((worker) => (
+            <option key={worker.id} value={worker.id}>
+              {worker.name}
+              {worker.ownMower ? ' · own mower' : ''}
+              {worker.isCasual && !worker.ownMower ? ' · casual' : ''}
+              {worker.isVolunteer ? ' · volunteer' : ''}
+            </option>
+          ))}
+        </select>
+      </label>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[64rem] border-collapse text-left text-sm">
           <thead>
@@ -134,48 +173,57 @@ export default function WeekPlanGrid({
                 >
                   <div className="font-semibold">{weekdayLabel(day)}</div>
                   <div className="mt-2">
-                    <PersonBars state={state} day={day} />
+                    <PersonBars state={state} day={day} workerId={personFilter} />
                   </div>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {IRRIGATED_SURFACES.map((surface) => (
-              <tr key={`irrigate-${surface}`} data-grid-row={`irrigate-${surface}`}>
-                <th className="sticky left-0 z-10 border border-[var(--sand)] bg-[var(--soil)] p-2 align-top">
-                  <div className="font-semibold">Irrigate {SURFACE_LABELS[surface]}</div>
-                  <p className="mt-1 text-xs text-[var(--sand)]">Nightly millimetres. Not a timed job.</p>
-                </th>
-                {irrigationCells(state, surface).map((cell) => {
-                  const edit = canEditPlanDay(state, cell.day);
-                  return (
-                    <td key={cell.day} className="border border-[var(--sand)] p-2 align-top">
-                      <IrrigationDayCell
-                        cell={cell}
-                        surface={surface}
-                        onSetIrrigation={onSetIrrigation}
-                        locked={!edit.ok}
-                      />
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
+            {personFilter === 'all'
+              ? IRRIGATED_SURFACES.map((surface) => (
+                  <tr key={`irrigate-${surface}`} data-grid-row={`irrigate-${surface}`}>
+                    <th className="sticky left-0 z-10 border border-[var(--sand)] bg-[var(--soil)] p-2 align-top">
+                      <div className="font-semibold">Irrigate {SURFACE_LABELS[surface]}</div>
+                      <p className="mt-1 text-xs text-[var(--sand)]">Nightly millimetres. Not a timed job.</p>
+                    </th>
+                    {irrigationCells(state, surface).map((cell) => {
+                      const edit = canEditPlanDay(state, cell.day);
+                      return (
+                        <td key={cell.day} className="border border-[var(--sand)] p-2 align-top">
+                          <IrrigationDayCell
+                            cell={cell}
+                            surface={surface}
+                            onSetIrrigation={onSetIrrigation}
+                            locked={!edit.ok}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))
+              : null}
             {rows.map((row) => {
               const chosen = rowDefault(row);
               const locked = Boolean(row.lockReason);
+              const chosenWorker = rosterWorker(state, chosen.workerId);
+              const rowOwnMower = workerBringsOwnMower(chosenWorker, row.surface);
+              const assignable = people.filter((worker) => workerAllows(worker, row.surface));
               const workerLabel = row.mixedWorker
                 ? 'mixed'
-                : rosterWorker(state, row.workerId)?.name ?? '—';
-              const machineLabel = row.mixedMachine
-                ? 'mixed'
-                : row.machineId
-                  ? catalogMachineTitle(row.machineId)
-                  : row.usesMachine
-                    ? 'Auto'
-                    : '—';
-              const machines = row.usesMachine ? allowingMachines(state, row.task) : [];
+                : rosterWorker(state, row.workerId)?.ownMower
+                  ? `${rosterWorker(state, row.workerId).name} · own mower`
+                  : rosterWorker(state, row.workerId)?.name ?? '—';
+              const machineLabel = rowOwnMower
+                ? 'Own mower'
+                : row.mixedMachine
+                  ? 'mixed'
+                  : row.machineId
+                    ? catalogMachineTitle(row.machineId)
+                    : row.usesMachine
+                      ? 'Auto'
+                      : '—';
+              const machines = row.usesMachine && !rowOwnMower ? allowingMachines(state, row.task) : [];
               return (
                 <tr
                   key={row.taskId}
@@ -205,16 +253,17 @@ export default function WeekPlanGrid({
                         aria-label={`${row.label} worker`}
                       >
                         {row.mixedWorker ? <option value="mixed">mixed</option> : null}
-                        {people.map((worker) => (
+                        {assignable.map((worker) => (
                           <option key={worker.id} value={worker.id}>
                             {worker.name}
-                            {worker.isCasual ? ' · casual' : ''}
+                            {worker.ownMower ? ' · own mower' : ''}
+                            {worker.isCasual && !worker.ownMower ? ' · casual' : ''}
                             {worker.isVolunteer ? ' · volunteer' : ''}
                           </option>
                         ))}
                       </select>
                     </label>
-                    {row.usesMachine ? (
+                    {row.usesMachine && !rowOwnMower ? (
                       <label className="mt-2 block text-xs text-[var(--sand)]">
                         Machine
                         <select
@@ -273,6 +322,11 @@ export default function WeekPlanGrid({
                         >
                           {cell.unassigned ? '·' : cell.planned ? '✓' : ''}
                         </button>
+                        {cell.planned ? (
+                          <div className="mt-1 text-[10px] text-[var(--sand)]" data-cell-minutes={`${row.taskId}-${cell.day}`}>
+                            {Math.round(cell.minutes)} min
+                          </div>
+                        ) : null}
                       </td>
                     );
                   })}

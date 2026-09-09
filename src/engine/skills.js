@@ -18,7 +18,13 @@ import {
 export function workerAllows(worker, surface) {
   if (worker.allowedSurfaces === 'all') return true;
   if (!surface) return !worker.isVolunteer;
-  return worker.allowedSurfaces.includes(surface);
+  return Array.isArray(worker.allowedSurfaces) && worker.allowedSurfaces.includes(surface);
+}
+
+export function workerBringsOwnMower(worker, surface) {
+  if (!worker?.ownMower) return false;
+  if (!surface) return false;
+  return workerAllows(worker, surface);
 }
 
 export function isWorkerPresent(worker) {
