@@ -110,7 +110,7 @@ export default function ForecastStrip({ state, onSelectDay }) {
       </div>
       {onSelectDay ? (
         <p className="mt-1 text-[10px] leading-tight text-[var(--sand)]">
-          Plan each day this week against the forecast. Starting a day locks the rest. Rain early or a hotter afternoon can still dump the plan.
+          Past days are frozen. Remaining days stay editable. Rain early or a hotter afternoon can still dump the plan.
         </p>
       ) : rolling.length === FORECAST_DAYS ? null : (
         <div aria-hidden="true" />
