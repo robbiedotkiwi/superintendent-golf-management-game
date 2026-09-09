@@ -215,6 +215,7 @@ export function createInitialState() {
     savedRoutes: [],
     nextRouteId: 1,
     lastDayJobs: [],
+    lastWeek: null,
     lastRepeatDropped: [],
     log: [],
     ownedMachines: [...STARTING_MACHINE_IDS],
@@ -337,6 +338,7 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
   const day = actionPlanDay(state, options);
   const edit = canEditPlanDay(state, day);
   if (!edit.ok) return edit;
+  const roster = [...(state.workers ?? []), ...(state.casualPool ?? [])];
   state = planViewState({ ...state, planningDay: day });
   const task = getTask(taskId);
   if (!task) return { ok: false, reason: 'Unknown job.' };
@@ -382,8 +384,10 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
     return { ok: false, reason: NO_MACHINE_REASON };
   }
 
-  const requested = workerId ? workerById(state, workerId) : null;
-  if (requested && (!isWorkerPresent(requested) || !workerAllows(requested, task.surface))) {
+  const requested = workerId
+    ? workerById(state, workerId) ?? roster.find((item) => item.id === workerId) ?? null
+    : null;
+  if (requested && !workerAllows(requested, task.surface)) {
     return { ok: false, reason: 'No one available for that job.' };
   }
 
@@ -438,11 +442,13 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
   if (!machineCheck.ok) return machineCheck;
   const minutes = durationOnMachine(state, taskId, worker, machineCheck.machine?.id, holes);
   const remaining = worker.minutesToday - worker.minutesUsed;
-  if (minutes > remaining) {
-    return { ok: false, reason: `Needs ${minutes} min on ${worker.name}, only ${remaining} left.` };
-  }
-  if (machineCheck.machine && machineMinutesRemaining(state, machineCheck.machine.id) < minutes) {
-    return { ok: false, reason: MACHINE_BOOKED_REASON };
+  if (!requested) {
+    if (minutes > remaining) {
+      return { ok: false, reason: `Needs ${minutes} min on ${worker.name}, only ${remaining} left.` };
+    }
+    if (machineCheck.machine && machineMinutesRemaining(state, machineCheck.machine.id) < minutes) {
+      return { ok: false, reason: MACHINE_BOOKED_REASON };
+    }
   }
   const suitability = machineSuitability(machineCheck.machine, task.surface);
   if (suitability === SUITABILITY_DAMAGING && !options.confirmDamaging) {
@@ -487,6 +493,7 @@ function removePlannedTask(state, taskId, planId, day = planningDayOf(state)) {
   return commitDayTasks(
     state,
     tasks.filter((item) => (planId ? item.planId !== planId : item.taskId !== taskId)),
+    day,
   );
 }
 
@@ -736,7 +743,8 @@ export function reducer(state, action) {
     case 'SET_EARLY_START':
       return { ...state, earlyStart: Boolean(action.value) };
     case 'SET_TASK_WORKER': {
-      const view = planViewState(state);
+      const day = actionPlanDay(state, action);
+      const view = planViewState({ ...state, planningDay: day });
       const planned = view.plannedTasks.find((item) => item.taskId === action.taskId);
       const worker = view.workers.find((item) => item.id === action.workerId);
       const task = planned ? getTask(planned.taskId) : null;
@@ -759,7 +767,7 @@ export function reducer(state, action) {
           ? { ...item, workerId: worker.id, minutes, machineId: machineCheck.machine?.id ?? null, needsReassignment: false }
           : item,
       );
-      return commitDayTasks(state, tasks);
+      return commitDayTasks(state, tasks, day);
     }
     case 'SET_HOC': {
       if (!hasHoc(action.surface)) return state;

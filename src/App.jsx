@@ -183,6 +183,7 @@ export default function App() {
               holes,
               confirmDamaging: options?.confirmDamaging,
               machineId: options?.machineId,
+              workerId: options?.workerId,
               day: options?.day,
             })
           }
@@ -220,7 +221,7 @@ export default function App() {
           onSelectDay={(day) => dispatch({ type: 'SET_PLANNING_DAY', day })}
           onBookCasual={(casualId, day) => dispatch({ type: 'BOOK_CASUAL', casualId, day })}
           onUnbookCasual={(casualId, day) => dispatch({ type: 'UNBOOK_CASUAL', casualId, day })}
-          onSetWorker={(taskId, workerId) => dispatch({ type: 'SET_TASK_WORKER', taskId, workerId })}
+          onSetWorker={(taskId, workerId, day) => dispatch({ type: 'SET_TASK_WORKER', taskId, workerId, day })}
           onSetHoc={(surface, hoc) => dispatch({ type: 'SET_HOC', surface, hoc })}
           onSetPattern={(surface, pattern) => dispatch({ type: 'SET_PATTERN', surface, pattern })}
           onSetAngle={(surface, angle) => dispatch({ type: 'SET_ANGLE', surface, angle })}

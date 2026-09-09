@@ -289,6 +289,7 @@ export function withDefaults(state) {
       .map((entry) => ({ day: entry.day, spend: Number(entry.spend) })),
     volunteerWeekday: migrateVolunteerWeekday(state.volunteerWeekday),
     forecastCall: migrateForecastCall(state.forecastCall),
+    lastWeek: state.lastWeek ?? null,
     planningDay: Number.isInteger(state.planningDay) ? state.planningDay : (state.day ?? 1),
     weekPlan: (() => {
       const start = weekStartDay(state.day ?? 1);

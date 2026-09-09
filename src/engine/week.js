@@ -172,10 +172,23 @@ export function isFuturePlanDay(state, day = planningDayOf(state)) {
   return day > state.day;
 }
 
-export function weekLockedFor(state, day) {
-  const plan = weekPlanOf(state);
-  if (!plan.locked) return false;
-  return day > state.day;
+export function lockWeek(state) {
+  return state;
+}
+
+export function weekLockedFor(_state, _day) {
+  return false;
+}
+
+export function rollNewWeek(state, weekStart, casualPool) {
+  return {
+    ...state,
+    lastWeek: state.weekPlan ?? emptyWeekPlan(weekStartDay((state.day ?? 1) - 1)),
+    weekPlan: emptyWeekPlan(weekStart),
+    casualPool,
+    planningDay: state.day,
+    morningDrops: [],
+  };
 }
 
 export function upsertDayPlan(state, day, patch) {
@@ -231,21 +244,6 @@ export function unbookCasual(state, casualId, day) {
     casualIds: (current.casualIds ?? []).filter((id) => id !== casualId),
     tasks,
   });
-}
-
-export function lockWeek(state) {
-  const plan = weekPlanOf(state);
-  return { ...state, weekPlan: { ...plan, locked: true } };
-}
-
-export function rollNewWeek(state, weekStart, casualPool) {
-  return {
-    ...state,
-    weekPlan: emptyWeekPlan(weekStart),
-    casualPool,
-    planningDay: state.day,
-    morningDrops: [],
-  };
 }
 
 export function activateDayPlan(state) {

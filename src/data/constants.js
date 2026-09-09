@@ -1147,22 +1147,31 @@ export const TURF_TAB_MOWING = 'mowing';
 export const TURF_TAB_IRRIGATION = 'irrigation';
 export const TURF_TAB_INPUTS = 'inputs';
 export const TURF_TAB_OTHER = 'other';
+export const TURF_TAB_WEEK = 'week';
+export const TURF_TAB_PATTERNS = 'patterns';
 export const TURF_TAB_LEGACY_BUNKERS = 'bunkers';
 export const TURF_TAB_LEGACY_POND = 'pond';
 export const TURF_TAB_BUNKERS = TURF_TAB_OTHER;
 export const TURF_TAB_POND = TURF_TAB_OTHER;
+/** Flip true to restore Mowing / Irrigation / Inputs / Other during playtest. */
+export const TURF_SHOW_LEGACY_TABS = false;
 export const TURF_TABS = [
   TURF_TAB_MOWING,
   TURF_TAB_IRRIGATION,
   TURF_TAB_INPUTS,
   TURF_TAB_OTHER,
 ];
+export const TURF_PRIMARY_TABS = [TURF_TAB_WEEK, TURF_TAB_PATTERNS];
 export const TURF_TAB_DEFAULT = TURF_TAB_MOWING;
 export const TURF_TAB_LABELS = {
   [TURF_TAB_MOWING]: 'Mowing',
   [TURF_TAB_IRRIGATION]: 'Irrigation',
   [TURF_TAB_INPUTS]: 'Inputs',
   [TURF_TAB_OTHER]: 'Other',
+};
+export const TURF_PRIMARY_TAB_LABELS = {
+  [TURF_TAB_WEEK]: 'Week plan',
+  [TURF_TAB_PATTERNS]: 'Cut patterns',
 };
 export const PLAN_THIS_CUT_LABEL = 'Plan this cut';
 export const MACHINE_OVERRIDE_AUTO = 'auto';

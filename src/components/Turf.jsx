@@ -37,13 +37,14 @@ import {
   SUITABILITY_LABELS,
   SUITABILITY_PENALTY_COPY,
   TASK_MINUTES,
+  TURF_SHOW_LEGACY_TABS,
   TURF_TAB_DEFAULT,
   TURF_TAB_INPUTS,
   TURF_TAB_IRRIGATION,
-  TURF_TAB_LABELS,
   TURF_TAB_MOWING,
   TURF_TAB_OTHER,
-  TURF_TABS,
+  TURF_TAB_PATTERNS,
+  TURF_TAB_WEEK,
   TURFRAD_COST,
   WEATHER_STORM,
 } from '../data/constants.js';
@@ -77,6 +78,9 @@ import { inputsStatus } from '../engine/inputsStatus.js';
 import { GreensMoistureList, MoistureLine } from './MoistureReadout.jsx';
 import SectionTabs from './SectionTabs.jsx';
 import HoleSelector from './HoleSelector.jsx';
+import WeekPlanGrid from './WeekPlanGrid.jsx';
+import CutPatternsTab from './CutPatternsTab.jsx';
+import { turfTabLabels, visibleTurfTabs } from '../engine/section.js';
 import {
   canEditPlanDay,
   planningDayOf,
@@ -187,9 +191,29 @@ export default function Turf({
           Back to the course
         </button>
       </div>
-      <SectionTabs tabs={TURF_TABS} labels={TURF_TAB_LABELS} value={tab} onChange={onTab} />
+      <SectionTabs tabs={visibleTurfTabs()} labels={turfTabLabels()} value={tab} onChange={onTab} />
 
-      {tab === TURF_TAB_MOWING ? (
+      {tab === TURF_TAB_WEEK ? (
+        <WeekPlanGrid
+          state={state}
+          onPlan={onPlan}
+          onRemove={onRemove}
+          onSelectDay={onSelectDay}
+          onSetIrrigation={onSetIrrigation}
+        />
+      ) : null}
+
+      {tab === TURF_TAB_PATTERNS ? (
+        <CutPatternsTab
+          state={state}
+          onSetHoc={onSetHoc}
+          onSetPattern={onSetPattern}
+          onSetAngle={onSetAngle}
+          onSetAutoRotate={onSetAutoRotate}
+        />
+      ) : null}
+
+      {TURF_SHOW_LEGACY_TABS && tab === TURF_TAB_MOWING ? (
         <div className="space-y-4">
           <section className="border border-[var(--sand)] p-3">
             <h2 className="text-sm font-semibold text-[var(--sand)]">Days this week</h2>
@@ -220,7 +244,7 @@ export default function Turf({
         </div>
       ) : null}
 
-      {tab === TURF_TAB_IRRIGATION ? (
+      {TURF_SHOW_LEGACY_TABS && tab === TURF_TAB_IRRIGATION ? (
         <div className="space-y-3">
           <section className="border border-[var(--sand)] p-3">
             <h2 className="text-sm font-semibold text-[var(--sand)]">Nights this week</h2>
@@ -309,7 +333,7 @@ export default function Turf({
         </div>
       ) : null}
 
-      {tab === TURF_TAB_INPUTS ? (
+      {TURF_SHOW_LEGACY_TABS && tab === TURF_TAB_INPUTS ? (
         <div className="mt-4">
           <InputsTab
             state={state}
@@ -321,7 +345,7 @@ export default function Turf({
         </div>
       ) : null}
 
-      {tab === TURF_TAB_OTHER ? (
+      {TURF_SHOW_LEGACY_TABS && tab === TURF_TAB_OTHER ? (
         <div className="space-y-4">
           {state.weather === WEATHER_STORM ? (
             debris ? (

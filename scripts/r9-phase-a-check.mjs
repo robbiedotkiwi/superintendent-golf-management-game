@@ -15,6 +15,7 @@ import {
   TURF_TABS,
   TURF_TAB_DEFAULT,
   TURF_TAB_LABELS,
+  TURF_TAB_WEEK,
 } from '../src/data/constants.js';
 import { createInitialState, reducer } from '../src/engine/gameState.js';
 import { migrateSave } from '../src/engine/save.js';
@@ -34,7 +35,7 @@ assert.equal(TURF_TAB_LABELS[TURF_TAB_MOWING], 'Mowing');
 assert.equal(Object.keys(TURF_TAB_LABELS).length, 4);
 
 const start = createInitialState();
-assert.equal(start.tabs[SECTION_TURF], TURF_TAB_MOWING);
+assert.equal(start.tabs[SECTION_TURF], TURF_TAB_WEEK);
 assert.equal(start.customPresets, undefined);
 assert.equal(start.nextPresetId, undefined);
 assert.equal(reducer(start, { type: 'SAVE_PRESET', surface: 'greens', name: 'Daily' }), start);
@@ -56,7 +57,7 @@ const old = migrateSave({
     bunkers: { quality: 40 },
   },
 });
-assert.equal(old.tabs[SECTION_TURF], TURF_TAB_MOWING);
+assert.equal(old.tabs[SECTION_TURF], TURF_TAB_WEEK);
 assert.equal(old.customPresets, undefined);
 assert.equal(old.nextPresetId, undefined);
 assert.equal(courseSettings(old, 'greens').hoc, courseSettings(start, 'greens').hoc);
@@ -67,7 +68,7 @@ const presetsTab = migrateSave({
   holes: old.holes,
   surfaceDefaults: old.surfaceDefaults,
 });
-assert.equal(presetsTab.tabs[SECTION_TURF], TURF_TAB_MOWING);
+assert.equal(presetsTab.tabs[SECTION_TURF], TURF_TAB_WEEK);
 
 const turfSrc = read('src/components/Turf.jsx');
 assert.match(turfSrc, /TURF_TAB_MOWING/);

@@ -16,6 +16,7 @@ import {
   TURF_TAB_OTHER,
   TURF_TAB_POND,
   TURF_TABS,
+  TURF_TAB_WEEK,
 } from '../src/data/constants.js';
 import {
   crewBadgeCount,
@@ -49,7 +50,7 @@ assert.equal(daysUntilGmMeeting(5), 2);
 assert.equal(daysUntilGmMeeting(7), 0);
 
 const start = createInitialState();
-assert.equal(start.tabs[SECTION_TURF], TURF_TAB_MOWING);
+assert.equal(start.tabs[SECTION_TURF], TURF_TAB_WEEK);
 assert.equal(start.lastMainsCost, 0);
 
 const old = migrateSave({
@@ -62,7 +63,7 @@ const old = migrateSave({
     bunkers: { quality: 40, lastRakedDay: 1 },
   },
 });
-assert.equal(old.tabs[SECTION_TURF], TURF_TAB_MOWING);
+assert.equal(old.tabs[SECTION_TURF], TURF_TAB_WEEK);
 assert.ok(turfBadgeCount(old) >= 1, 'overdue surfaces badge on a neglected day-40 save');
 
 const outbreak = {

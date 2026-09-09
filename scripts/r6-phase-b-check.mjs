@@ -21,7 +21,9 @@ import {
   TURF_TAB_MOWING,
   TURF_TAB_OTHER,
   TURF_TAB_POND,
+  TURF_SHOW_LEGACY_TABS,
   TURF_TABS,
+  TURF_TAB_WEEK,
   VENTRAC_ID,
   WALK_BEHIND_ID,
 } from '../src/data/constants.js';
@@ -68,7 +70,7 @@ const planSrc = readFileSync(new URL('../src/components/PlanList.jsx', import.me
 assert.match(planSrc, /machineTitle/);
 
 const start = createInitialState();
-assert.equal(start.tabs[SECTION_TURF], TURF_TAB_MOWING);
+assert.equal(start.tabs[SECTION_TURF], TURF_TAB_WEEK);
 assert.deepEqual(start.machineOverride, {
   greens: null,
   tees: null,
@@ -149,7 +151,7 @@ const migrated = migrateSave({
     bunkers: { quality: 40, lastRakedDay: 1 },
   },
 });
-assert.equal(migrated.tabs[SECTION_TURF], TURF_TAB_OTHER);
+assert.equal(migrated.tabs[SECTION_TURF], TURF_SHOW_LEGACY_TABS ? TURF_TAB_OTHER : TURF_TAB_WEEK);
 assert.equal(holeSurface(migrated, 1, 'greens').heightAtLastCut, null);
 assert.equal(migrated.machineOverride.greens, null);
 const pondSave = migrateSave({
@@ -158,7 +160,7 @@ const pondSave = migrateSave({
   holes: migrated.holes,
   surfaceDefaults: migrated.surfaceDefaults,
 });
-assert.equal(pondSave.tabs[SECTION_TURF], TURF_TAB_OTHER);
+assert.equal(pondSave.tabs[SECTION_TURF], TURF_SHOW_LEGACY_TABS ? TURF_TAB_OTHER : TURF_TAB_WEEK);
 
 console.log('GATE B1 PASS Plan this cut exists on Mowing; PLAN_TASK works without the map');
 console.log('GATE B2 PASS last-cut fields are written at resolve, not at plan time');

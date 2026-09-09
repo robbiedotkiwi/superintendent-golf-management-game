@@ -11,17 +11,35 @@ import {
   SECTIONS,
   SHED_TAB_DEFAULT,
   SHED_TABS,
+  TURF_PRIMARY_TAB_LABELS,
+  TURF_PRIMARY_TABS,
+  TURF_SHOW_LEGACY_TABS,
   TURF_TAB_DEFAULT,
+  TURF_TAB_LABELS,
   TURF_TAB_LEGACY_BUNKERS,
   TURF_TAB_LEGACY_POND,
   TURF_TAB_MOWING,
   TURF_TAB_OTHER,
+  TURF_TAB_PATTERNS,
+  TURF_TAB_WEEK,
   TURF_TABS,
 } from '../data/constants.js';
 
+export function visibleTurfTabs() {
+  return TURF_SHOW_LEGACY_TABS ? [...TURF_PRIMARY_TABS, ...TURF_TABS] : [...TURF_PRIMARY_TABS];
+}
+
+export function turfTabLabels() {
+  return { ...TURF_PRIMARY_TAB_LABELS, ...TURF_TAB_LABELS };
+}
+
+export function turfTabDefault() {
+  return TURF_SHOW_LEGACY_TABS ? TURF_TAB_DEFAULT : TURF_TAB_WEEK;
+}
+
 export function defaultSectionTabs() {
   return {
-    [SECTION_TURF]: TURF_TAB_DEFAULT,
+    [SECTION_TURF]: turfTabDefault(),
     [SECTION_OFFICE]: OFFICE_TAB_DEFAULT,
     [SECTION_CREW]: CREW_TAB_DEFAULT,
     [SECTION_SHED]: SHED_TAB_DEFAULT,
@@ -33,9 +51,17 @@ export function normalizeSection(section) {
 }
 
 function normalizeTurfTab(tab) {
-  if (tab === TURF_TAB_LEGACY_BUNKERS || tab === TURF_TAB_LEGACY_POND) return TURF_TAB_OTHER;
-  if (tab === 'summary' || tab === 'presets') return TURF_TAB_MOWING;
-  return TURF_TABS.includes(tab) ? tab : TURF_TAB_DEFAULT;
+  if (tab === TURF_TAB_LEGACY_BUNKERS || tab === TURF_TAB_LEGACY_POND) {
+    return TURF_SHOW_LEGACY_TABS ? TURF_TAB_OTHER : TURF_TAB_WEEK;
+  }
+  if (tab === 'summary' || tab === 'presets') {
+    return TURF_SHOW_LEGACY_TABS ? TURF_TAB_MOWING : TURF_TAB_WEEK;
+  }
+  if (tab === TURF_TAB_WEEK || tab === TURF_TAB_PATTERNS) return tab;
+  if (TURF_TABS.includes(tab)) {
+    return TURF_SHOW_LEGACY_TABS ? tab : TURF_TAB_WEEK;
+  }
+  return turfTabDefault();
 }
 
 export function normalizeTabs(tabs) {
@@ -49,7 +75,7 @@ export function normalizeTabs(tabs) {
 }
 
 export function tabListForSection(section) {
-  if (section === SECTION_TURF) return TURF_TABS;
+  if (section === SECTION_TURF) return [...TURF_PRIMARY_TABS, ...TURF_TABS];
   if (section === SECTION_OFFICE) return OFFICE_TABS;
   if (section === SECTION_CREW) return CREW_TABS;
   if (section === SECTION_SHED) return SHED_TABS;
