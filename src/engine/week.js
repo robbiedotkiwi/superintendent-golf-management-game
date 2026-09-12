@@ -11,6 +11,7 @@ import {
   WEEKDAY_LABELS,
   WEATHER_STORM,
 } from '../data/constants.js';
+import { emptyWeekPassState } from './passes.js';
 import { getTask } from '../data/tasks.js';
 import { minutesTodayForWeather } from './weather.js';
 import { dayOfWeek } from './staff.js';
@@ -206,6 +207,7 @@ export function rollNewWeek(state, weekStart, casualPool) {
     casualPool,
     planningDay: state.day,
     morningDrops: [],
+    ...emptyWeekPassState(),
   };
 }
 

@@ -1,4 +1,5 @@
 import { qualityColor } from '../engine/color.js';
+import { gradeLetter } from '../engine/grades.js';
 import { formatMoney } from '../engine/format.js';
 import { pondCapacity, pondPercent } from '../engine/irrigation.js';
 import { constructionMinutes } from '../engine/projects.js';
@@ -30,8 +31,8 @@ export default function Hud({ state, condition }) {
         <Stat label="Day" value={state.day} size="primary" />
         <Stat label="Season" value={`${state.season} · ${state.year}`} size="primary" />
         <Stat
-          label="Condition"
-          value={condition}
+          label="Grade"
+          value={gradeLetter(condition)}
           size="condition"
           valueStyle={{ color: qualityColor(condition) }}
         />

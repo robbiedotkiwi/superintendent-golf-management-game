@@ -37,7 +37,9 @@ import {
   WET_GAIN_MULT,
   WEATHER_STORM,
 } from '../data/constants.js';
-import { PLAYER_ID } from '../data/constants.js';
+import { PASS_AREAS } from '../data/config.js';
+import { applyAreaQualityToHoles, emptyAreaQuality } from './passes.js';
+import { migrateWorkerTier } from './staffTiers.js';
 import { generateCandidates, generateCasuals } from '../data/staff.js';
 import { getTask, taskAppliesQuality } from '../data/tasks.js';
 import { workerById, workerQualityMultiplier, qualityRandomFactor } from './assignment.js';
@@ -304,44 +306,11 @@ export function resolveDay(state) {
     }
 
     const live = workingState({ ...state, surfaceDefaults }, holes);
-    let gain = task.mowing
-      ? mowingGain(live, task.id, workerQualityMultiplier(worker))
-      : BASE_GAIN * workerQualityMultiplier(worker);
-    if (task.id === 'rollGreens') {
-      const roller = machine?.rollOnly ? machine : ownedRoller(state);
-      if (roller) {
-        gain += roller.rollGainBonus ?? ROLLER_GAIN_BONUS;
-        gain *= upgradeModifiers(state, roller.id).qualityMult;
-      } else if (machine && upgradeModifiers(state, machine.id).enablesRoll) {
-        gain += ROLLER_GAIN_BONUS;
-      }
-    }
-    if (machine) {
-      gain *= wearMultiplier(state, machine.id);
-      gain *= upgradeModifiers(state, machine.id).qualityMult;
-    } else if (ownMower && task.mowing) {
-      gain *= OWN_MOWER_QUALITY_MULT;
-    }
-    gain *= qualityRandomFactor(worker, rng);
-    if (isAboveBand(moisture, task.surface)) gain *= WET_GAIN_MULT;
-
     const qualityBefore = meanQuality(live, task.surface);
-    const suitability = machineSuitability(machine, task.surface);
+
     holes = mapHoleSurfaces(holes, task.surface, (record, hole) => {
       if (jobHoles.length && !jobHoles.includes(hole.id)) return record;
-      const ceiling = machine
-        ? jobCeiling({ ...live, fertiliserUntil, holes }, task.surface, machine.id, record)
-        : ownMower
-          ? Math.min(
-              OWN_MOWER_CEILING,
-              surfaceCeiling({ ...live, fertiliserUntil, holes }, task.surface, record),
-            )
-          : surfaceCeiling({ ...live, fertiliserUntil, holes }, task.surface, record);
-      let qualityAfter = applyGain(record.quality, gain, ceiling);
-      if (task.mowing && suitability === SUITABILITY_DAMAGING) {
-        qualityAfter = clampQuality(qualityAfter - SUITABILITY_DAMAGING_QUALITY_HIT);
-      }
-      let next = { ...record, quality: qualityAfter };
+      let next = record;
       if (task.mowing) {
         next = applyMowingAftermath(
           next,
@@ -387,12 +356,9 @@ export function resolveDay(state) {
         if (!cutId || worked.has(surface)) continue;
         const live = workingState({ ...state, surfaceDefaults }, holes);
         const qualityBefore = meanQuality(live, surface);
-        const gain = mowingGain(live, cutId, 1) * (isAboveBand(moisture, surface) ? WET_GAIN_MULT : 1);
-        const ceiling = surfaceCeiling({ ...live, fertiliserUntil }, surface);
         holes = mapHoleSurfaces(holes, surface, (record, hole) => {
-          const qualityAfter = applyGain(record.quality, gain, ceiling);
           return applyMowingAftermath(
-            { ...record, quality: qualityAfter },
+            record,
             surface,
             state.day,
             wearIncremented,
@@ -422,11 +388,20 @@ export function resolveDay(state) {
     const qualityBefore = meanQuality(live, key);
     const protectedHoles = workedHolesByType[key];
     let decayed = false;
-    holes = mapHoleSurfaces(holes, key, (record, hole) => {
-      if (protectedHoles.has(hole.id)) return record;
-      decayed = true;
-      return { ...record, quality: applyDecay(record.quality, state.season) };
-    });
+    if (!PASS_AREAS.includes(key)) {
+      holes = mapHoleSurfaces(holes, key, (record, hole) => {
+        if (protectedHoles.has(hole.id)) return record;
+        decayed = true;
+        return { ...record, quality: applyDecay(record.quality, state.season) };
+      });
+    } else if (![...protectedHoles].length) {
+      skipped.push({
+        surface: key,
+        before: qualityBefore,
+        after: qualityBefore,
+      });
+      continue;
+    }
     if (decayed) {
       skipped.push({
         surface: key,
@@ -447,6 +422,7 @@ export function resolveDay(state) {
   holes = writeMoistureToHoles(holes, moisture, moistureReadDay);
   const extraDecay = droughtDecay(moisture, { ...state, moisture, holes, surfaceDefaults });
   for (const [surface, amount] of Object.entries(extraDecay)) {
+    if (PASS_AREAS.includes(surface)) continue;
     holes = mapHoleSurfaces(holes, surface, (record) => ({
       ...record,
       quality: clampQuality(record.quality - amount),
@@ -465,7 +441,7 @@ export function resolveDay(state) {
           patternWear: Math.max(PATTERN_WEAR_DEFAULT, (next.patternWear ?? 0) - PATTERN_WEAR_DECAY),
         };
       }
-      if ((next.patternWear ?? 0) > PATTERN_WEAR_THRESHOLD) {
+      if ((next.patternWear ?? 0) > PATTERN_WEAR_THRESHOLD && !PASS_AREAS.includes(key)) {
         next = { ...next, quality: clampQuality(next.quality - PATTERN_WEAR_DAMAGE) };
       }
       return next;
@@ -473,6 +449,7 @@ export function resolveDay(state) {
   }
 
   for (const key of HOC_SURFACES) {
+    if (PASS_AREAS.includes(key)) continue;
     if (hocStressApplies({ ...state, surfaceDefaults, moisture }, key, isBelowBand(moisture, key))) {
       holes = mapHoleSurfaces(holes, key, (record) => ({
         ...record,
@@ -485,6 +462,7 @@ export function resolveDay(state) {
   disease = diseaseTick.disease;
   holes = syncHoleDisease(holes, { ...state, sprayedUntil, disease }, disease);
   for (const item of diseaseTick.ongoing) {
+    if (PASS_AREAS.includes(item.surface)) continue;
     holes = mapHoleSurfaces(holes, item.surface, (record) => ({
       ...record,
       quality: clampQuality(record.quality - item.drop),
@@ -492,6 +470,7 @@ export function resolveDay(state) {
     }));
   }
   for (const item of diseaseTick.outbreaks) {
+    if (PASS_AREAS.includes(item.surface)) continue;
     holes = mapHoleSurfaces(holes, item.surface, (record) => ({
       ...record,
       quality: clampQuality(record.quality - item.drop),
@@ -567,6 +546,9 @@ export function resolveDay(state) {
     },
   );
 
+  const areaQuality = emptyAreaQuality(state.areaQuality);
+  holes = applyAreaQualityToHoles(holes, areaQuality);
+
   const day = state.day + 1;
   const calendar = calendarFromDay(day);
   const seasonChanged = calendar.season !== state.season;
@@ -578,6 +560,7 @@ export function resolveDay(state) {
     year: calendar.year,
     cash: tournament.state.cash,
     holes,
+    areaQuality,
     surfaceDefaults,
     moisture,
     moistureReadDay,
@@ -618,7 +601,7 @@ export function resolveDay(state) {
     const ignored = next.pendingTournamentSetup;
     next = {
       ...next,
-      candidates: generateCandidates(rng),
+      candidates: generateCandidates(rng).map(migrateWorkerTier),
       candidatesSeason: calendar.season,
       volunteerDayChangedThisSeason: false,
       neighbourComplaintsThisSeason: 0,
@@ -711,7 +694,7 @@ export function resolveDay(state) {
       pendingWeekReview: true,
       lastWeekReview: review,
     };
-    next = rollNewWeek(next, next.day, generateCasuals(rng));
+    next = rollNewWeek(next, next.day, generateCasuals(rng).map(migrateWorkerTier));
     next = { ...next, weekStartSnapshot: snapshotWeekStart(next) };
   } else {
     next = lockWeek(next);

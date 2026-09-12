@@ -1,0 +1,221 @@
+import {
+  AUTONOMOUS_AREAS,
+  GRADE_CAP_LETTER,
+  GROW_IN_QUALITY_OFFSET,
+  MAX_PASSES_PER_AREA_PER_DAY,
+  MINUTES_PER_HOUR,
+  PASS_AREAS,
+  PASS_CLASS_AUTONOMOUS,
+  PASS_CLASS_BY_CATALOG,
+  PASS_CLASS_ROLLER,
+  PASS_HOURS,
+  PASSES_REQUIRED_PER_WEEK,
+  ROLL_GRADE_CONTRIBUTION,
+  ROLL_PASS_HOURS,
+  SLOT_MINUTES,
+  STARTING_AREA_QUALITY,
+  WEAR_STEP_HEAVY_MAX,
+  WEAR_STEP_LIGHT_MAX,
+  WEAR_STEP_NONE_MAX,
+  WEAR_TIME_MULT_CRITICAL,
+  WEAR_TIME_MULT_HEAVY,
+  WEAR_TIME_MULT_LIGHT,
+  WEAR_TIME_MULT_NONE,
+  WEEKLY_TARGET_QUALITY_SCALE,
+  WET_PASS_TIME_MULT,
+  WET_WEATHER,
+} from '../data/config.js';
+import { getMachine, machineClass } from '../data/equipment.js';
+import { WEAR_MAX } from '../data/constants.js';
+import { clampQuality, gradeCapScore, gradeLetter } from './grades.js';
+import { staffCanRunClass, staffPassTimeMult } from './staffTiers.js';
+import { mapHoleSurfaces } from './holes.js';
+
+export function emptyAreaMap(value = 0) {
+  return Object.fromEntries(PASS_AREAS.map((area) => [area, value]));
+}
+
+export function emptyAreaListMap() {
+  return Object.fromEntries(PASS_AREAS.map((area) => [area, []]));
+}
+
+export function emptyAreaQuality(source) {
+  return {
+    greens: source?.greens ?? STARTING_AREA_QUALITY.greens,
+    tees: source?.tees ?? STARTING_AREA_QUALITY.tees,
+    fairways: source?.fairways ?? STARTING_AREA_QUALITY.fairways,
+    rough: source?.rough ?? STARTING_AREA_QUALITY.rough,
+    bunkers: source?.bunkers ?? STARTING_AREA_QUALITY.bunkers,
+  };
+}
+
+export function emptyWeekPassState() {
+  return {
+    weekPasses: emptyAreaMap(0),
+    weekWastedHours: emptyAreaMap(0),
+    weekPassDays: emptyAreaListMap(),
+    weekRollPasses: emptyAreaMap(0),
+    weekCupChanges: 0,
+    weekGeneralDutiesMinutes: 0,
+  };
+}
+
+export function passClassOf(machine) {
+  if (!machine) return null;
+  if (typeof machine === 'string') return passClassOf(getMachine(machine));
+  if (machine.passClass) return machine.passClass;
+  const catalog = machineClass(machine);
+  return PASS_CLASS_BY_CATALOG[catalog] ?? null;
+}
+
+export function passHoursTable(passClass) {
+  return PASS_HOURS[passClass] ?? null;
+}
+
+export function basePassHours(passClass, area) {
+  if (passClass === PASS_CLASS_ROLLER && area === 'greens') return ROLL_PASS_HOURS;
+  const hours = passHoursTable(passClass)?.[area];
+  return hours == null ? null : hours;
+}
+
+export function machineAllowsArea(machine, area) {
+  if (!machine || !area) return false;
+  const cls = passClassOf(machine);
+  if (cls === PASS_CLASS_ROLLER) return area === 'greens';
+  if (cls === PASS_CLASS_AUTONOMOUS) return AUTONOMOUS_AREAS.includes(area);
+  return basePassHours(cls, area) != null;
+}
+
+export function wearTimeMult(wear) {
+  const n = Math.max(0, Math.min(WEAR_MAX, Number(wear) || 0));
+  if (n < WEAR_STEP_NONE_MAX) return WEAR_TIME_MULT_NONE;
+  if (n < WEAR_STEP_LIGHT_MAX) return WEAR_TIME_MULT_LIGHT;
+  if (n < WEAR_STEP_HEAVY_MAX) return WEAR_TIME_MULT_HEAVY;
+  return WEAR_TIME_MULT_CRITICAL;
+}
+
+export function wearTimeDeltaHours(baseHours, wear) {
+  if (baseHours == null) return 0;
+  return baseHours * wearTimeMult(wear) - baseHours;
+}
+
+export function passHoursFor(state, machineId, area, worker) {
+  const machine = getMachine(machineId);
+  const cls = passClassOf(machine);
+  const base = basePassHours(cls, area);
+  if (base == null) return null;
+  const wear = state?.machineWear?.[machineId] ?? 0;
+  const wet = WET_WEATHER.includes(state?.weather) ? WET_PASS_TIME_MULT : 1;
+  const staff = staffPassTimeMult(worker);
+  return base * wearTimeMult(wear) * wet * staff;
+}
+
+export function passMinutesFor(state, machineId, area, worker) {
+  const hours = passHoursFor(state, machineId, area, worker);
+  if (hours == null) return null;
+  return Math.round((hours * MINUTES_PER_HOUR) / SLOT_MINUTES) * SLOT_MINUTES;
+}
+
+export function hoursToPassFraction(hoursBooked, passHours) {
+  if (!(passHours > 0)) return 0;
+  return (Number(hoursBooked) || 0) / passHours;
+}
+
+export function applyDailyPassCap(rawPass, wastedHours, passHours) {
+  const capped = Math.min(MAX_PASSES_PER_AREA_PER_DAY, Math.max(0, rawPass));
+  const surplusPasses = Math.max(0, rawPass - MAX_PASSES_PER_AREA_PER_DAY);
+  const wasted = (Number(wastedHours) || 0) + surplusPasses * (passHours || 0);
+  return { pass: capped, wastedHours: wasted };
+}
+
+export function machineGradeCapLetter(machine, area) {
+  const cls = passClassOf(machine);
+  return GRADE_CAP_LETTER[cls]?.[area] ?? null;
+}
+
+export function machineGradeCapScore(machine, area) {
+  const letter = machineGradeCapLetter(machine, area);
+  if (!letter) return null;
+  return gradeCapScore(letter);
+}
+
+export function bestMachineCap(state, area) {
+  let best = null;
+  for (const id of state.ownedMachines ?? []) {
+    const machine = getMachine(id);
+    if (!machineAllowsArea(machine, area)) continue;
+    const score = machineGradeCapScore(machine, area);
+    if (score == null) continue;
+    if (best == null || score > best.score) best = { machine, score, letter: machineGradeCapLetter(machine, area) };
+  }
+  return best;
+}
+
+export function weeklyPassRatio(passes, area) {
+  const required = PASSES_REQUIRED_PER_WEEK[area] ?? 1;
+  if (!(required > 0)) return 0;
+  return (Number(passes) || 0) / required;
+}
+
+export function weeklyTargetQuality(passes, capScore) {
+  const ratio = Math.max(0, passes);
+  const uncapped = Math.min(WEEKLY_TARGET_QUALITY_SCALE, ratio * WEEKLY_TARGET_QUALITY_SCALE);
+  if (capScore == null) return uncapped;
+  return Math.min(uncapped, capScore);
+}
+
+export function growInOffset(state, area) {
+  const until = state?.growInUntil?.[area];
+  if (until == null) return 0;
+  if ((state?.day ?? 0) > until) return 0;
+  return GROW_IN_QUALITY_OFFSET;
+}
+
+export function applyAreaQualityToHoles(holes, areaQuality) {
+  const q = emptyAreaQuality(areaQuality);
+  let next = holes;
+  for (const area of [...PASS_AREAS, 'bunkers']) {
+    next = mapHoleSurfaces(next, area, (record) =>
+      record ? { ...record, quality: clampQuality(q[area] ?? record.quality) } : record,
+    );
+  }
+  return next;
+}
+
+export function syncHolesFromAreaQuality(state) {
+  return {
+    ...state,
+    holes: applyAreaQualityToHoles(state.holes, state.areaQuality),
+  };
+}
+
+export function projectedWeeklyGrade(state) {
+  const cap = (area) => bestMachineCap(state, area)?.score ?? 100;
+  return Object.fromEntries(
+    PASS_AREAS.map((area) => {
+      const required = PASSES_REQUIRED_PER_WEEK[area];
+      const achieved = state.weekPasses?.[area] ?? 0;
+      const target = weeklyTargetQuality(weeklyPassRatio(achieved, area), cap(area));
+      return [
+        area,
+        {
+          achieved,
+          required,
+          wastedHours: state.weekWastedHours?.[area] ?? 0,
+          dailyCapped: Boolean(state.weekPassDays?.[area]?.includes(state.day)),
+          target,
+          letter: gradeLetter(target),
+          cappedByMachine: weeklyPassRatio(achieved, area) * 100 > cap(area) + 0.01,
+        },
+      ];
+    }),
+  );
+}
+
+export function rollPassContribution(hoursBooked, passHours) {
+  return hoursToPassFraction(hoursBooked, passHours) * ROLL_GRADE_CONTRIBUTION;
+}
+
+export function staffCanRunMachine(worker, machine) {
+  return staffCanRunClass(worker, passClassOf(machine));
+}

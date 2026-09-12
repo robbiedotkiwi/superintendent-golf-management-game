@@ -22,7 +22,7 @@ import { mowingSpeedEfficiency } from '../engine/skills.js';
 import { workerAbsenceReason } from '../engine/availability.js';
 import { formatMoney } from '../engine/format.js';
 import { canBookCasual, casualDaysBooked, weekDays, weekdayLabel } from '../engine/week.js';
-import SectionTabs from './SectionTabs.jsx';
+import { STAFF_TIER_LABELS } from '../data/config.js';
 
 function mowSpeedLabel(speedSkill) {
   if (speedSkill == null) return 'Speed —';
@@ -77,7 +77,7 @@ export default function Crew({
             <h3 className={`text-2xl font-semibold ${reason ? 'line-through' : ''}`}>{worker.name}</h3>
             {reason ? <p className="text-sm text-[var(--sand)]">{reason}</p> : null}
             <p>
-              {mowSpeedLabel(worker.speedSkill)} · Quality {worker.qualitySkill} · Morale {Math.round(worker.morale)} · Wage {formatMoney(worker.wage)}/day
+              {STAFF_TIER_LABELS[worker.tier] ?? worker.tier ?? 'Unskilled'} · Rating {Math.round(worker.rating ?? 0)} · Morale {Math.round(worker.morale)} · Wage {formatMoney(worker.wage)}/day
               {worker.isMechanic ? ' · Mechanic' : ''}
               {worker.sprayCertified ? ' · Spray ticket' : ''}
             </p>

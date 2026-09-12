@@ -23,6 +23,13 @@ import {
 } from './week.js';
 import { generateCandidates, generateCasuals } from '../data/staff.js';
 import { rosterWorker } from './weekGrid.js';
+import { migrateWorkerTier } from './staffTiers.js';
+import {
+  applyAreaQualityToHoles,
+  emptyAreaQuality,
+  emptyWeekPassState,
+  staffCanRunMachine,
+} from './passes.js';
 import {
   applyEarlyStartComplaints,
   dismissVolunteer,
@@ -142,8 +149,8 @@ export function createInitialState() {
   const rng = createRng(STARTING_RNG_SEED);
   const forecast = buildForecast({ day: STARTING_DAY, weather: STARTING_WEATHER }, rng);
   const rngSeed = rng.seed;
-  const candidates = generateCandidates(rng);
-  const casualPool = generateCasuals(rng);
+  const candidates = generateCandidates(rng).map(migrateWorkerTier);
+  const casualPool = generateCasuals(rng).map(migrateWorkerTier);
   const usedListings = rollUsedListings(
     {
       ownedMachines: [...STARTING_MACHINE_IDS],
@@ -154,22 +161,10 @@ export function createInitialState() {
     rng,
   );
   const grass = startingGrass();
-  const state = {
-    day: STARTING_DAY,
-    season: calendar.season,
-    year: calendar.year,
-    cash: STARTING_OPENING_CASH,
-    fuelSpendLog: [],
-    holes: createInitialHoles(HOLE_COUNT, { grass }),
-    surfaceDefaults: createSurfaceDefaults(undefined, grass),
-    grass,
-    weather: STARTING_WEATHER,
-    tempMin: STARTING_TEMP_MIN,
-    tempMax: STARTING_TEMP_MAX,
-    forecastCall: null,
-    ...forecast,
-    rngSeed,
-    workers: [
+  const holes = createInitialHoles(HOLE_COUNT, { grass });
+  const areaQuality = emptyAreaQuality();
+  const passWeek = emptyWeekPassState();
+  const workers = [
       {
         id: PLAYER_ID,
         name: PLAYER_NAME,
@@ -202,7 +197,24 @@ export function createInitialState() {
         minutesUsed: STARTING_MINUTES_USED,
         daysWorkedRunning: STARTING_DAYS_WORKED_RUNNING,
       },
-    ],
+    ].map(migrateWorkerTier);
+  const state = {
+    day: STARTING_DAY,
+    season: calendar.season,
+    year: calendar.year,
+    cash: STARTING_OPENING_CASH,
+    fuelSpendLog: [],
+    holes: applyAreaQualityToHoles(holes, areaQuality),
+    areaQuality,
+    surfaceDefaults: createSurfaceDefaults(undefined, grass),
+    grass,
+    weather: STARTING_WEATHER,
+    tempMin: STARTING_TEMP_MIN,
+    tempMax: STARTING_TEMP_MAX,
+    forecastCall: null,
+    ...forecast,
+    rngSeed,
+    workers,
     view: {
       zoom: VIEW_ZOOM_DEFAULT,
       panX: VIEW_PAN_X_DEFAULT,
@@ -212,6 +224,9 @@ export function createInitialState() {
     nextPlanId: 1,
     planningDay: STARTING_DAY,
     weekPlan: emptyWeekPlan(STARTING_DAY),
+    ...passWeek,
+    planTemplates: [],
+    areaQualityPrev: emptyAreaQuality(),
     morningDrops: [],
     selectedHoles: [],
     savedRoutes: [],
@@ -448,6 +463,9 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
   }
   const machineCheck = machinePlanCheck(state, task, worker, options.machineId, holes);
   if (!machineCheck.ok) return machineCheck;
+  if (machineCheck.machine && !staffCanRunMachine(worker, machineCheck.machine)) {
+    return { ok: false, reason: 'That person cannot run that machine.' };
+  }
   const minutes = durationOnMachine(state, taskId, worker, machineCheck.machine?.id, holes);
   const remaining = worker.minutesToday - worker.minutesUsed;
   if (!requested) {
@@ -459,21 +477,6 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
     }
   }
   const suitability = machineSuitability(machineCheck.machine, task.surface);
-  if (suitability === SUITABILITY_DAMAGING && !options.confirmDamaging) {
-    return {
-      ok: false,
-      needsConfirm: true,
-      reason: DAMAGING_JOB_REASON(
-        machineTitle(machineCheck.machine),
-        SURFACE_LABELS[task.surface] ?? task.surface,
-      ),
-      minutes,
-      workerId: worker.id,
-      machineId: machineCheck.machine?.id ?? null,
-      holes,
-      ownMower: Boolean(machineCheck.ownMower),
-    };
-  }
   return {
     ok: true,
     minutes,

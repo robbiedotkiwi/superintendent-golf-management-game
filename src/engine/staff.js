@@ -26,7 +26,9 @@ import {
   VOLUNTEER_QUALITY_SKILL,
   VOLUNTEER_SPEED_SKILL,
 } from '../data/constants.js';
+import { VOLUNTEER_SURFACES } from '../data/config.js';
 import { cashOnHand } from './cash.js';
+import { migrateWorkerTier } from './staffTiers.js';
 import { minutesTodayForWeather } from './weather.js';
 import { constructionMinutes } from './projects.js';
 
@@ -47,7 +49,7 @@ export function migrateVolunteerWorker(worker) {
     ...worker,
     speedSkill: VOLUNTEER_SPEED_SKILL,
     qualitySkill: VOLUNTEER_QUALITY_SKILL,
-    allowedSurfaces: 'all',
+    allowedSurfaces: VOLUNTEER_SURFACES,
   };
 }
 
@@ -113,7 +115,7 @@ export function wageBill(workers) {
 
 export function hireWorker(state, candidate) {
   const template = state.workers.find((worker) => worker.id === PLAYER_ID) ?? state.workers[0];
-  const hire = {
+  const hire = migrateWorkerTier({
     ...candidate,
     id: `hire-${state.nextHireId ?? 1}`,
     morale: 100,
@@ -123,7 +125,7 @@ export function hireWorker(state, candidate) {
     daysWorkedRunning: 0,
     trainingUntilDay: null,
     trainingAxis: null,
-  };
+  });
   return {
     ...state,
     nextHireId: (state.nextHireId ?? 1) + 1,

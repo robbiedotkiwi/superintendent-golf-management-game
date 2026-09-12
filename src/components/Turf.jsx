@@ -79,7 +79,7 @@ import { inputsStatus } from '../engine/inputsStatus.js';
 import { GreensMoistureList, MoistureLine } from './MoistureReadout.jsx';
 import SectionTabs from './SectionTabs.jsx';
 import HoleSelector from './HoleSelector.jsx';
-import WeekPlanGrid from './WeekPlanGrid.jsx';
+import GradeStrip from './GradeStrip.jsx';
 import IrrigationWeekTab from './IrrigationWeekTab.jsx';
 import CutPatternsTab from './CutPatternsTab.jsx';
 import { turfTabLabels, visibleTurfTabs } from '../engine/section.js';
@@ -204,6 +204,9 @@ export default function Turf({
           onSelectDay={onSelectDay}
           onSetWorker={onSetWorker}
         />
+        <div className="mt-4">
+          <GradeStrip state={state} />
+        </div>
       ) : null}
 
       {tab === TURF_TAB_IRRIGATION ? (
