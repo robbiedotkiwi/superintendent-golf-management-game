@@ -38,6 +38,7 @@ import {
   WEATHER_STORM,
 } from '../data/constants.js';
 import { PASS_AREAS, AUTONOMOUS_AREAS, AUTONOMOUS_NIGHT_MINUTES, AUTONOMOUS_UNSTICK_CHANCE, AUTONOMOUS_UNSTICK_MINUTES, MINUTES_PER_HOUR } from '../data/config.js';
+import { applyDailyQualityDrift, applyMissedWeekPenalties } from './qualityDrift.js';
 import { applyAreaQualityToHoles, applyWeekPasses, emptyAreaQuality, machineAllowsArea, passHoursFor, resolveDayPasses } from './passes.js';
 import { migrateWorkerTier } from './staffTiers.js';
 import { generateCandidates, generateCasuals } from '../data/staff.js';
@@ -569,7 +570,13 @@ export function resolveDay(state) {
     },
   );
 
-  const areaQuality = emptyAreaQuality(state.areaQuality);
+  const drifted = applyDailyQualityDrift(
+    { ...state, holes, surfaceDefaults },
+    planned,
+    weekPassState.weekPasses,
+  );
+  const areaQuality = drifted.areaQuality;
+  const areaQualityPrev = drifted.areaQualityPrev;
   holes = applyAreaQualityToHoles(holes, areaQuality);
 
   const day = state.day + 1;
@@ -584,6 +591,7 @@ export function resolveDay(state) {
     cash: tournament.state.cash,
     holes,
     areaQuality,
+    areaQualityPrev,
     ...weekPassState,
     surfaceDefaults,
     moisture,
@@ -695,6 +703,12 @@ export function resolveDay(state) {
   };
 
   if (weekStartDay(next.day) !== weekStartDay(state.day)) {
+    const missed = applyMissedWeekPenalties(next);
+    next = {
+      ...next,
+      areaQuality: missed.areaQuality,
+      holes: applyAreaQualityToHoles(next.holes, missed.areaQuality),
+    };
     const dayJobs = {
       day: state.day,
       planned: plannedJobs,

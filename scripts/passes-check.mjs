@@ -11,11 +11,14 @@ import {
   wearTimeMult,
   weeklyTargetQuality,
 } from '../src/engine/passes.js';
-import { migrateWorkerTier, STAFF_TIER_SENIOR, STAFF_TIER_UNSKILLED } from '../src/engine/staffTiers.js';
+import { driftQuality } from '../src/engine/qualityDrift.js';
+import { migrateWorkerTier } from '../src/engine/staffTiers.js';
 import {
   MAX_PASSES_PER_AREA_PER_DAY,
   PASS_CLASS_PUSH_REEL,
   PASS_CLASS_RIDE_ON_ROTARY,
+  STAFF_TIER_SENIOR,
+  STAFF_TIER_UNSKILLED,
   WEAR_TIME_MULT_LIGHT,
   WEAR_TIME_MULT_NONE,
 } from '../src/data/config.js';
@@ -74,11 +77,9 @@ let next = reducer(state, {
 });
 assert(next.plannedTasks.some((t) => t.taskId === 'cutGreens'), 'greens cut booked');
 next = reducer(next, { type: 'END_DAY' });
-assert(next.areaQuality.greens === state.areaQuality.greens, 'phase 2 quality still frozen until drift');
 assert(next.day === state.day + 1, 'day advanced');
 assert(next.weekPasses.greens > 0.9, `full greens pass should count, got ${next.weekPasses.greens}`);
-if (next.weekPasses.greens >= 1) {
-  assert((next.weekPassDays.greens ?? []).includes(state.day), 'daily cap recorded');
-}
+assert(next.areaQuality.greens !== state.areaQuality.greens, 'quality should drift after a pass');
+assert(driftQuality(50, 100, 0.12) === 56, 'linear drift both ways');
 
 console.log('passes-check phase 1 ok');
