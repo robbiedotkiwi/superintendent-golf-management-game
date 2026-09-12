@@ -25,6 +25,8 @@ import {
   WEAR_TIME_MULT_NONE,
 } from '../src/data/config.js';
 import { monthlyBudgetFor, golferNumbers, gmRequiredGrade } from '../src/engine/economy.js';
+import { getTask } from '../src/data/tasks.js';
+import { draftFromJobId, emptySlotDraft, mowTaskIdFor, resolvePlannerJobId } from '../src/engine/slots.js';
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -128,5 +130,40 @@ const forecastSrc = readFileSync(new URL('../src/components/ForecastStrip.jsx', 
 assert(forecastSrc.includes("from '../engine/weather.js'"), 'ForecastStrip imports weather helpers');
 assert(forecastSrc.includes('formatTempRange'), 'ForecastStrip uses formatTempRange');
 assert(forecastSrc.includes('forecastOpacity'), 'ForecastStrip uses forecastOpacity');
+
+assert(mowTaskIdFor('cutTees') == null, 'task ids are not area keys');
+assert(resolvePlannerJobId({ jobId: 'cutTees', surface: 'cutTees' }) === 'cutTees', 'stale surface still resolves job');
+assert(getTask(resolvePlannerJobId({ jobId: 'cutTees', surface: 'cutTees' }))?.surface === 'tees', 'resolved cutTees surface is tees');
+const switched = draftFromJobId('cutTees', { ...emptySlotDraft(), machineId: GREENSMASTER_ID });
+assert(switched.jobId === 'cutTees', 'area change keeps task id');
+assert(switched.surface === 'tees', 'area change stores area key not task id');
+assert(switched.machineId === '', 'area change clears leftover machine');
+
+let afterGreens = reducer(state, {
+  type: 'PLAN_TASK',
+  taskId: 'cutGreens',
+  workerId: state.workers[0].id,
+  machineId: GREENSMASTER_ID,
+  minutes: 60,
+  confirmDamaging: true,
+});
+const teesDraft = draftFromJobId('cutTees', { ...emptySlotDraft(), machineId: GREENSMASTER_ID });
+const teesCheck = canPlanTask(afterGreens, resolvePlannerJobId(teesDraft), state.workers[0].id, {
+  minutes: 60,
+  confirmDamaging: true,
+});
+assert(teesCheck.ok, `can still plan tees after changing area: ${teesCheck.reason ?? ''}`);
+afterGreens = reducer(afterGreens, {
+  type: 'PLAN_TASK',
+  taskId: resolvePlannerJobId(teesDraft),
+  workerId: state.workers[0].id,
+  minutes: 60,
+  confirmDamaging: true,
+});
+assert(afterGreens.plannedTasks.some((item) => item.taskId === 'cutTees'), 'tees slot added after area change');
+
+const plannerSrc = readFileSync(new URL('../src/components/WeekPlanGrid.jsx', import.meta.url), 'utf8');
+assert(plannerSrc.includes('draftFromJobId(event.target.value'), 'planner area select uses draftFromJobId');
+assert(!plannerSrc.includes('surface: support ?'), 'planner no longer writes task id into surface');
 
 console.log('passes-check phase 7 ok');

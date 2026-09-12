@@ -7,6 +7,7 @@ import {
   WORK_DAY_MINUTES,
 } from '../data/config.js';
 import { CUT_TASK_BY_SURFACE } from '../data/constants.js';
+import { getTask } from '../data/tasks.js';
 import { isMachineAvailable } from './equipment.js';
 import { getDayTasks, setDayTasks, weekDays, weekStartDay, workersForPlanDay } from './week.js';
 import { workerAvailableOnDay } from './weekGrid.js';
@@ -164,6 +165,25 @@ export function applyNamedTemplate(state, templateId) {
 
 export function mowTaskIdFor(surface) {
   return CUT_TASK_BY_SURFACE[surface] ?? null;
+}
+
+export function emptySlotDraft() {
+  return { surface: 'greens', jobId: CUT_TASK_BY_SURFACE.greens, machineId: '', minutes: SLOT_MINUTES * 4 };
+}
+
+export function resolvePlannerJobId(draft) {
+  if (draft?.jobId && getTask(draft.jobId)) return draft.jobId;
+  return mowTaskIdFor(draft?.surface) ?? CUT_TASK_BY_SURFACE[draft?.surface] ?? null;
+}
+
+export function draftFromJobId(jobId, previous = emptySlotDraft()) {
+  const task = getTask(jobId);
+  return {
+    ...previous,
+    jobId: task?.id ?? jobId,
+    surface: task?.surface ?? previous.surface,
+    machineId: '',
+  };
 }
 
 export { workersForPlanDay };

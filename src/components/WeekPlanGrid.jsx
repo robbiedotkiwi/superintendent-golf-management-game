@@ -10,15 +10,17 @@ import {
   WET_WEATHER,
 } from '../data/config.js';
 import { CUT_TASK_BY_SURFACE } from '../data/constants.js';
-import { SURFACE_LABELS } from '../data/tasks.js';
+import { getTask, SURFACE_LABELS, taskUsesMachine } from '../data/tasks.js';
 import { allowingMachines } from '../engine/equipment.js';
 import { catalogMachineTitle } from '../engine/machineDisplay.js';
-import { getTask } from '../data/tasks.js';
+import { canPlanTask } from '../engine/gameState.js';
 import { passMinutesFor, staffCanRunMachine } from '../engine/passes.js';
 import {
+  draftFromJobId,
+  emptySlotDraft,
   machineConflictsOnDay,
-  mowTaskIdFor,
   nextStartMinute,
+  resolvePlannerJobId,
   snapMinutes,
 } from '../engine/slots.js';
 import { canEditPlanDay, planDayChrome, weekDays, weekdayLabel, workersForPlanDay } from '../engine/week.js';
@@ -27,6 +29,13 @@ import ForecastStrip from './ForecastStrip.jsx';
 import GradeStrip from './GradeStrip.jsx';
 import MachinePassPanel from './MachinePassPanel.jsx';
 import SeasonBar from './SeasonBar.jsx';
+
+function machinesForPlannerDraft(state, worker, draft) {
+  const taskId = resolvePlannerJobId(draft);
+  const task = getTask(taskId);
+  if (!taskUsesMachine(task)) return [];
+  return allowingMachines(state, task).filter((machine) => staffCanRunMachine(worker, machine));
+}
 
 function flagLabel(flag) {
   if (flag === COPY_FLAG_AWAY) return 'person away';
@@ -87,28 +96,31 @@ export default function WeekPlanGrid({
   const rows = useMemo(() => people, [people, state.workers, state.casualPool]);
 
   function draftFor(workerId, day) {
-    return draft[`${workerId}-${day}`] ?? { surface: 'greens', jobId: 'cutGreens', machineId: '', minutes: SLOT_MINUTES * 4 };
+    return draft[`${workerId}-${day}`] ?? emptySlotDraft();
   }
 
   function setDraftFor(workerId, day, patch) {
     const key = `${workerId}-${day}`;
-    setDraft((current) => ({ ...current, [key]: { ...draftFor(workerId, day), ...patch } }));
+    setDraft((current) => {
+      const prev = current[key] ?? emptySlotDraft();
+      return { ...current, [key]: { ...prev, ...patch } };
+    });
   }
 
   function addSlot(worker, day) {
     const edit = canEditPlanDay(state, day);
     if (!edit.ok) return;
     const chosen = draftFor(worker.id, day);
-    const support = SUPPORT_PLAN_JOBS.find((item) => item.taskId === chosen.jobId);
-    const taskId = support?.taskId ?? mowTaskIdFor(chosen.surface) ?? CUT_TASK_BY_SURFACE[chosen.surface];
+    const taskId = resolvePlannerJobId(chosen);
     const task = getTask(taskId);
-    const surface = task?.surface ?? chosen.surface;
-    const dayState = { ...state, weather: state.weather };
-    const machines = task?.mowing || taskId === 'rollGreens'
-      ? allowingMachines(dayState, task).filter((machine) => staffCanRunMachine(worker, machine))
-      : [];
-    const machineId = chosen.machineId || machines[0]?.id;
-    const defaultMinutes = passMinutesFor(dayState, machineId, surface, worker) ?? SLOT_MINUTES * 4;
+    if (!task) return;
+    const dayState = { ...state, weather: state.weather, planningDay: day };
+    const machines = machinesForPlannerDraft(dayState, worker, chosen);
+    const machineId = machines.some((item) => item.id === chosen.machineId)
+      ? chosen.machineId
+      : undefined;
+    const defaultMinutes =
+      passMinutesFor(dayState, machineId ?? machines[0]?.id, task.surface, worker) ?? SLOT_MINUTES * 4;
     const minutes = snapMinutes(chosen.minutes || defaultMinutes);
     onPlan(taskId, undefined, {
       day,
@@ -209,10 +221,20 @@ export default function WeekPlanGrid({
                   const used = tasks.reduce((sum, item) => sum + (item.minutes ?? 0), 0);
                   const cap = on?.minutesToday ?? 0;
                   const chosen = draftFor(worker.id, day);
-                  const taskId = mowTaskIdFor(chosen.surface);
-                  const machines = taskId
-                    ? allowingMachines(state, getTask(taskId)).filter((machine) => staffCanRunMachine(worker, machine))
-                    : [];
+                  const jobId = resolvePlannerJobId(chosen);
+                  const machines = machinesForPlannerDraft(state, worker, chosen);
+                  const machineId = machines.some((item) => item.id === chosen.machineId)
+                    ? chosen.machineId
+                    : '';
+                  const planMinutes = snapMinutes(chosen.minutes || SLOT_MINUTES * 4);
+                  const addCheck = jobId
+                    ? canPlanTask(state, jobId, worker.id, {
+                        day,
+                        machineId: machineId || undefined,
+                        minutes: planMinutes,
+                        confirmDamaging: true,
+                      })
+                    : { ok: false, reason: 'Unknown job.' };
                   return (
                     <td key={day} className="border border-[var(--sand)] p-2 align-top" data-staff-cell={`${worker.id}-${day}`}>
                       <div className="text-[10px] text-[var(--sand)]">
@@ -241,16 +263,12 @@ export default function WeekPlanGrid({
                         <div className="mt-1 space-y-1">
                           <select
                             className="w-full border border-[var(--sand)] bg-[var(--soil)] text-[10px]"
-                            value={chosen.jobId ?? chosen.surface}
-                            onChange={(event) => {
-                              const value = event.target.value;
-                              const support = SUPPORT_PLAN_JOBS.find((item) => item.taskId === value);
-                              setDraftFor(worker.id, day, {
-                                jobId: value,
-                                surface: support ? getTask(value)?.surface ?? chosen.surface : value,
-                              });
-                            }}
+                            value={jobId}
+                            onChange={(event) =>
+                              setDraftFor(worker.id, day, draftFromJobId(event.target.value, chosen))
+                            }
                             aria-label={`${worker.name} job ${weekdayLabel(day)}`}
+                            data-job-select={`${worker.id}-${day}`}
                           >
                             {PASS_AREAS.filter((area) => worker.allowedSurfaces === 'all' || worker.allowedSurfaces?.includes(area)).map((area) => (
                               <option key={area} value={CUT_TASK_BY_SURFACE[area]}>
@@ -265,9 +283,10 @@ export default function WeekPlanGrid({
                           </select>
                           <select
                             className="w-full border border-[var(--sand)] bg-[var(--soil)] text-[10px]"
-                            value={chosen.machineId}
+                            value={machineId}
                             onChange={(event) => setDraftFor(worker.id, day, { machineId: event.target.value })}
                             aria-label={`${worker.name} machine ${weekdayLabel(day)}`}
+                            data-machine-select={`${worker.id}-${day}`}
                           >
                             <option value="">Auto</option>
                             {machines.map((machine) => (
@@ -294,6 +313,8 @@ export default function WeekPlanGrid({
                           <button
                             type="button"
                             className="w-full border border-[var(--sand)] px-1 py-0.5 text-[10px]"
+                            title={addCheck.reason ?? ''}
+                            disabled={!addCheck.ok}
                             onClick={() => addSlot(worker, day)}
                             data-add-slot={`${worker.id}-${day}`}
                           >
