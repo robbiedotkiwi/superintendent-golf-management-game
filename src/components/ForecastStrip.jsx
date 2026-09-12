@@ -6,8 +6,9 @@ import {
   WEATHER_RAIN,
   WEATHER_STORM,
 } from '../data/constants.js';
+import { FORECAST_UNRELIABLE_FROM_DAY, WET_PASS_TIME_MULT, WET_WEATHER } from '../data/config.js';
 import { WEATHER_LABELS } from '../data/events.js';
-import { forecastOpacity, formatTempRange } from '../engine/weather.js';
+import { dayOfWeek } from '../engine/staff.js';
 import {
   canEditPlanDay,
   forecastEntryForDay,
@@ -116,6 +117,16 @@ export default function ForecastStrip({ state, onSelectDay, selectedDay }) {
                 {entry.windSpeed != null ? `${entry.windSpeed} ${entry.windDir ?? ''}` : ''}
               </div>
               <div className="text-[var(--sand)]">{jobs ? `${jobs} job${jobs === 1 ? '' : 's'}` : '—'}</div>
+              {WET_WEATHER.includes(entry.type) ? (
+                <div className="text-[9px] text-[var(--machine-orange)]" data-wet-forecast={day}>
+                  Wet +{Math.round((WET_PASS_TIME_MULT - 1) * 100)}%
+                </div>
+              ) : null}
+              {dayOfWeek(day) >= FORECAST_UNRELIABLE_FROM_DAY ? (
+                <div className="text-[9px] text-[var(--sand)]" data-unreliable={day}>
+                  Unreliable
+                </div>
+              ) : null}
               {plan.locked && day > state.day ? <div className="text-[9px] text-[var(--sand)]">Locked</div> : null}
             </button>
           );

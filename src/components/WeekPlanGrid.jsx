@@ -1,97 +1,64 @@
 import { useMemo, useState } from 'react';
-import { PLAYER_ID } from '../data/constants.js';
-import { allowingMachines } from '../engine/equipment.js';
-import { machineTitle, catalogMachineTitle } from '../engine/machineDisplay.js';
-import { canEditPlanDay, planDayChrome, weekDays, weekdayLabel } from '../engine/week.js';
 import {
-  capacityBarsForPerson,
-  courseHolesFor,
-  daysMatchingWorker,
-  defaultWorkerId,
-  displayCellMinutes,
-  EVERYONE_ID,
-  isEveryonePlanner,
-  jobsThatWontFit,
-  machineCapacityForDay,
-  rosterPeople,
-  rosterWorker,
-  rowsForPerson,
-} from '../engine/weekGrid.js';
-import { workerAllows, workerBringsOwnMower } from '../engine/skills.js';
+  COPY_FLAG_AWAY,
+  COPY_FLAG_SHED,
+  MINUTES_PER_HOUR,
+  PASS_AREAS,
+  SLOT_MINUTES,
+  WET_PASS_TIME_MULT,
+  WET_WEATHER,
+} from '../data/config.js';
+import { CUT_TASK_BY_SURFACE } from '../data/constants.js';
+import { SURFACE_LABELS } from '../data/tasks.js';
+import { allowingMachines } from '../engine/equipment.js';
+import { catalogMachineTitle } from '../engine/machineDisplay.js';
+import { getTask } from '../data/tasks.js';
+import { passMinutesFor, staffCanRunMachine } from '../engine/passes.js';
+import {
+  machineConflictsOnDay,
+  mowTaskIdFor,
+  nextStartMinute,
+  snapMinutes,
+} from '../engine/slots.js';
+import { canEditPlanDay, planDayChrome, weekDays, weekdayLabel, workersForPlanDay } from '../engine/week.js';
+import { rosterPeople } from '../engine/weekGrid.js';
 import ForecastStrip from './ForecastStrip.jsx';
+import GradeStrip from './GradeStrip.jsx';
+import MachinePassPanel from './MachinePassPanel.jsx';
 
-function fillPercent(used, capacity) {
-  if (capacity <= 0) return used > 0 ? 100 : 0;
-  return Math.min(100, (used / capacity) * 100);
+function flagLabel(flag) {
+  if (flag === COPY_FLAG_AWAY) return 'person away';
+  if (flag === COPY_FLAG_SHED) return 'machine in shed';
+  return flag;
 }
 
-function PersonBars({ state, day, workerId }) {
-  const people = capacityBarsForPerson(state, day, workerId);
-  const wontFit = jobsThatWontFit(state, day, isEveryonePlanner(workerId) ? null : workerId);
-  const provisional = day > state.day;
-  if (!people.length) {
-    return (
-      <div data-capacity-day={day} data-wont-fit={wontFit.length}>
-        <p className="text-[10px] text-[var(--sand)]">{workerId && !isEveryonePlanner(workerId) ? 'Not on' : 'No one on'}</p>
-        {wontFit.length ? (
-          <p className="mt-1 text-[10px] font-semibold text-red-500" data-wont-fit-line>
-            {wontFit.length} job{wontFit.length === 1 ? '' : 's'} won&apos;t fit
-          </p>
-        ) : null}
+function SlotChip({ task, conflict, onRemove, disabled }) {
+  const taskSpec = getTask(task.taskId);
+  const label = SURFACE_LABELS[task.surface ?? taskSpec?.surface] ?? taskSpec?.name ?? task.taskId;
+  const hours = ((task.minutes ?? 0) / MINUTES_PER_HOUR).toFixed(1);
+  const flags = task.copyFlags ?? [];
+  return (
+    <div
+      className={`mb-1 border px-1 py-0.5 text-left text-[10px] leading-tight ${
+        flags.length || conflict ? 'border-red-500 text-red-300' : 'border-[var(--machine-orange)]'
+      }`}
+      data-slot-chip={task.planId}
+      data-conflict={conflict || undefined}
+    >
+      <div className="flex items-center justify-between gap-1">
+        <span>
+          {label} · {catalogMachineTitle(task.machineId) || 'own'} · {hours}h
+        </span>
+        {disabled ? null : (
+          <button type="button" className="text-[10px]" onClick={() => onRemove(task.taskId, task.planId)}>
+            ×
+          </button>
+        )}
       </div>
-    );
-  }
-  return (
-    <div className="space-y-1" data-capacity-day={day} data-provisional={provisional || undefined} data-wont-fit={wontFit.length}>
-      {people.map((person) => (
-        <div key={person.id} data-capacity-person={person.id} data-overfill={person.overfilled || undefined}>
-          <div className="flex justify-between gap-1 text-[10px] leading-tight">
-            <span className="truncate">{person.name}</span>
-            <span>
-              {Math.round(person.used)}/{person.capacity}
-            </span>
-          </div>
-          <div className="h-1.5 overflow-hidden bg-[var(--paint)]/20">
-            <div
-              className={`h-full ${person.overfilled ? 'bg-red-600' : 'bg-[var(--sand)]'}`}
-              style={{ width: `${fillPercent(person.used, person.capacity)}%` }}
-            />
-          </div>
-        </div>
-      ))}
-      {wontFit.length ? (
-        <p className="text-[10px] font-semibold text-red-500" data-wont-fit-line>
-          {wontFit.length} job{wontFit.length === 1 ? '' : 's'} won&apos;t fit
-        </p>
-      ) : null}
-      {provisional ? <p className="text-[10px] text-[var(--sand)]">Provisional</p> : null}
-    </div>
-  );
-}
-
-function MachineBars({ state, day, workerId }) {
-  const machines = machineCapacityForDay(state, day, workerId);
-  if (!machines.length) return null;
-  return (
-    <div className="mt-2 space-y-1" data-machine-capacity-day={day}>
-      {machines.map((machine) => (
-        <div key={machine.id} data-capacity-machine={machine.id} data-overfill={machine.overfilled || undefined}>
-          <div className={`flex justify-between gap-1 text-[10px] leading-tight ${machine.overfilled ? 'text-red-500' : ''}`}>
-            <span className="truncate">
-              {catalogMachineTitle(machine.id)} — {Math.round(machine.used)}/{machine.capacity}
-            </span>
-          </div>
-          <div className="h-1.5 overflow-hidden bg-[var(--paint)]/20">
-            <div
-              className={`h-full ${machine.overfilled ? 'bg-red-600' : 'bg-[var(--sand)]'}`}
-              style={{ width: `${fillPercent(machine.used, machine.capacity)}%` }}
-            />
-          </div>
-          {machine.wontFit ? (
-            <p className="text-[10px] font-semibold text-red-500" data-machine-wont-fit={machine.id}>
-              {machine.wontFit} job{machine.wontFit === 1 ? '' : 's'} won&apos;t fit
-            </p>
-          ) : null}
+      {conflict ? <div>Machine already booked this slot</div> : null}
+      {flags.map((flag) => (
+        <div key={flag} data-copy-flag={flag}>
+          Copied · {flagLabel(flag)}
         </div>
       ))}
     </div>
@@ -104,269 +71,225 @@ export default function WeekPlanGrid({
   onRemove,
   onSelectDay,
   onSetWorker,
+  onCopyYesterday,
+  onCopyLastWeek,
+  onSaveTemplate,
+  onApplyTemplate,
 }) {
   const days = weekDays(state.day);
-  const [plannerId, setPlannerId] = useState(PLAYER_ID);
-  const everyone = isEveryonePlanner(plannerId);
-  const planner = everyone ? null : rosterWorker(state, plannerId);
-  const rows = useMemo(() => rowsForPerson(state, plannerId), [state, plannerId]);
-  const [defaults, setDefaults] = useState({});
+  const people = rosterPeople(state).filter((worker) => !worker.isCasual || (state.casualPool ?? []).some((c) => c.id === worker.id));
+  const [draft, setDraft] = useState({});
+  const [templateName, setTemplateName] = useState('');
+  const flags = state.lastCopyFlags ?? [];
 
-  function rowDefault(row) {
-    const saved = defaults[row.taskId];
-    return {
-      workerId: saved?.workerId ?? (everyone ? defaultWorkerId(state, row) : plannerId),
-      machineId: saved?.machineId ?? row.machineId ?? '',
-    };
+  const rows = useMemo(() => people, [people, state.workers, state.casualPool]);
+
+  function draftFor(workerId, day) {
+    return draft[`${workerId}-${day}`] ?? { surface: 'greens', machineId: '', minutes: SLOT_MINUTES * 4 };
   }
 
-  function setRowDefault(taskId, patch) {
-    setDefaults((current) => ({
-      ...current,
-      [taskId]: { ...rowDefault(rows.find((row) => row.taskId === taskId) ?? { taskId }), ...current[taskId], ...patch },
-    }));
+  function setDraftFor(workerId, day, patch) {
+    const key = `${workerId}-${day}`;
+    setDraft((current) => ({ ...current, [key]: { ...draftFor(workerId, day), ...patch } }));
   }
 
-  function toggleCell(row, cell) {
-    if (everyone) return;
-    const edit = canEditPlanDay(state, cell.day);
-    if (!edit.ok || row.lockReason) return;
-    if (cell.planned) {
-      const own = cell.tasks.every((task) => task.workerId === plannerId);
-      if (own) {
-        for (const task of cell.tasks) {
-          onRemove(task.taskId, task.planId, cell.day);
-        }
-        return;
-      }
-      onSetWorker?.(row.taskId, plannerId, cell.day);
-      return;
-    }
-    const chosen = rowDefault(row);
-    const worker = rosterWorker(state, plannerId);
-    onPlan(row.taskId, courseHolesFor(state, row.taskId), {
-      day: cell.day,
-      workerId: plannerId,
-      machineId: workerBringsOwnMower(worker, row.surface) ? undefined : chosen.machineId || undefined,
+  function addSlot(worker, day) {
+    const edit = canEditPlanDay(state, day);
+    if (!edit.ok) return;
+    const chosen = draftFor(worker.id, day);
+    const surface = chosen.surface;
+    const taskId = mowTaskIdFor(surface) ?? CUT_TASK_BY_SURFACE[surface];
+    const task = getTask(taskId);
+    const dayState = { ...state, weather: state.weather };
+    const machines = allowingMachines(dayState, task).filter((machine) => staffCanRunMachine(worker, machine));
+    const machineId = chosen.machineId || machines[0]?.id;
+    const defaultMinutes = passMinutesFor(dayState, machineId, surface, worker) ?? SLOT_MINUTES * 4;
+    const minutes = snapMinutes(chosen.minutes || defaultMinutes);
+    onPlan(taskId, undefined, {
+      day,
+      workerId: worker.id,
+      machineId,
+      minutes,
       confirmDamaging: true,
     });
   }
 
-  const people = rosterPeople(state);
-
   return (
-    <div className="space-y-3" data-week-grid data-planner={plannerId}>
+    <div className="space-y-3" data-week-grid data-planner="staff">
       <ForecastStrip state={state} onSelectDay={onSelectDay} />
-      <label className="flex items-center gap-2 text-sm">
-        <span className="text-[var(--sand)]">Show</span>
+      <GradeStrip state={state} />
+      <MachinePassPanel state={state} />
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <button type="button" className="border border-[var(--sand)] px-2 py-1" onClick={() => onCopyYesterday?.(state.planningDay ?? state.day)} data-copy-yesterday>
+          Copy yesterday
+        </button>
+        <button type="button" className="border border-[var(--sand)] px-2 py-1" onClick={() => onCopyLastWeek?.()} data-copy-last-week>
+          Copy last week
+        </button>
+        <input
+          className="border border-[var(--sand)] bg-[var(--soil)] px-2 py-1"
+          value={templateName}
+          onChange={(event) => setTemplateName(event.target.value)}
+          placeholder="Template name"
+          aria-label="Template name"
+        />
+        <button type="button" className="border border-[var(--sand)] px-2 py-1" onClick={() => onSaveTemplate?.(templateName)} data-save-template>
+          Save template
+        </button>
         <select
           className="border border-[var(--sand)] bg-[var(--soil)] px-2 py-1"
-          value={plannerId}
-          onChange={(event) => setPlannerId(event.target.value)}
-          aria-label="Planning mode"
-          data-person-filter
+          value=""
+          onChange={(event) => {
+            const id = Number(event.target.value);
+            if (id) onApplyTemplate?.(id);
+          }}
+          aria-label="Apply template"
+          data-apply-template
         >
-          <option value={EVERYONE_ID}>Everyone</option>
-          {people.map((worker) => (
-            <option key={worker.id} value={worker.id}>
-              {worker.name}
-              {worker.ownMower ? ' · own mower' : ''}
-              {worker.isCasual && !worker.ownMower ? ' · casual' : ''}
-              {worker.isVolunteer ? ' · volunteer' : ''}
+          <option value="">Apply template…</option>
+          {(state.planTemplates ?? []).map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.name}
             </option>
           ))}
         </select>
-        {everyone ? (
-          <span className="text-xs text-[var(--sand)]">Overview only — pick a person to plan</span>
+        {flags.length ? (
+          <span className="text-[10px] text-red-400" data-copy-flags>
+            Copied with flags: {flags.join(', ')}
+          </span>
         ) : null}
-      </label>
+      </div>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[64rem] border-collapse text-left text-sm">
           <thead>
             <tr>
-              <th className="sticky left-0 z-10 min-w-[14rem] border border-[var(--sand)] bg-[var(--soil)] p-2">Job</th>
+              <th className="sticky left-0 z-10 min-w-[10rem] border border-[var(--sand)] bg-[var(--soil)] p-2">Staff</th>
               {days.map((day) => {
                 const chrome = planDayChrome(state, day);
                 return (
                   <th
                     key={day}
-                    className={`min-w-[7.5rem] border border-[var(--sand)] p-2 align-top ${
-                      chrome.isToday ? 'bg-[var(--machine-orange)]/20' : ''
-                    } ${chrome.isPlanningAhead ? 'outline outline-1 outline-dashed outline-[var(--machine-orange)]' : ''} ${
+                    className={`min-w-[9rem] border border-[var(--sand)] p-2 align-top ${chrome.isToday ? 'bg-[var(--machine-orange)]/20' : ''} ${
                       day < state.day ? 'opacity-40' : ''
                     }`}
                     data-day-col={day}
-                    data-today={chrome.isToday || undefined}
-                    data-planning-ahead={chrome.isPlanningAhead || undefined}
                   >
-                    <div className="font-semibold">{weekdayLabel(day)}</div>
-                    {chrome.isToday ? (
-                      <div className="text-[10px] font-semibold text-[var(--machine-orange)]">Today</div>
+                    <button type="button" className="font-semibold" onClick={() => onSelectDay?.(day)}>
+                      {weekdayLabel(day)}
+                    </button>
+                    {WET_WEATHER.includes(state.forecastStrip?.[day - state.day - 1]?.type) ||
+                    (day === state.day && WET_WEATHER.includes(state.weather)) ? (
+                      <div className="text-[10px] text-[var(--machine-orange)]" data-wet-cut={day}>
+                        Wet cut +{Math.round((WET_PASS_TIME_MULT - 1) * 100)}% · penalty
+                      </div>
                     ) : null}
-                    {chrome.isPlanningAhead ? (
-                      <div className="text-[10px] font-semibold text-[var(--machine-orange)]">Planning</div>
-                    ) : null}
-                    <div className="mt-2">
-                      <PersonBars state={state} day={day} workerId={plannerId} />
-                      <MachineBars state={state} day={day} workerId={plannerId} />
-                    </div>
                   </th>
                 );
               })}
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => {
-              const chosen = rowDefault(row);
-              const locked = Boolean(row.lockReason);
-              const chosenWorker = rosterWorker(state, everyone ? chosen.workerId : plannerId);
-              const assignedWorker = rosterWorker(state, row.workerId);
-              const assignedOwnMower = Boolean(
-                !row.mixedWorker && workerBringsOwnMower(assignedWorker, row.surface),
-              );
-              const rowOwnMower = assignedOwnMower || workerBringsOwnMower(chosenWorker, row.surface);
-              const assignable = people.filter((worker) => workerAllows(worker, row.surface));
-              const workerLabel = row.mixedWorker
-                ? 'mixed'
-                : assignedWorker?.name ?? '—';
-              const machineLabel = assignedOwnMower
-                ? 'Own mower'
-                : row.mixedMachine
-                  ? 'mixed'
-                  : row.machineId
-                    ? catalogMachineTitle(row.machineId)
-                    : row.usesMachine
-                      ? 'Auto'
-                      : '—';
-              const machines = row.usesMachine && !rowOwnMower ? allowingMachines(state, row.task) : [];
-              return (
-                <tr
-                  key={row.taskId}
-                  data-grid-row={row.taskId}
-                  data-locked={locked || undefined}
-                  className={locked ? 'opacity-50' : ''}
-                  title={row.lockReason ?? undefined}
-                >
-                  <th className="sticky left-0 z-10 border border-[var(--sand)] bg-[var(--soil)] p-2 align-top">
-                    <div className="font-semibold">{row.label}</div>
-                    {row.daysSince ? (
-                      <p className="mt-1 text-xs text-[var(--sand)]" data-days-since={row.taskId}>
-                        {row.daysSince}
-                      </p>
-                    ) : null}
-                    {everyone ? (
-                      <label className="mt-2 block text-xs text-[var(--sand)]">
-                        Worker
-                        <select
-                          className="mt-1 w-full border border-[var(--sand)] bg-[var(--soil)] px-1 py-1 text-[var(--paint)]"
-                          value={row.mixedWorker && !defaults[row.taskId]?.workerId ? 'mixed' : chosen.workerId}
-                          disabled={locked}
-                          onChange={(event) => {
-                            const value = event.target.value;
-                            if (value === 'mixed') return;
-                            const oldId = row.workerId;
-                            setRowDefault(row.taskId, { workerId: value });
-                            if (!oldId || row.mixedWorker) return;
-                            for (const day of daysMatchingWorker(row, oldId)) {
-                              if (!canEditPlanDay(state, day).ok) continue;
-                              onSetWorker?.(row.taskId, value, day);
-                            }
-                          }}
-                          aria-label={`${row.label} worker`}
-                          data-row-worker-select={row.taskId}
-                        >
-                          {row.mixedWorker ? <option value="mixed">mixed</option> : null}
-                          {assignable.map((worker) => (
-                            <option key={worker.id} value={worker.id}>
-                              {worker.name}
-                              {worker.ownMower ? ' · own mower' : ''}
-                              {worker.isCasual && !worker.ownMower ? ' · casual' : ''}
-                              {worker.isVolunteer ? ' · volunteer' : ''}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    ) : null}
-                    {row.usesMachine && !rowOwnMower ? (
-                      <label className="mt-2 block text-xs text-[var(--sand)]">
-                        Machine
-                        <select
-                          className="mt-1 w-full border border-[var(--sand)] bg-[var(--soil)] px-1 py-1 text-[var(--paint)]"
-                          value={row.mixedMachine && !defaults[row.taskId]?.machineId ? 'mixed' : chosen.machineId || ''}
-                          disabled={locked || everyone}
-                          onChange={(event) => {
-                            const value = event.target.value;
-                            if (value === 'mixed') return;
-                            setRowDefault(row.taskId, { machineId: value });
-                          }}
-                          aria-label={`${row.label} machine`}
-                        >
-                          {row.mixedMachine ? <option value="mixed">mixed</option> : null}
-                          <option value="">Auto</option>
-                          {machines.map((machine) => (
-                            <option key={machine.id} value={machine.id}>
-                              {machineTitle(machine)}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    ) : null}
-                    <p className="mt-1 text-[11px]" data-row-worker={row.taskId}>
-                      {workerLabel}
-                      {row.usesMachine ? ` · ${machineLabel}` : ''}
-                    </p>
-                  </th>
-                  {row.cells.map((cell) => {
-                    const edit = canEditPlanDay(state, cell.day);
-                    const takenByOther = Boolean(planner && cell.planned && cell.workerId && cell.workerId !== plannerId);
-                    const disabled = locked || !edit.ok || everyone;
-                    const minutes = displayCellMinutes(state, row, cell, planner, chosen.machineId);
-                    const showMinutes = planner ? minutes > 0 : cell.planned;
-                    return (
-                      <td key={cell.day} className="border border-[var(--sand)] p-2 text-center align-middle">
-                        <button
-                          type="button"
-                          data-grid-cell={`${row.taskId}-${cell.day}`}
-                          data-unassigned={cell.unassigned || undefined}
-                          data-taken-by={takenByOther ? cell.workerId : undefined}
-                          disabled={disabled}
-                          onClick={() => toggleCell(row, cell)}
-                          className={`min-h-8 min-w-8 border px-1 ${
-                            cell.unassigned
-                              ? 'border-dashed border-[var(--sand)] bg-transparent text-[var(--sand)]'
-                              : takenByOther
-                                ? 'border-[var(--sand)] bg-[var(--paint)]/10 text-[11px]'
-                                : cell.planned
-                                  ? 'border-[var(--machine-orange)] bg-[var(--machine-orange)]'
-                                  : 'border-[var(--sand)]/40'
-                          } disabled:opacity-40`}
-                          aria-pressed={cell.planned && !takenByOther}
-                          aria-label={`${row.label} ${cell.weekday}${takenByOther ? ` taken by ${cell.workerName}` : cell.unassigned ? ' unassigned' : ''}`}
-                          title={
-                            takenByOther
-                              ? `Taken by ${cell.workerName}. Click to reassign.`
-                              : cell.unassigned
-                                ? 'Assigned person is not available. This cell will not run.'
-                                : everyone
-                                  ? 'Pick a person to plan'
-                                  : edit.ok
-                                    ? undefined
-                                    : edit.reason
-                          }
-                        >
-                          {takenByOther ? cell.workerName : cell.unassigned ? '·' : cell.planned ? '✓' : ''}
-                        </button>
-                        {showMinutes ? (
-                          <div className="mt-1 text-[10px] text-[var(--sand)]" data-cell-minutes={`${row.taskId}-${cell.day}`}>
-                            {Math.round(minutes)} min
-                          </div>
-                        ) : null}
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
+            {rows.map((worker) => (
+              <tr key={worker.id} data-staff-row={worker.id}>
+                <th className="sticky left-0 z-10 border border-[var(--sand)] bg-[var(--soil)] p-2 align-top">
+                  <div className="font-semibold">{worker.name}</div>
+                  <div className="text-[10px] text-[var(--sand)]">{worker.tier}</div>
+                </th>
+                {days.map((day) => {
+                  const edit = canEditPlanDay(state, day);
+                  const roster = workersForPlanDay(state, day);
+                  const on = roster.find((item) => item.id === worker.id);
+                  const tasks = (state.weekPlan?.days?.[day]?.tasks ?? []).filter((item) => item.workerId === worker.id);
+                  const used = tasks.reduce((sum, item) => sum + (item.minutes ?? 0), 0);
+                  const cap = on?.minutesToday ?? 0;
+                  const chosen = draftFor(worker.id, day);
+                  const taskId = mowTaskIdFor(chosen.surface);
+                  const machines = taskId
+                    ? allowingMachines(state, getTask(taskId)).filter((machine) => staffCanRunMachine(worker, machine))
+                    : [];
+                  return (
+                    <td key={day} className="border border-[var(--sand)] p-2 align-top" data-staff-cell={`${worker.id}-${day}`}>
+                      <div className="text-[10px] text-[var(--sand)]">
+                        {Math.round(used)}/{Math.round(cap)} min
+                        {cap > 0 && used / SLOT_MINUTES > 5 / (SLOT_MINUTES / 60) ? null : null}
+                      </div>
+                      {tasks.map((task) => {
+                        const conflict = machineConflictsOnDay(
+                          state.weekPlan?.days?.[day]?.tasks ?? [],
+                          task.machineId,
+                          task.startMinute ?? nextStartMinute(tasks, worker.id),
+                          task.minutes,
+                          task.planId,
+                        ).length;
+                        return (
+                          <SlotChip
+                            key={task.planId ?? `${task.taskId}-${day}`}
+                            task={task}
+                            conflict={conflict}
+                            disabled={!edit.ok}
+                            onRemove={(taskId, planId) => onRemove(taskId, planId, day)}
+                          />
+                        );
+                      })}
+                      {edit.ok && on?.minutesToday > 0 ? (
+                        <div className="mt-1 space-y-1">
+                          <select
+                            className="w-full border border-[var(--sand)] bg-[var(--soil)] text-[10px]"
+                            value={chosen.surface}
+                            onChange={(event) => setDraftFor(worker.id, day, { surface: event.target.value })}
+                            aria-label={`${worker.name} area ${weekdayLabel(day)}`}
+                          >
+                            {PASS_AREAS.filter((area) => worker.allowedSurfaces === 'all' || worker.allowedSurfaces?.includes(area)).map((area) => (
+                              <option key={area} value={area}>
+                                {SURFACE_LABELS[area]}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            className="w-full border border-[var(--sand)] bg-[var(--soil)] text-[10px]"
+                            value={chosen.machineId}
+                            onChange={(event) => setDraftFor(worker.id, day, { machineId: event.target.value })}
+                            aria-label={`${worker.name} machine ${weekdayLabel(day)}`}
+                          >
+                            <option value="">Auto</option>
+                            {machines.map((machine) => (
+                              <option key={machine.id} value={machine.id}>
+                                {machine.model ?? machine.name}
+                              </option>
+                            ))}
+                          </select>
+                          <label className="block text-[10px] text-[var(--sand)]">
+                            Hours
+                            <input
+                              type="number"
+                              min={SLOT_MINUTES / MINUTES_PER_HOUR}
+                              step={SLOT_MINUTES / MINUTES_PER_HOUR}
+                              className="w-full border border-[var(--sand)] bg-[var(--soil)] px-1"
+                              value={(chosen.minutes ?? SLOT_MINUTES) / MINUTES_PER_HOUR}
+                              onChange={(event) =>
+                                setDraftFor(worker.id, day, {
+                                  minutes: snapMinutes(Number(event.target.value) * MINUTES_PER_HOUR),
+                                })
+                              }
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            className="w-full border border-[var(--sand)] px-1 py-0.5 text-[10px]"
+                            onClick={() => addSlot(worker, day)}
+                            data-add-slot={`${worker.id}-${day}`}
+                          >
+                            Add slot
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-[var(--sand)]">{edit.ok ? 'Not on' : edit.reason}</p>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

@@ -73,6 +73,20 @@ let next = reducer(state, {
   taskId: 'cutGreens',
   workerId: state.workers[0].id,
   machineId: GREENSMASTER_ID,
+  minutes: 120,
+  confirmDamaging: true,
+});
+assert(next.plannedTasks[0]?.minutes === 120, 'slot minutes stick');
+next = reducer(next, { type: 'SAVE_TEMPLATE', name: 'winter week' });
+assert(next.planTemplates.some((item) => item.name === 'winter week'), 'named template saved');
+const copied = reducer(next, { type: 'COPY_YESTERDAY', day: state.day + 1 });
+assert(copied.weekPlan.days[state.day + 1]?.tasks?.length >= 0, 'copy yesterday runs');
+
+next = reducer(state, {
+  type: 'PLAN_TASK',
+  taskId: 'cutGreens',
+  workerId: state.workers[0].id,
+  machineId: GREENSMASTER_ID,
   confirmDamaging: true,
 });
 assert(next.plannedTasks.some((t) => t.taskId === 'cutGreens'), 'greens cut booked');

@@ -188,6 +188,7 @@ export default function App() {
               machineId: options?.machineId,
               workerId: options?.workerId,
               day: options?.day,
+              minutes: options?.minutes,
             })
           }
           onRemove={(taskId, planId, day) => dispatch({ type: 'REMOVE_TASK', taskId, planId, day })}
@@ -225,6 +226,10 @@ export default function App() {
           onBookCasual={(casualId, day) => dispatch({ type: 'BOOK_CASUAL', casualId, day })}
           onUnbookCasual={(casualId, day) => dispatch({ type: 'UNBOOK_CASUAL', casualId, day })}
           onSetWorker={(taskId, workerId, day) => dispatch({ type: 'SET_TASK_WORKER', taskId, workerId, day })}
+          onCopyYesterday={(day) => dispatch({ type: 'COPY_YESTERDAY', day })}
+          onCopyLastWeek={() => dispatch({ type: 'COPY_LAST_WEEK' })}
+          onSaveTemplate={(name) => dispatch({ type: 'SAVE_TEMPLATE', name })}
+          onApplyTemplate={(templateId) => dispatch({ type: 'APPLY_TEMPLATE', templateId })}
           onSetHoc={(surface, hoc) => dispatch({ type: 'SET_HOC', surface, hoc })}
           onSetPattern={(surface, pattern) => dispatch({ type: 'SET_PATTERN', surface, pattern })}
           onSetAngle={(surface, angle) => dispatch({ type: 'SET_ANGLE', surface, angle })}
@@ -350,6 +355,10 @@ function GameScreen({
   onBookCasual,
   onUnbookCasual,
   onSetWorker,
+  onCopyYesterday,
+  onCopyLastWeek,
+  onSaveTemplate,
+  onApplyTemplate,
   onSetHoc,
   onSetPattern,
   onSetAngle,
@@ -563,6 +572,10 @@ function GameScreen({
             onSetAutoRotate={onSetAutoRotate}
             onSetIrrigation={onSetIrrigation}
             onSetWorker={onSetWorker}
+            onCopyYesterday={onCopyYesterday}
+            onCopyLastWeek={onCopyLastWeek}
+            onSaveTemplate={onSaveTemplate}
+            onApplyTemplate={onApplyTemplate}
             onBuyAerator={onBuyAerator}
             onBuyGreensSensors={onBuyGreensSensors}
             onBuyTurfRad={onBuyTurfRad}

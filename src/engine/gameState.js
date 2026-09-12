@@ -24,6 +24,7 @@ import {
 import { generateCandidates, generateCasuals } from '../data/staff.js';
 import { rosterWorker } from './weekGrid.js';
 import { migrateWorkerTier } from './staffTiers.js';
+import { applyNamedTemplate, copyLastWeek, copyYesterday, nextStartMinute, saveNamedTemplate, snapMinutes } from './slots.js';
 import {
   applyAreaQualityToHoles,
   emptyAreaQuality,
@@ -226,6 +227,8 @@ export function createInitialState() {
     weekPlan: emptyWeekPlan(STARTING_DAY),
     ...passWeek,
     planTemplates: [],
+    nextTemplateId: 1,
+    lastCopyFlags: [],
     areaQualityPrev: emptyAreaQuality(),
     morningDrops: [],
     selectedHoles: [],
@@ -392,7 +395,7 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
     return { ok: false, reason: 'Select at least one green.' };
   }
 
-  if (task.surface ? findPlannedJob(state, taskId, holes) : state.plannedTasks.some((planned) => planned.taskId === taskId)) {
+  if (!task.mowing && (task.surface ? findPlannedJob(state, taskId, holes) : state.plannedTasks.some((planned) => planned.taskId === taskId))) {
     return { ok: false, reason: 'Already planned. Take it off the list first.' };
   }
 
@@ -462,9 +465,10 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
   if (machineCheck.machine && !staffCanRunMachine(worker, machineCheck.machine)) {
     return { ok: false, reason: 'That person cannot run that machine.' };
   }
-  const minutes = durationOnMachine(state, taskId, worker, machineCheck.machine?.id, holes);
+  let minutes = durationOnMachine(state, taskId, worker, machineCheck.machine?.id, holes);
+  if (options.minutes != null) minutes = snapMinutes(options.minutes);
   const remaining = worker.minutesToday - worker.minutesUsed;
-  if (!requested) {
+  if (!requested || options.minutes != null) {
     if (minutes > remaining) {
       return { ok: false, reason: `Needs ${minutes} min on ${worker.name}, only ${remaining} left.` };
     }
@@ -559,6 +563,7 @@ export function reducer(state, action) {
         holes: action.holes,
         machineId: action.machineId,
         confirmDamaging: action.confirmDamaging,
+        minutes: action.minutes,
         day,
       });
       if (!task || !check.ok) return state;
@@ -570,6 +575,7 @@ export function reducer(state, action) {
           surface: task.surface,
           workerId: check.workerId,
           minutes: check.minutes,
+          startMinute: action.startMinute ?? nextStartMinute(getDayTasks(state, day), check.workerId),
           machineId: check.machineId ?? null,
           ownMower: Boolean(check.ownMower),
           holes: check.holes ?? [],
@@ -946,6 +952,14 @@ export function reducer(state, action) {
       if (!allowed.includes(action.tab)) return state;
       return { ...state, tabs: { ...normalizeTabs(state.tabs), [section]: action.tab } };
     }
+    case 'COPY_YESTERDAY':
+      return copyYesterday(state, action.day ?? planningDayOf(state));
+    case 'COPY_LAST_WEEK':
+      return copyLastWeek(state);
+    case 'SAVE_TEMPLATE':
+      return saveNamedTemplate(state, action.name);
+    case 'APPLY_TEMPLATE':
+      return applyNamedTemplate(state, action.templateId);
     default:
       return state;
   }

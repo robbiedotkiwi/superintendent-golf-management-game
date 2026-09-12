@@ -343,6 +343,8 @@ export function withDefaults(state) {
       };
     })(),
     planTemplates: Array.isArray(state.planTemplates) ? state.planTemplates : [],
+    nextTemplateId: Number.isInteger(state.nextTemplateId) && state.nextTemplateId > 0 ? state.nextTemplateId : 1,
+    lastCopyFlags: Array.isArray(state.lastCopyFlags) ? state.lastCopyFlags : [],
   };
   if (next.holes) next.holes = applyAreaQualityToHoles(next.holes, next.areaQuality);
   if (!next.weekStartSnapshot) next.weekStartSnapshot = snapshotWeekStart(next);
