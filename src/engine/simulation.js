@@ -38,6 +38,7 @@ import {
   WEATHER_STORM,
 } from '../data/constants.js';
 import { PASS_AREAS, AUTONOMOUS_AREAS, AUTONOMOUS_NIGHT_MINUTES, AUTONOMOUS_UNSTICK_CHANCE, AUTONOMOUS_UNSTICK_MINUTES, MINUTES_PER_HOUR } from '../data/config.js';
+import { applyCoringSeasonTick, applySupportDay, applySupportWeekEnd } from './support.js';
 import { applyDailyQualityDrift, applyMissedWeekPenalties } from './qualityDrift.js';
 import { applyAreaQualityToHoles, applyWeekPasses, emptyAreaQuality, machineAllowsArea, passHoursFor, resolveDayPasses } from './passes.js';
 import { migrateWorkerTier } from './staffTiers.js';
@@ -45,7 +46,7 @@ import { generateCandidates, generateCasuals } from '../data/staff.js';
 import { getTask, taskAppliesQuality } from '../data/tasks.js';
 import { workerById, workerQualityMultiplier, qualityRandomFactor } from './assignment.js';
 import { workerBringsOwnMower } from './skills.js';
-import { tickGm } from './gm.js';
+import { enqueueGm, GM_MSG_CORING, GM_MSG_DUTIES, tickGm } from './gm.js';
 import { consumeJobFuel, jobBurnsFuel, replaceBurnSpend } from './fuel.js';
 import { applyMowingAftermath, hocStressApplies, mowingGain, rotatePatternAngle } from './mowing.js';
 import {
@@ -571,11 +572,12 @@ export function resolveDay(state) {
   );
 
   const drifted = applyDailyQualityDrift(
-    { ...state, holes, surfaceDefaults },
+    { ...state, holes, surfaceDefaults, weekRollPasses: weekPassState.weekRollPasses },
     planned,
     weekPassState.weekPasses,
   );
-  const areaQuality = drifted.areaQuality;
+  const supported = applySupportDay({ ...state, areaQuality: drifted.areaQuality }, planned);
+  const areaQuality = supported.areaQuality;
   const areaQualityPrev = drifted.areaQualityPrev;
   holes = applyAreaQualityToHoles(holes, areaQuality);
 
@@ -593,6 +595,10 @@ export function resolveDay(state) {
     areaQuality,
     areaQualityPrev,
     ...weekPassState,
+    weekCupChanges: supported.weekCupChanges,
+    weekGeneralDutiesMinutes: supported.weekGeneralDutiesMinutes,
+    coringUntilDay: supported.coringUntilDay,
+    coredThisSeason: supported.coredThisSeason,
     surfaceDefaults,
     moisture,
     moistureReadDay,
@@ -611,8 +617,8 @@ export function resolveDay(state) {
     lastRepeatDropped: [],
     fuelSpendLog: [...(state.fuelSpendLog ?? []), { day: state.day, spend: fuelSpend }].slice(-30),
     workers,
-    satisfaction: tournament.state.satisfaction,
-    gmStanding,
+    satisfaction: supported.satisfaction ?? tournament.state.satisfaction,
+    gmStanding: supported.gmStanding ?? gmStanding,
     daysSinceWorked,
     snappedToday: false,
     tournamentPrepScore: tournament.state.tournamentPrepScore,
@@ -674,6 +680,7 @@ export function resolveDay(state) {
       };
     }
     next = { ...next, usedListings: rollUsedListings(next, rng) };
+    next = { ...next, ...applyCoringSeasonTick(next) };
   }
   const built = tickProjects(next);
   next = built.state;
@@ -704,11 +711,14 @@ export function resolveDay(state) {
 
   if (weekStartDay(next.day) !== weekStartDay(state.day)) {
     const missed = applyMissedWeekPenalties(next);
+    const supportWeek = applySupportWeekEnd({ ...next, areaQuality: missed.areaQuality });
     next = {
       ...next,
-      areaQuality: missed.areaQuality,
-      holes: applyAreaQualityToHoles(next.holes, missed.areaQuality),
+      areaQuality: supportWeek.areaQuality,
+      holes: applyAreaQualityToHoles(next.holes, supportWeek.areaQuality),
+      generalDutiesSkipWeeks: supportWeek.generalDutiesSkipWeeks,
     };
+    if (supportWeek.dutiesComment) next = enqueueGm(next, GM_MSG_DUTIES);
     const dayJobs = {
       day: state.day,
       planned: plannedJobs,
@@ -771,6 +781,7 @@ export function resolveDay(state) {
   }
 
   next = tickGm(next, { breakdowns });
+  if (supported.events.some((item) => item.kind === 'coring')) next = enqueueGm(next, GM_MSG_CORING);
 
   const summary = {
     day: state.day,

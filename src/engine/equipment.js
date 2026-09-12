@@ -77,6 +77,7 @@ import { hasMechanic } from './staff.js';
 import { createRng } from './rng.js';
 import { needsCash, spendCash } from './cash.js';
 import { OWN_MOWER_PASS_CLASS, PASS_AREAS } from '../data/config.js';
+import { supportMinutes } from './support.js';
 import { passMinutesFor } from './passes.js';
 
 function remainingMinutes(state) {
@@ -396,6 +397,15 @@ export function durationOnMachine(state, taskId, worker, machineId, holeIds) {
     const probe = holeIds?.length ? { ...state, handWaterTargets: holeIds } : state;
     const base = handWaterMinutes(probe);
     return worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
+  }
+  const support = supportMinutes(taskId, state);
+  if (support != null) {
+    if (taskId === 'rollGreens' || taskId === 'extraRoll') {
+      const resolvedId = machineId === undefined ? pickMachine(state, task)?.id ?? null : machineId;
+      const minutes = passMinutesFor(state, resolvedId, 'greens', worker, { skipWet: true });
+      if (minutes != null) return minutes;
+    }
+    return worker ? Math.round(support) : support;
   }
   if (task?.mowing && PASS_AREAS.includes(task.surface)) {
     let resolvedId = machineId;

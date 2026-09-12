@@ -345,6 +345,11 @@ export function withDefaults(state) {
     planTemplates: Array.isArray(state.planTemplates) ? state.planTemplates : [],
     nextTemplateId: Number.isInteger(state.nextTemplateId) && state.nextTemplateId > 0 ? state.nextTemplateId : 1,
     lastCopyFlags: Array.isArray(state.lastCopyFlags) ? state.lastCopyFlags : [],
+    coringUntilDay: Number(state.coringUntilDay) || 0,
+    coredThisSeason: Boolean(state.coredThisSeason),
+    coringSkipStreak: Number(state.coringSkipStreak) || 0,
+    greensCeilingPenalty: Number(state.greensCeilingPenalty) || 0,
+    generalDutiesSkipWeeks: Number(state.generalDutiesSkipWeeks) || 0,
   };
   if (next.holes) next.holes = applyAreaQualityToHoles(next.holes, next.areaQuality);
   if (!next.weekStartSnapshot) next.weekStartSnapshot = snapshotWeekStart(next);

@@ -22,6 +22,8 @@ export const GM_TRIGGER_OVERDUE = 'gmOverdue';
 export const GM_TRIGGER_BREAKDOWN = 'gmBreakdown';
 export const GM_TRIGGER_CASH = 'gmCash';
 export const GM_TRIGGER_SAT = 'gmSatisfaction';
+export const GM_MSG_DUTIES = 'gmDuties';
+export const GM_MSG_CORING = 'gmCoring';
 
 export const GM_MESSAGE_IDS = [
   GM_MSG_DAY1,
@@ -34,6 +36,8 @@ export const GM_MESSAGE_IDS = [
   GM_TRIGGER_BREAKDOWN,
   GM_TRIGGER_CASH,
   GM_TRIGGER_SAT,
+  GM_MSG_DUTIES,
+  GM_MSG_CORING,
 ];
 
 export const GM_MESSAGES = {
@@ -77,6 +81,14 @@ export const GM_MESSAGES = {
     from: 'The GM',
     body: "Members noticed. Satisfaction is how we get paid at season end. Don't treat it as decoration.",
   },
+  [GM_MSG_DUTIES]: {
+    from: 'The GM',
+    body: 'Clubrooms, the range, the tidy-up. Three weeks of skipping general duties and it shows. Put someone on it.',
+  },
+  [GM_MSG_CORING]: {
+    from: 'The GM',
+    body: 'You punched the greens. Members will complain for a fortnight. It had to happen.',
+  },
 };
 
 export const GM_LOCK_HINT = {
@@ -102,7 +114,7 @@ export function isSectionLocked(state, section) {
   return false;
 }
 
-function enqueueGm(state, id) {
+export function enqueueGm(state, id) {
   if (!id || state.gmSeen?.[id] || (state.gmQueue ?? []).includes(id)) return state;
   return {
     ...state,

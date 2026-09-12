@@ -191,6 +191,19 @@ export const ROLL_PASS_HOURS = 3;
 export const TASK_GENERAL_DUTIES = 'generalDuties';
 export const TASK_WEED_EAT = 'weedEat';
 export const TASK_CORE_GREENS = 'coreGreens';
+export const SUPPORT_PLAN_JOBS = [
+  { taskId: 'changeCups', label: 'Change cups' },
+  { taskId: 'rakeBunkers', label: 'Rake bunkers' },
+  { taskId: 'rollGreens', label: 'Roll greens' },
+  { taskId: 'checkMoistureGreens', label: 'Moisture meter' },
+  { taskId: 'weedEat', label: 'Weed eating' },
+  { taskId: 'generalDuties', label: 'General duties' },
+  { taskId: 'gmMeeting', label: 'GM meeting' },
+  { taskId: 'sprayGreens', label: 'Spray greens' },
+  { taskId: 'sprayTees', label: 'Spray tees' },
+  { taskId: 'sprayFairways', label: 'Spray fairways' },
+  { taskId: 'coreGreens', label: 'Core greens' },
+];
 export const TASK_UNSTICK = 'unstickMower';
 export const PROJECT_EXPAND_3 = 'expand3';
 export const PROJECT_EXPAND_9 = 'expand9';

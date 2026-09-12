@@ -139,6 +139,7 @@ export function combinePassJobs(jobs) {
 
 export function passJobsFromPlanned(state, planned, workers = []) {
   const grouped = Object.fromEntries(PASS_AREAS.map((area) => [area, []]));
+  const rolls = Object.fromEntries(PASS_AREAS.map((area) => [area, []]));
   for (const job of planned ?? []) {
     const task = getTask(job.taskId) ?? {
       id: job.taskId,
@@ -146,6 +147,13 @@ export function passJobsFromPlanned(state, planned, workers = []) {
       mowing: job.taskId === 'autonomousMower' || job.mowing,
     };
     const surface = task.surface ?? job.surface;
+    if (task.id === 'rollGreens' || task.id === 'extraRoll') {
+      const worker = (workers ?? []).find((item) => item.id === job.workerId);
+      const passHours = passHoursFor(state, job.machineId, 'greens', worker, { skipWet: true, passClass: job.machineId ? undefined : PASS_CLASS_ROLLER });
+      const hours = passHours ?? ROLL_PASS_HOURS;
+      rolls.greens.push({ hours: minutesToHours(job.minutes), passHours: hours });
+      continue;
+    }
     if (!task.mowing && job.taskId !== 'autonomousMower') continue;
     if (!PASS_AREAS.includes(surface)) continue;
     const worker = (workers ?? []).find((item) => item.id === job.workerId);
@@ -158,35 +166,45 @@ export function passJobsFromPlanned(state, planned, workers = []) {
     if (!(passHours > 0)) continue;
     grouped[surface].push({ hours: minutesToHours(job.minutes), passHours });
   }
-  return grouped;
+  return { grouped, rolls };
 }
 
 export function resolveDayPasses(state, planned, workers = []) {
-  const grouped = passJobsFromPlanned(state, planned, workers);
+  const { grouped, rolls } = passJobsFromPlanned(state, planned, workers);
   const passes = emptyAreaMap(0);
   const wastedHours = emptyAreaMap(0);
+  const rollPasses = emptyAreaMap(0);
   const cappedAreas = [];
   for (const area of PASS_AREAS) {
     const result = combinePassJobs(grouped[area]);
     passes[area] = result.pass;
     wastedHours[area] = result.wastedHours;
+    rollPasses[area] = combinePassJobs(rolls[area]).pass * ROLL_GRADE_CONTRIBUTION;
     if (result.pass >= MAX_PASSES_PER_AREA_PER_DAY && result.pass > 0) cappedAreas.push(area);
   }
-  return { passes, wastedHours, cappedAreas };
+  return { passes, wastedHours, rollPasses, cappedAreas };
 }
 
 export function applyWeekPasses(state, dayResult, day = state.day) {
   const weekPasses = { ...(state.weekPasses ?? emptyAreaMap(0)) };
   const weekWastedHours = { ...(state.weekWastedHours ?? emptyAreaMap(0)) };
   const weekPassDays = { ...(state.weekPassDays ?? emptyAreaListMap()) };
+  const weekRollPasses = { ...(state.weekRollPasses ?? emptyAreaMap(0)) };
   for (const area of PASS_AREAS) {
     weekPasses[area] = (weekPasses[area] ?? 0) + (dayResult.passes[area] ?? 0);
     weekWastedHours[area] = (weekWastedHours[area] ?? 0) + (dayResult.wastedHours[area] ?? 0);
+    weekRollPasses[area] = (weekRollPasses[area] ?? 0) + (dayResult.rollPasses?.[area] ?? 0);
     const days = [...(weekPassDays[area] ?? [])];
     if (dayResult.cappedAreas.includes(area) && !days.includes(day)) days.push(day);
     weekPassDays[area] = days;
   }
-  return { weekPasses, weekWastedHours, weekPassDays };
+  return { weekPasses, weekWastedHours, weekPassDays, weekRollPasses };
+}
+
+export function areaGradeCap(state, area) {
+  let cap = bestMachineCap(state, area)?.score ?? 100;
+  if (area === 'greens') cap -= state.greensCeilingPenalty ?? 0;
+  return Math.max(0, cap);
 }
 
 export function hoursToPassFraction(hoursBooked, passHours) {

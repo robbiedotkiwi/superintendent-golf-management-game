@@ -5,6 +5,7 @@ import {
   MINUTES_PER_HOUR,
   PASS_AREAS,
   SLOT_MINUTES,
+  SUPPORT_PLAN_JOBS,
   WET_PASS_TIME_MULT,
   WET_WEATHER,
 } from '../data/config.js';
@@ -85,7 +86,7 @@ export default function WeekPlanGrid({
   const rows = useMemo(() => people, [people, state.workers, state.casualPool]);
 
   function draftFor(workerId, day) {
-    return draft[`${workerId}-${day}`] ?? { surface: 'greens', machineId: '', minutes: SLOT_MINUTES * 4 };
+    return draft[`${workerId}-${day}`] ?? { surface: 'greens', jobId: 'cutGreens', machineId: '', minutes: SLOT_MINUTES * 4 };
   }
 
   function setDraftFor(workerId, day, patch) {
@@ -97,11 +98,14 @@ export default function WeekPlanGrid({
     const edit = canEditPlanDay(state, day);
     if (!edit.ok) return;
     const chosen = draftFor(worker.id, day);
-    const surface = chosen.surface;
-    const taskId = mowTaskIdFor(surface) ?? CUT_TASK_BY_SURFACE[surface];
+    const support = SUPPORT_PLAN_JOBS.find((item) => item.taskId === chosen.jobId);
+    const taskId = support?.taskId ?? mowTaskIdFor(chosen.surface) ?? CUT_TASK_BY_SURFACE[chosen.surface];
     const task = getTask(taskId);
+    const surface = task?.surface ?? chosen.surface;
     const dayState = { ...state, weather: state.weather };
-    const machines = allowingMachines(dayState, task).filter((machine) => staffCanRunMachine(worker, machine));
+    const machines = task?.mowing || taskId === 'rollGreens'
+      ? allowingMachines(dayState, task).filter((machine) => staffCanRunMachine(worker, machine))
+      : [];
     const machineId = chosen.machineId || machines[0]?.id;
     const defaultMinutes = passMinutesFor(dayState, machineId, surface, worker) ?? SLOT_MINUTES * 4;
     const minutes = snapMinutes(chosen.minutes || defaultMinutes);
@@ -235,13 +239,25 @@ export default function WeekPlanGrid({
                         <div className="mt-1 space-y-1">
                           <select
                             className="w-full border border-[var(--sand)] bg-[var(--soil)] text-[10px]"
-                            value={chosen.surface}
-                            onChange={(event) => setDraftFor(worker.id, day, { surface: event.target.value })}
-                            aria-label={`${worker.name} area ${weekdayLabel(day)}`}
+                            value={chosen.jobId ?? chosen.surface}
+                            onChange={(event) => {
+                              const value = event.target.value;
+                              const support = SUPPORT_PLAN_JOBS.find((item) => item.taskId === value);
+                              setDraftFor(worker.id, day, {
+                                jobId: value,
+                                surface: support ? getTask(value)?.surface ?? chosen.surface : value,
+                              });
+                            }}
+                            aria-label={`${worker.name} job ${weekdayLabel(day)}`}
                           >
                             {PASS_AREAS.filter((area) => worker.allowedSurfaces === 'all' || worker.allowedSurfaces?.includes(area)).map((area) => (
-                              <option key={area} value={area}>
-                                {SURFACE_LABELS[area]}
+                              <option key={area} value={CUT_TASK_BY_SURFACE[area]}>
+                                Mow {SURFACE_LABELS[area]}
+                              </option>
+                            ))}
+                            {SUPPORT_PLAN_JOBS.map((job) => (
+                              <option key={job.taskId} value={job.taskId}>
+                                {job.label}
                               </option>
                             ))}
                           </select>

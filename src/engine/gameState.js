@@ -25,6 +25,7 @@ import { generateCandidates, generateCasuals } from '../data/staff.js';
 import { rosterWorker } from './weekGrid.js';
 import { migrateWorkerTier } from './staffTiers.js';
 import { applyNamedTemplate, copyLastWeek, copyYesterday, nextStartMinute, saveNamedTemplate, snapMinutes } from './slots.js';
+import { coringWindowOk, isDrySpell, sprayWindowOk } from './support.js';
 import {
   applyAreaQualityToHoles,
   emptyAreaQuality,
@@ -229,6 +230,11 @@ export function createInitialState() {
     planTemplates: [],
     nextTemplateId: 1,
     lastCopyFlags: [],
+    coringUntilDay: 0,
+    coredThisSeason: false,
+    coringSkipStreak: 0,
+    greensCeilingPenalty: 0,
+    generalDutiesSkipWeeks: 0,
     areaQualityPrev: emptyAreaQuality(),
     morningDrops: [],
     selectedHoles: [],
@@ -381,6 +387,17 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
 
   if (task.id === 'gmMeeting' && !meetingDue(planningDayOf(state))) {
     return { ok: false, reason: 'No GM meeting that day.' };
+  }
+  if (task.kind === 'moistureCheck' && !isDrySpell(state, actionPlanDay(state, options))) {
+    return { ok: false, reason: 'Moisture checks are for dry spells.' };
+  }
+  if (task.kind === 'spray') {
+    const window = sprayWindowOk(state, actionPlanDay(state, options));
+    if (!window.ok) return window;
+  }
+  if (task.kind === 'coring') {
+    const window = coringWindowOk(state);
+    if (!window.ok) return window;
   }
 
   if (task.id === 'pickBalls' && !state.hasDrivingRange) {
