@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { createInitialState, canPlanTask, reducer } from '../src/engine/gameState.js';
 import { machineAllows, getMachine } from '../src/data/equipment.js';
 import { GREENSMASTER_ID, GROUNDSMASTER_ID } from '../src/data/constants.js';
@@ -122,5 +123,10 @@ site = reducer(site, { type: 'PAUSE_PROJECT', projectId: PROJECT_EXPAND_3 });
 assert(site.projects[0].paused, 'expansion can pause');
 site = reducer(site, { type: 'RESUME_PROJECT', projectId: PROJECT_EXPAND_3 });
 assert(!site.projects[0].paused, 'expansion can resume');
+
+const forecastSrc = readFileSync(new URL('../src/components/ForecastStrip.jsx', import.meta.url), 'utf8');
+assert(forecastSrc.includes("from '../engine/weather.js'"), 'ForecastStrip imports weather helpers');
+assert(forecastSrc.includes('formatTempRange'), 'ForecastStrip uses formatTempRange');
+assert(forecastSrc.includes('forecastOpacity'), 'ForecastStrip uses forecastOpacity');
 
 console.log('passes-check phase 7 ok');

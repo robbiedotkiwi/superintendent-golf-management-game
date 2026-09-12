@@ -9,6 +9,7 @@ import {
 import { FORECAST_UNRELIABLE_FROM_DAY, WET_PASS_TIME_MULT, WET_WEATHER } from '../data/config.js';
 import { WEATHER_LABELS } from '../data/events.js';
 import { dayOfWeek } from '../engine/staff.js';
+import { forecastOpacity, formatTempRange } from '../engine/weather.js';
 import {
   canEditPlanDay,
   forecastEntryForDay,
