@@ -74,7 +74,11 @@ let next = reducer(state, {
 });
 assert(next.plannedTasks.some((t) => t.taskId === 'cutGreens'), 'greens cut booked');
 next = reducer(next, { type: 'END_DAY' });
-assert(next.areaQuality.greens === state.areaQuality.greens, 'phase 1 quality frozen');
+assert(next.areaQuality.greens === state.areaQuality.greens, 'phase 2 quality still frozen until drift');
 assert(next.day === state.day + 1, 'day advanced');
+assert(next.weekPasses.greens > 0.9, `full greens pass should count, got ${next.weekPasses.greens}`);
+if (next.weekPasses.greens >= 1) {
+  assert((next.weekPassDays.greens ?? []).includes(state.day), 'daily cap recorded');
+}
 
 console.log('passes-check phase 1 ok');

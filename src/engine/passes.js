@@ -14,6 +14,7 @@ import {
   ROLL_PASS_HOURS,
   SLOT_MINUTES,
   STARTING_AREA_QUALITY,
+  OWN_MOWER_PASS_CLASS,
   WEAR_STEP_HEAVY_MAX,
   WEAR_STEP_LIGHT_MAX,
   WEAR_STEP_NONE_MAX,
@@ -26,6 +27,7 @@ import {
   WET_WEATHER,
 } from '../data/config.js';
 import { getMachine, machineClass } from '../data/equipment.js';
+import { getTask } from '../data/tasks.js';
 import { WEAR_MAX } from '../data/constants.js';
 import { clampQuality, gradeCapScore, gradeLetter } from './grades.js';
 import { staffCanRunClass, staffPassTimeMult } from './staffTiers.js';
@@ -99,21 +101,92 @@ export function wearTimeDeltaHours(baseHours, wear) {
   return baseHours * wearTimeMult(wear) - baseHours;
 }
 
-export function passHoursFor(state, machineId, area, worker) {
-  const machine = getMachine(machineId);
-  const cls = passClassOf(machine);
+export function passHoursFor(state, machineId, area, worker, options = {}) {
+  const machine = machineId ? getMachine(machineId) : null;
+  const cls = machine ? passClassOf(machine) : options.passClass ?? null;
   const base = basePassHours(cls, area);
   if (base == null) return null;
-  const wear = state?.machineWear?.[machineId] ?? 0;
-  const wet = WET_WEATHER.includes(state?.weather) ? WET_PASS_TIME_MULT : 1;
-  const staff = staffPassTimeMult(worker);
+  const wear = machineId ? (state?.machineWear?.[machineId] ?? 0) : 0;
+  const wet = options.skipWet ? 1 : WET_WEATHER.includes(state?.weather) ? WET_PASS_TIME_MULT : 1;
+  const staff =
+    cls === PASS_CLASS_AUTONOMOUS || options.ignoreStaff ? 1 : staffPassTimeMult(worker);
   return base * wearTimeMult(wear) * wet * staff;
 }
 
-export function passMinutesFor(state, machineId, area, worker) {
-  const hours = passHoursFor(state, machineId, area, worker);
+export function passMinutesFor(state, machineId, area, worker, options = {}) {
+  const hours = passHoursFor(state, machineId, area, worker, options);
   if (hours == null) return null;
   return Math.round((hours * MINUTES_PER_HOUR) / SLOT_MINUTES) * SLOT_MINUTES;
+}
+
+export function minutesToHours(minutes) {
+  return (Number(minutes) || 0) / MINUTES_PER_HOUR;
+}
+
+export function combinePassJobs(jobs) {
+  let raw = 0;
+  let totalHours = 0;
+  for (const job of jobs ?? []) {
+    const passHours = Number(job.passHours) || 0;
+    const hours = Number(job.hours) || 0;
+    if (!(passHours > 0) || hours <= 0) continue;
+    raw += hours / passHours;
+    totalHours += hours;
+  }
+  const effective = raw > 0 ? totalHours / raw : 0;
+  return applyDailyPassCap(raw, 0, effective);
+}
+
+export function passJobsFromPlanned(state, planned, workers = []) {
+  const grouped = Object.fromEntries(PASS_AREAS.map((area) => [area, []]));
+  for (const job of planned ?? []) {
+    const task = getTask(job.taskId) ?? {
+      id: job.taskId,
+      surface: job.surface,
+      mowing: job.taskId === 'autonomousMower' || job.mowing,
+    };
+    const surface = task.surface ?? job.surface;
+    if (!task.mowing && job.taskId !== 'autonomousMower') continue;
+    if (!PASS_AREAS.includes(surface)) continue;
+    const worker = (workers ?? []).find((item) => item.id === job.workerId);
+    const autonomous = job.taskId === 'autonomousMower' || job.ignoreStaff;
+    const options = { ignoreStaff: autonomous };
+    if ((job.ownMower && !job.machineId) || (!job.machineId && worker?.ownMower)) {
+      options.passClass = OWN_MOWER_PASS_CLASS;
+    }
+    const passHours = passHoursFor(state, job.machineId, surface, worker, options);
+    if (!(passHours > 0)) continue;
+    grouped[surface].push({ hours: minutesToHours(job.minutes), passHours });
+  }
+  return grouped;
+}
+
+export function resolveDayPasses(state, planned, workers = []) {
+  const grouped = passJobsFromPlanned(state, planned, workers);
+  const passes = emptyAreaMap(0);
+  const wastedHours = emptyAreaMap(0);
+  const cappedAreas = [];
+  for (const area of PASS_AREAS) {
+    const result = combinePassJobs(grouped[area]);
+    passes[area] = result.pass;
+    wastedHours[area] = result.wastedHours;
+    if (result.pass >= MAX_PASSES_PER_AREA_PER_DAY && result.pass > 0) cappedAreas.push(area);
+  }
+  return { passes, wastedHours, cappedAreas };
+}
+
+export function applyWeekPasses(state, dayResult, day = state.day) {
+  const weekPasses = { ...(state.weekPasses ?? emptyAreaMap(0)) };
+  const weekWastedHours = { ...(state.weekWastedHours ?? emptyAreaMap(0)) };
+  const weekPassDays = { ...(state.weekPassDays ?? emptyAreaListMap()) };
+  for (const area of PASS_AREAS) {
+    weekPasses[area] = (weekPasses[area] ?? 0) + (dayResult.passes[area] ?? 0);
+    weekWastedHours[area] = (weekWastedHours[area] ?? 0) + (dayResult.wastedHours[area] ?? 0);
+    const days = [...(weekPassDays[area] ?? [])];
+    if (dayResult.cappedAreas.includes(area) && !days.includes(day)) days.push(day);
+    weekPassDays[area] = days;
+  }
+  return { weekPasses, weekWastedHours, weekPassDays };
 }
 
 export function hoursToPassFraction(hoursBooked, passHours) {

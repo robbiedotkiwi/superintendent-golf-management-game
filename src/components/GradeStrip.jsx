@@ -1,7 +1,8 @@
 import { PASS_AREAS, PASSES_REQUIRED_PER_WEEK } from '../data/config.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import { gradeLetter, gradeTrend } from '../engine/grades.js';
-import { bestMachineCap, projectedWeeklyGrade } from '../engine/passes.js';
+import { bestMachineCap } from '../engine/passes.js';
+import { projectedWeeklyGrade } from '../engine/weekPasses.js';
 
 function TrendArrow({ trend }) {
   if (trend === 'up') return <span aria-label="up">↑</span>;

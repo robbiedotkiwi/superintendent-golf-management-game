@@ -396,10 +396,6 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
     return { ok: false, reason: 'Already planned. Take it off the list first.' };
   }
 
-  if (task.mowing && MOWING_WEATHER.includes(state.weather)) {
-    return { ok: false, reason: 'Mowing is off today.' };
-  }
-
   const requested = workerId
     ? workerById(state, workerId) ?? roster.find((item) => item.id === workerId) ?? null
     : null;

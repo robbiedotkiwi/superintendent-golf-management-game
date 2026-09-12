@@ -76,6 +76,8 @@ import { workerTimeMultiplier, mowingOperatorTimeMultiplier, workerBringsOwnMowe
 import { hasMechanic } from './staff.js';
 import { createRng } from './rng.js';
 import { needsCash, spendCash } from './cash.js';
+import { OWN_MOWER_PASS_CLASS, PASS_AREAS } from '../data/config.js';
+import { passMinutesFor } from './passes.js';
 
 function remainingMinutes(state) {
   return state.workers.reduce((total, worker) => total + (worker.minutesToday - worker.minutesUsed), 0);
@@ -394,6 +396,21 @@ export function durationOnMachine(state, taskId, worker, machineId, holeIds) {
     const probe = holeIds?.length ? { ...state, handWaterTargets: holeIds } : state;
     const base = handWaterMinutes(probe);
     return worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
+  }
+  if (task?.mowing && PASS_AREAS.includes(task.surface)) {
+    let resolvedId = machineId;
+    if (resolvedId === undefined) {
+      if (workerBringsOwnMower(worker, task.surface)) resolvedId = null;
+      else resolvedId = pickMachine(state, task)?.id ?? null;
+    }
+    if (workerBringsOwnMower(worker, task.surface) && !resolvedId) {
+      const minutes = passMinutesFor(state, null, task.surface, worker, {
+        passClass: OWN_MOWER_PASS_CLASS,
+      });
+      if (minutes != null) return minutes;
+    }
+    const minutes = passMinutesFor(state, resolvedId, task.surface, worker);
+    if (minutes != null) return minutes;
   }
   if (!task?.surface) {
     const base = TASK_MINUTES[taskId] ?? 0;

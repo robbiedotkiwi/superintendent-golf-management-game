@@ -37,8 +37,8 @@ import {
   WET_GAIN_MULT,
   WEATHER_STORM,
 } from '../data/constants.js';
-import { PASS_AREAS } from '../data/config.js';
-import { applyAreaQualityToHoles, emptyAreaQuality } from './passes.js';
+import { PASS_AREAS, AUTONOMOUS_AREAS, AUTONOMOUS_NIGHT_MINUTES, AUTONOMOUS_UNSTICK_CHANCE, AUTONOMOUS_UNSTICK_MINUTES, MINUTES_PER_HOUR } from '../data/config.js';
+import { applyAreaQualityToHoles, applyWeekPasses, emptyAreaQuality, machineAllowsArea, passHoursFor, resolveDayPasses } from './passes.js';
 import { migrateWorkerTier } from './staffTiers.js';
 import { generateCandidates, generateCasuals } from '../data/staff.js';
 import { getTask, taskAppliesQuality } from '../data/tasks.js';
@@ -347,15 +347,28 @@ export function resolveDay(state) {
     });
   }
 
-  if (autonomousReady(state) && !MOWING_WEATHER.includes(state.weather)) {
+  if (autonomousReady(state)) {
     for (const autoMachine of ownedAutonomousMowers(state)) {
       if (!isMachineAvailable(state, autoMachine.id)) continue;
       markUsed(autoMachine.id);
-      for (const surface of autonomousSurfacesOf(autoMachine)) {
+      for (const surface of AUTONOMOUS_AREAS) {
+        if (!machineAllowsArea(autoMachine, surface)) continue;
         const cutId = CUT_TASK_BY_SURFACE[surface];
-        if (!cutId || worked.has(surface)) continue;
+        if (!cutId) continue;
         const live = workingState({ ...state, surfaceDefaults }, holes);
         const qualityBefore = meanQuality(live, surface);
+        const hours = passHoursFor(state, autoMachine.id, surface, null, { ignoreStaff: true });
+        const nightHours = AUTONOMOUS_NIGHT_MINUTES / MINUTES_PER_HOUR;
+        const bookedHours = Math.min(hours ?? 0, nightHours);
+        if (bookedHours > 0) {
+          planned.push({
+            taskId: 'autonomousMower',
+            surface,
+            minutes: bookedHours * MINUTES_PER_HOUR,
+            machineId: autoMachine.id,
+            ignoreStaff: true,
+          });
+        }
         holes = mapHoleSurfaces(holes, surface, (record, hole) => {
           return applyMowingAftermath(
             record,
@@ -374,12 +387,22 @@ export function resolveDay(state) {
           taskId: 'autonomousMower',
           name: 'Autonomous cut',
           surface,
-          minutes: 0,
+          minutes: bookedHours * MINUTES_PER_HOUR,
           before: qualityBefore,
           after: meanQuality(workingState({ ...state, surfaceDefaults }, holes), surface),
         });
       }
     }
+  }
+
+  const dayPasses = resolveDayPasses(state, planned, state.workers);
+  const weekPassState = applyWeekPasses(state, dayPasses, state.day);
+  let unstickMinutes = 0;
+  if (
+    ownedAutonomousMowers(state).some((machine) => isMachineAvailable(state, machine.id)) &&
+    rng.next() < AUTONOMOUS_UNSTICK_CHANCE
+  ) {
+    unstickMinutes = AUTONOMOUS_UNSTICK_MINUTES;
   }
 
   const skipped = [];
@@ -561,6 +584,7 @@ export function resolveDay(state) {
     cash: tournament.state.cash,
     holes,
     areaQuality,
+    ...weekPassState,
     surfaceDefaults,
     moisture,
     moistureReadDay,
@@ -771,6 +795,8 @@ export function resolveDay(state) {
     satisfactionAfter: next.satisfaction,
     gmStandingBefore,
     gmStandingAfter: next.gmStanding,
+    dayPasses,
+    unstickMinutes,
   };
 
   return { state: next, summary };

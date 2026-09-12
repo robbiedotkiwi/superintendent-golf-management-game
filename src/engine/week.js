@@ -288,10 +288,6 @@ export function dropInvalidDayTasks(state, day) {
   const kept = [];
   for (const item of getDayTasks(state, day)) {
     const task = getTask(item.taskId);
-    if (task?.mowing && MOWING_WEATHER.includes(weather)) {
-      dropped.push({ ...item, reason: 'weather' });
-      continue;
-    }
     if (task?.id === 'clearDebris' && weather !== WEATHER_STORM) {
       dropped.push({ ...item, reason: 'weather' });
       continue;
