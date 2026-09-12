@@ -1,4 +1,4 @@
-import { PASS_AREAS, PASSES_REQUIRED_PER_WEEK } from '../data/config.js';
+import { PASS_AREAS } from '../data/config.js';
 import { gradeLetter } from './grades.js';
 import {
   applyWeekPasses,
@@ -6,6 +6,7 @@ import {
   bestMachineCap,
   emptyAreaListMap,
   emptyAreaMap,
+  passesRequired,
   resolveDayPasses,
   weeklyPassRatio,
   weeklyTargetQuality,
@@ -37,10 +38,10 @@ export function projectedWeeklyGrade(state) {
   return Object.fromEntries(
     PASS_AREAS.map((area) => {
       const cap = areaGradeCap(state, area);
-      const required = PASSES_REQUIRED_PER_WEEK[area];
+      const required = passesRequired(state, area);
       const achieved = projected.weekPasses[area] ?? 0;
       const roll = projected.weekRollPasses?.[area] ?? state.weekRollPasses?.[area] ?? 0;
-      const target = weeklyTargetQuality(weeklyPassRatio(achieved, area) + roll, cap);
+      const target = weeklyTargetQuality(weeklyPassRatio(achieved, area, required) + roll, cap);
       const days = projected.weekPassDays[area] ?? [];
       return [
         area,

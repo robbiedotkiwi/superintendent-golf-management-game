@@ -1,4 +1,4 @@
-import { PASS_AREAS, PASSES_REQUIRED_PER_WEEK } from '../data/config.js';
+import { PASS_AREAS } from '../data/config.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import { gradeLetter, gradeTrend } from '../engine/grades.js';
 import { bestMachineCap } from '../engine/passes.js';
@@ -57,7 +57,7 @@ export default function GradeStrip({ state }) {
         const trend = gradeTrend(prev, quality);
         const cap = bestMachineCap(state, area);
         const week = projected[area];
-        const required = PASSES_REQUIRED_PER_WEEK[area];
+        const required = week?.required ?? 1;
         return (
           <div key={area} className="border border-[var(--sand)]/40 p-2" data-area-grade={area}>
             <div className="flex items-baseline justify-between gap-2">

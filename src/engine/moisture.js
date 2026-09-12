@@ -37,7 +37,7 @@ import { HOLES } from '../data/course.js';
 import { lerpHex } from './color.js';
 import { hocFactor } from './mowing.js';
 import { droughtMult } from './grass.js';
-import { needsCash } from './cash.js';
+import { needsCapital } from './cash.js';
 import { holeCount, mapHoleSurfaces } from './holes.js';
 import { moistureFromMm, migrateIrrigationValue } from './irrigation.js';
 import { moistureEtTempFactor } from './weather.js';
@@ -295,14 +295,14 @@ export function handWaterMinutes(state) {
 
 export function canBuyGreensSensors(state) {
   if (state.hasGreensSensors) return { ok: false, reason: 'Greens already have sensors.' };
-  const sensorCash = needsCash(state, GREENS_SENSORS_COST);
+  const sensorCash = needsCapital(state, GREENS_SENSORS_COST);
   if (!sensorCash.ok) return sensorCash;
   return { ok: true };
 }
 
 export function canBuyTurfRad(state) {
   if (state.hasTurfRad) return { ok: false, reason: 'TurfRad is already on the mowers.' };
-  const radCash = needsCash(state, TURFRAD_COST);
+  const radCash = needsCapital(state, TURFRAD_COST);
   if (!radCash.ok) return radCash;
   return { ok: true };
 }

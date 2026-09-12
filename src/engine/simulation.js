@@ -37,7 +37,7 @@ import {
   WET_GAIN_MULT,
   WEATHER_STORM,
 } from '../data/constants.js';
-import { PASS_AREAS, AUTONOMOUS_AREAS, AUTONOMOUS_NIGHT_MINUTES, AUTONOMOUS_UNSTICK_CHANCE, AUTONOMOUS_UNSTICK_MINUTES, MINUTES_PER_HOUR } from '../data/config.js';
+import { PASS_AREAS, AUTONOMOUS_AREAS, AUTONOMOUS_NIGHT_MINUTES, AUTONOMOUS_UNSTICK_CHANCE, AUTONOMOUS_UNSTICK_MINUTES, CAPEX_STATUS_MISSED, CAPEX_STATUS_RELEASED, MINUTES_PER_HOUR } from '../data/config.js';
 import { applyCoringSeasonTick, applySupportDay, applySupportWeekEnd } from './support.js';
 import { applyDailyQualityDrift, applyMissedWeekPenalties } from './qualityDrift.js';
 import { applyAreaQualityToHoles, applyWeekPasses, emptyAreaQuality, machineAllowsArea, passHoursFor, resolveDayPasses } from './passes.js';
@@ -46,7 +46,7 @@ import { generateCandidates, generateCasuals } from '../data/staff.js';
 import { getTask, taskAppliesQuality } from '../data/tasks.js';
 import { workerById, workerQualityMultiplier, qualityRandomFactor } from './assignment.js';
 import { workerBringsOwnMower } from './skills.js';
-import { enqueueGm, GM_MSG_CORING, GM_MSG_DUTIES, tickGm } from './gm.js';
+import { enqueueGm, GM_MSG_CAPEX_MISSED, GM_MSG_CAPEX_RELEASED, GM_MSG_CORING, GM_MSG_DUTIES, tickGm } from './gm.js';
 import { consumeJobFuel, jobBurnsFuel, replaceBurnSpend } from './fuel.js';
 import { applyMowingAftermath, hocStressApplies, mowingGain, rotatePatternAngle } from './mowing.js';
 import {
@@ -99,6 +99,7 @@ import {
 } from './moisture.js';
 import { rollMorningWithRng } from './weather.js';
 import { closeSeason, seasonGrant } from './budget.js';
+import { applyMonthlyBudget, applySeasonCapexGrant, tryReleaseSeason1Capex } from './economy.js';
 import { golferMail, gmMissedTournamentMail, gmSeasonMail, gmTournamentRequestMail, grantForecastMail, meetingDue, pushMail, resignMail, tickDaysSinceWorked } from './mail.js';
 import { neglectMail, neglectSatisfactionDrain } from './neglect.js';
 import {
@@ -590,6 +591,11 @@ export function resolveDay(state) {
   const areaQualityPrev = drifted.areaQualityPrev;
   holes = applyAreaQualityToHoles(holes, areaQuality);
 
+  const capexTick = tryReleaseSeason1Capex(
+    { ...state, areaQuality },
+    planned.some((item) => item.taskId === 'gmMeeting'),
+  );
+
   const day = state.day + 1;
   const calendar = calendarFromDay(day);
   const seasonChanged = calendar.season !== state.season;
@@ -640,7 +646,12 @@ export function resolveDay(state) {
           wageBill(state.workers) + irrigation.mainsCost + materialsSpent + fuelSpend + (complaint.fine ?? 0),
       },
     ),
+    capex: capexTick.capex,
+    capexStatus: capexTick.capexStatus,
+    capexReleasedDay: capexTick.capexReleasedDay,
+    growInUntil: state.growInUntil ?? {},
   };
+  next = applyMonthlyBudget(next);
   next = tickMarket(next);
   next = tickEvents(next);
   let seasonClose = null;
@@ -668,6 +679,7 @@ export function resolveDay(state) {
     };
     seasonClose = closeSeason(next);
     next = seasonClose.state;
+    next = applySeasonCapexGrant(next);
     for (const mail of seasonClose.mail.concat(
       gmSeasonMail({
         grant: seasonClose.grant,
@@ -792,6 +804,12 @@ export function resolveDay(state) {
 
   next = tickGm(next, { breakdowns });
   if (supported.events.some((item) => item.kind === 'coring')) next = enqueueGm(next, GM_MSG_CORING);
+  if (capexTick.capexStatus === CAPEX_STATUS_RELEASED && state.capexStatus !== CAPEX_STATUS_RELEASED) {
+    next = enqueueGm(next, GM_MSG_CAPEX_RELEASED);
+  }
+  if (capexTick.capexStatus === CAPEX_STATUS_MISSED && state.capexStatus !== CAPEX_STATUS_MISSED) {
+    next = enqueueGm(next, GM_MSG_CAPEX_MISSED);
+  }
 
   const summary = {
     day: state.day,

@@ -49,6 +49,7 @@ import { migrateIrrigation } from './irrigation.js';
 import { hocRangeFor, normalizeGrass } from './grass.js';
 import { migrateWorkerTier } from './staffTiers.js';
 import { emptyAreaQuality, emptyWeekPassState, applyAreaQualityToHoles } from './passes.js';
+import { CAPEX_STATUS_PENDING, STARTING_CAPEX, STARTING_MONTHLY_BUDGET } from '../data/config.js';
 
 function clampGrassHoc(defaults, grass) {
   if (!defaults) return defaults;
@@ -352,6 +353,11 @@ export function withDefaults(state) {
     generalDutiesSkipWeeks: Number(state.generalDutiesSkipWeeks) || 0,
     leaveRequests: Array.isArray(state.leaveRequests) ? state.leaveRequests : [],
     nextLeaveId: Number.isInteger(state.nextLeaveId) && state.nextLeaveId > 0 ? state.nextLeaveId : 1,
+    capex: Number.isFinite(Number(state.capex)) ? Number(state.capex) : STARTING_CAPEX,
+    capexStatus: state.capexStatus ?? CAPEX_STATUS_PENDING,
+    capexGrantedKey: state.capexGrantedKey ?? null,
+    growInUntil: state.growInUntil && typeof state.growInUntil === 'object' ? state.growInUntil : {},
+    lastMonthlyBudget: Number.isFinite(Number(state.lastMonthlyBudget)) ? Number(state.lastMonthlyBudget) : STARTING_MONTHLY_BUDGET,
   };
   if (next.holes) next.holes = applyAreaQualityToHoles(next.holes, next.areaQuality);
   if (!next.weekStartSnapshot) next.weekStartSnapshot = snapshotWeekStart(next);

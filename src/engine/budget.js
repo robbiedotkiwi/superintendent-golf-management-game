@@ -134,19 +134,12 @@ export function chargeLeases(state) {
 export function closeSeason(state) {
   const charged = chargeLeases(state);
   let next = charged.state;
-  const forecastSat = next.grantForecast?.satisfaction;
-  const grant = seasonGrant(next.satisfaction, next.gmStanding);
-  const adjustment = grantAdjustment(forecastSat, next.satisfaction);
-  const posted = grant + adjustment;
-  next = creditCash(
-    {
-      ...next,
-      lastSeasonRevenue: next.seasonRevenue ?? 0,
-      seasonRevenue: 0,
-      grantForecast: null,
-    },
-    posted,
-  );
+  next = {
+    ...next,
+    lastSeasonRevenue: next.seasonRevenue ?? 0,
+    seasonRevenue: 0,
+    grantForecast: null,
+  };
 
   if (next.loan && next.season === next.loan.dueSeason && next.year === next.loan.dueYear) {
     next = { ...spendCash(next, next.loan.repay), loan: null };
@@ -164,8 +157,8 @@ export function closeSeason(state) {
 
   return {
     state: { ...next, insolventStreak, dismissed },
-    grant: posted,
-    adjustment,
+    grant: 0,
+    adjustment: 0,
     insolvent,
     mail: charged.mail,
   };

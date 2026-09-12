@@ -75,7 +75,7 @@ import { bumpCapitalSpent } from './history.js';
 import { workerTimeMultiplier, mowingOperatorTimeMultiplier, workerBringsOwnMower } from './skills.js';
 import { hasMechanic } from './staff.js';
 import { createRng } from './rng.js';
-import { needsCash, spendCash } from './cash.js';
+import { needsCapital, needsCash, spendCapital, spendCash } from './cash.js';
 import { OWN_MOWER_PASS_CLASS, PASS_AREAS } from '../data/config.js';
 import { supportMinutes } from './support.js';
 import { passMinutesFor } from './passes.js';
@@ -608,7 +608,7 @@ export function canBuyMachine(state, machineId) {
   if ((state.pendingDeliveries ?? []).some((item) => canonicalMachineId(item.machineId) === id)) {
     return { ok: false, reason: 'Already on a truck.' };
   }
-  if (!needsCash(state, machine.cost).ok) return needsCash(state, machine.cost);
+  if (!needsCapital(state, machine.cost).ok) return needsCapital(state, machine.cost);
   return { ok: true };
 }
 
@@ -624,14 +624,14 @@ export function canBuyUpgrade(state, machineId, upgradeId) {
   if (upgrade.slot && owned.some((item) => getUpgrade(item)?.slot === upgrade.slot)) {
     return { ok: false, reason: 'That slot is already fitted.' };
   }
-  const cash = needsCash(state, upgrade.cost);
+  const cash = needsCapital(state, upgrade.cost);
   if (!cash.ok) return cash;
   return { ok: true };
 }
 
 export function canBuyFoley(state) {
   if (state.hasFoleyGrinder) return { ok: false, reason: 'Already installed.' };
-  const foleyCash = needsCash(state, FOLEY_GRINDER_COST);
+  const foleyCash = needsCapital(state, FOLEY_GRINDER_COST);
   if (!foleyCash.ok) return foleyCash;
   return { ok: true };
 }
@@ -728,7 +728,7 @@ export function buyMachine(state, machineId) {
   const id = canonicalMachineId(machineId);
   const machine = getMachine(id);
   let next = {
-    ...spendCash(state, machine.cost),
+    ...spendCapital(state, machine.cost),
     ...stampOwnedMachine(state, id, NEW_PURCHASE_CONDITION),
     hasAutoPicker: machine.ballPicker ? true : state.hasAutoPicker,
   };
@@ -747,7 +747,7 @@ export function buyUpgrade(state, machineId, upgradeId) {
   const id = canonicalMachineId(machineId);
   const upgrade = getUpgrade(upgradeId);
   const next = {
-    ...spendCash(state, upgrade.cost),
+    ...spendCapital(state, upgrade.cost),
     machineUpgrades: {
       ...(state.machineUpgrades ?? {}),
       [id]: [...ownedUpgradeIds(state, id), upgrade.id],
@@ -759,7 +759,7 @@ export function buyUpgrade(state, machineId, upgradeId) {
 export function buyFoley(state) {
   const check = canBuyFoley(state);
   if (!check.ok) return state;
-  return bumpCapitalSpent(spendCash({ ...state, hasFoleyGrinder: true }, FOLEY_GRINDER_COST), FOLEY_GRINDER_COST);
+  return bumpCapitalSpent(spendCapital({ ...state, hasFoleyGrinder: true }, FOLEY_GRINDER_COST), FOLEY_GRINDER_COST);
 }
 
 export function sendForGrind(state, machineId) {

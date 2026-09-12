@@ -2,6 +2,7 @@ import {
   AUTONOMOUS_AREAS,
   GRADE_CAP_LETTER,
   GROW_IN_QUALITY_OFFSET,
+  GROW_IN_PASSES_REQUIRED_MULT,
   MAX_PASSES_PER_AREA_PER_DAY,
   MINUTES_PER_HOUR,
   PASS_AREAS,
@@ -242,10 +243,20 @@ export function bestMachineCap(state, area) {
   return best;
 }
 
-export function weeklyPassRatio(passes, area) {
-  const required = PASSES_REQUIRED_PER_WEEK[area] ?? 1;
-  if (!(required > 0)) return 0;
-  return (Number(passes) || 0) / required;
+export function growInActive(state, area) {
+  return growInOffset(state, area) !== 0;
+}
+
+export function passesRequired(state, area) {
+  const base = PASSES_REQUIRED_PER_WEEK[area] ?? 1;
+  if (growInActive(state, area)) return base * GROW_IN_PASSES_REQUIRED_MULT;
+  return base;
+}
+
+export function weeklyPassRatio(passes, area, required) {
+  const need = required ?? PASSES_REQUIRED_PER_WEEK[area] ?? 1;
+  if (!(need > 0)) return 0;
+  return (Number(passes) || 0) / need;
 }
 
 export function weeklyTargetQuality(passes, capScore) {

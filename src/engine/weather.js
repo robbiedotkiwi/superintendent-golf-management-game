@@ -40,7 +40,7 @@ import {
   WIND_SPEED_MIN,
 } from '../data/constants.js';
 import { calendarFromDay } from './calendar.js';
-import { needsCash } from './cash.js';
+import { needsCapital } from './cash.js';
 import { createRng } from './rng.js';
 
 const MAGNUS_A = 17.62;
@@ -226,7 +226,7 @@ export function stationAtmosphere(state) {
 
 export function canBuyWeatherStation(state) {
   if (state.hasWeatherStation) return { ok: false, reason: 'A weather station is already on the course.' };
-  return needsCash(state, WEATHER_STATION_COST);
+  return needsCapital(state, WEATHER_STATION_COST);
 }
 
 export function rollTrueDay(season, rng, day) {

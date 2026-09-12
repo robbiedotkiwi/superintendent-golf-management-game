@@ -14,6 +14,7 @@ import { emptyWeekPassState } from './passes.js';
 import { getTask } from '../data/tasks.js';
 import { minutesTodayForWeather } from './weather.js';
 import { dayOfWeek } from './staff.js';
+import { projectWorkerIds } from './projects.js';
 
 export function weekStartDay(day) {
   return Math.floor((Number(day) - 1) / DAYS_PER_WEEK) * DAYS_PER_WEEK + 1;
@@ -144,6 +145,7 @@ export function workersForPlanDay(state, day) {
       if (worker.trainingUntilDay && day < worker.trainingUntilDay) minutesToday = 0;
       if (worker.leaveUntilDay && day < worker.leaveUntilDay) minutesToday = 0;
       if (worker.sickUntilDay && day < worker.sickUntilDay) minutesToday = 0;
+      if (projectWorkerIds(state).has(worker.id)) minutesToday = 0;
       return {
         ...worker,
         minutesToday,

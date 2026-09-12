@@ -368,20 +368,33 @@ export function mostRecentCut(state, type) {
   return best;
 }
 
-export function expandHoleRecords(state) {
+export function expandHoleRecords(state, addCount = HOLE_COUNT) {
   const current = state.holes ?? [];
-  if (current.length >= EXPANDED_HOLE_COUNT) return current;
-  const extras = current.slice(0, HOLE_COUNT).map((hole) => ({
-    ...hole,
-    id: hole.id + HOLE_COUNT,
-    green: { ...hole.green, override: hole.green.override ? { ...hole.green.override } : null, dryingFactor: dryingFactorForHole(hole.id + HOLE_COUNT) },
-    tee: { ...hole.tee, override: hole.tee.override ? { ...hole.tee.override } : null },
-    fairway: { ...hole.fairway, override: hole.fairway.override ? { ...hole.fairway.override } : null },
-    rough: { ...hole.rough, override: hole.rough.override ? { ...hole.rough.override } : null },
-    bunker: hole.bunker ? { ...hole.bunker } : layoutHasBunker(hole.id + HOLE_COUNT, EXPANDED_HOLE_COUNT)
-      ? createBunkerRecord({ quality: startingQuality('bunkers') })
-      : null,
-  }));
+  const add = Math.max(0, Number(addCount) || 0);
+  const target = Math.min(EXPANDED_HOLE_COUNT, current.length + add);
+  if (current.length >= target) return current;
+  const extras = [];
+  for (let id = current.length + 1; id <= target; id += 1) {
+    const template = current[(id - 1) % HOLE_COUNT] ?? current[0];
+    extras.push({
+      ...template,
+      id,
+      green: {
+        ...template.green,
+        override: template.green.override ? { ...template.green.override } : null,
+        dryingFactor: dryingFactorForHole(id),
+      },
+      tee: { ...template.tee, override: template.tee.override ? { ...template.tee.override } : null },
+      fairway: { ...template.fairway, override: template.fairway.override ? { ...template.fairway.override } : null },
+      rough: { ...template.rough, override: template.rough.override ? { ...template.rough.override } : null },
+      bunker: template.bunker
+        ? { ...template.bunker }
+        : layoutHasBunker(id, target)
+          ? createBunkerRecord({ quality: startingQuality('bunkers') })
+          : null,
+      growIn: true,
+    });
+  }
   return [...cloneHoles(current), ...extras];
 }
 

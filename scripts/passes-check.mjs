@@ -17,11 +17,13 @@ import {
   MAX_PASSES_PER_AREA_PER_DAY,
   PASS_CLASS_PUSH_REEL,
   PASS_CLASS_RIDE_ON_ROTARY,
+  PROJECT_EXPAND_3,
   STAFF_TIER_SENIOR,
   STAFF_TIER_UNSKILLED,
   WEAR_TIME_MULT_LIGHT,
   WEAR_TIME_MULT_NONE,
 } from '../src/data/config.js';
+import { monthlyBudgetFor, golferNumbers, gmRequiredGrade } from '../src/engine/economy.js';
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -104,4 +106,21 @@ assert(leave.leaveRequests[0].resolved === 'approved', 'leave approved');
 assert(leave.workers.find((w) => w.id === 'hire-x').morale === 58, 'approve morale');
 assert(leave.workers.find((w) => w.id === 'hire-x').leaveUntilDay === state.day + 5, 'leave until');
 
-console.log('passes-check phase 6 ok');
+assert(state.capex === 0, 'season 1 capex starts locked');
+assert(state.capexStatus === 'pending', 'season 1 capex pending');
+assert(monthlyBudgetFor(state) > 0, 'monthly budget');
+assert(golferNumbers(state) > 0, 'golfers');
+assert(gmRequiredGrade(state) > 70, 'gm required rises with holes');
+
+let site = reducer(
+  { ...state, capex: 200000 },
+  { type: 'START_PROJECT', projectId: PROJECT_EXPAND_3, workerId: state.workers[0].id },
+);
+assert(site.projects.some((item) => item.id === PROJECT_EXPAND_3), '3-hole expansion starts');
+assert(site.projects[0].workerId === state.workers[0].id, 'expansion occupies a person');
+site = reducer(site, { type: 'PAUSE_PROJECT', projectId: PROJECT_EXPAND_3 });
+assert(site.projects[0].paused, 'expansion can pause');
+site = reducer(site, { type: 'RESUME_PROJECT', projectId: PROJECT_EXPAND_3 });
+assert(!site.projects[0].paused, 'expansion can resume');
+
+console.log('passes-check phase 7 ok');

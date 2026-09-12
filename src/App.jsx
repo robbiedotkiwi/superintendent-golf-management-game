@@ -262,7 +262,9 @@ export default function App() {
           onDeclineTournament={() => dispatch({ type: 'DECLINE_TOURNAMENT_REQUEST' })}
           onAcceptEvent={(inviteId) => dispatch({ type: 'ACCEPT_EVENT', inviteId })}
           onDeclineEvent={(inviteId) => dispatch({ type: 'DECLINE_EVENT', inviteId })}
-          onStartProject={(projectId) => dispatch({ type: 'START_PROJECT', projectId })}
+          onStartProject={(projectId, workerId) => dispatch({ type: 'START_PROJECT', projectId, workerId })}
+          onPauseProject={(projectId) => dispatch({ type: 'PAUSE_PROJECT', projectId })}
+          onResumeProject={(projectId) => dispatch({ type: 'RESUME_PROJECT', projectId })}
           onStartGrassConversion={(surface, speciesId) =>
             dispatch({ type: 'START_GRASS_CONVERSION', surface, speciesId })
           }
@@ -389,6 +391,8 @@ function GameScreen({
   onAcceptEvent,
   onDeclineEvent,
   onStartProject,
+  onPauseProject,
+  onResumeProject,
   onStartGrassConversion,
   onBuyPicker,
   onToggleSound,
@@ -561,6 +565,8 @@ function GameScreen({
             onDeclineEvent={onDeclineEvent}
             onSetTournaments={onSetTournaments}
             onStartProject={onStartProject}
+            onPauseProject={onPauseProject}
+            onResumeProject={onResumeProject}
             onStartGrassConversion={onStartGrassConversion}
             onBuyPicker={onBuyPicker}
           />

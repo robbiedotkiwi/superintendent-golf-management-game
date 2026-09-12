@@ -39,6 +39,7 @@ export default function Hud({ state, condition }) {
       </div>
       <div className="flex items-end gap-6">
         <Stat label="Cash" value={formatMoney(state.cash)} size="secondary" />
+        <Stat label="Capex" value={formatMoney(state.capex ?? 0)} size="secondary" />
         <Stat label="Satisfaction" value={Math.round(state.satisfaction)} size="secondary" />
       </div>
       <Stat

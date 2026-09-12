@@ -62,9 +62,9 @@ import {
   seasonTournament,
 } from './tournament.js';
 import { clampStanding } from './satisfaction.js';
-import { buyAutoPicker, startGrassConversion, startProject } from './projects.js';
+import { buyAutoPicker, pauseProject, resumeProject, startGrassConversion, startProject } from './projects.js';
 import { bumpCapitalSpent, emptyYearRecord } from './history.js';
-import { spendCash } from './cash.js';
+import { spendCapital } from './cash.js';
 import { dismissGm, emptySectionUnlocks, GM_MSG_DAY1, isSectionLocked } from './gm.js';
 import { snapshotWeekStart } from './weekReview.js';
 import { resolveDay } from './simulation.js';
@@ -144,6 +144,7 @@ import { courseBounds, holesForCount } from '../data/course.js';
 import { clampView, defaultView } from './view.js';
 import { defaultSectionTabs, normalizeSection, normalizeTabs, tabListForSection } from './section.js';
 import { formatMoney } from './format.js';
+import { CAPEX_STATUS_PENDING, STARTING_CAPEX, STARTING_MONTHLY_BUDGET } from '../data/config.js';
 import { buyUsed, rollUsedListings, sellMachine } from './market.js';
 import { acceptEvent, declineEvent } from './events.js';
 
@@ -334,6 +335,11 @@ export function createInitialState() {
     lastDeliveryDay: null,
     firingHistory: [],
     volunteerDismissed: false,
+    capex: STARTING_CAPEX,
+    capexStatus: CAPEX_STATUS_PENDING,
+    capexGrantedKey: null,
+    growInUntil: {},
+    lastMonthlyBudget: STARTING_MONTHLY_BUDGET,
     section: SECTION_MAP,
     tabs: defaultSectionTabs(),
   };
@@ -715,7 +721,11 @@ export function reducer(state, action) {
       };
     }
     case 'START_PROJECT':
-      return startProject(state, action.projectId);
+      return startProject(state, action.projectId, action.workerId);
+    case 'PAUSE_PROJECT':
+      return pauseProject(state, action.projectId);
+    case 'RESUME_PROJECT':
+      return resumeProject(state, action.projectId);
     case 'START_GRASS_CONVERSION':
       return startGrassConversion(state, action.surface, action.speciesId);
     case 'BUY_AUTO_PICKER':
@@ -886,22 +896,22 @@ export function reducer(state, action) {
     case 'BUY_AERATOR': {
       const check = canBuyAerator(state);
       if (!check.ok) return state;
-      return bumpCapitalSpent(spendCash({ ...state, hasAerator: true }, AERATOR_COST), AERATOR_COST);
+      return bumpCapitalSpent(spendCapital({ ...state, hasAerator: true }, AERATOR_COST), AERATOR_COST);
     }
     case 'BUY_GREENS_SENSORS': {
       const check = canBuyGreensSensors(state);
       if (!check.ok) return state;
-      return bumpCapitalSpent(spendCash({ ...state, hasGreensSensors: true }, GREENS_SENSORS_COST), GREENS_SENSORS_COST);
+      return bumpCapitalSpent(spendCapital({ ...state, hasGreensSensors: true }, GREENS_SENSORS_COST), GREENS_SENSORS_COST);
     }
     case 'BUY_TURFRAD': {
       const check = canBuyTurfRad(state);
       if (!check.ok) return state;
-      return bumpCapitalSpent(spendCash({ ...state, hasTurfRad: true }, TURFRAD_COST), TURFRAD_COST);
+      return bumpCapitalSpent(spendCapital({ ...state, hasTurfRad: true }, TURFRAD_COST), TURFRAD_COST);
     }
     case 'BUY_WEATHER_STATION': {
       const check = canBuyWeatherStation(state);
       if (!check.ok) return state;
-      return bumpCapitalSpent(spendCash({ ...state, hasWeatherStation: true }, WEATHER_STATION_COST), WEATHER_STATION_COST);
+      return bumpCapitalSpent(spendCapital({ ...state, hasWeatherStation: true }, WEATHER_STATION_COST), WEATHER_STATION_COST);
     }
     case 'TOGGLE_MOISTURE_OVERLAY':
       return { ...state, moistureOverlay: !state.moistureOverlay };

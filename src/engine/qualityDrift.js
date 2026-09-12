@@ -9,13 +9,13 @@ import {
 import { getTask } from '../data/tasks.js';
 import { clampQuality } from './grades.js';
 import { inHocStressBand } from './mowing.js';
-import { areaGradeCap, emptyAreaQuality, growInOffset, weeklyPassRatio, weeklyTargetQuality } from './passes.js';
+import { areaGradeCap, emptyAreaQuality, growInOffset, passesRequired, weeklyPassRatio, weeklyTargetQuality } from './passes.js';
 import { courseSettings } from './holes.js';
 
 export function weeklyTargetForArea(state, area, passes) {
   const cap = areaGradeCap(state, area);
   const roll = state.weekRollPasses?.[area] ?? 0;
-  return clampQuality(weeklyTargetQuality(weeklyPassRatio(passes, area) + roll, cap) + growInOffset(state, area));
+  return clampQuality(weeklyTargetQuality(weeklyPassRatio(passes, area, passesRequired(state, area)) + roll, cap) + growInOffset(state, area));
 }
 
 export function driftQuality(current, target, rate = QUALITY_DRIFT_RATE_PER_DAY) {

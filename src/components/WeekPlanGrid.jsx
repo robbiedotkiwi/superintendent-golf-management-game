@@ -26,6 +26,7 @@ import { rosterPeople } from '../engine/weekGrid.js';
 import ForecastStrip from './ForecastStrip.jsx';
 import GradeStrip from './GradeStrip.jsx';
 import MachinePassPanel from './MachinePassPanel.jsx';
+import SeasonBar from './SeasonBar.jsx';
 
 function flagLabel(flag) {
   if (flag === COPY_FLAG_AWAY) return 'person away';
@@ -121,6 +122,7 @@ export default function WeekPlanGrid({
   return (
     <div className="space-y-3" data-week-grid data-planner="staff">
       <ForecastStrip state={state} onSelectDay={onSelectDay} />
+      <SeasonBar state={state} />
       <GradeStrip state={state} />
       <MachinePassPanel state={state} />
       <div className="flex flex-wrap items-center gap-2 text-sm">
