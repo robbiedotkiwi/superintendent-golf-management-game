@@ -350,6 +350,8 @@ export function withDefaults(state) {
     coringSkipStreak: Number(state.coringSkipStreak) || 0,
     greensCeilingPenalty: Number(state.greensCeilingPenalty) || 0,
     generalDutiesSkipWeeks: Number(state.generalDutiesSkipWeeks) || 0,
+    leaveRequests: Array.isArray(state.leaveRequests) ? state.leaveRequests : [],
+    nextLeaveId: Number.isInteger(state.nextLeaveId) && state.nextLeaveId > 0 ? state.nextLeaveId : 1,
   };
   if (next.holes) next.holes = applyAreaQualityToHoles(next.holes, next.areaQuality);
   if (!next.weekStartSnapshot) next.weekStartSnapshot = snapshotWeekStart(next);

@@ -96,4 +96,12 @@ assert(next.weekPasses.greens > 0.9, `full greens pass should count, got ${next.
 assert(next.areaQuality.greens !== state.areaQuality.greens, 'quality should drift after a pass');
 assert(driftQuality(50, 100, 0.12) === 56, 'linear drift both ways');
 
-console.log('passes-check phase 1 ok');
+const leave = reducer(
+  { ...state, leaveRequests: [{ id: 1, workerId: 'hire-x', name: 'Test', days: 5, approveMorale: 8, declineMorale: -12 }], nextLeaveId: 2, workers: [...state.workers, { id: 'hire-x', name: 'Test', morale: 50, isVolunteer: false, tier: STAFF_TIER_UNSKILLED }] },
+  { type: 'APPROVE_LEAVE', requestId: 1 },
+);
+assert(leave.leaveRequests[0].resolved === 'approved', 'leave approved');
+assert(leave.workers.find((w) => w.id === 'hire-x').morale === 58, 'approve morale');
+assert(leave.workers.find((w) => w.id === 'hire-x').leaveUntilDay === state.day + 5, 'leave until');
+
+console.log('passes-check phase 6 ok');

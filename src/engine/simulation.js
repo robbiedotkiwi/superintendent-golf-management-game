@@ -80,7 +80,8 @@ import {
   upgradeModifiers,
   wearMultiplier,
 } from './equipment.js';
-import { applyEarlyStartComplaints, applyMorale, prepareMorningWorkers, wageBill } from './staff.js';
+import { applyEarlyStartComplaints, applyMorale, departResignedWorkers, prepareMorningWorkers, wageBill } from './staff.js';
+import { maybeLeaveRequest } from './staffMorale.js';
 import { activateDayPlan, casualsBookedOn, getDayTasks, lockWeek, rollNewWeek, setDayTasks, weekStartDay } from './week.js';
 import { createRng } from './rng.js';
 import { applyFertiliser, applySpray, emptyDisease, resolveDisease, syncHoleDisease } from './disease.js';
@@ -98,7 +99,7 @@ import {
 } from './moisture.js';
 import { rollMorningWithRng } from './weather.js';
 import { closeSeason, seasonGrant } from './budget.js';
-import { golferMail, gmMissedTournamentMail, gmSeasonMail, gmTournamentRequestMail, grantForecastMail, meetingDue, pushMail, tickDaysSinceWorked } from './mail.js';
+import { golferMail, gmMissedTournamentMail, gmSeasonMail, gmTournamentRequestMail, grantForecastMail, meetingDue, pushMail, resignMail, tickDaysSinceWorked } from './mail.js';
 import { neglectMail, neglectSatisfactionDrain } from './neglect.js';
 import {
   applyScheduledTournament,
@@ -525,6 +526,8 @@ export function resolveDay(state) {
     );
   }
   workers = applyMorale(workers);
+  const afterMorale = departResignedWorkers({ ...state, workers });
+  workers = afterMorale.workers;
   const fuelSpend = replaceBurnSpend(fuelBurned);
   cash = cash - wageBill(state.workers) - irrigation.mainsCost - fuelSpend;
   const complaint = applyEarlyStartComplaints({ ...state, cash, workers, holes, surfaceDefaults });
@@ -546,7 +549,13 @@ export function resolveDay(state) {
     inbox: state.inbox ?? [],
     nextMailId: state.nextMailId ?? 1,
     pond,
+    weekPlan: afterMorale.weekPlan ?? state.weekPlan,
+    plannedTasks: afterMorale.plannedTasks ?? state.plannedTasks,
+    firingHistory: afterMorale.firingHistory ?? state.firingHistory,
   };
+  for (const person of afterMorale.resignedToday ?? []) {
+    mailed = pushMail(mailed, resignMail(person.name));
+  }
   for (const mail of golferMail(mailed)) {
     mailed = pushMail(mailed, mail);
   }
@@ -743,6 +752,7 @@ export function resolveDay(state) {
       lastWeekReview: review,
     };
     next = rollNewWeek(next, next.day, generateCasuals(rng).map(migrateWorkerTier));
+    next = maybeLeaveRequest(next, rng);
     next = { ...next, weekStartSnapshot: snapshotWeekStart(next) };
   } else {
     next = lockWeek(next);

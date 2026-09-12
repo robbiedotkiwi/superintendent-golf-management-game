@@ -25,6 +25,7 @@ import { generateCandidates, generateCasuals } from '../data/staff.js';
 import { rosterWorker } from './weekGrid.js';
 import { migrateWorkerTier } from './staffTiers.js';
 import { applyNamedTemplate, copyLastWeek, copyYesterday, nextStartMinute, saveNamedTemplate, snapMinutes } from './slots.js';
+import { approveLeave, declineLeave } from './staffMorale.js';
 import { coringWindowOk, isDrySpell, sprayWindowOk } from './support.js';
 import {
   applyAreaQualityToHoles,
@@ -230,6 +231,8 @@ export function createInitialState() {
     planTemplates: [],
     nextTemplateId: 1,
     lastCopyFlags: [],
+    leaveRequests: [],
+    nextLeaveId: 1,
     coringUntilDay: 0,
     coredThisSeason: false,
     coringSkipStreak: 0,
@@ -776,6 +779,10 @@ export function reducer(state, action) {
       return trainWorker(state, action.workerId, action.axis);
     case 'FIRE_WORKER':
       return fireWorker(state, action.workerId);
+    case 'APPROVE_LEAVE':
+      return approveLeave(state, action.requestId);
+    case 'DECLINE_LEAVE':
+      return declineLeave(state, action.requestId);
     case 'DISMISS_VOLUNTEER':
       return dismissVolunteer(state);
     case 'SET_VOLUNTEER_WEEKDAY':

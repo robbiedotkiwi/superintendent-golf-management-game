@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import CourseMap from './components/CourseMap.jsx';
 import DaySummary from './components/DaySummary.jsx';
-import Crew from './components/Crew.jsx';
+import Crew, { LeaveRequests } from './components/Crew.jsx';
 import GameOver from './components/GameOver.jsx';
 import Office from './components/Office.jsx';
 import PlayoutBar from './components/PlayoutBar.jsx';
@@ -219,6 +219,8 @@ export default function App() {
           onHire={(candidateId) => dispatch({ type: 'HIRE_WORKER', candidateId })}
           onTrain={(workerId, axis) => dispatch({ type: 'TRAIN_WORKER', workerId, axis })}
           onFire={(workerId) => dispatch({ type: 'FIRE_WORKER', workerId })}
+          onApproveLeave={(requestId) => dispatch({ type: 'APPROVE_LEAVE', requestId })}
+          onDeclineLeave={(requestId) => dispatch({ type: 'DECLINE_LEAVE', requestId })}
           onDismissVolunteer={() => dispatch({ type: 'DISMISS_VOLUNTEER' })}
           onVolunteerDay={(weekday) => dispatch({ type: 'SET_VOLUNTEER_WEEKDAY', weekday })}
           onEarlyStart={(value) => dispatch({ type: 'SET_EARLY_START', value })}
@@ -348,6 +350,8 @@ function GameScreen({
   onHire,
   onTrain,
   onFire,
+  onApproveLeave,
+  onDeclineLeave,
   onDismissVolunteer,
   onVolunteerDay,
   onEarlyStart,
@@ -504,6 +508,7 @@ function GameScreen({
         onUnbookCasual={onUnbookCasual}
       />
       <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+        <LeaveRequests state={state} onApprove={onApproveLeave} onDecline={onDeclineLeave} />
         {view === SECTION_SHED ? (
           <Shed
             state={state}
@@ -530,6 +535,8 @@ function GameScreen({
           onHire={onHire}
           onTrain={onTrain}
           onFire={onFire}
+          onApproveLeave={onApproveLeave}
+          onDeclineLeave={onDeclineLeave}
           onDismissVolunteer={onDismissVolunteer}
           onVolunteerDay={onVolunteerDay}
             onEarlyStart={onEarlyStart}

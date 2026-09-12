@@ -7,8 +7,6 @@ import {
   FIRING_MORALE_HIT,
   FIRING_SEVERANCE_DAYS,
   MORALE_MAX,
-  MORALE_NOSHOW_BELOW,
-  MORALE_NOSHOW_CHANCE,
   MORALE_OVERWORK_DROP,
   MORALE_RECOVER,
   MORALE_SAFE_MINUTES,
@@ -29,6 +27,7 @@ import {
 import { VOLUNTEER_SURFACES } from '../data/config.js';
 import { cashOnHand } from './cash.js';
 import { migrateWorkerTier } from './staffTiers.js';
+import { applyWorkedDayMorale, rollSickDay, tickLowMoraleStreak, volunteerMinutesForDay } from './staffMorale.js';
 import { minutesTodayForWeather } from './weather.js';
 import { constructionMinutes } from './projects.js';
 
@@ -60,8 +59,8 @@ export function hasMechanic(state) {
 export function prepareMorningWorkers(state, weather, rng) {
   const paidBase = minutesTodayForWeather(weather) + (state.earlyStart ? EARLY_START_MINUTES : 0);
   return state.workers.map((worker) => {
-    let minutesToday = worker.isVolunteer ? VOLUNTEER_MINUTES : paidBase;
-    if (worker.isVolunteer && dayOfWeek(state.day) !== (state.volunteerWeekday ?? VOLUNTEER_DEFAULT_WEEKDAY)) {
+    let minutesToday = worker.isVolunteer ? volunteerMinutesForDay(state, state.day) : paidBase;
+    if (worker.isVolunteer && minutesToday === 0) {
       minutesToday = 0;
     }
     if (worker.trainingUntilDay && state.day < worker.trainingUntilDay) {
@@ -70,8 +69,18 @@ export function prepareMorningWorkers(state, weather, rng) {
     if (worker.trainingUntilDay && state.day >= worker.trainingUntilDay && worker.trainingAxis) {
       worker = applyTrainingReturn(worker);
     }
-    if (minutesToday > 0 && worker.morale < MORALE_NOSHOW_BELOW && rng.next() < MORALE_NOSHOW_CHANCE) {
+    if (worker.leaveUntilDay && state.day < worker.leaveUntilDay) {
       minutesToday = 0;
+    }
+    if (worker.resigned) {
+      minutesToday = 0;
+    }
+    if (worker.sickUntilDay && state.day < worker.sickUntilDay) {
+      minutesToday = 0;
+    }
+    if (minutesToday > 0 && worker.id !== PLAYER_ID && !worker.isVolunteer) {
+      worker = rollSickDay({ ...worker, minutesToday }, rng, state.day);
+      if (worker.sickUntilDay && state.day < worker.sickUntilDay) minutesToday = 0;
     }
     if (worker.id === PLAYER_ID) {
       minutesToday = Math.max(0, minutesToday - constructionMinutes(state));
@@ -92,20 +101,23 @@ function applyTrainingReturn(worker) {
 
 export function applyMorale(workers) {
   return workers.map((worker) => {
-    if (worker.isVolunteer) return { ...worker, daysWorkedRunning: 0 };
+    if (worker.isVolunteer) return { ...worker, daysWorkedRunning: 0, daysWorkedThisWeek: 0 };
     const worked = worker.minutesUsed > 0;
     let morale = worker.morale;
     let daysWorkedRunning = worker.daysWorkedRunning;
+    let daysWorkedThisWeek = worker.daysWorkedThisWeek ?? 0;
     if (worked) {
       daysWorkedRunning += 1;
+      daysWorkedThisWeek += 1;
       if (worker.minutesUsed > MORALE_SAFE_MINUTES) morale -= MORALE_OVERWORK_DROP;
       if (daysWorkedRunning > MORALE_STREAK_LIMIT) morale -= MORALE_STREAK_DROP;
+      ({ morale } = applyWorkedDayMorale({ ...worker, morale }, daysWorkedThisWeek));
     } else {
       daysWorkedRunning = 0;
       morale += MORALE_RECOVER;
     }
     morale = Math.min(MORALE_MAX, Math.max(0, morale));
-    return { ...worker, morale, daysWorkedRunning };
+    return tickLowMoraleStreak({ ...worker, morale, daysWorkedRunning, daysWorkedThisWeek });
   });
 }
 
@@ -123,8 +135,11 @@ export function hireWorker(state, candidate) {
     minutesToday: template.minutesToday,
     minutesUsed: 0,
     daysWorkedRunning: 0,
+    daysWorkedThisWeek: 0,
     trainingUntilDay: null,
     trainingAxis: null,
+    resigned: false,
+    lowMoraleStreak: 0,
   });
   return {
     ...state,
@@ -178,6 +193,35 @@ export function canFireWorker(state, workerId) {
   if (!worker) return { ok: false, reason: 'Not on the books.' };
   if (worker.isVolunteer) return { ok: false, reason: 'The volunteer cannot be fired.' };
   return { ok: true, worker, severance: severanceCost(worker) };
+}
+
+function flagWeekPlanJobs(state, workerId) {
+  const plan = state.weekPlan;
+  if (!plan?.days) return state;
+  const days = { ...plan.days };
+  for (const [day, entry] of Object.entries(days)) {
+    days[day] = { ...entry, tasks: flagWorkerJobs(entry.tasks, workerId) };
+  }
+  return { ...state, weekPlan: { ...plan, days } };
+}
+
+export function departResignedWorkers(state) {
+  const gone = (state.workers ?? []).filter((worker) => worker.resigned && worker.id !== PLAYER_ID);
+  if (!gone.length) return { ...state, resignedToday: [] };
+  let next = { ...state, resignedToday: gone.map((worker) => ({ id: worker.id, name: worker.name })) };
+  for (const worker of gone) {
+    next = {
+      ...next,
+      workers: next.workers.filter((item) => item.id !== worker.id),
+      plannedTasks: flagWorkerJobs(next.plannedTasks, worker.id),
+      firingHistory: [
+        ...(next.firingHistory ?? []),
+        { day: next.day, workerId: worker.id, name: worker.name, kind: 'resigned', severance: 0 },
+      ],
+    };
+    next = flagWeekPlanJobs(next, worker.id);
+  }
+  return next;
 }
 
 export function fireWorker(state, workerId) {

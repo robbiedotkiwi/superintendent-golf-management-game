@@ -6,11 +6,10 @@ import {
   STARTING_DAY,
   STARTING_TEMP_MAX,
   STARTING_TEMP_MIN,
-  VOLUNTEER_DEFAULT_WEEKDAY,
-  VOLUNTEER_MINUTES,
   WEEKDAY_LABELS,
   WEATHER_STORM,
 } from '../data/constants.js';
+import { volunteerMinutesForDay } from './staffMorale.js';
 import { emptyWeekPassState } from './passes.js';
 import { getTask } from '../data/tasks.js';
 import { minutesTodayForWeather } from './weather.js';
@@ -132,8 +131,6 @@ export function casualDaysBooked(state, casualId) {
 
 export function workersForPlanDay(state, day) {
   const paidBase = dayLengthMinutes(state, day);
-  const weekday = dayOfWeek(day);
-  const volunteerDay = state.volunteerWeekday ?? VOLUNTEER_DEFAULT_WEEKDAY;
   const tasks = getDayTasks(state, day);
   const used = {};
   for (const item of tasks) {
@@ -142,10 +139,11 @@ export function workersForPlanDay(state, day) {
   const permanent = (state.workers ?? [])
     .filter((worker) => !worker.isCasual)
     .map((worker) => {
-      let minutesToday = worker.isVolunteer ? VOLUNTEER_MINUTES : paidBase;
-      if (worker.isVolunteer && weekday !== volunteerDay) minutesToday = 0;
+      let minutesToday = worker.isVolunteer ? volunteerMinutesForDay(state, day) : paidBase;
+      if (worker.isVolunteer && !minutesToday) minutesToday = 0;
       if (worker.trainingUntilDay && day < worker.trainingUntilDay) minutesToday = 0;
-      if (day === state.day) minutesToday = worker.minutesToday;
+      if (worker.leaveUntilDay && day < worker.leaveUntilDay) minutesToday = 0;
+      if (worker.sickUntilDay && day < worker.sickUntilDay) minutesToday = 0;
       return {
         ...worker,
         minutesToday,
@@ -207,6 +205,7 @@ export function rollNewWeek(state, weekStart, casualPool) {
     casualPool,
     planningDay: state.day,
     morningDrops: [],
+    workers: (state.workers ?? []).map((worker) => ({ ...worker, daysWorkedThisWeek: 0 })),
     ...emptyWeekPassState(),
   };
 }

@@ -1203,6 +1203,7 @@ export const VOLUNTEER_OFF_REASON = 'Volunteer — not in today';
 export const TRAINING_BACK_DAY_REASON = (name, backDay) => `${name} — training, back day ${backDay}`;
 export const MORALE_HOME_REASON = (name) => `${name} — staying home (morale)`;
 export const SICK_REASON = (name) => `${name} — off sick`;
+export const LEAVE_REASON = (name) => `${name} — on leave`;
 export const WORKER_ABSENT_REASON = 'Not in today';
 export const OVERRUN_DROP_COPY =
   'Top runs first. The last task is the one dropped if the day overruns.';

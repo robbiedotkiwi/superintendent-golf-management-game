@@ -1,16 +1,16 @@
 import {
+  LEAVE_REASON,
   MORALE_HOME_REASON,
   MORALE_NOSHOW_BELOW,
   SICK_REASON,
   TRAINING_BACK_DAY_REASON,
-  VOLUNTEER_DEFAULT_WEEKDAY,
   VOLUNTEER_OFF_REASON,
   WORKER_ABSENT_REASON,
 } from '../data/constants.js';
-import { dayOfWeek } from './staff.js';
+import { volunteerOnDuty } from './staffMorale.js';
 
-export function isVolunteerOnDuty(state) {
-  return dayOfWeek(state.day) === (state.volunteerWeekday ?? VOLUNTEER_DEFAULT_WEEKDAY);
+export function isVolunteerOnDuty(state, day = state.day) {
+  return volunteerOnDuty(state, day);
 }
 
 /** Round 5 Phase D: why this worker cannot be assigned today, or null if they can. */
@@ -25,6 +25,9 @@ export function workerAbsenceReason(state, worker) {
   }
   if (worker.sickUntilDay && state.day < worker.sickUntilDay) {
     return SICK_REASON(worker.name);
+  }
+  if (worker.leaveUntilDay && state.day < worker.leaveUntilDay) {
+    return LEAVE_REASON(worker.name);
   }
   if ((worker.morale ?? 50) < MORALE_NOSHOW_BELOW) {
     return MORALE_HOME_REASON(worker.name);
