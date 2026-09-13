@@ -22,6 +22,7 @@ import {
   PASS_CLASS_PUSH_REEL,
   PASS_CLASS_RIDE_ON_ROTARY,
   PROJECT_EXPAND_3,
+  STAFF_TIER_JUNIOR,
   STAFF_TIER_SENIOR,
   STAFF_TIER_UNSKILLED,
   WEAR_TIME_MULT_HEAVY,
@@ -30,7 +31,7 @@ import {
 } from '../src/data/config.js';
 import { monthlyBudgetFor, golferNumbers, gmRequiredGrade } from '../src/engine/economy.js';
 import { draftFromJobId, emptySlotDraft, mowTaskIdFor, resolvePlannerJobId } from '../src/engine/slots.js';
-import { autoMachineFor, blockConflicts, surplusWastedHours } from '../src/engine/dayPlanner.js';
+import { autoMachineFor, blockConflicts, paletteHoursFor, surplusWastedHours } from '../src/engine/dayPlanner.js';
 import { getTask } from '../src/data/tasks.js';
 
 function assert(cond, msg) {
@@ -262,5 +263,12 @@ assert(surplusWastedHours(surplus, surplus.plannedTasks[1]) === 0.5, 'surplus sh
 
 assert(plannerSrc.includes('data-block-machine'), 'machine name is on the block face');
 assert(plannerSrc.includes('Machine override'), 'block has a machine override');
+
+const junior = { ...state.workers[0], id: 'junior', name: 'Junior', tier: STAFF_TIER_JUNIOR };
+assert(paletteHoursFor(state, 'cutGreens', state.workers[0]) === 7.5, 'palette senior clean greens is 7.5');
+assert(paletteHoursFor(state, 'cutGreens', junior) === 8, 'palette junior clean greens is 8.0');
+const worn = { ...state, machineWear: { ...(state.machineWear ?? {}), [GREENSMASTER_ID]: 60 } };
+assert(paletteHoursFor(worn, 'cutGreens', junior) === 10, 'palette junior 60% wear greens is 10.0');
+assert(plannerSrc.includes('data-palette-hours'), 'palette shows computed hours');
 
 console.log('passes-check phase 7 ok');

@@ -17,11 +17,11 @@ import {
   blockLeftPx,
   blockWidthPx,
   conflictCopy,
-  defaultBlockMinutes,
   formatPlannerHours,
   hourFromClientX,
   hourTicks,
   overrideMachinesFor,
+  paletteHoursFor,
   plannerPalette,
   snapMinutes,
   surplusWastedHours,
@@ -152,10 +152,9 @@ export default function DayPlanner({
           {plannerPalette().map((item) => {
             const task = getTask(item.taskId);
             const machine = paletteWorker ? autoMachineFor(state, task, paletteWorker) : null;
-            const minutes = paletteWorker
-              ? defaultBlockMinutes(state, item.taskId, paletteWorker, machine?.id)
-              : HOUR_INCREMENT * MINUTES_PER_HOUR;
-            const hours = minutesToHours(minutes);
+            const hours = paletteWorker
+              ? paletteHoursFor(state, item.taskId, paletteWorker)
+              : HOUR_INCREMENT;
             return (
               <div
                 key={item.taskId}
@@ -167,12 +166,16 @@ export default function DayPlanner({
                 }}
                 className="cursor-grab border border-[var(--sand)] px-2 py-1 text-[11px] leading-tight active:cursor-grabbing"
                 data-palette-task={item.taskId}
+                data-palette-hours={formatPlannerHours(hours)}
               >
                 <div className="font-semibold">{item.label}</div>
                 <div className="text-[var(--sand)]">
                   {formatPlannerHours(hours)} hr
-                  {paletteWorker ? ` · ${paletteWorker.name}` : ''}
+                  {machine ? ` · ${catalogMachineTitle(machine.id) || machine.model || machine.name}` : ''}
                 </div>
+                {paletteWorker ? (
+                  <div className="text-[10px] text-[var(--sand)]">for {paletteWorker.name}</div>
+                ) : null}
               </div>
             );
           })}
@@ -192,7 +195,9 @@ export default function DayPlanner({
             return (
               <div
                 key={worker.id}
-                className="flex border-b border-[var(--sand)]/40"
+                className={`flex border-b border-[var(--sand)]/40 ${
+                  hoverWorkerId === worker.id ? 'bg-[var(--machine-orange)]/10' : ''
+                }`}
                 data-crew-row={worker.id}
                 onDragOver={(event) => {
                   event.preventDefault();

@@ -41,6 +41,12 @@ export function defaultBlockMinutes(state, taskId, worker, machineId) {
   return snapMinutes(minutes || HOUR_INCREMENT * MINUTES_PER_HOUR);
 }
 
+export function paletteHoursFor(state, taskId, worker) {
+  const task = getTask(taskId);
+  const machine = worker ? autoMachineFor(state, task, worker) : null;
+  return minutesToHours(defaultBlockMinutes(state, taskId, worker, machine?.id));
+}
+
 export function hourFromClientX(timelineEl, clientX) {
   if (!timelineEl) return 0;
   const rect = timelineEl.getBoundingClientRect();
