@@ -23,6 +23,20 @@ import {
 } from './week.js';
 import { generateCandidates, generateCasuals } from '../data/staff.js';
 import { rosterWorker } from './weekGrid.js';
+import { migrateWorkerTier } from './staffTiers.js';
+import { applyNamedTemplate, copyYesterday, nextStartMinute, saveNamedTemplate, snapMinutes } from './slots.js';
+import {
+  autoMachineFor,
+  defaultBlockMinutes,
+} from './dayPlanner.js';
+import { approveLeave, declineLeave } from './staffMorale.js';
+import { coringWindowOk, isDrySpell, sprayWindowOk } from './support.js';
+import {
+  applyAreaQualityToHoles,
+  emptyAreaQuality,
+  emptyWeekPassState,
+  staffCanRunMachine,
+} from './passes.js';
 import {
   applyEarlyStartComplaints,
   dismissVolunteer,
@@ -52,9 +66,9 @@ import {
   seasonTournament,
 } from './tournament.js';
 import { clampStanding } from './satisfaction.js';
-import { buyAutoPicker, startGrassConversion, startProject } from './projects.js';
+import { buyAutoPicker, pauseProject, resumeProject, startGrassConversion, startProject } from './projects.js';
 import { bumpCapitalSpent, emptyYearRecord } from './history.js';
-import { spendCash } from './cash.js';
+import { spendCapital } from './cash.js';
 import { dismissGm, emptySectionUnlocks, GM_MSG_DAY1, isSectionLocked } from './gm.js';
 import { snapshotWeekStart } from './weekReview.js';
 import { resolveDay } from './simulation.js';
@@ -134,6 +148,7 @@ import { courseBounds, holesForCount } from '../data/course.js';
 import { clampView, defaultView } from './view.js';
 import { defaultSectionTabs, normalizeSection, normalizeTabs, tabListForSection } from './section.js';
 import { formatMoney } from './format.js';
+import { CAPEX_STATUS_PENDING, STARTING_CAPEX, STARTING_MONTHLY_BUDGET } from '../data/config.js';
 import { buyUsed, rollUsedListings, sellMachine } from './market.js';
 import { acceptEvent, declineEvent } from './events.js';
 
@@ -142,8 +157,8 @@ export function createInitialState() {
   const rng = createRng(STARTING_RNG_SEED);
   const forecast = buildForecast({ day: STARTING_DAY, weather: STARTING_WEATHER }, rng);
   const rngSeed = rng.seed;
-  const candidates = generateCandidates(rng);
-  const casualPool = generateCasuals(rng);
+  const candidates = generateCandidates(rng).map(migrateWorkerTier);
+  const casualPool = generateCasuals(rng).map(migrateWorkerTier);
   const usedListings = rollUsedListings(
     {
       ownedMachines: [...STARTING_MACHINE_IDS],
@@ -154,22 +169,10 @@ export function createInitialState() {
     rng,
   );
   const grass = startingGrass();
-  const state = {
-    day: STARTING_DAY,
-    season: calendar.season,
-    year: calendar.year,
-    cash: STARTING_OPENING_CASH,
-    fuelSpendLog: [],
-    holes: createInitialHoles(HOLE_COUNT, { grass }),
-    surfaceDefaults: createSurfaceDefaults(undefined, grass),
-    grass,
-    weather: STARTING_WEATHER,
-    tempMin: STARTING_TEMP_MIN,
-    tempMax: STARTING_TEMP_MAX,
-    forecastCall: null,
-    ...forecast,
-    rngSeed,
-    workers: [
+  const holes = createInitialHoles(HOLE_COUNT, { grass });
+  const areaQuality = emptyAreaQuality();
+  const passWeek = emptyWeekPassState();
+  const workers = [
       {
         id: PLAYER_ID,
         name: PLAYER_NAME,
@@ -202,7 +205,24 @@ export function createInitialState() {
         minutesUsed: STARTING_MINUTES_USED,
         daysWorkedRunning: STARTING_DAYS_WORKED_RUNNING,
       },
-    ],
+    ].map(migrateWorkerTier);
+  const state = {
+    day: STARTING_DAY,
+    season: calendar.season,
+    year: calendar.year,
+    cash: STARTING_OPENING_CASH,
+    fuelSpendLog: [],
+    holes: applyAreaQualityToHoles(holes, areaQuality),
+    areaQuality,
+    surfaceDefaults: createSurfaceDefaults(undefined, grass),
+    grass,
+    weather: STARTING_WEATHER,
+    tempMin: STARTING_TEMP_MIN,
+    tempMax: STARTING_TEMP_MAX,
+    forecastCall: null,
+    ...forecast,
+    rngSeed,
+    workers,
     view: {
       zoom: VIEW_ZOOM_DEFAULT,
       panX: VIEW_PAN_X_DEFAULT,
@@ -212,6 +232,18 @@ export function createInitialState() {
     nextPlanId: 1,
     planningDay: STARTING_DAY,
     weekPlan: emptyWeekPlan(STARTING_DAY),
+    ...passWeek,
+    planTemplates: [],
+    nextTemplateId: 1,
+    lastCopyFlags: [],
+    leaveRequests: [],
+    nextLeaveId: 1,
+    coringUntilDay: 0,
+    coredThisSeason: false,
+    coringSkipStreak: 0,
+    greensCeilingPenalty: 0,
+    generalDutiesSkipWeeks: 0,
+    areaQualityPrev: emptyAreaQuality(),
     morningDrops: [],
     selectedHoles: [],
     savedRoutes: [],
@@ -307,6 +339,11 @@ export function createInitialState() {
     lastDeliveryDay: null,
     firingHistory: [],
     volunteerDismissed: false,
+    capex: STARTING_CAPEX,
+    capexStatus: CAPEX_STATUS_PENDING,
+    capexGrantedKey: null,
+    growInUntil: {},
+    lastMonthlyBudget: STARTING_MONTHLY_BUDGET,
     section: SECTION_MAP,
     tabs: defaultSectionTabs(),
   };
@@ -349,7 +386,7 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
   if (!task) return { ok: false, reason: 'Unknown job.' };
   const holes =
     task.id === 'handWater'
-      ? [...(options.holes?.length ? options.holes : state.handWaterTargets ?? [])]
+      ? allGreenIds(holeCount(state))
       : jobHolesFor(state, task, options.holes);
 
   if (task.id === 'clearDebris' && state.weather !== WEATHER_STORM) {
@@ -364,6 +401,17 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
   if (task.id === 'gmMeeting' && !meetingDue(planningDayOf(state))) {
     return { ok: false, reason: 'No GM meeting that day.' };
   }
+  if (task.kind === 'moistureCheck' && !isDrySpell(state, actionPlanDay(state, options))) {
+    return { ok: false, reason: 'Moisture checks are for dry spells.' };
+  }
+  if (task.kind === 'spray') {
+    const window = sprayWindowOk(state, actionPlanDay(state, options));
+    if (!window.ok) return window;
+  }
+  if (task.kind === 'coring') {
+    const window = coringWindowOk(state);
+    if (!window.ok) return window;
+  }
 
   if (task.id === 'pickBalls' && !state.hasDrivingRange) {
     return { ok: false, reason: 'No driving range yet.' };
@@ -373,16 +421,8 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
     return { ok: false, reason: 'Prep only in the three days before a tournament.' };
   }
 
-  if (task.id === 'handWater' && !(options.holes ?? state.handWaterTargets ?? []).length) {
-    return { ok: false, reason: 'Select at least one green.' };
-  }
-
-  if (task.surface ? findPlannedJob(state, taskId, holes) : state.plannedTasks.some((planned) => planned.taskId === taskId)) {
+  if (!task.mowing && (task.surface ? findPlannedJob(state, taskId, holes) : state.plannedTasks.some((planned) => planned.taskId === taskId))) {
     return { ok: false, reason: 'Already planned. Take it off the list first.' };
-  }
-
-  if (task.mowing && MOWING_WEATHER.includes(state.weather)) {
-    return { ok: false, reason: 'Mowing is off today.' };
   }
 
   const requested = workerId
@@ -448,9 +488,13 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
   }
   const machineCheck = machinePlanCheck(state, task, worker, options.machineId, holes);
   if (!machineCheck.ok) return machineCheck;
-  const minutes = durationOnMachine(state, taskId, worker, machineCheck.machine?.id, holes);
+  if (machineCheck.machine && !staffCanRunMachine(worker, machineCheck.machine)) {
+    return { ok: false, reason: 'That person cannot run that machine.' };
+  }
+  let minutes = durationOnMachine(state, taskId, worker, machineCheck.machine?.id, holes);
+  if (options.minutes != null) minutes = snapMinutes(options.minutes);
   const remaining = worker.minutesToday - worker.minutesUsed;
-  if (!requested) {
+  if (!requested || options.minutes != null) {
     if (minutes > remaining) {
       return { ok: false, reason: `Needs ${minutes} min on ${worker.name}, only ${remaining} left.` };
     }
@@ -459,21 +503,6 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
     }
   }
   const suitability = machineSuitability(machineCheck.machine, task.surface);
-  if (suitability === SUITABILITY_DAMAGING && !options.confirmDamaging) {
-    return {
-      ok: false,
-      needsConfirm: true,
-      reason: DAMAGING_JOB_REASON(
-        machineTitle(machineCheck.machine),
-        SURFACE_LABELS[task.surface] ?? task.surface,
-      ),
-      minutes,
-      workerId: worker.id,
-      machineId: machineCheck.machine?.id ?? null,
-      holes,
-      ownMower: Boolean(machineCheck.ownMower),
-    };
-  }
   return {
     ok: true,
     minutes,
@@ -560,6 +589,7 @@ export function reducer(state, action) {
         holes: action.holes,
         machineId: action.machineId,
         confirmDamaging: action.confirmDamaging,
+        minutes: action.minutes,
         day,
       });
       if (!task || !check.ok) return state;
@@ -571,15 +601,83 @@ export function reducer(state, action) {
           surface: task.surface,
           workerId: check.workerId,
           minutes: check.minutes,
+          startMinute: action.startMinute ?? nextStartMinute(getDayTasks(state, day), check.workerId),
           machineId: check.machineId ?? null,
           ownMower: Boolean(check.ownMower),
           holes: check.holes ?? [],
           ...(action.taskId === 'handWater'
-            ? { greens: [...(action.holes ?? state.handWaterTargets ?? [])] }
+            ? { greens: allGreenIds(holeCount(state)) }
             : {}),
         },
       ];
       return commitDayTasks({ ...state, nextPlanId: (state.nextPlanId ?? 1) + 1 }, tasks, day);
+    }
+    case 'PLACE_BLOCK': {
+      const day = actionPlanDay(state, action);
+      const edit = canEditPlanDay(state, day);
+      const task = getTask(action.taskId);
+      if (!edit.ok || !task) return state;
+      const view = planViewState({ ...state, planningDay: day });
+      const worker =
+        workersForPlanDay(view, day).find((item) => item.id === action.workerId) ??
+        workersForPlanDay(view, day)[0];
+      if (!worker) return state;
+      const machine = action.machineId
+        ? getMachine(action.machineId)
+        : autoMachineFor(view, task, worker);
+      const minutes = snapMinutes(
+        action.minutes ?? defaultBlockMinutes(view, task.id, worker, machine?.id),
+      );
+      if (!minutes) return state;
+      const startMinute = snapMinutes(action.startMinute ?? 0);
+      const tasks = [
+        ...getDayTasks(state, day),
+        {
+          planId: state.nextPlanId ?? 1,
+          taskId: task.id,
+          surface: task.surface,
+          workerId: worker.id,
+          minutes,
+          startMinute,
+          machineId: machine?.id ?? null,
+          ownMower: Boolean(worker.ownMower && !machine),
+          holes: jobHolesFor(state, task),
+        },
+      ];
+      return commitDayTasks({ ...state, nextPlanId: (state.nextPlanId ?? 1) + 1 }, tasks, day);
+    }
+    case 'MOVE_BLOCK': {
+      const day = actionPlanDay(state, action);
+      const edit = canEditPlanDay(state, day);
+      if (!edit.ok) return state;
+      const startMinute = snapMinutes(action.startMinute ?? 0);
+      const tasks = getDayTasks(state, day).map((item) =>
+        item.planId === action.planId
+          ? { ...item, workerId: action.workerId ?? item.workerId, startMinute }
+          : item,
+      );
+      return commitDayTasks(state, tasks, day);
+    }
+    case 'RESIZE_BLOCK': {
+      const day = actionPlanDay(state, action);
+      const edit = canEditPlanDay(state, day);
+      if (!edit.ok) return state;
+      const minutes = snapMinutes(action.minutes);
+      if (!minutes) return state;
+      const startMinute = snapMinutes(action.startMinute ?? 0);
+      const tasks = getDayTasks(state, day).map((item) =>
+        item.planId === action.planId ? { ...item, startMinute, minutes } : item,
+      );
+      return commitDayTasks(state, tasks, day);
+    }
+    case 'SET_BLOCK_MACHINE': {
+      const day = actionPlanDay(state, action);
+      const edit = canEditPlanDay(state, day);
+      if (!edit.ok) return state;
+      const tasks = getDayTasks(state, day).map((item) =>
+        item.planId === action.planId ? { ...item, machineId: action.machineId || null, ownMower: !action.machineId } : item,
+      );
+      return commitDayTasks(state, tasks, day);
     }
     case 'SET_SELECTED_HOLES': {
       const holes = Array.isArray(action.holes) ? [...new Set(action.holes.map(Number))].sort((a, b) => a - b) : [];
@@ -690,7 +788,11 @@ export function reducer(state, action) {
       };
     }
     case 'START_PROJECT':
-      return startProject(state, action.projectId);
+      return startProject(state, action.projectId, action.workerId);
+    case 'PAUSE_PROJECT':
+      return pauseProject(state, action.projectId);
+    case 'RESUME_PROJECT':
+      return resumeProject(state, action.projectId);
     case 'START_GRASS_CONVERSION':
       return startGrassConversion(state, action.surface, action.speciesId);
     case 'BUY_AUTO_PICKER':
@@ -754,6 +856,10 @@ export function reducer(state, action) {
       return trainWorker(state, action.workerId, action.axis);
     case 'FIRE_WORKER':
       return fireWorker(state, action.workerId);
+    case 'APPROVE_LEAVE':
+      return approveLeave(state, action.requestId);
+    case 'DECLINE_LEAVE':
+      return declineLeave(state, action.requestId);
     case 'DISMISS_VOLUNTEER':
       return dismissVolunteer(state);
     case 'SET_VOLUNTEER_WEEKDAY':
@@ -857,22 +963,22 @@ export function reducer(state, action) {
     case 'BUY_AERATOR': {
       const check = canBuyAerator(state);
       if (!check.ok) return state;
-      return bumpCapitalSpent(spendCash({ ...state, hasAerator: true }, AERATOR_COST), AERATOR_COST);
+      return bumpCapitalSpent(spendCapital({ ...state, hasAerator: true }, AERATOR_COST), AERATOR_COST);
     }
     case 'BUY_GREENS_SENSORS': {
       const check = canBuyGreensSensors(state);
       if (!check.ok) return state;
-      return bumpCapitalSpent(spendCash({ ...state, hasGreensSensors: true }, GREENS_SENSORS_COST), GREENS_SENSORS_COST);
+      return bumpCapitalSpent(spendCapital({ ...state, hasGreensSensors: true }, GREENS_SENSORS_COST), GREENS_SENSORS_COST);
     }
     case 'BUY_TURFRAD': {
       const check = canBuyTurfRad(state);
       if (!check.ok) return state;
-      return bumpCapitalSpent(spendCash({ ...state, hasTurfRad: true }, TURFRAD_COST), TURFRAD_COST);
+      return bumpCapitalSpent(spendCapital({ ...state, hasTurfRad: true }, TURFRAD_COST), TURFRAD_COST);
     }
     case 'BUY_WEATHER_STATION': {
       const check = canBuyWeatherStation(state);
       if (!check.ok) return state;
-      return bumpCapitalSpent(spendCash({ ...state, hasWeatherStation: true }, WEATHER_STATION_COST), WEATHER_STATION_COST);
+      return bumpCapitalSpent(spendCapital({ ...state, hasWeatherStation: true }, WEATHER_STATION_COST), WEATHER_STATION_COST);
     }
     case 'TOGGLE_MOISTURE_OVERLAY':
       return { ...state, moistureOverlay: !state.moistureOverlay };
@@ -947,6 +1053,12 @@ export function reducer(state, action) {
       if (!allowed.includes(action.tab)) return state;
       return { ...state, tabs: { ...normalizeTabs(state.tabs), [section]: action.tab } };
     }
+    case 'COPY_YESTERDAY':
+      return copyYesterday(state, action.day ?? planningDayOf(state));
+    case 'SAVE_TEMPLATE':
+      return saveNamedTemplate(state, action.name);
+    case 'APPLY_TEMPLATE':
+      return applyNamedTemplate(state, action.templateId);
     default:
       return state;
   }

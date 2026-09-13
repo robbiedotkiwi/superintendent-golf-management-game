@@ -180,7 +180,9 @@ export const BACK_NINE = HOLES.map((hole) => offsetHole(hole, BACK_NINE_OFFSET_X
 
 export function holesForCount(count) {
   const n = Array.isArray(count) ? count.length : count;
-  return n >= EXPANDED_HOLE_COUNT ? HOLES.concat(BACK_NINE) : HOLES;
+  if (n >= EXPANDED_HOLE_COUNT) return HOLES.concat(BACK_NINE);
+  if (n > HOLE_COUNT) return HOLES.concat(BACK_NINE.slice(0, n - HOLE_COUNT));
+  return HOLES;
 }
 
 export function mapWidthForHoles(count) {

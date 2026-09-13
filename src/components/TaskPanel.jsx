@@ -9,7 +9,6 @@ import { getMachine, ineligibleMachines, machineSuitability, pickMachineForTask 
 import { machineTitle } from '../engine/machineDisplay.js';
 import { inPrepWindow } from '../engine/tournament.js';
 import { findPlannedJob } from '../engine/jobs.js';
-import { formatHoleSet } from '../engine/holes.js';
 import { formatMoney } from '../engine/format.js';
 import PlanConfirmButton from './PlanConfirmButton.jsx';
 
@@ -67,7 +66,6 @@ export default function TaskPanel({ surface, state, holes, onPlan, onRemove, onS
                 <div className="mt-2 space-y-2">
                   <p>
                     Planned · {planned.minutes} min · {planned.needsReassignment ? 'Needs reassignment' : workerById(state, planned.workerId)?.name}
-                    {planned.holes?.length ? ` · ${formatHoleSet(planned.holes)}` : ''}
                   </p>
                   <div className="block text-sm text-[var(--sand)]">
                     Worker

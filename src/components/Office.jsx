@@ -16,8 +16,10 @@ import {
   OFFICE_TAB_PROJECTS,
   OFFICE_TABS,
   HOC_SURFACES,
+  PLAYER_ID,
   PROJECT_GRASS_CONVERSION,
 } from '../data/constants.js';
+import { useState } from 'react';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import { canTakeLoan, maxLoan } from '../engine/budget.js';
 import { unreadCount } from '../engine/mail.js';
@@ -61,9 +63,12 @@ export default function Office({
   onDeclineEvent,
   onSetTournaments,
   onStartProject,
+  onPauseProject,
+  onResumeProject,
   onStartGrassConversion,
   onBuyPicker,
 }) {
+  const [projectWorkerId, setProjectWorkerId] = useState(PLAYER_ID);
   const unread = unreadCount(state);
   const cap = maxLoan(state.lastSeasonRevenue);
   const loanCheck = canTakeLoan(state, cap);
@@ -145,16 +150,51 @@ export default function Office({
           <h2 className="mt-8 font-condensed text-3xl">Projects</h2>
           <p className="mt-2 text-sm text-[var(--sand)]">{absorbNote(state.season)}</p>
           {(state.projects ?? []).map((item) => {
+            const worker = (state.workers ?? []).find((person) => person.id === item.workerId);
             return (
-              <p key={projectKey(item)} className="mt-2">
-                {projectName(item)} underway · finishes day {item.dueDay} · site work{' '}
-                {constructionMinutes({ ...state, projects: [item] })} min today
-              </p>
+              <section key={projectKey(item)} className="mt-2 border border-[var(--sand)] p-3">
+                <p>
+                  {projectName(item)} {item.paused ? 'paused' : 'underway'} · {item.remainingDays ?? '?'} days left
+                  {worker ? ` · ${worker.name} full time` : ''} · site work{' '}
+                  {item.paused ? 0 : constructionMinutes({ ...state, projects: [item] })} min today
+                </p>
+                {item.workerId ? (
+                  <div className="mt-2 flex gap-2">
+                    {item.paused ? (
+                      <button type="button" className="border border-[var(--sand)] px-3 py-1" onClick={() => onResumeProject(item.id)}>
+                        Resume
+                      </button>
+                    ) : (
+                      <button type="button" className="border border-[var(--sand)] px-3 py-1" onClick={() => onPauseProject(item.id)}>
+                        Pause
+                      </button>
+                    )}
+                  </div>
+                ) : null}
+              </section>
             );
           })}
           <div className="mt-3 space-y-3">
+            {Object.values(PROJECTS).some((spec) => spec.occupiesPerson) ? (
+              <label className="block text-sm">
+                Expansion assignee
+                <select
+                  className="ml-2 border border-[var(--sand)] bg-[var(--soil)] px-2 py-1"
+                  value={projectWorkerId}
+                  onChange={(event) => setProjectWorkerId(event.target.value)}
+                >
+                  {(state.workers ?? [])
+                    .filter((worker) => !worker.isVolunteer && !worker.isCasual)
+                    .map((worker) => (
+                      <option key={worker.id} value={worker.id}>
+                        {worker.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            ) : null}
             {Object.values(PROJECTS).map((spec) => {
-              const check = canStartProject(state, spec.id);
+              const check = canStartProject(state, spec.id, spec.occupiesPerson ? projectWorkerId : PLAYER_ID);
               if (check.hidden) return null;
               if (alreadyBuilt(state, spec.id) || (state.projects ?? []).some((item) => item.id === spec.id)) {
                 return alreadyBuilt(state, spec.id) ? (
@@ -169,11 +209,12 @@ export default function Office({
                   type="button"
                   disabled={!check.ok}
                   title={check.reason}
-                  onClick={() => onStartProject(spec.id)}
+                  onClick={() => onStartProject(spec.id, spec.occupiesPerson ? projectWorkerId : undefined)}
                   className="block border border-[var(--sand)] px-4 py-2 text-left disabled:opacity-40"
                 >
                   <div className="font-semibold">
                     {spec.name} · {formatMoney(spec.cost)} capital · {spec.days} days
+                    {spec.occupiesPerson ? ' · one person full time' : ''}
                   </div>
                   <div className="text-sm text-[var(--sand)]">
                     Completes day {state.day + spec.days}. {absorbNote(state.season)}
