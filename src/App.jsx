@@ -190,6 +190,10 @@ export default function App() {
             })
           }
           onRemove={(taskId, planId, day) => dispatch({ type: 'REMOVE_TASK', taskId, planId, day })}
+          onPlaceBlock={(payload) => dispatch({ type: 'PLACE_BLOCK', ...payload })}
+          onMoveBlock={(payload) => dispatch({ type: 'MOVE_BLOCK', ...payload })}
+          onResizeBlock={(payload) => dispatch({ type: 'RESIZE_BLOCK', ...payload })}
+          onSetBlockMachine={(payload) => dispatch({ type: 'SET_BLOCK_MACHINE', ...payload })}
           onRepeatLast={() => dispatch({ type: 'REPEAT_LAST' })}
           onEndDay={() => dispatch({ type: 'END_DAY' })}
           onDismissSummary={() => setSummary(null)}
@@ -315,6 +319,10 @@ function GameScreen({
   onSelect,
   onPlan,
   onRemove,
+  onPlaceBlock,
+  onMoveBlock,
+  onResizeBlock,
+  onSetBlockMachine,
   onRepeatLast,
   onEndDay,
   onDismissSummary,
@@ -561,6 +569,10 @@ function GameScreen({
             onTab={(tab) => onTab(SECTION_TURF, tab)}
             onBack={onCloseShed}
             onPlan={onPlan}
+            onPlaceBlock={onPlaceBlock}
+            onMoveBlock={onMoveBlock}
+            onResizeBlock={onResizeBlock}
+            onSetBlockMachine={onSetBlockMachine}
             onRemove={onRemove}
             onSelectDay={onSelectDay}
             onSetHoc={onSetHoc}

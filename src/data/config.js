@@ -227,6 +227,18 @@ export const SUPPORT_PLAN_JOBS = [
   { taskId: 'sprayFairways', label: 'Spray fairways' },
   { taskId: 'coreGreens', label: 'Core greens' },
 ];
+export const PLANNER_MOW_JOBS = [
+  { taskId: 'cutGreens', label: 'Mow greens' },
+  { taskId: 'cutTees', label: 'Mow tees' },
+  { taskId: 'cutFairways', label: 'Mow fairways' },
+  { taskId: 'cutRough', label: 'Mow rough' },
+];
+export const PLANNER_PALETTE = [...PLANNER_MOW_JOBS, ...SUPPORT_PLAN_JOBS];
+export const PLANNER_HOUR_PX = 72;
+export const PLANNER_ROW_PX = 68;
+export const PLANNER_NAME_PX = 132;
+export const PLANNER_PALETTE_PX = 200;
+export const PLANNER_HANDLE_PX = 8;
 export const TASK_UNSTICK = 'unstickMower';
 export const PROJECT_EXPAND_3 = 'expand3';
 export const PROJECT_EXPAND_9 = 'expand9';

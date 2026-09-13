@@ -25,6 +25,10 @@ import { generateCandidates, generateCasuals } from '../data/staff.js';
 import { rosterWorker } from './weekGrid.js';
 import { migrateWorkerTier } from './staffTiers.js';
 import { applyNamedTemplate, copyLastWeek, copyYesterday, nextStartMinute, saveNamedTemplate, snapMinutes } from './slots.js';
+import {
+  autoMachineFor,
+  defaultBlockMinutes,
+} from './dayPlanner.js';
 import { approveLeave, declineLeave } from './staffMorale.js';
 import { coringWindowOk, isDrySpell, sprayWindowOk } from './support.js';
 import {
@@ -607,6 +611,73 @@ export function reducer(state, action) {
         },
       ];
       return commitDayTasks({ ...state, nextPlanId: (state.nextPlanId ?? 1) + 1 }, tasks, day);
+    }
+    case 'PLACE_BLOCK': {
+      const day = actionPlanDay(state, action);
+      const edit = canEditPlanDay(state, day);
+      const task = getTask(action.taskId);
+      if (!edit.ok || !task) return state;
+      const view = planViewState({ ...state, planningDay: day });
+      const worker =
+        workersForPlanDay(view, day).find((item) => item.id === action.workerId) ??
+        workersForPlanDay(view, day)[0];
+      if (!worker) return state;
+      const machine = action.machineId
+        ? getMachine(action.machineId)
+        : autoMachineFor(view, task, worker);
+      const minutes = snapMinutes(
+        action.minutes ?? defaultBlockMinutes(view, task.id, worker, machine?.id),
+      );
+      if (!minutes) return state;
+      const startMinute = snapMinutes(action.startMinute ?? 0);
+      const tasks = [
+        ...getDayTasks(state, day),
+        {
+          planId: state.nextPlanId ?? 1,
+          taskId: task.id,
+          surface: task.surface,
+          workerId: worker.id,
+          minutes,
+          startMinute,
+          machineId: machine?.id ?? null,
+          ownMower: Boolean(worker.ownMower && !machine),
+          holes: jobHolesFor(state, task),
+        },
+      ];
+      return commitDayTasks({ ...state, nextPlanId: (state.nextPlanId ?? 1) + 1 }, tasks, day);
+    }
+    case 'MOVE_BLOCK': {
+      const day = actionPlanDay(state, action);
+      const edit = canEditPlanDay(state, day);
+      if (!edit.ok) return state;
+      const startMinute = snapMinutes(action.startMinute ?? 0);
+      const tasks = getDayTasks(state, day).map((item) =>
+        item.planId === action.planId
+          ? { ...item, workerId: action.workerId ?? item.workerId, startMinute }
+          : item,
+      );
+      return commitDayTasks(state, tasks, day);
+    }
+    case 'RESIZE_BLOCK': {
+      const day = actionPlanDay(state, action);
+      const edit = canEditPlanDay(state, day);
+      if (!edit.ok) return state;
+      const minutes = snapMinutes(action.minutes);
+      if (!minutes) return state;
+      const startMinute = snapMinutes(action.startMinute ?? 0);
+      const tasks = getDayTasks(state, day).map((item) =>
+        item.planId === action.planId ? { ...item, startMinute, minutes } : item,
+      );
+      return commitDayTasks(state, tasks, day);
+    }
+    case 'SET_BLOCK_MACHINE': {
+      const day = actionPlanDay(state, action);
+      const edit = canEditPlanDay(state, day);
+      if (!edit.ok) return state;
+      const tasks = getDayTasks(state, day).map((item) =>
+        item.planId === action.planId ? { ...item, machineId: action.machineId || null, ownMower: !action.machineId } : item,
+      );
+      return commitDayTasks(state, tasks, day);
     }
     case 'SET_SELECTED_HOLES': {
       const holes = Array.isArray(action.holes) ? [...new Set(action.holes.map(Number))].sort((a, b) => a - b) : [];

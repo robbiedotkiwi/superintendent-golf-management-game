@@ -78,7 +78,7 @@ import { mowingStatus } from '../engine/mowingStatus.js';
 import { inputsStatus } from '../engine/inputsStatus.js';
 import { GreensMoistureList, MoistureLine } from './MoistureReadout.jsx';
 import SectionTabs from './SectionTabs.jsx';
-import WeekPlanGrid from './WeekPlanGrid.jsx';
+import DayPlanner from './DayPlanner.jsx';
 import IrrigationWeekTab from './IrrigationWeekTab.jsx';
 import CutPatternsTab from './CutPatternsTab.jsx';
 import { turfTabLabels, visibleTurfTabs } from '../engine/section.js';
@@ -159,6 +159,10 @@ export default function Turf({
   onTab,
   onBack,
   onPlan,
+  onPlaceBlock,
+  onMoveBlock,
+  onResizeBlock,
+  onSetBlockMachine,
   onRemove,
   onSelectDay,
   onSetHoc,
@@ -200,14 +204,15 @@ export default function Turf({
       <SectionTabs tabs={visibleTurfTabs()} labels={turfTabLabels()} value={tab} onChange={onTab} />
 
       {tab === TURF_TAB_WEEK ? (
-        <WeekPlanGrid
+        <DayPlanner
           state={state}
-          onPlan={onPlan}
+          onPlaceBlock={onPlaceBlock}
+          onMoveBlock={onMoveBlock}
+          onResizeBlock={onResizeBlock}
+          onSetBlockMachine={onSetBlockMachine}
           onRemove={onRemove}
           onSelectDay={onSelectDay}
-          onSetWorker={onSetWorker}
           onCopyYesterday={onCopyYesterday}
-          onCopyLastWeek={onCopyLastWeek}
           onSaveTemplate={onSaveTemplate}
           onApplyTemplate={onApplyTemplate}
         />

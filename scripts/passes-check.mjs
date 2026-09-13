@@ -175,8 +175,21 @@ afterGreens = reducer(afterGreens, {
 });
 assert(afterGreens.plannedTasks.some((item) => item.taskId === 'cutTees'), 'tees slot added after area change');
 
-const plannerSrc = readFileSync(new URL('../src/components/WeekPlanGrid.jsx', import.meta.url), 'utf8');
-assert(plannerSrc.includes('draftFromJobId(event.target.value'), 'planner area select uses draftFromJobId');
-assert(!plannerSrc.includes('surface: support ?'), 'planner no longer writes task id into surface');
+let canvas = reducer(state, {
+  type: 'PLACE_BLOCK',
+  taskId: 'cutGreens',
+  workerId: state.workers[0].id,
+  startMinute: 0,
+});
+assert(canvas.plannedTasks.some((item) => item.taskId === 'cutGreens' && item.startMinute === 0), 'palette drop places a block');
+const placed = canvas.plannedTasks[0];
+canvas = reducer(canvas, { type: 'MOVE_BLOCK', planId: placed.planId, workerId: placed.workerId, startMinute: 60 });
+assert(canvas.plannedTasks[0].startMinute === 60, 'block moves to 1.0 hr');
+canvas = reducer(canvas, { type: 'RESIZE_BLOCK', planId: placed.planId, startMinute: 60, minutes: 90 });
+assert(canvas.plannedTasks[0].minutes === 90, 'block resizes to 1.5 hr');
+
+const plannerSrc = readFileSync(new URL('../src/components/DayPlanner.jsx', import.meta.url), 'utf8');
+assert(plannerSrc.includes('data-day-planner'), 'day canvas is the planner');
+assert(plannerSrc.includes('data-task-palette'), 'task palette is present');
 
 console.log('passes-check phase 7 ok');
