@@ -13,7 +13,7 @@ import {
   wearTimeMult,
   weeklyTargetQuality,
 } from '../src/engine/passes.js';
-import { applyDurationModifier, roundDurationHours } from '../src/engine/duration.js';
+import { applyDurationModifier, minutesToHours, roundDurationHours } from '../src/engine/duration.js';
 import { driftQuality } from '../src/engine/qualityDrift.js';
 import { migrateWorkerTier } from '../src/engine/staffTiers.js';
 import {
@@ -29,8 +29,9 @@ import {
   WEAR_TIME_MULT_NONE,
 } from '../src/data/config.js';
 import { monthlyBudgetFor, golferNumbers, gmRequiredGrade } from '../src/engine/economy.js';
-import { getTask } from '../src/data/tasks.js';
 import { draftFromJobId, emptySlotDraft, mowTaskIdFor, resolvePlannerJobId } from '../src/engine/slots.js';
+import { autoMachineFor, blockConflicts, surplusWastedHours } from '../src/engine/dayPlanner.js';
+import { getTask } from '../src/data/tasks.js';
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -191,5 +192,75 @@ assert(canvas.plannedTasks[0].minutes === 90, 'block resizes to 1.5 hr');
 const plannerSrc = readFileSync(new URL('../src/components/DayPlanner.jsx', import.meta.url), 'utf8');
 assert(plannerSrc.includes('data-day-planner'), 'day canvas is the planner');
 assert(plannerSrc.includes('data-task-palette'), 'task palette is present');
+
+const helper = { ...state.workers[0], id: 'helper', name: 'Helper' };
+const twoCrew = { ...state, workers: [...state.workers, helper] };
+const autoGreens = autoMachineFor(twoCrew, getTask('cutGreens'), twoCrew.workers[0]);
+let machines = reducer(twoCrew, {
+  type: 'PLACE_BLOCK',
+  taskId: 'cutGreens',
+  workerId: twoCrew.workers[0].id,
+  startMinute: 0,
+});
+assert(machines.plannedTasks[0].machineId === autoGreens?.id, 'place auto-selects best permitted machine');
+machines = reducer(machines, {
+  type: 'PLACE_BLOCK',
+  taskId: 'cutGreens',
+  workerId: 'helper',
+  startMinute: 0,
+});
+assert(blockConflicts(machines, machines.plannedTasks[1]).includes('machine'), 'overlapping machine highlights');
+
+machines = reducer(machines, {
+  type: 'SET_BLOCK_MACHINE',
+  planId: machines.plannedTasks[1].planId,
+  machineId: GROUNDSMASTER_ID,
+});
+assert(machines.plannedTasks[1].machineId === GROUNDSMASTER_ID, 'block machine override sticks');
+
+const unskilled = { ...state.workers[0], id: 'unskilled', name: 'Unskilled', tier: STAFF_TIER_UNSKILLED };
+const mixed = { ...state, workers: [...state.workers, unskilled] };
+let tiered = reducer(mixed, {
+  type: 'PLACE_BLOCK',
+  taskId: 'cutGreens',
+  workerId: mixed.workers[0].id,
+  startMinute: 0,
+});
+tiered = reducer(tiered, {
+  type: 'MOVE_BLOCK',
+  planId: tiered.plannedTasks[0].planId,
+  workerId: 'unskilled',
+  startMinute: 0,
+});
+assert(blockConflicts(tiered, tiered.plannedTasks[0]).includes('tier'), 'tier mismatch highlights');
+
+const overrun = reducer(state, {
+  type: 'PLACE_BLOCK',
+  taskId: 'cutGreens',
+  workerId: state.workers[0].id,
+  startMinute: 420,
+  minutes: 90,
+});
+assert(blockConflicts(overrun, overrun.plannedTasks[0]).includes('overrun'), 'over day length highlights');
+
+let surplus = reducer(twoCrew, {
+  type: 'PLACE_BLOCK',
+  taskId: 'cutGreens',
+  workerId: twoCrew.workers[0].id,
+  startMinute: 0,
+  minutes: 450,
+});
+surplus = reducer(surplus, {
+  type: 'PLACE_BLOCK',
+  taskId: 'cutGreens',
+  workerId: twoCrew.workers[0].id,
+  startMinute: 450,
+  minutes: 30,
+});
+assert(blockConflicts(surplus, surplus.plannedTasks[1]).includes('surplus'), 'second pass today highlights');
+assert(surplusWastedHours(surplus, surplus.plannedTasks[1]) === 0.5, 'surplus shows 0.5 hr wasted');
+
+assert(plannerSrc.includes('data-block-machine'), 'machine name is on the block face');
+assert(plannerSrc.includes('Machine override'), 'block has a machine override');
 
 console.log('passes-check phase 7 ok');

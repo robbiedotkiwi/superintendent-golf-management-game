@@ -83,11 +83,30 @@ export function passFractionForBlock(state, block, worker) {
   return hoursToPassFraction(minutesToHours(block.minutes), passHours);
 }
 
+export function overrideMachinesFor(state, task) {
+  return allowingMachines(state, task);
+}
+
+export function surplusWastedHours(state, block, day = state.day) {
+  const task = getTask(block.taskId);
+  if (!task?.mowing || !PASS_AREAS.includes(task.surface)) return 0;
+  const tasks = getDayTasks(state, day);
+  const worker = workersForPlanDay(state, day).find((item) => item.id === block.workerId);
+  const others = tasks.filter(
+    (item) => item.planId !== block.planId && getTask(item.taskId)?.surface === task.surface && getTask(item.taskId)?.mowing,
+  );
+  const booked = others.reduce((sum, item) => sum + minutesToHours(item.minutes), 0);
+  const passHours = passHoursFor(state, block.machineId, task.surface, worker);
+  if (!(passHours > 0)) return 0;
+  const already = hoursToPassFraction(booked, passHours);
+  if (already < MAX_PASSES_PER_AREA_PER_DAY) return 0;
+  return minutesToHours(block.minutes);
+}
+
 export function blockConflicts(state, block, day = state.day) {
   const reasons = [];
   const tasks = getDayTasks(state, day);
   const worker = workersForPlanDay(state, day).find((item) => item.id === block.workerId);
-  const task = getTask(block.taskId);
   const machine = block.machineId ? getMachine(block.machineId) : null;
   if (block.machineId) {
     const clashes = machineConflictsOnDay(tasks, block.machineId, block.startMinute, block.minutes, block.planId);
@@ -96,25 +115,18 @@ export function blockConflicts(state, block, day = state.day) {
   if (machine && worker && !staffCanRunMachine(worker, machine)) reasons.push('tier');
   const dayLen = worker?.minutesToday ?? dayLengthMinutes(state, day);
   if ((block.startMinute ?? 0) + (block.minutes ?? 0) > dayLen) reasons.push('overrun');
-  if (task?.mowing && PASS_AREAS.includes(task.surface)) {
-    const others = tasks.filter(
-      (item) => item.planId !== block.planId && getTask(item.taskId)?.surface === task.surface && getTask(item.taskId)?.mowing,
-    );
-    const booked = others.reduce((sum, item) => sum + minutesToHours(item.minutes), 0);
-    const passHours = passHoursFor(state, block.machineId, task.surface, worker);
-    if (passHours > 0) {
-      const already = hoursToPassFraction(booked, passHours);
-      if (already >= MAX_PASSES_PER_AREA_PER_DAY) reasons.push('surplus');
-    }
-  }
+  if (surplusWastedHours(state, block, day) > 0) reasons.push('surplus');
   return reasons;
 }
 
-export function conflictCopy(reason) {
+export function conflictCopy(reason, wastedHours) {
   if (reason === 'machine') return 'Machine already booked in this window';
   if (reason === 'tier') return "This person's tier cannot run that machine";
   if (reason === 'overrun') return "Over this person's day length";
-  if (reason === 'surplus') return 'Second pass today — surplus hours wasted';
+  if (reason === 'surplus') {
+    const hours = wastedHours > 0 ? ` (${formatPlannerHours(wastedHours)} hr wasted)` : '';
+    return `Second pass today — surplus hours wasted${hours}`;
+  }
   return reason;
 }
 

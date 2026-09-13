@@ -21,15 +21,15 @@ import {
   formatPlannerHours,
   hourFromClientX,
   hourTicks,
-  paletteLabel,
+  overrideMachinesFor,
   plannerPalette,
   snapMinutes,
+  surplusWastedHours,
   timelineWidthPx,
 } from '../engine/dayPlanner.js';
 import { hoursToMinutes, minutesToHours } from '../engine/duration.js';
 import { getTask } from '../data/tasks.js';
 import { catalogMachineTitle } from '../engine/machineDisplay.js';
-import { allowingMachines } from '../engine/equipment.js';
 import { staffCanRunMachine } from '../engine/passes.js';
 import ForecastStrip from './ForecastStrip.jsx';
 import SeasonBar from './SeasonBar.jsx';
@@ -219,9 +219,8 @@ export default function DayPlanner({
                   {tasks.map((block) => {
                     const face = blockFace(state, block, worker);
                     const conflicts = blockConflicts(state, block, day);
-                    const machines = allowingMachines(state, getTask(block.taskId)).filter((machine) =>
-                      staffCanRunMachine(worker, machine),
-                    );
+                    const wasted = surplusWastedHours(state, block, day);
+                    const machines = overrideMachinesFor(state, getTask(block.taskId));
                     return (
                       <div
                         key={block.planId}
@@ -263,11 +262,15 @@ export default function DayPlanner({
                               </button>
                             ) : null}
                           </div>
+                          <div className="text-[var(--sand)]" data-block-machine>
+                            {face.machine || 'No machine'}
+                          </div>
                           {machines.length ? (
                             <select
                               className="mt-0.5 w-full bg-[var(--soil)] text-[10px]"
                               value={block.machineId ?? ''}
                               disabled={!edit.ok}
+                              aria-label="Machine override"
                               onChange={(event) =>
                                 onSetBlockMachine?.({
                                   day,
@@ -278,17 +281,21 @@ export default function DayPlanner({
                               onPointerDown={(event) => event.stopPropagation()}
                             >
                               <option value="">Auto / own</option>
-                              {machines.map((machine) => (
-                                <option key={machine.id} value={machine.id}>
-                                  {machine.model ?? catalogMachineTitle(machine.id) ?? machine.name}
-                                </option>
-                              ))}
+                              {machines.map((machine) => {
+                                const permitted = staffCanRunMachine(worker, machine);
+                                const title = machine.model ?? catalogMachineTitle(machine.id) ?? machine.name;
+                                return (
+                                  <option key={machine.id} value={machine.id}>
+                                    {permitted ? title : `${title} (tier)`}
+                                  </option>
+                                );
+                              })}
                             </select>
-                          ) : (
-                            <div className="text-[var(--sand)]">{face.machine || 'No machine'}</div>
-                          )}
+                          ) : null}
                           {conflicts.map((reason) => (
-                            <div key={reason}>{conflictCopy(reason)}</div>
+                            <div key={reason} data-conflict-reason={reason}>
+                              {conflictCopy(reason, reason === 'surplus' ? wasted : undefined)}
+                            </div>
                           ))}
                         </div>
                         {edit.ok ? (
