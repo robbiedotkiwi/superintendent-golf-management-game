@@ -7,11 +7,11 @@ import {
   SECTION_SHED_DESCRIPTION,
   SECTION_TURF,
   SECTION_TURF_DESCRIPTION,
-  SEASON_WEEKS,
   SIDEBAR_NAV_GAP,
   SIDEBAR_WIDTH,
   START_DAY_LABEL,
 } from '../data/constants.js';
+import { SEASON_WEEKS } from '../data/config.js';
 import { WEATHER_LABELS } from '../data/events.js';
 import { qualityColor } from '../engine/color.js';
 import { sectionBadge } from '../engine/badges.js';

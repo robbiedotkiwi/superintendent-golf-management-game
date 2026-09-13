@@ -1,12 +1,15 @@
 import {
   DAYS_PER_SEASON,
+  SEASON_WEEKS,
+} from '../data/config.js';
+import {
   DAYS_PER_WEEK,
-  DAYS_PER_YEAR,
   GRACE_NO_DISEASE_SEASON,
   SEASON_ORDER,
-  SEASON_WEEKS,
   STARTING_YEAR,
 } from '../data/constants.js';
+
+const DAYS_PER_YEAR = DAYS_PER_SEASON * SEASON_ORDER.length;
 
 export function calendarFromDay(day) {
   const index = day - 1;

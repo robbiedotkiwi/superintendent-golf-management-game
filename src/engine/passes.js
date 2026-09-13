@@ -4,7 +4,6 @@ import {
   GROW_IN_QUALITY_OFFSET,
   GROW_IN_PASSES_REQUIRED_MULT,
   MAX_PASSES_PER_AREA_PER_DAY,
-  MINUTES_PER_HOUR,
   PASS_AREAS,
   PASS_CLASS_AUTONOMOUS,
   PASS_CLASS_BY_CATALOG,
@@ -13,7 +12,6 @@ import {
   PASSES_REQUIRED_PER_WEEK,
   ROLL_GRADE_CONTRIBUTION,
   ROLL_PASS_HOURS,
-  SLOT_MINUTES,
   STARTING_AREA_QUALITY,
   OWN_MOWER_PASS_CLASS,
   WEAR_STEP_HEAVY_MAX,
@@ -30,6 +28,7 @@ import {
 import { getMachine, machineClass } from '../data/equipment.js';
 import { getTask } from '../data/tasks.js';
 import { WEAR_MAX } from '../data/constants.js';
+import { applyDurationModifier, hoursToMinutes, minutesToHours, roundDurationHours } from './duration.js';
 import { clampQuality, gradeCapScore, gradeLetter } from './grades.js';
 import { staffCanRunClass, staffPassTimeMult } from './staffTiers.js';
 import { mapHoleSurfaces } from './holes.js';
@@ -99,7 +98,8 @@ export function wearTimeMult(wear) {
 
 export function wearTimeDeltaHours(baseHours, wear) {
   if (baseHours == null) return 0;
-  return baseHours * wearTimeMult(wear) - baseHours;
+  const base = roundDurationHours(baseHours);
+  return applyDurationModifier(base, wearTimeMult(wear)) - base;
 }
 
 export function passHoursFor(state, machineId, area, worker, options = {}) {
@@ -111,17 +111,17 @@ export function passHoursFor(state, machineId, area, worker, options = {}) {
   const wet = options.skipWet ? 1 : WET_WEATHER.includes(state?.weather) ? WET_PASS_TIME_MULT : 1;
   const staff =
     cls === PASS_CLASS_AUTONOMOUS || options.ignoreStaff ? 1 : staffPassTimeMult(worker);
-  return base * wearTimeMult(wear) * wet * staff;
+  let hours = roundDurationHours(base);
+  hours = applyDurationModifier(hours, wearTimeMult(wear));
+  hours = applyDurationModifier(hours, staff);
+  hours = applyDurationModifier(hours, wet);
+  return hours > 0 ? hours : null;
 }
 
 export function passMinutesFor(state, machineId, area, worker, options = {}) {
   const hours = passHoursFor(state, machineId, area, worker, options);
   if (hours == null) return null;
-  return Math.round((hours * MINUTES_PER_HOUR) / SLOT_MINUTES) * SLOT_MINUTES;
-}
-
-export function minutesToHours(minutes) {
-  return (Number(minutes) || 0) / MINUTES_PER_HOUR;
+  return hoursToMinutes(hours);
 }
 
 export function combinePassJobs(jobs) {

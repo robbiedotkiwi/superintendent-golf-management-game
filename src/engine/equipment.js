@@ -79,6 +79,7 @@ import { needsCapital, needsCash, spendCapital, spendCash } from './cash.js';
 import { OWN_MOWER_PASS_CLASS, PASS_AREAS } from '../data/config.js';
 import { supportMinutes } from './support.js';
 import { passMinutesFor } from './passes.js';
+import { snapMinutes } from './duration.js';
 
 function remainingMinutes(state) {
   return state.workers.reduce((total, worker) => total + (worker.minutesToday - worker.minutesUsed), 0);
@@ -388,6 +389,10 @@ export function machineAssignment(state, surface, worker) {
 }
 
 export function durationOnMachine(state, taskId, worker, machineId, holeIds) {
+  return snapMinutes(durationOnMachineUnrounded(state, taskId, worker, machineId, holeIds));
+}
+
+function durationOnMachineUnrounded(state, taskId, worker, machineId, holeIds) {
   const task = getTask(taskId);
   if (taskId === 'pickBalls') {
     const base = hasBallPicker(state) ? AUTO_PICK_MINUTES : BALL_PICK_MINUTES;

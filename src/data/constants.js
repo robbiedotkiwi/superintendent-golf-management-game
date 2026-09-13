@@ -479,7 +479,7 @@ export const TEE_MARKER_RADIUS = HOLE_NUMBER_RADIUS;
 export const TEE_MARKER_FONT = 22;
 
 export const DAYS_PER_WEEK = 7;
-export const SEASON_WEEKS = 12;
+export const SEASON_WEEKS = 4;
 export const SEASON_MONTHS = 3;
 export const WEEKS_PER_MONTH = 4;
 export const DAYS_PER_SEASON = SEASON_WEEKS * DAYS_PER_WEEK;

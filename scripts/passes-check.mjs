@@ -8,19 +8,23 @@ import {
   applyDailyPassCap,
   machineAllowsArea,
   passClassOf,
+  passHoursFor,
   staffCanRunMachine,
   wearTimeMult,
   weeklyTargetQuality,
 } from '../src/engine/passes.js';
+import { applyDurationModifier, roundDurationHours } from '../src/engine/duration.js';
 import { driftQuality } from '../src/engine/qualityDrift.js';
 import { migrateWorkerTier } from '../src/engine/staffTiers.js';
 import {
+  DAYS_PER_SEASON,
   MAX_PASSES_PER_AREA_PER_DAY,
   PASS_CLASS_PUSH_REEL,
   PASS_CLASS_RIDE_ON_ROTARY,
   PROJECT_EXPAND_3,
   STAFF_TIER_SENIOR,
   STAFF_TIER_UNSKILLED,
+  WEAR_TIME_MULT_HEAVY,
   WEAR_TIME_MULT_LIGHT,
   WEAR_TIME_MULT_NONE,
 } from '../src/data/config.js';
@@ -63,6 +67,15 @@ assert(Math.abs(capped.wastedHours - 3.2) < 1e-9, 'surplus hours wasted');
 
 assert(wearTimeMult(10) === WEAR_TIME_MULT_NONE, 'wear 0-25 none');
 assert(wearTimeMult(30) === WEAR_TIME_MULT_LIGHT, 'wear 25-50 +10%');
+assert(wearTimeMult(60) === WEAR_TIME_MULT_HEAVY, 'wear 50-75 +25%');
+assert(roundDurationHours(4.4) === 4, 'floor 4.4 to 4.0');
+assert(applyDurationModifier(8, 0.9) === 7.5, 'senior 8 hr → 7.5');
+assert(applyDurationModifier(4, 1.25) === 5, '4 hr +25% wear → 5.0');
+assert(applyDurationModifier(4, 1.1) === 4, '4 hr +10% wear rounds down to 4.0');
+assert(applyDurationModifier(2, 0.9) === 2, '2 hr senior stays 2');
+const seniorHours = passHoursFor(state, GREENSMASTER_ID, 'greens', state.workers[0]);
+assert(seniorHours === 7.5, `senior clean push reel greens is 7.5, got ${seniorHours}`);
+assert(DAYS_PER_SEASON === 28, 'season is 28 days');
 assert(weeklyTargetQuality(1, 80) === 80, 'weekly result capped by machine');
 assert(weeklyTargetQuality(0.5, 100) === 50, 'half passes = 50');
 assert(gradeCapScore('A+') === 100, 'A+ cap is 100');

@@ -1,36 +1,37 @@
 import {
   BUNKER_COUNT_DEFAULT,
-  BUNKER_MINUTES_EACH,
+  BUNKER_HOURS_EACH,
   CORING_CEILING_DROP,
   CORING_GM_STANDING_HIT,
-  CORING_MINUTES,
+  CORING_HOURS,
   CORING_QUALITY_DROP,
   CORING_RECOVERY_DAYS,
   CORING_SATISFACTION_HIT,
   CORING_SEASONS,
   CORING_SKIP_SEASONS_FOR_CEILING_HIT,
-  CUP_CHANGE_MINUTES,
+  CUP_CHANGE_HOURS,
   CUP_CHANGES_REQUIRED_PER_WEEK,
   CUP_MISS_QUALITY_PENALTY,
   DRY_SPELL_DAYS,
-  GENERAL_DUTIES_MINUTES,
+  GENERAL_DUTIES_HOURS,
   GENERAL_DUTIES_SKIP_WEEKS_FOR_COMMENT,
-  GM_MEETING_MINUTES,
-  MOISTURE_METER_MINUTES,
-  ROLL_GREENS_MINUTES,
-  SPRAY_FAIRWAYS_MINUTES,
-  SPRAY_GREENS_TEES_MINUTES,
+  GM_MEETING_HOURS,
+  MOISTURE_METER_HOURS,
+  ROLL_GREENS_HOURS,
+  SPRAY_FAIRWAYS_HOURS,
+  SPRAY_GREENS_TEES_HOURS,
   SPRAY_RAIN_CLEAR_HOURS,
   SPRAY_WIND_MAX,
   TASK_CORE_GREENS,
   TASK_GENERAL_DUTIES,
   TASK_WEED_EAT,
-  WEED_EATING_MINUTES,
+  WEED_EATING_HOURS,
   WET_WEATHER,
 } from '../data/config.js';
 import { layoutHasBunker, holeCount } from './holes.js';
 import { forecastEntryForDay } from './week.js';
 import { clampQuality } from './grades.js';
+import { hoursToMinutes, roundDurationHours } from './duration.js';
 import { emptyAreaQuality } from './passes.js';
 
 export function bunkerCount(state) {
@@ -42,20 +43,25 @@ export function bunkerCount(state) {
   return count || BUNKER_COUNT_DEFAULT;
 }
 
-export function supportMinutes(taskId, state) {
-  if (taskId === 'rakeBunkers') return bunkerCount(state) * BUNKER_MINUTES_EACH;
-  if (taskId === 'changeCups') return CUP_CHANGE_MINUTES;
+export function supportHours(taskId, state) {
+  if (taskId === 'rakeBunkers') return roundDurationHours(bunkerCount(state) * BUNKER_HOURS_EACH);
+  if (taskId === 'changeCups') return CUP_CHANGE_HOURS;
   if (taskId === 'checkMoistureGreens' || taskId === 'checkMoistureTees' || taskId === 'checkMoistureFairways') {
-    return MOISTURE_METER_MINUTES;
+    return MOISTURE_METER_HOURS;
   }
-  if (taskId === 'rollGreens' || taskId === 'extraRoll') return ROLL_GREENS_MINUTES;
-  if (taskId === TASK_WEED_EAT) return WEED_EATING_MINUTES;
-  if (taskId === TASK_GENERAL_DUTIES) return GENERAL_DUTIES_MINUTES;
-  if (taskId === 'gmMeeting') return GM_MEETING_MINUTES;
-  if (taskId === 'sprayGreens' || taskId === 'sprayTees') return SPRAY_GREENS_TEES_MINUTES;
-  if (taskId === 'sprayFairways') return SPRAY_FAIRWAYS_MINUTES;
-  if (taskId === TASK_CORE_GREENS) return CORING_MINUTES;
+  if (taskId === 'rollGreens' || taskId === 'extraRoll') return ROLL_GREENS_HOURS;
+  if (taskId === TASK_WEED_EAT) return WEED_EATING_HOURS;
+  if (taskId === TASK_GENERAL_DUTIES) return GENERAL_DUTIES_HOURS;
+  if (taskId === 'gmMeeting') return GM_MEETING_HOURS;
+  if (taskId === 'sprayGreens' || taskId === 'sprayTees') return SPRAY_GREENS_TEES_HOURS;
+  if (taskId === 'sprayFairways') return SPRAY_FAIRWAYS_HOURS;
+  if (taskId === TASK_CORE_GREENS) return CORING_HOURS;
   return null;
+}
+
+export function supportMinutes(taskId, state) {
+  const hours = supportHours(taskId, state);
+  return hours == null ? null : hoursToMinutes(hours);
 }
 
 export function isDrySpell(state, day = state.day) {

@@ -8,14 +8,12 @@ import {
 } from '../data/config.js';
 import { CUT_TASK_BY_SURFACE } from '../data/constants.js';
 import { getTask } from '../data/tasks.js';
+import { snapMinutes } from './duration.js';
 import { isMachineAvailable } from './equipment.js';
 import { getDayTasks, setDayTasks, weekDays, weekStartDay, workersForPlanDay } from './week.js';
 import { workerAvailableOnDay } from './weekGrid.js';
 
-export function snapMinutes(minutes) {
-  const n = Number(minutes) || 0;
-  return Math.max(SLOT_MINUTES, Math.round(n / SLOT_MINUTES) * SLOT_MINUTES);
-}
+export { snapMinutes };
 
 export function slotCount(dayLength = WORK_DAY_MINUTES) {
   return Math.max(1, Math.round(dayLength / SLOT_MINUTES));
