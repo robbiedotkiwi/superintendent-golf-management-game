@@ -4,6 +4,7 @@ import {
   QUALITY_PENALTY_MISS_WEEK,
   QUALITY_PENALTY_SCALP,
   QUALITY_PENALTY_WET_CUT,
+  BUNKER_DECAY_PER_DAY,
   WET_WEATHER,
 } from '../data/config.js';
 import { getTask } from '../data/tasks.js';
@@ -54,7 +55,7 @@ export function applyDailyQualityDrift(state, planned, weekPasses) {
     }
     next[area] = clampQuality(quality);
   }
-  next.bunkers = prev.bunkers;
+  next.bunkers = clampQuality((prev.bunkers ?? 0) - BUNKER_DECAY_PER_DAY);
   return { areaQuality: next, areaQualityPrev: prev, events };
 }
 

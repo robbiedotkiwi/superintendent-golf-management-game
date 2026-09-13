@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { createInitialState, canPlanTask, reducer } from '../src/engine/gameState.js';
 import { machineAllows, getMachine } from '../src/data/equipment.js';
 import { GREENSMASTER_ID, GROUNDSMASTER_ID } from '../src/data/constants.js';
-import { gradeLetter, gradeCapScore } from '../src/engine/grades.js';
+import { gradeLetter, gradeCapScore, clampQuality } from '../src/engine/grades.js';
 import {
   hoursToPassFraction,
   applyDailyPassCap,
@@ -14,9 +14,11 @@ import {
   weeklyTargetQuality,
 } from '../src/engine/passes.js';
 import { applyDurationModifier, minutesToHours, roundDurationHours } from '../src/engine/duration.js';
-import { driftQuality } from '../src/engine/qualityDrift.js';
+import { driftQuality, applyDailyQualityDrift } from '../src/engine/qualityDrift.js';
 import { migrateWorkerTier } from '../src/engine/staffTiers.js';
 import {
+  BUNKER_DECAY_PER_DAY,
+  BUNKER_RAKE_QUALITY,
   DAYS_PER_SEASON,
   MAX_PASSES_PER_AREA_PER_DAY,
   PASS_CLASS_PUSH_REEL,
@@ -34,6 +36,7 @@ import { draftFromJobId, emptySlotDraft, mowTaskIdFor, resolvePlannerJobId } fro
 import { autoMachineFor, blockConflicts, paletteHoursFor, surplusWastedHours } from '../src/engine/dayPlanner.js';
 import { weekPassStrip } from '../src/engine/weekPasses.js';
 import { getDayTasks, workersForPlanDay } from '../src/engine/week.js';
+import { applySupportDay } from '../src/engine/support.js';
 import { getTask } from '../src/data/tasks.js';
 
 function assert(cond, msg) {
@@ -334,5 +337,13 @@ const sidebarSrc = readFileSync(new URL('../src/components/Sidebar.jsx', import.
 assert(crewSrc.includes('data-casual-hire'), 'casuals live in the hiring area');
 assert(crewSrc.indexOf('data-casual-hire') < crewSrc.indexOf('>Casuals<'), 'casuals heading is in the hire tab');
 assert(!sidebarSrc.includes('onBookCasual'), 'casuals are off the crew sidebar');
+
+const bunkered = applyDailyQualityDrift(state, [], state.weekPasses);
+assert(
+  bunkered.areaQuality.bunkers === clampQuality(state.areaQuality.bunkers - BUNKER_DECAY_PER_DAY),
+  'bunkers decay each day',
+);
+const raked = applySupportDay({ ...state, areaQuality: bunkered.areaQuality }, [{ taskId: 'rakeBunkers' }]);
+assert(raked.areaQuality.bunkers === BUNKER_RAKE_QUALITY, 'rake resets bunkers to 100');
 
 console.log('passes-check phase 7 ok');
