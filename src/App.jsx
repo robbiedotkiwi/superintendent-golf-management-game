@@ -226,7 +226,6 @@ export default function App() {
           onUnbookCasual={(casualId, day) => dispatch({ type: 'UNBOOK_CASUAL', casualId, day })}
           onSetWorker={(taskId, workerId, day) => dispatch({ type: 'SET_TASK_WORKER', taskId, workerId, day })}
           onCopyYesterday={(day) => dispatch({ type: 'COPY_YESTERDAY', day })}
-          onCopyLastWeek={() => dispatch({ type: 'COPY_LAST_WEEK' })}
           onSaveTemplate={(name) => dispatch({ type: 'SAVE_TEMPLATE', name })}
           onApplyTemplate={(templateId) => dispatch({ type: 'APPLY_TEMPLATE', templateId })}
           onSetHoc={(surface, hoc) => dispatch({ type: 'SET_HOC', surface, hoc })}
@@ -355,7 +354,6 @@ function GameScreen({
   onUnbookCasual,
   onSetWorker,
   onCopyYesterday,
-  onCopyLastWeek,
   onSaveTemplate,
   onApplyTemplate,
   onSetHoc,
@@ -582,7 +580,6 @@ function GameScreen({
             onSetIrrigation={onSetIrrigation}
             onSetWorker={onSetWorker}
             onCopyYesterday={onCopyYesterday}
-            onCopyLastWeek={onCopyLastWeek}
             onSaveTemplate={onSaveTemplate}
             onApplyTemplate={onApplyTemplate}
             onBuyAerator={onBuyAerator}

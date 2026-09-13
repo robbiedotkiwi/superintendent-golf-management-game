@@ -61,3 +61,12 @@ export function projectedWeeklyGrade(state) {
     }),
   );
 }
+
+export function weekPassStrip(state) {
+  return PASS_AREAS.map((area) => {
+    const required = passesRequired(state, area);
+    const banked = Number(state.weekPasses?.[area] ?? 0);
+    const owed = Math.max(0, required - banked);
+    return { area, banked, required, owed };
+  });
+}

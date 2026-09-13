@@ -24,7 +24,7 @@ import {
 import { generateCandidates, generateCasuals } from '../data/staff.js';
 import { rosterWorker } from './weekGrid.js';
 import { migrateWorkerTier } from './staffTiers.js';
-import { applyNamedTemplate, copyLastWeek, copyYesterday, nextStartMinute, saveNamedTemplate, snapMinutes } from './slots.js';
+import { applyNamedTemplate, copyYesterday, nextStartMinute, saveNamedTemplate, snapMinutes } from './slots.js';
 import {
   autoMachineFor,
   defaultBlockMinutes,
@@ -1055,8 +1055,6 @@ export function reducer(state, action) {
     }
     case 'COPY_YESTERDAY':
       return copyYesterday(state, action.day ?? planningDayOf(state));
-    case 'COPY_LAST_WEEK':
-      return copyLastWeek(state);
     case 'SAVE_TEMPLATE':
       return saveNamedTemplate(state, action.name);
     case 'APPLY_TEMPLATE':

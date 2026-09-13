@@ -91,7 +91,7 @@ export default function ForecastStrip({ state, onSelectDay, selectedDay }) {
             <button
               key={day}
               type="button"
-              disabled={!onSelectDay || past}
+              disabled={!onSelectDay}
               onClick={() => onSelectDay?.(day)}
               data-forecast-day={day}
               data-today={isToday || undefined}

@@ -10,7 +10,7 @@ import { CUT_TASK_BY_SURFACE } from '../data/constants.js';
 import { getTask } from '../data/tasks.js';
 import { snapMinutes } from './duration.js';
 import { isMachineAvailable } from './equipment.js';
-import { getDayTasks, setDayTasks, weekDays, weekStartDay, workersForPlanDay } from './week.js';
+import { getDayTasks, planningDayOf, setDayTasks, weekStartDay, workersForPlanDay } from './week.js';
 import { workerAvailableOnDay } from './weekGrid.js';
 
 export { snapMinutes };
@@ -73,15 +73,13 @@ export function copyFlagsFor(state, day, task) {
 
 export function cloneTasksToDay(state, sourceTasks, destDay, nextPlanId) {
   let id = nextPlanId ?? state.nextPlanId ?? 1;
-  const destExisting = getDayTasks(state, destDay);
   const cloned = [];
   for (const task of sourceTasks ?? []) {
-    const startMinute = nextStartMinute([...destExisting, ...cloned], task.workerId);
     const copyFlags = copyFlagsFor(state, destDay, task);
     cloned.push({
       ...task,
       planId: id,
-      startMinute,
+      startMinute: snapMinutes(task.startMinute ?? 0),
       copyFlags,
     });
     id += 1;
@@ -105,38 +103,19 @@ export function copyYesterday(state, destDay) {
   return { ...next, lastCopyFlags: getDayTasks(next, destDay).flatMap((item) => item.copyFlags ?? []) };
 }
 
-export function copyLastWeek(state) {
-  const last = state.lastWeek;
-  if (!last?.days) return { ...state, lastCopyFlags: [] };
-  const fromDays = weekDays(last.weekStart ?? state.day - 7);
-  const toDays = weekDays(state.day);
-  let next = { ...state, lastCopyFlags: [] };
-  const flags = [];
-  for (let i = 0; i < toDays.length; i += 1) {
-    if (toDays[i] < state.day) continue;
-    const source = last.days?.[fromDays[i]]?.tasks ?? [];
-    next = applyCopiedTasks(next, toDays[i], source);
-    flags.push(...getDayTasks(next, toDays[i]).flatMap((item) => item.copyFlags ?? []));
-  }
-  return { ...next, lastCopyFlags: flags };
-}
-
 export function saveNamedTemplate(state, name) {
   const trimmed = String(name ?? '').trim().slice(0, TEMPLATE_NAME_MAX);
   if (!trimmed) return state;
-  const days = {};
-  for (const day of weekDays(state.day)) {
-    const weekday = ((day - 1) % 7) + 1;
-    days[weekday] = (getDayTasks(state, day) ?? []).map((item) => {
-      const rest = { ...item };
-      delete rest.planId;
-      delete rest.copyFlags;
-      return rest;
-    });
-  }
+  const day = planningDayOf(state);
+  const tasks = (getDayTasks(state, day) ?? []).map((item) => {
+    const rest = { ...item };
+    delete rest.planId;
+    delete rest.copyFlags;
+    return rest;
+  });
   const templates = [...(state.planTemplates ?? [])];
   const existing = templates.findIndex((item) => item.name === trimmed);
-  const entry = { id: existing >= 0 ? templates[existing].id : (state.nextTemplateId ?? 1), name: trimmed, days };
+  const entry = { id: existing >= 0 ? templates[existing].id : (state.nextTemplateId ?? 1), name: trimmed, tasks };
   if (existing >= 0) templates[existing] = entry;
   else templates.push(entry);
   return {
@@ -146,19 +125,20 @@ export function saveNamedTemplate(state, name) {
   };
 }
 
+export function tasksFromTemplate(template, day) {
+  if (Array.isArray(template?.tasks)) return template.tasks;
+  const weekday = ((day - 1) % 7) + 1;
+  return template?.days?.[weekday] ?? template?.days?.[String(weekday)] ?? [];
+}
+
 export function applyNamedTemplate(state, templateId) {
   const template = (state.planTemplates ?? []).find((item) => item.id === templateId);
   if (!template) return state;
-  let next = { ...state };
-  const flags = [];
-  for (const day of weekDays(state.day)) {
-    if (day < state.day) continue;
-    const weekday = ((day - 1) % 7) + 1;
-    const source = template.days?.[weekday] ?? [];
-    next = applyCopiedTasks(next, day, source);
-    flags.push(...getDayTasks(next, day).flatMap((item) => item.copyFlags ?? []));
-  }
-  return { ...next, lastCopyFlags: flags };
+  const destDay = planningDayOf(state);
+  if (destDay < state.day) return { ...state, lastCopyFlags: [] };
+  const source = tasksFromTemplate(template, destDay);
+  const next = applyCopiedTasks(state, destDay, source);
+  return { ...next, lastCopyFlags: getDayTasks(next, destDay).flatMap((item) => item.copyFlags ?? []) };
 }
 
 export function mowTaskIdFor(surface) {

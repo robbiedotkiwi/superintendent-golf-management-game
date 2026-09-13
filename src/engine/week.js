@@ -44,7 +44,6 @@ export function emptyWeekPlan(weekStart = STARTING_DAY) {
 export function planningDayOf(state) {
   const day = Number(state.planningDay ?? state.day);
   if (!Number.isInteger(day) || day < 1) return state.day;
-  if (day < state.day) return state.day;
   if (weekStartDay(day) !== weekStartDay(state.day)) return state.day;
   return day;
 }

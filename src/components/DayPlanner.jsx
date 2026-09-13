@@ -9,7 +9,7 @@ import {
   PLANNER_ROW_PX,
 } from '../data/config.js';
 import { STAFF_TIER_LABELS } from '../data/config.js';
-import { canEditPlanDay, planningDayOf, weekdayLabel, workersForPlanDay } from '../engine/week.js';
+import { canEditPlanDay, planningDayOf, weekDays, weekdayLabel, workersForPlanDay } from '../engine/week.js';
 import {
   autoMachineFor,
   blockConflicts,
@@ -28,13 +28,14 @@ import {
   timelineWidthPx,
 } from '../engine/dayPlanner.js';
 import { hoursToMinutes, minutesToHours } from '../engine/duration.js';
-import { getTask } from '../data/tasks.js';
+import { getTask, SURFACE_LABELS } from '../data/tasks.js';
 import { catalogMachineTitle } from '../engine/machineDisplay.js';
 import { staffCanRunMachine } from '../engine/passes.js';
 import ForecastStrip from './ForecastStrip.jsx';
 import SeasonBar from './SeasonBar.jsx';
 import GradeStrip from './GradeStrip.jsx';
 import MachinePassPanel from './MachinePassPanel.jsx';
+import { weekPassStrip } from '../engine/weekPasses.js';
 
 const DRAG_MIME = 'application/x-greenkeeper-block';
 
@@ -69,6 +70,9 @@ export default function DayPlanner({
   const paletteWorker = crew.find((item) => item.id === hoverWorkerId) ?? crew[0];
   const ticks = hourTicks(state, day);
   const width = timelineWidthPx(state, day);
+  const days = weekDays(state.day);
+  const dayIndex = days.indexOf(day);
+  const strip = weekPassStrip(state);
 
   function dropOnRow(event, worker) {
     event.preventDefault();
@@ -138,13 +142,43 @@ export default function DayPlanner({
       <GradeStrip state={state} />
       <MachinePassPanel state={state} />
       <div className="flex flex-wrap items-center gap-2 text-sm">
+        <button
+          type="button"
+          className="border border-[var(--sand)] px-2 py-1 disabled:opacity-40"
+          disabled={dayIndex <= 0}
+          onClick={() => onSelectDay?.(days[dayIndex - 1])}
+          data-day-prev
+        >
+          Previous day
+        </button>
         <div className="font-semibold" data-planner-day>
           {weekdayLabel(day)}
-          {day === state.day ? ' · today' : ''}
+          {day === state.day ? ' · today' : day < state.day ? ' · past' : ''}
         </div>
+        <button
+          type="button"
+          className="border border-[var(--sand)] px-2 py-1 disabled:opacity-40"
+          disabled={dayIndex < 0 || dayIndex >= days.length - 1}
+          onClick={() => onSelectDay?.(days[dayIndex + 1])}
+          data-day-next
+        >
+          Next day
+        </button>
         {flags.length ? (
           <span className="text-[10px] text-red-400">Copied with flags: {flags.join(', ')}</span>
         ) : null}
+        {!edit.ok ? <span className="text-[10px] text-[var(--sand)]">{edit.reason}</span> : null}
+      </div>
+      <div className="grid grid-cols-2 gap-2 border border-[var(--sand)] p-2 text-[11px] sm:grid-cols-4" data-week-strip>
+        {strip.map((row) => (
+          <div key={row.area} data-week-strip-area={row.area}>
+            <div className="font-semibold">{SURFACE_LABELS[row.area] ?? row.area}</div>
+            <div className="text-[var(--sand)]">
+              {formatPlannerHours(row.banked)} / {formatPlannerHours(row.required)} banked
+            </div>
+            <div className="text-[var(--sand)]">{formatPlannerHours(row.owed)} owed</div>
+          </div>
+        ))}
       </div>
       <div className="flex gap-3" style={{ minHeight: PLANNER_ROW_PX * Math.max(2, crew.length + 1) }}>
         <aside className="shrink-0 space-y-1 overflow-y-auto border border-[var(--sand)] p-2" style={{ width: PLANNER_PALETTE_PX }} data-task-palette>

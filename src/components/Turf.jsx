@@ -172,7 +172,6 @@ export default function Turf({
   onSetIrrigation,
   onSetWorker,
   onCopyYesterday,
-  onCopyLastWeek,
   onSaveTemplate,
   onApplyTemplate,
   onBuyAerator,

@@ -32,6 +32,8 @@ import {
 import { monthlyBudgetFor, golferNumbers, gmRequiredGrade } from '../src/engine/economy.js';
 import { draftFromJobId, emptySlotDraft, mowTaskIdFor, resolvePlannerJobId } from '../src/engine/slots.js';
 import { autoMachineFor, blockConflicts, paletteHoursFor, surplusWastedHours } from '../src/engine/dayPlanner.js';
+import { weekPassStrip } from '../src/engine/weekPasses.js';
+import { getDayTasks } from '../src/engine/week.js';
 import { getTask } from '../src/data/tasks.js';
 
 function assert(cond, msg) {
@@ -98,7 +100,7 @@ let next = reducer(state, {
 });
 assert(next.plannedTasks[0]?.minutes === 120, 'slot minutes stick');
 next = reducer(next, { type: 'SAVE_TEMPLATE', name: 'winter week' });
-assert(next.planTemplates.some((item) => item.name === 'winter week'), 'named template saved');
+assert(next.planTemplates.some((item) => item.name === 'winter week' && Array.isArray(item.tasks)), 'named day template saved');
 const copied = reducer(next, { type: 'COPY_YESTERDAY', day: state.day + 1 });
 assert(copied.weekPlan.days[state.day + 1]?.tasks?.length >= 0, 'copy yesterday runs');
 
@@ -270,5 +272,49 @@ assert(paletteHoursFor(state, 'cutGreens', junior) === 8, 'palette junior clean 
 const worn = { ...state, machineWear: { ...(state.machineWear ?? {}), [GREENSMASTER_ID]: 60 } };
 assert(paletteHoursFor(worn, 'cutGreens', junior) === 10, 'palette junior 60% wear greens is 10.0');
 assert(plannerSrc.includes('data-palette-hours'), 'palette shows computed hours');
+
+const strip = weekPassStrip(state);
+assert(strip.length === 4, 'week strip has four course areas');
+assert(strip.every((row) => row.banked === 0 && row.owed === row.required), 'owed starts at required');
+let nav = reducer(state, { type: 'SET_PLANNING_DAY', day: 2 });
+assert(nav.planningDay === 2, 'day navigation moves to Tuesday');
+nav = reducer(nav, {
+  type: 'PLACE_BLOCK',
+  taskId: 'cutGreens',
+  workerId: state.workers[0].id,
+  startMinute: 60,
+  minutes: 120,
+});
+assert(getDayTasks(nav, 2).some((item) => item.startMinute === 60), 'place on navigated day');
+nav = reducer(nav, { type: 'SAVE_TEMPLATE', name: 'greens day' });
+const greensTpl = nav.planTemplates.find((item) => item.name === 'greens day');
+assert(Array.isArray(greensTpl?.tasks) && greensTpl.tasks.length === 1, 'day template stores current day tasks');
+nav = reducer(nav, { type: 'SET_PLANNING_DAY', day: 3 });
+nav = reducer(nav, { type: 'APPLY_TEMPLATE', templateId: greensTpl.id });
+assert(getDayTasks(nav, 3).some((item) => item.taskId === 'cutGreens' && item.startMinute === 60), 'apply template to current day');
+assert(getDayTasks(nav, 4).length === 0, 'day template does not fill the rest of the week');
+
+const legacy = reducer(state, { type: 'SET_PLANNING_DAY', day: 2 });
+const withLegacy = {
+  ...legacy,
+  planTemplates: [{ id: 99, name: 'old week', days: { 2: [{ taskId: 'cutTees', workerId: state.workers[0].id, startMinute: 30, minutes: 60 }] } }],
+};
+const appliedLegacy = reducer(withLegacy, { type: 'APPLY_TEMPLATE', templateId: 99 });
+assert(getDayTasks(appliedLegacy, 2).some((item) => item.taskId === 'cutTees'), 'old week-shaped templates still apply to this weekday');
+
+let yesterday = reducer(state, {
+  type: 'PLACE_BLOCK',
+  taskId: 'cutGreens',
+  workerId: state.workers[0].id,
+  startMinute: 90,
+  minutes: 60,
+});
+yesterday = reducer(yesterday, { type: 'COPY_YESTERDAY', day: 2 });
+assert(getDayTasks(yesterday, 2).some((item) => item.taskId === 'cutGreens' && item.startMinute === 90), 'copy yesterday keeps start time');
+
+assert(plannerSrc.includes('data-week-strip'), 'week pass strip is on the canvas');
+assert(plannerSrc.includes('data-day-prev'), 'previous day control is present');
+assert(plannerSrc.includes('data-day-next'), 'next day control is present');
+assert(!plannerSrc.includes('Copy last week'), 'copy last week is gone');
 
 console.log('passes-check phase 7 ok');
