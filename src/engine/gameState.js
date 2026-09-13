@@ -382,7 +382,7 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
   if (!task) return { ok: false, reason: 'Unknown job.' };
   const holes =
     task.id === 'handWater'
-      ? [...(options.holes?.length ? options.holes : state.handWaterTargets ?? [])]
+      ? allGreenIds(holeCount(state))
       : jobHolesFor(state, task, options.holes);
 
   if (task.id === 'clearDebris' && state.weather !== WEATHER_STORM) {
@@ -415,10 +415,6 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
 
   if (task.kind === 'prep' && !inPrepWindow({ ...state, day: planningDayOf(state) })) {
     return { ok: false, reason: 'Prep only in the three days before a tournament.' };
-  }
-
-  if (task.id === 'handWater' && !(options.holes ?? state.handWaterTargets ?? []).length) {
-    return { ok: false, reason: 'Select at least one green.' };
   }
 
   if (!task.mowing && (task.surface ? findPlannedJob(state, taskId, holes) : state.plannedTasks.some((planned) => planned.taskId === taskId))) {
@@ -606,7 +602,7 @@ export function reducer(state, action) {
           ownMower: Boolean(check.ownMower),
           holes: check.holes ?? [],
           ...(action.taskId === 'handWater'
-            ? { greens: [...(action.holes ?? state.handWaterTargets ?? [])] }
+            ? { greens: allGreenIds(holeCount(state)) }
             : {}),
         },
       ];

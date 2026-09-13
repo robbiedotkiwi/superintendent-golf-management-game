@@ -78,7 +78,6 @@ import { mowingStatus } from '../engine/mowingStatus.js';
 import { inputsStatus } from '../engine/inputsStatus.js';
 import { GreensMoistureList, MoistureLine } from './MoistureReadout.jsx';
 import SectionTabs from './SectionTabs.jsx';
-import HoleSelector from './HoleSelector.jsx';
 import WeekPlanGrid from './WeekPlanGrid.jsx';
 import IrrigationWeekTab from './IrrigationWeekTab.jsx';
 import CutPatternsTab from './CutPatternsTab.jsx';
@@ -108,8 +107,8 @@ function TwoColumn({ left, right, rightInteractive = false }) {
   );
 }
 
-function jobHolesFromSelection(state) {
-  return state.selectedHoles?.length ? state.selectedHoles : undefined;
+function jobHolesFromSelection(_state) {
+  return undefined;
 }
 
 function formatExpiry(until, day) {
@@ -286,27 +285,6 @@ export default function Turf({
               onSelectHoles={onSelectHoles}
             />
           ))}
-          <section className="border border-[var(--sand)] p-3">
-            <h3 className="text-lg font-semibold">Hand-water targeting</h3>
-            <div className="mt-2 grid grid-cols-3 gap-1">
-              {Array.from({ length: holeCount(state) }, (_, index) => index + 1).map((id) => {
-                const on = (state.handWaterTargets ?? []).includes(id);
-                return (
-                  <label key={id} className="flex items-center gap-1 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={on}
-                      onChange={() => {
-                        const current = state.handWaterTargets ?? [];
-                        onSetHandWaterTargets(on ? current.filter((item) => item !== id) : [...current, id]);
-                      }}
-                    />
-                    {id}
-                  </label>
-                );
-              })}
-            </div>
-          </section>
           <section className="border border-[var(--sand)] p-3">
             <h3 className="text-lg font-semibold">Greens sensors</h3>
             {state.hasGreensSensors ? (
@@ -521,7 +499,6 @@ function IrrigationStatus({ state, surface, onPlan, onRemove, onToggleHole, onSe
       <p>{stale}</p>
       {surface === 'greens' ? <GreensMoistureList state={state} /> : null}
       <div className="pointer-events-auto">
-        <HoleSelector state={state} onToggleHole={onToggleHole} onSelectHoles={onSelectHoles} />
         <PlanJob
           state={state}
           taskId={CHECK_MOISTURE_BY_SURFACE[surface]}
@@ -763,7 +740,6 @@ function MowingSurface({
               </p>
             ) : null}
             <MachinePicker state={state} surface={surface} onSetMachineOverride={onSetMachineOverride} />
-            <HoleSelector state={state} onToggleHole={onToggleHole} onSelectHoles={onSelectHoles} />
             <CutDayStrip
               state={state}
               taskId={cutId}
@@ -861,7 +837,6 @@ function InputsSurface({ state, surface, onPlan, onRemove, onToggleHole, onSelec
             {!certified ? (
               <p className="mt-2 text-sm text-[var(--machine-orange)]">Needs a spray-certified worker.</p>
             ) : null}
-            <HoleSelector state={state} onToggleHole={onToggleHole} onSelectHoles={onSelectHoles} />
             <div className="mt-2 flex flex-wrap gap-2">
               <PlanJob
                 state={state}

@@ -43,8 +43,6 @@ import {
 } from './engine/gameState.js';
 import { courseCondition } from './engine/simulation.js';
 import { holeCount } from './engine/holes.js';
-import HoleDetail from './components/HoleDetail.jsx';
-import MapSelectionBar from './components/MapSelectionBar.jsx';
 import {
   PLAYOUT_DONE,
   PLAYOUT_PLAYING,
@@ -192,11 +190,6 @@ export default function App() {
             })
           }
           onRemove={(taskId, planId, day) => dispatch({ type: 'REMOVE_TASK', taskId, planId, day })}
-          onSelectHoles={(holes) => dispatch({ type: 'SET_SELECTED_HOLES', holes })}
-          onToggleHole={(holeId) => dispatch({ type: 'TOGGLE_HOLE', holeId })}
-          onAddHole={(holeId) => dispatch({ type: 'ADD_HOLE', holeId })}
-          onSaveRoute={(name) => dispatch({ type: 'SAVE_ROUTE', name })}
-          onApplyRoute={(id) => dispatch({ type: 'APPLY_ROUTE', id })}
           onRepeatLast={() => dispatch({ type: 'REPEAT_LAST' })}
           onEndDay={() => dispatch({ type: 'END_DAY' })}
           onDismissSummary={() => setSummary(null)}
@@ -246,9 +239,6 @@ export default function App() {
           onSetHandWaterTargets={(targets) => dispatch({ type: 'SET_HAND_WATER_TARGETS', targets })}
           onSetMachineOverride={(surface, machineId) =>
             dispatch({ type: 'SET_MACHINE_OVERRIDE', surface, machineId })
-          }
-          onSetHoleOverride={(holeId, surface, override) =>
-            dispatch({ type: 'SET_HOLE_OVERRIDE', holeId, surface, override })
           }
           onTab={(section, tab) => dispatch({ type: 'SET_TAB', section, tab })}
           onLease={(machineId) => dispatch({ type: 'LEASE_MACHINE', machineId })}
@@ -325,11 +315,6 @@ function GameScreen({
   onSelect,
   onPlan,
   onRemove,
-  onSelectHoles,
-  onToggleHole,
-  onAddHole,
-  onSaveRoute,
-  onApplyRoute,
   onRepeatLast,
   onEndDay,
   onDismissSummary,
@@ -378,7 +363,6 @@ function GameScreen({
   onToggleMoistureOverlay,
   onSetHandWaterTargets,
   onSetMachineOverride,
-  onSetHoleOverride,
   onLease,
   onStopLease,
   onBuyUsed,
@@ -595,8 +579,6 @@ function GameScreen({
             onBuyWeatherStation={onBuyWeatherStation}
             onSetHandWaterTargets={onSetHandWaterTargets}
             onSetMachineOverride={onSetMachineOverride}
-            onToggleHole={onToggleHole}
-            onSelectHoles={onSelectHoles}
           />
         ) : (
           <>
@@ -611,9 +593,6 @@ function GameScreen({
               showMower={showMower}
               selected={selected}
               highlight={event?.surface ?? selected}
-              selectedHoles={state.selectedHoles}
-              onToggleHole={onToggleHole}
-              onAddHole={onAddHole}
               onSelect={handleSelect}
               onOpenShed={onOpenShed}
               day={watching ? playout.day : state.day}
@@ -621,34 +600,13 @@ function GameScreen({
               onView={onSetView}
               moistureState={state}
             />
-            {!watching ? (
-              <MapSelectionBar
-                state={plan}
-                onSelectHoles={onSelectHoles}
-                onToggleHole={onToggleHole}
-                onSaveRoute={onSaveRoute}
-                onApplyRoute={onApplyRoute}
-                onRepeatLast={onRepeatLast}
-                onPlan={onPlan}
-                onRemove={onRemove}
-              />
-            ) : null}
             {SURFACE_KEYS.includes(selected) && !watching ? (
               <MapJobPopover
                 surface={selected}
                 state={plan}
-                holes={state.selectedHoles}
                 onPlan={onPlan}
                 onRemove={onRemove}
                 onSetWorker={onSetWorker}
-                onClose={() => onSelect(null)}
-              />
-            ) : null}
-            {selected?.holeId && !watching ? (
-              <HoleDetail
-                state={state}
-                holeId={selected.holeId}
-                onSetOverride={onSetHoleOverride}
                 onClose={() => onSelect(null)}
               />
             ) : null}
