@@ -16,6 +16,7 @@ import {
   blockFace,
   blockLeftPx,
   blockWidthPx,
+  clampBlockResize,
   conflictCopy,
   formatPlannerHours,
   hourFromClientX,
@@ -119,11 +120,12 @@ export default function DayPlanner({
         if (edge === 'left') nextStart = nextEnd - HOUR_INCREMENT * MINUTES_PER_HOUR;
         else nextEnd = nextStart + HOUR_INCREMENT * MINUTES_PER_HOUR;
       }
+      const clamped = clampBlockResize(state, block, day, nextStart, nextEnd - nextStart);
       onResizeBlock?.({
         day,
         planId: block.planId,
-        startMinute: nextStart,
-        minutes: nextEnd - nextStart,
+        startMinute: clamped.startMinute,
+        minutes: clamped.minutes,
       });
     }
     function up() {

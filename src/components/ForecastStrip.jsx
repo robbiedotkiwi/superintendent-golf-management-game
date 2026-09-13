@@ -6,10 +6,9 @@ import {
   WEATHER_RAIN,
   WEATHER_STORM,
 } from '../data/constants.js';
-import { FORECAST_UNRELIABLE_FROM_DAY, WET_PASS_TIME_MULT, WET_WEATHER } from '../data/config.js';
+import { WET_PASS_TIME_MULT, WET_WEATHER } from '../data/config.js';
 import { WEATHER_LABELS } from '../data/events.js';
-import { dayOfWeek } from '../engine/staff.js';
-import { forecastOpacity, formatTempRange } from '../engine/weather.js';
+import { forecastIsUnreliable, forecastOpacity, formatTempRange } from '../engine/weather.js';
 import {
   canEditPlanDay,
   forecastEntryForDay,
@@ -123,7 +122,7 @@ export default function ForecastStrip({ state, onSelectDay, selectedDay }) {
                   Wet +{Math.round((WET_PASS_TIME_MULT - 1) * 100)}%
                 </div>
               ) : null}
-              {dayOfWeek(day) >= FORECAST_UNRELIABLE_FROM_DAY ? (
+              {forecastIsUnreliable(state.day, day) ? (
                 <div className="text-[9px] text-[var(--sand)]" data-unreliable={day}>
                   Unreliable
                 </div>

@@ -27,6 +27,7 @@ import { migrateWorkerTier } from './staffTiers.js';
 import { applyNamedTemplate, copyYesterday, nextStartMinute, saveNamedTemplate, snapMinutes } from './slots.js';
 import {
   autoMachineFor,
+  clampBlockResize,
   defaultBlockMinutes,
 } from './dayPlanner.js';
 import { approveLeave, declineLeave } from './staffMorale.js';
@@ -662,11 +663,14 @@ export function reducer(state, action) {
       const day = actionPlanDay(state, action);
       const edit = canEditPlanDay(state, day);
       if (!edit.ok) return state;
-      const minutes = snapMinutes(action.minutes);
-      if (!minutes) return state;
-      const startMinute = snapMinutes(action.startMinute ?? 0);
+      const current = getDayTasks(state, day).find((item) => item.planId === action.planId);
+      if (!current) return state;
+      const clamped = clampBlockResize(state, current, day, action.startMinute, action.minutes);
+      if (!clamped.minutes) return state;
       const tasks = getDayTasks(state, day).map((item) =>
-        item.planId === action.planId ? { ...item, startMinute, minutes } : item,
+        item.planId === action.planId
+          ? { ...item, startMinute: clamped.startMinute, minutes: clamped.minutes }
+          : item,
       );
       return commitDayTasks(state, tasks, day);
     }

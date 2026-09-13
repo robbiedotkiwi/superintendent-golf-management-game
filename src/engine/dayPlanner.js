@@ -109,6 +109,47 @@ export function surplusWastedHours(state, block, day = state.day) {
   return minutesToHours(block.minutes);
 }
 
+export function resizeBounds(state, block, day = state.day) {
+  const worker = workersForPlanDay(state, day).find((item) => item.id === block.workerId);
+  const dayLen = worker?.minutesToday ?? dayLengthMinutes(state, day);
+  const originalStart = block.startMinute ?? 0;
+  const originalEnd = originalStart + (block.minutes ?? 0);
+  const others = getDayTasks(state, day).filter(
+    (item) => item.workerId === block.workerId && item.planId !== block.planId,
+  );
+  let prevEnd = 0;
+  let nextStart = dayLen;
+  for (const other of others) {
+    const start = other.startMinute ?? 0;
+    const end = start + (other.minutes ?? 0);
+    if (end <= originalStart) prevEnd = Math.max(prevEnd, end);
+    else if (start >= originalEnd) nextStart = Math.min(nextStart, start);
+  }
+  return {
+    minStart: Math.max(0, prevEnd),
+    maxEnd: Math.min(dayLen, nextStart),
+  };
+}
+
+export function clampBlockResize(state, block, day, startMinute, minutes) {
+  const minSize = hoursToMinutes(HOUR_INCREMENT);
+  const { minStart, maxEnd } = resizeBounds(state, block, day);
+  const span = maxEnd - minStart;
+  if (span < minSize) {
+    return { startMinute: block.startMinute ?? 0, minutes: block.minutes ?? minSize };
+  }
+  let start = snapMinutes(Math.max(0, startMinute ?? 0));
+  let dur = snapMinutes(Math.max(minSize, minutes ?? minSize));
+  start = Math.max(minStart, Math.min(start, maxEnd - minSize));
+  dur = Math.min(dur, maxEnd - start);
+  dur = Math.max(minSize, dur);
+  if (start + dur > maxEnd) {
+    start = Math.max(minStart, maxEnd - dur);
+    dur = Math.min(dur, maxEnd - start);
+  }
+  return { startMinute: start, minutes: dur };
+}
+
 export function blockConflicts(state, block, day = state.day) {
   const reasons = [];
   const tasks = getDayTasks(state, day);

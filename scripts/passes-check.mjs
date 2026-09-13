@@ -20,6 +20,7 @@ import {
   BUNKER_DECAY_PER_DAY,
   BUNKER_RAKE_QUALITY,
   DAYS_PER_SEASON,
+  FORECAST_UNRELIABLE_FROM_DAY,
   MAX_PASSES_PER_AREA_PER_DAY,
   PASS_CLASS_PUSH_REEL,
   PASS_CLASS_RIDE_ON_ROTARY,
@@ -33,11 +34,12 @@ import {
 } from '../src/data/config.js';
 import { monthlyBudgetFor, golferNumbers, gmRequiredGrade } from '../src/engine/economy.js';
 import { draftFromJobId, emptySlotDraft, mowTaskIdFor, resolvePlannerJobId } from '../src/engine/slots.js';
-import { autoMachineFor, blockConflicts, paletteHoursFor, surplusWastedHours } from '../src/engine/dayPlanner.js';
+import { autoMachineFor, blockConflicts, clampBlockResize, paletteHoursFor, surplusWastedHours } from '../src/engine/dayPlanner.js';
 import { weekPassStrip } from '../src/engine/weekPasses.js';
 import { getDayTasks, workersForPlanDay } from '../src/engine/week.js';
 import { applySupportDay } from '../src/engine/support.js';
 import { getTask } from '../src/data/tasks.js';
+import { forecastDaysAhead, forecastIsUnreliable } from '../src/engine/weather.js';
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -150,6 +152,8 @@ const forecastSrc = readFileSync(new URL('../src/components/ForecastStrip.jsx', 
 assert(forecastSrc.includes("from '../engine/weather.js'"), 'ForecastStrip imports weather helpers');
 assert(forecastSrc.includes('formatTempRange'), 'ForecastStrip uses formatTempRange');
 assert(forecastSrc.includes('forecastOpacity'), 'ForecastStrip uses forecastOpacity');
+assert(forecastSrc.includes('forecastIsUnreliable'), 'strip uses days-ahead reliability');
+assert(!forecastSrc.includes('dayOfWeek'), 'strip no longer uses weekday for reliability');
 
 assert(mowTaskIdFor('cutTees') == null, 'task ids are not area keys');
 assert(resolvePlannerJobId({ jobId: 'cutTees', surface: 'cutTees' }) === 'cutTees', 'stale surface still resolves job');
@@ -345,5 +349,62 @@ assert(
 );
 const raked = applySupportDay({ ...state, areaQuality: bunkered.areaQuality }, [{ taskId: 'rakeBunkers' }]);
 assert(raked.areaQuality.bunkers === BUNKER_RAKE_QUALITY, 'rake resets bunkers to 100');
+
+let gapResize = reducer(state, {
+  type: 'PLACE_BLOCK',
+  taskId: 'generalDuties',
+  workerId: state.workers[0].id,
+  startMinute: 0,
+  minutes: 60,
+});
+gapResize = reducer(gapResize, {
+  type: 'PLACE_BLOCK',
+  taskId: 'gmMeeting',
+  workerId: state.workers[0].id,
+  startMinute: 180,
+  minutes: 60,
+});
+const firstBlock = gapResize.plannedTasks[0];
+gapResize = reducer(gapResize, {
+  type: 'RESIZE_BLOCK',
+  planId: firstBlock.planId,
+  startMinute: 0,
+  minutes: 480,
+});
+const resized = gapResize.plannedTasks.find((item) => item.planId === firstBlock.planId);
+assert(resized.startMinute === 0 && resized.minutes === 180, 'resize extends up to the next occupied block');
+const dayLen = workersForPlanDay(state, state.day)[0].minutesToday;
+let toDayEnd = reducer(state, {
+  type: 'PLACE_BLOCK',
+  taskId: 'generalDuties',
+  workerId: state.workers[0].id,
+  startMinute: 0,
+  minutes: 60,
+});
+toDayEnd = reducer(toDayEnd, {
+  type: 'RESIZE_BLOCK',
+  planId: toDayEnd.plannedTasks[0].planId,
+  startMinute: 0,
+  minutes: 9999,
+});
+assert(toDayEnd.plannedTasks[0].minutes === dayLen, 'resize extends up to remaining day length');
+const shrunk = clampBlockResize(toDayEnd, toDayEnd.plannedTasks[0], toDayEnd.day, 0, 30);
+assert(shrunk.minutes === 30, 'resize can shrink');
+
+assert(forecastDaysAhead(5, 7) === 2, 'days-ahead is calendar distance');
+assert(!forecastIsUnreliable(5, 5), 'day 5 of a week is reliable when it is today');
+assert(!forecastIsUnreliable(5, 6), 'day 6 is 1 ahead of day 5');
+assert(!forecastIsUnreliable(5, 7), 'day 7 is 2 ahead of day 5');
+assert(!forecastIsUnreliable(6, 6), 'day 6 of a week is reliable when it is today');
+assert(!forecastIsUnreliable(6, 7), 'day 7 is 1 ahead of day 6');
+assert(!forecastIsUnreliable(7, 7), 'day 7 of a week is reliable when it is today');
+assert(
+  forecastIsUnreliable(1, 1 + FORECAST_UNRELIABLE_FROM_DAY),
+  'unreliable from the configured days-ahead threshold',
+);
+assert(
+  !forecastIsUnreliable(1, 1 + FORECAST_UNRELIABLE_FROM_DAY - 1),
+  'the day before the threshold stays reliable',
+);
 
 console.log('passes-check phase 7 ok');

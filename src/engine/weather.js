@@ -39,6 +39,7 @@ import {
   WIND_SPEED_MAX,
   WIND_SPEED_MIN,
 } from '../data/constants.js';
+import { FORECAST_UNRELIABLE_FROM_DAY } from '../data/config.js';
 import { calendarFromDay } from './calendar.js';
 import { needsCapital } from './cash.js';
 import { createRng } from './rng.js';
@@ -252,6 +253,14 @@ export function corruptDay(trueDay, accuracy, season, rng, day) {
 export function forecastOpacity(index) {
   const accuracy = FORECAST_ACCURACY[index] ?? FORECAST_ACCURACY[FORECAST_ACCURACY.length - 1];
   return FORECAST_OPACITY_MIN + accuracy * (1 - FORECAST_OPACITY_MIN);
+}
+
+export function forecastDaysAhead(today, day) {
+  return Number(day) - Number(today);
+}
+
+export function forecastIsUnreliable(today, day) {
+  return forecastDaysAhead(today, day) >= FORECAST_UNRELIABLE_FROM_DAY;
 }
 
 export function makeWeatherQueue(fromDay, rng) {
