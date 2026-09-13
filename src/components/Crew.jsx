@@ -113,6 +113,7 @@ export default function Crew({
 
       {tab === CREW_TAB_ROSTER ? (
         <>
+      <div data-crew-roster>
       <LeaveRequests state={state} onApprove={onApproveLeave} onDecline={onDeclineLeave} />
       <label className="mb-6 flex items-center gap-3">
         <input
@@ -261,8 +262,14 @@ export default function Crew({
       )}
       </>
       )}
+      </div>
+        </>
+      ) : null}
 
-      <h2 className="mt-10 font-condensed text-3xl">Casuals</h2>
+      {tab === CREW_TAB_HIRE ? (
+        <>
+      <div data-casual-hire>
+      <h2 className="font-condensed text-3xl">Casuals</h2>
       <p className="mt-2 text-sm text-[var(--sand)]">
         Book up to {CASUAL_MAX_DAYS_PER_WEEK} days this week at {CASUAL_WAGE_MULT}× a regular wage. They only cost the days they work.
       </p>
@@ -307,11 +314,8 @@ export default function Crew({
           );
         })}
       </div>
-        </>
-      ) : null}
+      </div>
 
-      {tab === CREW_TAB_HIRE ? (
-        <>
       <h2 className="mt-10 font-condensed text-3xl">Hire</h2>
       <p className="text-sm text-[var(--sand)]">List refreshes each season.</p>
       <div className="mt-3 space-y-3">

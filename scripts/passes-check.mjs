@@ -33,7 +33,7 @@ import { monthlyBudgetFor, golferNumbers, gmRequiredGrade } from '../src/engine/
 import { draftFromJobId, emptySlotDraft, mowTaskIdFor, resolvePlannerJobId } from '../src/engine/slots.js';
 import { autoMachineFor, blockConflicts, paletteHoursFor, surplusWastedHours } from '../src/engine/dayPlanner.js';
 import { weekPassStrip } from '../src/engine/weekPasses.js';
-import { getDayTasks } from '../src/engine/week.js';
+import { getDayTasks, workersForPlanDay } from '../src/engine/week.js';
 import { getTask } from '../src/data/tasks.js';
 
 function assert(cond, msg) {
@@ -316,5 +316,23 @@ assert(plannerSrc.includes('data-week-strip'), 'week pass strip is on the canvas
 assert(plannerSrc.includes('data-day-prev'), 'previous day control is present');
 assert(plannerSrc.includes('data-day-next'), 'next day control is present');
 assert(!plannerSrc.includes('Copy last week'), 'copy last week is gone');
+
+assert(workersForPlanDay(state, state.day).every((worker) => !worker.isCasual), 'unbooked casuals stay off the planner');
+const casual = state.casualPool[0];
+const bookedCasual = reducer(state, { type: 'BOOK_CASUAL', casualId: casual.id, day: state.day });
+assert(
+  workersForPlanDay(bookedCasual, state.day).some((worker) => worker.id === casual.id),
+  'rostered casual appears as a planner row that day',
+);
+assert(
+  !workersForPlanDay(bookedCasual, state.day + 1).some((worker) => worker.id === casual.id),
+  'casual is absent on days they are not booked',
+);
+
+const crewSrc = readFileSync(new URL('../src/components/Crew.jsx', import.meta.url), 'utf8');
+const sidebarSrc = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
+assert(crewSrc.includes('data-casual-hire'), 'casuals live in the hiring area');
+assert(crewSrc.indexOf('data-casual-hire') < crewSrc.indexOf('>Casuals<'), 'casuals heading is in the hire tab');
+assert(!sidebarSrc.includes('onBookCasual'), 'casuals are off the crew sidebar');
 
 console.log('passes-check phase 7 ok');

@@ -22,7 +22,7 @@ import { pondDoseBriefing } from '../engine/irrigation.js';
 import { getTask } from '../data/tasks.js';
 import { formatTempRange, isHotterThanCall } from '../engine/weather.js';
 import { fitCourse } from '../engine/view.js';
-import { canBookCasual, casualDaysBooked, planningDayOf, weekdayLabel } from '../engine/week.js';
+import { planningDayOf, weekdayLabel } from '../engine/week.js';
 import ForecastStrip from './ForecastStrip.jsx';
 import TimeBar from './TimeBar.jsx';
 
@@ -79,8 +79,6 @@ export default function Sidebar({
   onToggleSound,
   onDismissLockHint,
   onSelectDay,
-  onBookCasual,
-  onUnbookCasual,
   plannedTasks,
 }) {
   const turf = sectionBadge(state, 'turf');
@@ -137,32 +135,6 @@ export default function Sidebar({
         ) : null}
 
         <ForecastStrip state={state} onSelectDay={onSelectDay} />
-        {onBookCasual ? (
-          <div className="mt-2">
-            <div className="text-[10px] text-[var(--sand)]">Casuals · {weekdayLabel(planDay)}</div>
-            <div className="mt-1 space-y-1">
-              {(state.casualPool ?? []).map((casual) => {
-                const on = casualDaysBooked(state, casual.id).includes(planDay);
-                const check = on ? { ok: true } : canBookCasual(state, casual.id, planDay);
-                return (
-                  <button
-                    key={casual.id}
-                    type="button"
-                    disabled={!on && !check.ok}
-                    title={check.ok ? undefined : check.reason}
-                    onClick={() => (on ? onUnbookCasual?.(casual.id, planDay) : onBookCasual(casual.id, planDay))}
-                    className={`w-full truncate border px-2 py-1 text-left text-[10px] disabled:opacity-40 ${
-                      on ? 'border-[var(--machine-orange)] bg-[var(--machine-orange)]' : 'border-[var(--sand)]'
-                    }`}
-                  >
-                    {casual.name} · {formatMoney(casual.wage)}
-                    {casual.ownMower ? ' · own mower' : ''}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ) : null}
 
         <div className="mt-3">
           <div className="text-xs text-[var(--sand)]">Condition</div>
