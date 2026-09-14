@@ -31,6 +31,8 @@ export const PASS_CLASS_RIDE_ON_REEL = 'rideOnReel';
 export const PASS_CLASS_RIDE_ON_ROTARY = 'rideOnRotary';
 export const PASS_CLASS_AUTONOMOUS = 'autonomous';
 export const PASS_CLASS_ROLLER = 'roller';
+export const PASS_CLASS_SPRAYER = 'sprayer';
+export const PASS_CLASS_CORER = 'corer';
 
 export const PASS_HOURS = {
   [PASS_CLASS_PUSH_REEL]: { greens: 8, tees: 4 },
@@ -177,6 +179,27 @@ export const FORECAST_UNRELIABLE_FROM_DAY = 5;
 export const FORECAST_UNRELIABLE_ACCURACY = 0.45;
 export const WET_WEATHER = ['rain', 'storm'];
 
+export const TASK_MACHINE_REQUIRE_NONE = 'none';
+export const TASK_MACHINE_REQUIRE_CLASS = 'class';
+export const TASK_MACHINE_REQUIRE_TYPE = 'type';
+export const TASK_MACHINE_CLASS_MOWER = 'mower';
+export const TASK_MACHINE_CLASS_ROLLER = 'roller';
+export const TASK_MACHINE_CLASS_SPRAYER = 'sprayer';
+export const TASK_MACHINE_CLASS_CORER = 'corer';
+export const TASK_MACHINE_CLASS_LABELS = {
+  [TASK_MACHINE_CLASS_MOWER]: 'mower',
+  [TASK_MACHINE_CLASS_ROLLER]: 'roller',
+  [TASK_MACHINE_CLASS_SPRAYER]: 'sprayer',
+  [TASK_MACHINE_CLASS_CORER]: 'corer',
+};
+export const ROLLER_PURCHASE_COST = 2400;
+export const SPRAYER_PURCHASE_COST = 9000;
+export const CORER_PURCHASE_COST = 18000;
+export const CORER_HIRE_PER_USE_COST = 450;
+export const MACHINE_HIRE_COST_BY_CLASS = {
+  [TASK_MACHINE_CLASS_CORER]: CORER_HIRE_PER_USE_COST,
+};
+
 export const STARTING_AREA_QUALITY = {
   greens: 55,
   tees: 50,
@@ -263,6 +286,8 @@ import {
   MACHINE_CLASS_RIDING_GREENS_TRIPLEX,
   MACHINE_CLASS_ROLLER,
   MACHINE_CLASS_ROUGH_UTILITY,
+  MACHINE_CLASS_SPRAYER,
+  MACHINE_CLASS_CORER,
   MACHINE_CLASS_WALK_BEHIND_REEL,
 } from './constants.js';
 
@@ -274,4 +299,6 @@ export const PASS_CLASS_BY_CATALOG = {
   [MACHINE_CLASS_ROUGH_UTILITY]: PASS_CLASS_RIDE_ON_ROTARY,
   [MACHINE_CLASS_AUTONOMOUS]: PASS_CLASS_AUTONOMOUS,
   [MACHINE_CLASS_ROLLER]: PASS_CLASS_ROLLER,
+  [MACHINE_CLASS_SPRAYER]: PASS_CLASS_SPRAYER,
+  [MACHINE_CLASS_CORER]: PASS_CLASS_CORER,
 };

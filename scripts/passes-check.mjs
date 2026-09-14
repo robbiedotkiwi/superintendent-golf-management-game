@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createInitialState, canPlanTask, reducer } from '../src/engine/gameState.js';
 import { machineAllows, getMachine } from '../src/data/equipment.js';
-import { GREENSMASTER_ID, GROUNDSMASTER_ID } from '../src/data/constants.js';
+import { GREENSMASTER_ID, GROUNDSMASTER_ID, GREENS_ROLLER_ID, SPRAYER_ID, CORER_ID } from '../src/data/constants.js';
 import { gradeLetter, gradeCapScore, clampQuality } from '../src/engine/grades.js';
 import {
   hoursToPassFraction,
@@ -22,6 +22,10 @@ import {
   DAYS_PER_SEASON,
   FORECAST_UNRELIABLE_FROM_DAY,
   MAX_PASSES_PER_AREA_PER_DAY,
+  ROLLER_PURCHASE_COST,
+  SPRAYER_PURCHASE_COST,
+  CORER_PURCHASE_COST,
+  CORER_HIRE_PER_USE_COST,
   PASS_CLASS_PUSH_REEL,
   PASS_CLASS_RIDE_ON_ROTARY,
   PROJECT_EXPAND_3,
@@ -34,11 +38,12 @@ import {
 } from '../src/data/config.js';
 import { monthlyBudgetFor, golferNumbers, gmRequiredGrade } from '../src/engine/economy.js';
 import { draftFromJobId, emptySlotDraft, mowTaskIdFor, resolvePlannerJobId } from '../src/engine/slots.js';
-import { autoMachineFor, blockConflicts, clampBlockResize, paletteHoursFor, surplusWastedHours } from '../src/engine/dayPlanner.js';
+import { autoMachineFor, blockConflicts, clampBlockResize, paletteHoursFor, paletteMachineStatus, surplusWastedHours } from '../src/engine/dayPlanner.js';
 import { weekPassStrip } from '../src/engine/weekPasses.js';
 import { getDayTasks, workersForPlanDay } from '../src/engine/week.js';
 import { applySupportDay } from '../src/engine/support.js';
-import { getTask } from '../src/data/tasks.js';
+import { allowingMachines } from '../src/engine/equipment.js';
+import { getTask, taskUsesMachine } from '../src/data/tasks.js';
 import { forecastDaysAhead, forecastIsUnreliable } from '../src/engine/weather.js';
 
 function assert(cond, msg) {
@@ -406,5 +411,30 @@ assert(
   !forecastIsUnreliable(1, 1 + FORECAST_UNRELIABLE_FROM_DAY - 1),
   'the day before the threshold stays reliable',
 );
+
+assert(!taskUsesMachine(getTask('changeCups')), 'cup changes need no machine');
+assert(!taskUsesMachine(getTask('checkMoistureGreens')), 'moisture meter needs no machine');
+assert(!taskUsesMachine(getTask('weedEat')), 'weed eating needs no machine');
+assert(allowingMachines(state, getTask('changeCups')).length === 0, 'cups do not bind a mower');
+assert(taskUsesMachine(getTask('sprayGreens')), 'spray requires a machine class');
+assert(taskUsesMachine(getTask('coreGreens')), 'coring requires a machine class');
+assert(taskUsesMachine(getTask('rollGreens')), 'rolling requires a machine class');
+assert(getTask('coreGreens').machine.hireable, 'corer is hireable per use');
+assert(paletteMachineStatus(state, getTask('sprayGreens')).ok === false, 'spray palette blocked without sprayer');
+assert(paletteMachineStatus(state, getTask('rollGreens')).ok === false, 'roll palette blocked without roller');
+assert(paletteMachineStatus(state, getTask('coreGreens')).ok === true, 'coring palette open via hire');
+assert(machineAllows(getMachine(SPRAYER_ID), 'greens', getTask('sprayGreens')), 'sprayer allows spray greens');
+assert(!machineAllows(reel, 'greens', getTask('sprayGreens')), 'mower cannot spray');
+assert(machineAllows(getMachine(GREENS_ROLLER_ID), 'greens', getTask('rollGreens')), 'roller allows rolling');
+assert(machineAllows(getMachine(CORER_ID), 'greens', getTask('coreGreens')), 'corer allows coring');
+assert(getMachine(GREENS_ROLLER_ID).cost === ROLLER_PURCHASE_COST, 'roller priced from config');
+assert(getMachine(SPRAYER_ID).cost === SPRAYER_PURCHASE_COST, 'sprayer priced from config');
+assert(getMachine(CORER_ID).cost === CORER_PURCHASE_COST, 'corer priced from config');
+assert(CORER_HIRE_PER_USE_COST > 0, 'corer hire cost is in config');
+
+const plannerUi = readFileSync(new URL('../src/components/DayPlanner.jsx', import.meta.url), 'utf8');
+assert(plannerUi.includes('taskUsesMachine(task)'), 'planner hides selector from the task property');
+assert(plannerUi.includes('paletteMachineStatus'), 'planner reads machine requirement for palette gating');
+assert(!plannerUi.includes("taskId === 'sprayGreens'"), 'no per-task machine special cases in the planner');
 
 console.log('passes-check phase 7 ok');

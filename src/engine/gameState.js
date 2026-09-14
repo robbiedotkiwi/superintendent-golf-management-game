@@ -1,8 +1,8 @@
-import { getTask, SURFACE_LABELS } from '../data/tasks.js';
+import { getTask, SURFACE_LABELS, machineRequirementOf, taskUsesMachine } from '../data/tasks.js';
 import { calendarFromDay } from './calendar.js';
 import { buildForecast, canBuyWeatherStation } from './weather.js';
 import { createRng } from './rng.js';
-import { buyFoley, buyMachine, buyUpgrade, grindInHouse, repairMachine, sendForGrind, machinePlanCheck, durationOnMachine, recomputePlannedMinutes, allowingMachines, pickMachine, pickMachineForTask, machineMinutesRemaining, MACHINE_BOOKED_REASON, NO_MACHINE_REASON, getMachine, normalizeMachineOverride, machineSuitability } from './equipment.js';
+import { buyFoley, buyMachine, buyUpgrade, grindInHouse, repairMachine, sendForGrind, machinePlanCheck, durationOnMachine, recomputePlannedMinutes, allowingMachines, pickMachine, pickMachineForTask, machineMinutesRemaining, MACHINE_BOOKED_REASON, NO_MACHINE_REASON, getMachine, normalizeMachineOverride, machineSuitability, canHireForTask, missingMachineReason } from './equipment.js';
 import { machineAllows } from '../data/equipment.js';
 import { machineTitle } from './machineDisplay.js';
 import { assignWorker, certifiedPresent, workerById, workerAllows, workerBringsOwnMower, isWorkerPresent } from './assignment.js';
@@ -149,7 +149,7 @@ import { courseBounds, holesForCount } from '../data/course.js';
 import { clampView, defaultView } from './view.js';
 import { defaultSectionTabs, normalizeSection, normalizeTabs, tabListForSection } from './section.js';
 import { formatMoney } from './format.js';
-import { CAPEX_STATUS_PENDING, STARTING_CAPEX, STARTING_MONTHLY_BUDGET } from '../data/config.js';
+import { CAPEX_STATUS_PENDING, STARTING_CAPEX, STARTING_MONTHLY_BUDGET, TASK_MACHINE_CLASS_MOWER } from '../data/config.js';
 import { buyUsed, rollUsedListings, sellMachine } from './market.js';
 import { acceptEvent, declineEvent } from './events.js';
 
@@ -436,8 +436,13 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
   const ownMowerReady = requested
     ? workerBringsOwnMower(requested, task.surface)
     : roster.some((item) => workerBringsOwnMower(item, task.surface));
-  if (task.mowing && !allowingMachines(state, task).length && !ownMowerReady) {
-    return { ok: false, reason: NO_MACHINE_REASON };
+  if (
+    taskUsesMachine(task) &&
+    !allowingMachines(state, task).length &&
+    !(machineRequirementOf(task).class === TASK_MACHINE_CLASS_MOWER && ownMowerReady) &&
+    !canHireForTask(state, task)
+  ) {
+    return { ok: false, reason: missingMachineReason(task) };
   }
 
   const worker = requested ?? assignWorker(state, task, holes);
@@ -512,6 +517,7 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
     holes,
     suitability,
     ownMower: Boolean(machineCheck.ownMower),
+    hiredMachine: Boolean(machineCheck.hired),
   };
 }
 
@@ -605,6 +611,7 @@ export function reducer(state, action) {
           startMinute: action.startMinute ?? nextStartMinute(getDayTasks(state, day), check.workerId),
           machineId: check.machineId ?? null,
           ownMower: Boolean(check.ownMower),
+          hiredMachine: Boolean(check.hiredMachine),
           holes: check.holes ?? [],
           ...(action.taskId === 'handWater'
             ? { greens: allGreenIds(holeCount(state)) }
@@ -626,6 +633,7 @@ export function reducer(state, action) {
       const machine = action.machineId
         ? getMachine(action.machineId)
         : autoMachineFor(view, task, worker);
+      const hiredMachine = Boolean(!machine && canHireForTask(view, task));
       const minutes = snapMinutes(
         action.minutes ?? defaultBlockMinutes(view, task.id, worker, machine?.id),
       );
@@ -642,6 +650,7 @@ export function reducer(state, action) {
           startMinute,
           machineId: machine?.id ?? null,
           ownMower: Boolean(worker.ownMower && !machine),
+          hiredMachine,
           holes: jobHolesFor(state, task),
         },
       ];

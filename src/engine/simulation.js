@@ -43,7 +43,7 @@ import { applyDailyQualityDrift, applyMissedWeekPenalties } from './qualityDrift
 import { applyAreaQualityToHoles, applyWeekPasses, emptyAreaQuality, machineAllowsArea, passHoursFor, resolveDayPasses } from './passes.js';
 import { migrateWorkerTier } from './staffTiers.js';
 import { generateCandidates, generateCasuals } from '../data/staff.js';
-import { getTask, taskAppliesQuality } from '../data/tasks.js';
+import { getTask, hireCostFor, machineRequirementOf, taskAppliesQuality } from '../data/tasks.js';
 import { workerById, workerQualityMultiplier, qualityRandomFactor } from './assignment.js';
 import { workerBringsOwnMower } from './skills.js';
 import { enqueueGm, GM_MSG_CAPEX_MISSED, GM_MSG_CAPEX_RELEASED, GM_MSG_CORING, GM_MSG_DUTIES, tickGm } from './gm.js';
@@ -273,6 +273,11 @@ export function resolveDay(state) {
     if (task.materialsCost) {
       cash -= task.materialsCost;
       materialsSpent += task.materialsCost;
+    }
+    if (plannedTask.hiredMachine || (machineRequirementOf(task).hireable && !machine)) {
+      const hire = hireCostFor(task);
+      cash -= hire;
+      materialsSpent += hire;
     }
     if (task.surface && (taskAppliesQuality(task) || task.kind === 'prep')) {
       for (const id of jobHoles) workedHolesByType[task.surface].add(id);

@@ -5,11 +5,12 @@ import {
   PASS_AREAS,
   PLANNER_HOUR_PX,
   PLANNER_PALETTE,
+  TASK_MACHINE_CLASS_LABELS,
   WORK_DAY_HOURS,
 } from '../data/config.js';
-import { getTask, SURFACE_LABELS } from '../data/tasks.js';
+import { getTask, SURFACE_LABELS, machineRequirementOf, taskUsesMachine } from '../data/tasks.js';
 import { catalogMachineTitle } from './machineDisplay.js';
-import { allowingMachines, durationOnMachine, pickMachineForTask } from './equipment.js';
+import { allowingMachines, canHireForTask, durationOnMachine, missingMachineReason, pickMachineForTask } from './equipment.js';
 import { hoursToMinutes, minutesToHours, snapHours, snapMinutes } from './duration.js';
 import { machineConflictsOnDay, rangesOverlap } from './slots.js';
 import { staffCanRunMachine, hoursToPassFraction, passHoursFor } from './passes.js';
@@ -25,7 +26,7 @@ export function paletteLabel(taskId) {
 }
 
 export function autoMachineFor(state, task, worker) {
-  if (!task) return null;
+  if (!taskUsesMachine(task)) return null;
   const allowed = allowingMachines(state, task).filter((machine) => staffCanRunMachine(worker, machine));
   if (!allowed.length) return pickMachineForTask(state, task, worker);
   const ranked = [...allowed].sort((a, b) => {
@@ -34,6 +35,13 @@ export function autoMachineFor(state, task, worker) {
     return da - db;
   });
   return ranked[0] ?? null;
+}
+
+export function paletteMachineStatus(state, task) {
+  if (!taskUsesMachine(task)) return { ok: true };
+  if (allowingMachines(state, task).length) return { ok: true };
+  if (canHireForTask(state, task)) return { ok: true, hired: true };
+  return { ok: false, reason: missingMachineReason(task) };
 }
 
 export function defaultBlockMinutes(state, taskId, worker, machineId) {
@@ -182,7 +190,11 @@ export function blockFace(state, block, worker) {
   const hours = minutesToHours(block.minutes);
   const fraction = passFractionForBlock(state, block, worker);
   const label = SURFACE_LABELS[task?.surface] ?? paletteLabel(block.taskId);
-  const machine = catalogMachineTitle(block.machineId) || (block.ownMower ? 'own' : '');
+  let machine = catalogMachineTitle(block.machineId) || (block.ownMower ? 'own' : '');
+  if (!machine && block.hiredMachine) {
+    const req = machineRequirementOf(task);
+    machine = `hired ${TASK_MACHINE_CLASS_LABELS[req.class] ?? 'machine'}`;
+  }
   return {
     label,
     machine,
