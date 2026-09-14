@@ -17,9 +17,7 @@ import {
 import {
   STANDARD_WORK_DAYS,
   STAFF_TIER_LABELS,
-  VOLUNTEER_REWARD_SATISFACTION,
   VOLUNTEER_SURFACES,
-  VOLUNTEER_WEEKLY_HOURS,
 } from '../data/config.js';
 import { useState } from 'react';
 import { canFireWorker, dayOfWeek, severanceCost } from '../engine/staff.js';
@@ -99,7 +97,6 @@ export default function Crew({
   const [confirmFireId, setConfirmFireId] = useState(null);
   const [confirmVolunteerGone, setConfirmVolunteerGone] = useState(false);
   const volunteerHours = volunteerHoursFor(state);
-  const volunteerReward = (state.satisfaction ?? 0) >= VOLUNTEER_REWARD_SATISFACTION;
 
   return (
     <div className="h-full overflow-y-auto bg-[var(--soil)] px-6 py-5 text-[var(--paint)]">
@@ -209,11 +206,8 @@ export default function Crew({
             <p className={`mt-2 ${reason ? 'line-through' : ''}`}>{volunteer?.name ?? 'Volunteer'}</p>
             {reason ? <p className="text-sm text-[var(--sand)]">{reason}</p> : null}
             <p className="mt-2">
-              {volunteerHours} hours {volunteerReward ? 'on two days' : 'one day'} each week on{' '}
-              {VOLUNTEER_SURFACES.join(', ')}. Assign to general duties and bunkers.
-              {volunteerReward
-                ? ' Club satisfaction unlocked a second volunteer day.'
-                : ` ${VOLUNTEER_WEEKLY_HOURS} hours weekly until satisfaction hits ${VOLUNTEER_REWARD_SATISFACTION}.`}
+              {volunteerHours} hours one day each week on {VOLUNTEER_SURFACES.join(', ')}. Assign to
+              general duties and bunkers.
             </p>
           </>
         );

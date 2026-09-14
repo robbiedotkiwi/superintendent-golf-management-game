@@ -17,9 +17,9 @@ export const DAYS_PER_SEASON = 28;
 export const PASS_AREAS = ['greens', 'tees', 'fairways', 'rough'];
 
 export const PASSES_REQUIRED_PER_WEEK = {
-  greens: 5,
+  greens: 4,
   tees: 2,
-  fairways: 2,
+  fairways: 1,
   rough: 1,
 };
 
@@ -35,7 +35,7 @@ export const PASS_CLASS_SPRAYER = 'sprayer';
 export const PASS_CLASS_CORER = 'corer';
 
 export const PASS_HOURS = {
-  [PASS_CLASS_PUSH_REEL]: { greens: 8, tees: 4 },
+  [PASS_CLASS_PUSH_REEL]: { greens: 6, tees: 4 },
   [PASS_CLASS_PUSH_ROTARY]: { tees: 6, fairways: 40, rough: 30 },
   [PASS_CLASS_RIDE_ON_REEL]: { greens: 4, tees: 2, fairways: 8 },
   [PASS_CLASS_RIDE_ON_ROTARY]: { tees: 3, fairways: 16, rough: 12 },
@@ -109,7 +109,7 @@ export const STAFF_RATING_SENIOR = 80;
 
 export const PLAYER_TIER = STAFF_TIER_SENIOR;
 export const VOLUNTEER_TIER = STAFF_TIER_UNSKILLED;
-export const VOLUNTEER_WEEKLY_HOURS = 4;
+export const VOLUNTEER_WEEKLY_HOURS = 8;
 export const VOLUNTEER_REWARD_DAYS = 2;
 export const VOLUNTEER_REWARD_SATISFACTION = 70;
 export const VOLUNTEER_SURFACES = ['fairways', 'rough', 'bunkers'];
@@ -173,6 +173,12 @@ export const GROW_IN_DAYS = 84;
 export const GROW_IN_AREAS = ['greens'];
 export const GM_REQUIRED_GRADE_BASE = 70;
 export const GM_REQUIRED_GRADE_PER_HOLE = 0.35;
+export const GM_TARGET_START_LETTER = 'D+';
+export const GM_TARGET_PLATEAU_LETTER = 'B+';
+export const GM_TARGET_RATCHET_STEPS_PER_SEASON = 1;
+export const BREAKDOWN_CASH_COST = 2500;
+export const BAD_WEEK_CASH_COST = 8000;
+export const STARTING_CASH = Math.max(BREAKDOWN_CASH_COST, BAD_WEEK_CASH_COST);
 export const PROJECT_OCCUPIES_PERSON = true;
 
 export const FORECAST_UNRELIABLE_FROM_DAY = 5;

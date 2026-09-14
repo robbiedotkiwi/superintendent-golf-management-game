@@ -27,6 +27,9 @@ import {
   CORER_PURCHASE_COST,
   CORER_HIRE_PER_USE_COST,
   PASS_CLASS_PUSH_REEL,
+  PASSES_REQUIRED_PER_WEEK,
+  STARTING_CASH,
+  VOLUNTEER_WEEKLY_HOURS,
   PASS_CLASS_RIDE_ON_ROTARY,
   PROJECT_EXPAND_3,
   STAFF_TIER_JUNIOR,
@@ -36,12 +39,13 @@ import {
   WEAR_TIME_MULT_LIGHT,
   WEAR_TIME_MULT_NONE,
 } from '../src/data/config.js';
-import { monthlyBudgetFor, golferNumbers, gmRequiredGrade } from '../src/engine/economy.js';
+import { monthlyBudgetFor, golferNumbers, gmRequiredGrade, gmTargetLetter, tryReleaseSeason1Capex } from '../src/engine/economy.js';
 import { draftFromJobId, emptySlotDraft, mowTaskIdFor, resolvePlannerJobId } from '../src/engine/slots.js';
 import { autoMachineFor, blockConflicts, clampBlockResize, paletteHoursFor, paletteMachineStatus, surplusWastedHours } from '../src/engine/dayPlanner.js';
 import { weekPassStrip } from '../src/engine/weekPasses.js';
 import { getDayTasks, workersForPlanDay } from '../src/engine/week.js';
 import { applySupportDay } from '../src/engine/support.js';
+import { volunteerHoursFor, volunteerOnDuty } from '../src/engine/staffMorale.js';
 import { migrateMoisture } from '../src/engine/moisture.js';
 import { allowingMachines } from '../src/engine/equipment.js';
 import { getTask, taskUsesMachine } from '../src/data/tasks.js';
@@ -89,7 +93,7 @@ assert(applyDurationModifier(4, 1.25) === 5, '4 hr +25% wear → 5.0');
 assert(applyDurationModifier(4, 1.1) === 4, '4 hr +10% wear rounds down to 4.0');
 assert(applyDurationModifier(2, 0.9) === 2, '2 hr senior stays 2');
 const seniorHours = passHoursFor(state, GREENSMASTER_ID, 'greens', state.workers[0]);
-assert(seniorHours === 7.5, `senior clean push reel greens is 7.5, got ${seniorHours}`);
+assert(seniorHours === 5.5, `senior clean push reel greens is 5.5, got ${seniorHours}`);
 assert(DAYS_PER_SEASON === 28, 'season is 28 days');
 assert(weeklyTargetQuality(1, 80) === 80, 'weekly result capped by machine');
 assert(weeklyTargetQuality(0.5, 100) === 50, 'half passes = 50');
@@ -141,7 +145,7 @@ assert(state.capex === 0, 'season 1 capex starts locked');
 assert(state.capexStatus === 'pending', 'season 1 capex pending');
 assert(monthlyBudgetFor(state) > 0, 'monthly budget');
 assert(golferNumbers(state) > 0, 'golfers');
-assert(gmRequiredGrade(state) > 70, 'gm required rises with holes');
+assert(gmRequiredGrade(state) === 67, 'season 1 GM target is D+');
 
 let site = reducer(
   { ...state, capex: 200000 },
@@ -280,10 +284,10 @@ assert(plannerSrc.includes('data-block-machine'), 'machine name is on the block 
 assert(plannerSrc.includes('Machine override'), 'block has a machine override');
 
 const junior = { ...state.workers[0], id: 'junior', name: 'Junior', tier: STAFF_TIER_JUNIOR };
-assert(paletteHoursFor(state, 'cutGreens', state.workers[0]) === 7.5, 'palette senior clean greens is 7.5');
-assert(paletteHoursFor(state, 'cutGreens', junior) === 8, 'palette junior clean greens is 8.0');
+assert(paletteHoursFor(state, 'cutGreens', state.workers[0]) === 5.5, 'palette senior clean greens is 5.5');
+assert(paletteHoursFor(state, 'cutGreens', junior) === 6, 'palette junior clean greens is 6.0');
 const worn = { ...state, machineWear: { ...(state.machineWear ?? {}), [GREENSMASTER_ID]: 60 } };
-assert(paletteHoursFor(worn, 'cutGreens', junior) === 10, 'palette junior 60% wear greens is 10.0');
+assert(paletteHoursFor(worn, 'cutGreens', junior) === 7.5, 'palette junior 60% wear greens is 7.5');
 assert(plannerSrc.includes('data-palette-hours'), 'palette shows computed hours');
 
 const strip = weekPassStrip(state);
@@ -454,5 +458,28 @@ const moistureUi = readFileSync(new URL('../src/components/MoistureReadout.jsx',
 assert(!moistureUi.includes('GreensMoistureList'), 'per-hole moisture list UI removed');
 const irrigationUi = readFileSync(new URL('../src/components/IrrigationWeekTab.jsx', import.meta.url), 'utf8');
 assert(irrigationUi.includes('MoistureLine'), 'irrigation tab shows area moisture');
+
+assert(PASSES_REQUIRED_PER_WEEK.greens === 4, 'A greens needs 4 passes');
+assert(PASSES_REQUIRED_PER_WEEK.tees === 2, 'A tees needs 2 passes');
+assert(PASSES_REQUIRED_PER_WEEK.fairways === 1, 'A fairways needs 1 pass');
+assert(PASSES_REQUIRED_PER_WEEK.rough === 1, 'A rough needs 1 pass');
+assert(volunteerHoursFor(state) === VOLUNTEER_WEEKLY_HOURS, 'volunteer is 8 hours weekly');
+assert(volunteerOnDuty({ ...state, satisfaction: 100 }, state.day) === volunteerOnDuty(state, state.day), 'no second volunteer day');
+assert(!crewSrc.includes('second volunteer day'), 'two-day volunteer upgrade copy removed');
+assert(gmTargetLetter(state) === 'D+', 'season 1 GM target letter is D+');
+assert(gmTargetLetter({ ...state, day: 1 + DAYS_PER_SEASON }) === 'C-', 'season 2 ratchets one grade step');
+assert(gmTargetLetter({ ...state, day: 1 + 6 * DAYS_PER_SEASON }) === 'B+', 'GM target plateaus at B+');
+assert(gmTargetLetter({ ...state, day: 1 + 12 * DAYS_PER_SEASON }) === 'B+', 'GM target stays at B+ past the plateau');
+const missed = tryReleaseSeason1Capex(
+  {
+    ...state,
+    day: 15,
+    areaQuality: { greens: 0, tees: 0, fairways: 0, rough: 0 },
+    capexStatus: 'pending',
+  },
+  true,
+);
+assert(missed.capexStatus !== 'missed', 'season 1 has no funding penalty');
+assert(STARTING_CASH >= 2500, 'starting cash covers a breakdown or a bad week');
 
 console.log('passes-check phase 7 ok');

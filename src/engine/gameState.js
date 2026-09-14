@@ -87,7 +87,8 @@ import {
   PLAYER_QUALITY_SKILL,
   PLAYER_SPEED_SKILL,
   PLAYER_WAGE,
-  STARTING_OPENING_CASH,
+  STARTING_MAINTENANCE_BUDGET,
+  STARTING_CAPITAL_BUDGET,
   STARTING_DAY,
   STARTING_DAYS_WORKED_RUNNING,
   STARTING_MACHINE_CONDITION,
@@ -149,7 +150,7 @@ import { courseBounds, holesForCount } from '../data/course.js';
 import { clampView, defaultView } from './view.js';
 import { defaultSectionTabs, normalizeSection, normalizeTabs, tabListForSection } from './section.js';
 import { formatMoney } from './format.js';
-import { CAPEX_STATUS_PENDING, STARTING_CAPEX, STARTING_MONTHLY_BUDGET, TASK_MACHINE_CLASS_MOWER } from '../data/config.js';
+import { CAPEX_STATUS_PENDING, STARTING_CAPEX, STARTING_CASH, STARTING_MONTHLY_BUDGET, TASK_MACHINE_CLASS_MOWER } from '../data/config.js';
 import { buyUsed, rollUsedListings, sellMachine } from './market.js';
 import { acceptEvent, declineEvent } from './events.js';
 
@@ -211,7 +212,7 @@ export function createInitialState() {
     day: STARTING_DAY,
     season: calendar.season,
     year: calendar.year,
-    cash: STARTING_OPENING_CASH,
+    cash: STARTING_CASH + STARTING_MAINTENANCE_BUDGET + STARTING_CAPITAL_BUDGET,
     fuelSpendLog: [],
     holes: applyAreaQualityToHoles(holes, areaQuality),
     areaQuality,
