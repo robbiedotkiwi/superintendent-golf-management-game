@@ -1,7 +1,5 @@
 import {
   DROUGHT_DECAY,
-  GREEN_DRYING_FACTOR_MAX,
-  GREEN_DRYING_FACTOR_MIN,
   GREENS_SENSORS_COST,
   HAND_WATER_MINUTES_PER_GREEN,
   HOC_WATER_MULT,
@@ -33,7 +31,6 @@ import {
   pondWater,
   sand,
 } from '../data/constants.js';
-import { HOLES } from '../data/course.js';
 import { lerpHex } from './color.js';
 import { hocFactor } from './mowing.js';
 import { droughtMult } from './grass.js';
@@ -43,22 +40,23 @@ import { moistureFromMm, migrateIrrigationValue } from './irrigation.js';
 import { moistureEtTempFactor } from './weather.js';
 
 const WINDY_WEATHER = [WEATHER_FINE, WEATHER_OVERCAST];
+const AREA_SURFACES = ['greens', 'tees', 'fairways'];
 
 export function allGreenIds(holes = HOLE_COUNT) {
   return Array.from({ length: holes }, (_, index) => index + 1);
 }
 
-export function emptyMoisture(holes = HOLE_COUNT) {
+export function emptyMoisture() {
   return {
-    greens: Array.from({ length: holes }, () => MOISTURE_START.greens),
+    greens: MOISTURE_START.greens,
     tees: MOISTURE_START.tees,
     fairways: MOISTURE_START.fairways,
   };
 }
 
-export function emptyMoistureReadDay(holes = HOLE_COUNT) {
+export function emptyMoistureReadDay() {
   return {
-    greens: Array.from({ length: holes }, () => MOISTURE_HIDDEN),
+    greens: MOISTURE_HIDDEN,
     tees: MOISTURE_HIDDEN,
     fairways: MOISTURE_HIDDEN,
   };
@@ -68,20 +66,35 @@ export function clampMoisture(value) {
   return Math.min(MOISTURE_MAX, Math.max(MOISTURE_MIN, value));
 }
 
-export function dryingFactorForGreen(index) {
-  const factor = HOLES[index]?.dryingFactor ?? 1;
-  return Math.min(GREEN_DRYING_FACTOR_MAX, Math.max(GREEN_DRYING_FACTOR_MIN, factor));
+function asAreaValue(value, fallback) {
+  if (Array.isArray(value)) {
+    const nums = value.filter((item) => item != null && Number.isFinite(Number(item))).map(Number);
+    if (!nums.length) return fallback;
+    return nums.reduce((sum, item) => sum + item, 0) / nums.length;
+  }
+  if (value == null) return fallback;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function asReadDay(value) {
+  if (Array.isArray(value)) {
+    const days = value.filter((item) => item != null && Number.isFinite(Number(item))).map(Number);
+    if (!days.length) return MOISTURE_HIDDEN;
+    return Math.max(...days);
+  }
+  if (value == null) return MOISTURE_HIDDEN;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : MOISTURE_HIDDEN;
 }
 
 export function meanGreenMoisture(moisture) {
-  const greens = moisture?.greens ?? [];
-  if (!greens.length) return MOISTURE_START.greens;
-  return greens.reduce((sum, value) => sum + value, 0) / greens.length;
+  return asAreaValue(moisture?.greens, MOISTURE_START.greens);
 }
 
 export function surfaceMoisture(moisture, surface) {
   if (surface === 'greens') return meanGreenMoisture(moisture);
-  return moisture?.[surface] ?? MOISTURE_START[surface];
+  return asAreaValue(moisture?.[surface], MOISTURE_START[surface]);
 }
 
 export function isBelowBand(moisture, surface) {
@@ -103,21 +116,20 @@ export function greenBandState(value) {
   return 'ok';
 }
 
-function cloneMoisture(moisture, holes = HOLE_COUNT) {
-  const fallback = emptyMoisture(holes);
+function cloneMoisture(moisture) {
+  const fallback = emptyMoisture();
   return {
-    greens: [...(moisture?.greens ?? fallback.greens)],
-    tees: moisture?.tees ?? fallback.tees,
-    fairways: moisture?.fairways ?? fallback.fairways,
+    greens: clampMoisture(asAreaValue(moisture?.greens, fallback.greens)),
+    tees: clampMoisture(asAreaValue(moisture?.tees, fallback.tees)),
+    fairways: clampMoisture(asAreaValue(moisture?.fairways, fallback.fairways)),
   };
 }
 
-function cloneReadDay(readDay, holes = HOLE_COUNT) {
-  const fallback = emptyMoistureReadDay(holes);
+function cloneReadDay(readDay) {
   return {
-    greens: [...(readDay?.greens ?? fallback.greens)],
-    tees: readDay?.tees ?? fallback.tees,
-    fairways: readDay?.fairways ?? fallback.fairways,
+    greens: asReadDay(readDay?.greens),
+    tees: asReadDay(readDay?.tees),
+    fairways: asReadDay(readDay?.fairways),
   };
 }
 
@@ -156,71 +168,43 @@ function rainAdd(weather) {
 }
 
 export function tickMoisture(state) {
-  const holes = holeCount(state);
-  const next = cloneMoisture(state.moisture, holes);
+  const next = cloneMoisture(state.moisture);
   const rain = rainAdd(state.weather);
-  for (const surface of ['tees', 'fairways']) {
+  for (const surface of AREA_SURFACES) {
     const et = MOISTURE_ET_BASE[surface] * etMultiplier(state, surface);
     next[surface] = clampMoisture(next[surface] + irrigationAdd(state, surface) + rain - et);
   }
-  const greensEt = MOISTURE_ET_BASE.greens * etMultiplier(state, 'greens');
-  const greensAdd = irrigationAdd(state, 'greens') + rain;
-  next.greens = Array.from({ length: holes }, (_, index) => {
-    const prev = next.greens[index] ?? MOISTURE_START.greens;
-    return clampMoisture(prev + greensAdd - greensEt * dryingFactorForGreen(index));
-  });
   return next;
 }
 
 export function writeMoistureToHoles(holes, moisture, moistureReadDay) {
   let next = holes;
-  next = mapHoleSurfaces(next, 'greens', (record, hole) => ({
-    ...record,
-    moisture: moisture?.greens?.[hole.id - 1] ?? record.moisture,
-    moistureReadDay: moistureReadDay?.greens?.[hole.id - 1] ?? record.moistureReadDay,
-  }));
-  next = mapHoleSurfaces(next, 'tees', (record) => ({
-    ...record,
-    moisture: moisture?.tees ?? record.moisture,
-    moistureReadDay: moistureReadDay?.tees ?? record.moistureReadDay,
-  }));
-  next = mapHoleSurfaces(next, 'fairways', (record) => ({
-    ...record,
-    moisture: moisture?.fairways ?? record.moisture,
-    moistureReadDay: moistureReadDay?.fairways ?? record.moistureReadDay,
-  }));
-  return next;
-}
-
-export function applyHandWater(moisture, targets, holes = HOLE_COUNT) {
-  const next = cloneMoisture(moisture, holes);
-  for (const id of targets ?? []) {
-    const index = id - 1;
-    if (index < 0 || index >= next.greens.length) continue;
-    next.greens[index] = clampMoisture(next.greens[index] + MOISTURE_HAND_WATER_ADD);
+  for (const surface of AREA_SURFACES) {
+    next = mapHoleSurfaces(next, surface, (record) => ({
+      ...record,
+      moisture: moisture?.[surface] ?? record.moisture,
+      moistureReadDay: moistureReadDay?.[surface] ?? record.moistureReadDay,
+    }));
   }
   return next;
 }
 
-export function revealMoisture(readDay, surface, day, holes = HOLE_COUNT, holeIds) {
-  const next = cloneReadDay(readDay, holes);
-  if (surface === 'greens') {
-    if (!holeIds?.length) {
-      next.greens = Array.from({ length: holes }, () => day);
-    } else {
-      for (const id of holeIds) {
-        const index = id - 1;
-        if (index >= 0 && index < next.greens.length) next.greens[index] = day;
-      }
-    }
-  } else if (surface === 'tees' || surface === 'fairways') {
+export function applyHandWater(moisture) {
+  const next = cloneMoisture(moisture);
+  next.greens = clampMoisture(next.greens + MOISTURE_HAND_WATER_ADD);
+  return next;
+}
+
+export function revealMoisture(readDay, surface, day) {
+  const next = cloneReadDay(readDay);
+  if (surface === 'greens' || surface === 'tees' || surface === 'fairways') {
     next[surface] = day;
   }
   return next;
 }
 
 function readAge(readDay, day) {
-  if (readDay == null) return null;
+  if (readDay == null || readDay === MOISTURE_HIDDEN) return null;
   return day - readDay;
 }
 
@@ -231,31 +215,15 @@ function readingKind(age, neverStale) {
   return 'fresh';
 }
 
-export function moistureStatus(state, surface, greenIndex = null) {
-  const holes = holeCount(state);
-  const moisture = state.moisture ?? emptyMoisture(holes);
-  const readDay = state.moistureReadDay ?? emptyMoistureReadDay(holes);
-  if (surface === 'greens') {
-    const index = greenIndex ?? 0;
-    const value = greenIndex == null ? meanGreenMoisture(moisture) : (moisture.greens[index] ?? MOISTURE_START.greens);
-    const age = readAge(readDay.greens[index], state.day);
-    const kind = readingKind(age, Boolean(state.hasGreensSensors));
-    if (kind === 'hidden') return { kind, value: MOISTURE_HIDDEN };
-    return { kind, value };
-  }
-  const value = moisture[surface];
+export function moistureStatus(state, surface) {
+  const moisture = state.moisture ?? emptyMoisture();
+  const readDay = state.moistureReadDay ?? emptyMoistureReadDay();
+  const value = surfaceMoisture(moisture, surface);
+  const neverStale = surface === 'greens' && Boolean(state.hasGreensSensors);
   const age = readAge(readDay[surface], state.day);
-  const kind = readingKind(age, false);
+  const kind = readingKind(age, neverStale);
   if (kind === 'hidden') return { kind, value: MOISTURE_HIDDEN };
   return { kind, value };
-}
-
-export function greensStatuses(state) {
-  const holes = holeCount(state);
-  return Array.from({ length: holes }, (_, index) => ({
-    hole: index + 1,
-    ...moistureStatus(state, 'greens', index),
-  }));
 }
 
 export function droughtDecay(moisture, state) {
@@ -289,8 +257,7 @@ export function outOfBand(value, surface) {
 }
 
 export function handWaterMinutes(state) {
-  const targets = state.handWaterTargets ?? allGreenIds(holeCount(state));
-  return HAND_WATER_MINUTES_PER_GREEN * targets.length;
+  return HAND_WATER_MINUTES_PER_GREEN * holeCount(state);
 }
 
 export function canBuyGreensSensors(state) {
@@ -308,28 +275,17 @@ export function canBuyTurfRad(state) {
 }
 
 export function migrateMoisture(state) {
-  const holes = holeCount(state);
-  const moisture = emptyMoisture(holes);
-  if (Array.isArray(state.moisture?.greens)) {
-    moisture.greens = Array.from({ length: holes }, (_, index) =>
-      clampMoisture(state.moisture.greens[index] ?? MOISTURE_START.greens),
-    );
-    moisture.tees = clampMoisture(state.moisture.tees ?? MOISTURE_START.tees);
-    moisture.fairways = clampMoisture(state.moisture.fairways ?? MOISTURE_START.fairways);
-  }
-  const moistureReadDay = emptyMoistureReadDay(holes);
-  if (Array.isArray(state.moistureReadDay?.greens)) {
-    moistureReadDay.greens = Array.from({ length: holes }, (_, index) => state.moistureReadDay.greens[index] ?? MOISTURE_HIDDEN);
-    moistureReadDay.tees = state.moistureReadDay.tees ?? MOISTURE_HIDDEN;
-    moistureReadDay.fairways = state.moistureReadDay.fairways ?? MOISTURE_HIDDEN;
-  }
-  const targets = Array.isArray(state.handWaterTargets) && state.handWaterTargets.length
-    ? state.handWaterTargets.filter((id) => id >= 1 && id <= holes)
-    : allGreenIds(holes);
+  const moisture = emptyMoisture();
+  moisture.greens = clampMoisture(asAreaValue(state.moisture?.greens, MOISTURE_START.greens));
+  moisture.tees = clampMoisture(asAreaValue(state.moisture?.tees, MOISTURE_START.tees));
+  moisture.fairways = clampMoisture(asAreaValue(state.moisture?.fairways, MOISTURE_START.fairways));
+  const moistureReadDay = emptyMoistureReadDay();
+  moistureReadDay.greens = asReadDay(state.moistureReadDay?.greens);
+  moistureReadDay.tees = asReadDay(state.moistureReadDay?.tees);
+  moistureReadDay.fairways = asReadDay(state.moistureReadDay?.fairways);
   return {
     moisture,
     moistureReadDay,
-    handWaterTargets: targets,
     hasGreensSensors: Boolean(state.hasGreensSensors),
     hasTurfRad: Boolean(state.hasTurfRad),
     hasWeatherStation: Boolean(state.hasWeatherStation),

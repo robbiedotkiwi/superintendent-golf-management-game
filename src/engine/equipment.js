@@ -66,7 +66,7 @@ import {
   TURF_DAMAGE_REASON,
 } from '../data/equipment.js';
 import { getUpgrade, upgradeAppliesTo } from '../data/upgrades.js';
-import { getTask, taskUsesMachine } from '../data/tasks.js';
+import { getTask, hireCostFor, machineRequirementOf, taskUsesMachine } from '../data/tasks.js';
 import { hocFactor } from './mowing.js';
 import { jobHolesFor, setupMinutesFor, variableJobMinutes } from './jobs.js';
 import { handWaterMinutes } from './moisture.js';
@@ -75,8 +75,9 @@ import { bumpCapitalSpent } from './history.js';
 import { workerTimeMultiplier, mowingOperatorTimeMultiplier, workerBringsOwnMower } from './skills.js';
 import { hasMechanic } from './staff.js';
 import { createRng } from './rng.js';
+import { formatMoney } from './format.js';
 import { needsCapital, needsCash, spendCapital, spendCash } from './cash.js';
-import { OWN_MOWER_PASS_CLASS, PASS_AREAS } from '../data/config.js';
+import { OWN_MOWER_PASS_CLASS, PASS_AREAS, TASK_MACHINE_CLASS_LABELS, TASK_MACHINE_CLASS_MOWER } from '../data/config.js';
 import { supportMinutes } from './support.js';
 import { passMinutesFor } from './passes.js';
 import { snapMinutes } from './duration.js';
@@ -313,8 +314,21 @@ export function machineMinutesRemaining(state, machineId, ignoreTaskId) {
   return cap - claimed;
 }
 
+export function canHireForTask(state, task) {
+  const req = machineRequirementOf(task);
+  if (!req.hireable) return false;
+  return needsCash(state, hireCostFor(task)).ok;
+}
+
+export function missingMachineReason(task) {
+  const req = machineRequirementOf(task);
+  const label = TASK_MACHINE_CLASS_LABELS[req.class] ?? req.type ?? 'machine';
+  if (req.hireable) return `Needs a ${label} (hire ${formatMoney(hireCostFor(task))} or buy)`;
+  return `Needs a ${label}`;
+}
+
 export function allowingMachines(state, task) {
-  if (!task?.surface) return [];
+  if (!taskUsesMachine(task)) return [];
   return ownedMachineList(state).filter(
     (machine) => isMachineAvailable(state, machine.id) && machineAllowsInState(state, machine, task.surface, task),
   );
@@ -399,8 +413,7 @@ function durationOnMachineUnrounded(state, taskId, worker, machineId, holeIds) {
     return worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
   }
   if (taskId === 'handWater') {
-    const probe = holeIds?.length ? { ...state, handWaterTargets: holeIds } : state;
-    const base = handWaterMinutes(probe);
+    const base = handWaterMinutes(state);
     return worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
   }
   const support = supportMinutes(taskId, state);
@@ -486,8 +499,12 @@ export function pickMachineForTask(state, task, worker, ignoreTaskId, holeIds) {
 }
 
 export function machinePlanCheck(state, task, worker, machineId, holeIds) {
-  if (workerBringsOwnMower(worker, task?.surface)) {
+  const req = machineRequirementOf(task);
+  if (req.class === TASK_MACHINE_CLASS_MOWER && workerBringsOwnMower(worker, task?.surface)) {
     return { ok: true, machine: null, ownMower: true };
+  }
+  if (!taskUsesMachine(task)) {
+    return { ok: true, machine: null };
   }
   if (machineId) {
     if (!isMachineAvailable(state, machineId) || !state.ownedMachines?.includes(machineId)) {
@@ -495,11 +512,9 @@ export function machinePlanCheck(state, task, worker, machineId, holeIds) {
     }
     return { ok: true, machine: getMachine(machineId) };
   }
-  if (!task?.mowing) {
-    return { ok: true, machine: taskUsesMachine(task) ? pickMachineForTask(state, task, worker, undefined, holeIds) : null };
-  }
   if (!allowingMachines(state, task).length) {
-    return { ok: false, reason: NO_MACHINE_REASON, machine: null };
+    if (canHireForTask(state, task)) return { ok: true, machine: null, hired: true };
+    return { ok: false, reason: missingMachineReason(task), machine: null };
   }
   const machine = pickMachineForTask(state, task, worker, undefined, holeIds) ?? pickMachine(state, task);
   if (!machine) return { ok: false, reason: MACHINE_BOOKED_REASON, machine: null };

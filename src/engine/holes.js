@@ -123,20 +123,33 @@ function createBunkerRecord({ quality, lastRakedDay = STARTING_DAY } = {}) {
   return { quality, lastRakedDay };
 }
 
-function moistureFor(groupedMoisture, type, index, count) {
-  if (type === 'greens') {
-    const value = groupedMoisture?.greens?.[index];
-    return value == null ? MOISTURE_START.greens : value;
-  }
-  if (type === 'tees') return groupedMoisture?.tees ?? MOISTURE_START.tees;
-  if (type === 'fairways') return groupedMoisture?.fairways ?? MOISTURE_START.fairways;
+function moistureFor(groupedMoisture, type) {
+  if (type === 'greens') return asNumber(groupedMoisture?.greens, MOISTURE_START.greens);
+  if (type === 'tees') return asNumber(groupedMoisture?.tees, MOISTURE_START.tees);
+  if (type === 'fairways') return asNumber(groupedMoisture?.fairways, MOISTURE_START.fairways);
   return MOISTURE_HIDDEN;
 }
 
-function readDayFor(groupedRead, type, index) {
-  if (type === 'greens') return groupedRead?.greens?.[index] ?? MOISTURE_HIDDEN;
-  if (type === 'tees' || type === 'fairways') return groupedRead?.[type] ?? MOISTURE_HIDDEN;
+function readDayFor(groupedRead, type) {
+  if (type === 'greens' || type === 'tees' || type === 'fairways') {
+    const value = groupedRead?.[type];
+    if (Array.isArray(value)) {
+      const days = value.filter((item) => item != null && Number.isFinite(Number(item))).map(Number);
+      return days.length ? Math.max(...days) : MOISTURE_HIDDEN;
+    }
+    return value ?? MOISTURE_HIDDEN;
+  }
   return MOISTURE_HIDDEN;
+}
+
+function asNumber(value, fallback) {
+  if (Array.isArray(value)) {
+    const nums = value.filter((item) => item != null && Number.isFinite(Number(item))).map(Number);
+    if (!nums.length) return fallback;
+    return nums.reduce((sum, item) => sum + item, 0) / nums.length;
+  }
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
 }
 
 function diseaseFor(groupedDisease, type) {
@@ -154,8 +167,8 @@ function fanMowFromGrouped(type, grouped, extras, index, holeId) {
     angleAtLastCut: src.angleAtLastCut ?? null,
     patternWear: src.patternWear ?? PATTERN_WEAR_DEFAULT,
     diseasePressure: diseaseFor(extras.disease, type),
-    moisture: moistType ? moistureFor(extras.moisture, moistType, index, extras.count) : MOISTURE_HIDDEN,
-    moistureReadDay: moistType ? readDayFor(extras.moistureReadDay, moistType, index) : MOISTURE_HIDDEN,
+    moisture: moistType ? moistureFor(extras.moisture, moistType) : MOISTURE_HIDDEN,
+    moistureReadDay: moistType ? readDayFor(extras.moistureReadDay, moistType) : MOISTURE_HIDDEN,
     dryingFactor: type === 'greens' ? dryingFactorForHole(holeId) : DRYING_FACTOR_DEFAULT,
     override: null,
     hocAtLastCut: src.hocAtLastCut ?? src.hoc ?? hocRangeFor(extras, type)?.default ?? HOC_RANGE[type]?.default ?? null,

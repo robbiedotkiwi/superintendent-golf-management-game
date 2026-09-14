@@ -5,11 +5,12 @@ import {
   PASS_AREAS,
   PLANNER_HOUR_PX,
   PLANNER_PALETTE,
+  TASK_MACHINE_CLASS_LABELS,
   WORK_DAY_HOURS,
 } from '../data/config.js';
-import { getTask, SURFACE_LABELS } from '../data/tasks.js';
+import { getTask, SURFACE_LABELS, machineRequirementOf, taskUsesMachine } from '../data/tasks.js';
 import { catalogMachineTitle } from './machineDisplay.js';
-import { allowingMachines, durationOnMachine, pickMachineForTask } from './equipment.js';
+import { allowingMachines, canHireForTask, durationOnMachine, missingMachineReason, pickMachineForTask } from './equipment.js';
 import { hoursToMinutes, minutesToHours, snapHours, snapMinutes } from './duration.js';
 import { machineConflictsOnDay, rangesOverlap } from './slots.js';
 import { staffCanRunMachine, hoursToPassFraction, passHoursFor } from './passes.js';
@@ -25,7 +26,7 @@ export function paletteLabel(taskId) {
 }
 
 export function autoMachineFor(state, task, worker) {
-  if (!task) return null;
+  if (!taskUsesMachine(task)) return null;
   const allowed = allowingMachines(state, task).filter((machine) => staffCanRunMachine(worker, machine));
   if (!allowed.length) return pickMachineForTask(state, task, worker);
   const ranked = [...allowed].sort((a, b) => {
@@ -34,6 +35,13 @@ export function autoMachineFor(state, task, worker) {
     return da - db;
   });
   return ranked[0] ?? null;
+}
+
+export function paletteMachineStatus(state, task) {
+  if (!taskUsesMachine(task)) return { ok: true };
+  if (allowingMachines(state, task).length) return { ok: true };
+  if (canHireForTask(state, task)) return { ok: true, hired: true };
+  return { ok: false, reason: missingMachineReason(task) };
 }
 
 export function defaultBlockMinutes(state, taskId, worker, machineId) {
@@ -109,6 +117,47 @@ export function surplusWastedHours(state, block, day = state.day) {
   return minutesToHours(block.minutes);
 }
 
+export function resizeBounds(state, block, day = state.day) {
+  const worker = workersForPlanDay(state, day).find((item) => item.id === block.workerId);
+  const dayLen = worker?.minutesToday ?? dayLengthMinutes(state, day);
+  const originalStart = block.startMinute ?? 0;
+  const originalEnd = originalStart + (block.minutes ?? 0);
+  const others = getDayTasks(state, day).filter(
+    (item) => item.workerId === block.workerId && item.planId !== block.planId,
+  );
+  let prevEnd = 0;
+  let nextStart = dayLen;
+  for (const other of others) {
+    const start = other.startMinute ?? 0;
+    const end = start + (other.minutes ?? 0);
+    if (end <= originalStart) prevEnd = Math.max(prevEnd, end);
+    else if (start >= originalEnd) nextStart = Math.min(nextStart, start);
+  }
+  return {
+    minStart: Math.max(0, prevEnd),
+    maxEnd: Math.min(dayLen, nextStart),
+  };
+}
+
+export function clampBlockResize(state, block, day, startMinute, minutes) {
+  const minSize = hoursToMinutes(HOUR_INCREMENT);
+  const { minStart, maxEnd } = resizeBounds(state, block, day);
+  const span = maxEnd - minStart;
+  if (span < minSize) {
+    return { startMinute: block.startMinute ?? 0, minutes: block.minutes ?? minSize };
+  }
+  let start = snapMinutes(Math.max(0, startMinute ?? 0));
+  let dur = snapMinutes(Math.max(minSize, minutes ?? minSize));
+  start = Math.max(minStart, Math.min(start, maxEnd - minSize));
+  dur = Math.min(dur, maxEnd - start);
+  dur = Math.max(minSize, dur);
+  if (start + dur > maxEnd) {
+    start = Math.max(minStart, maxEnd - dur);
+    dur = Math.min(dur, maxEnd - start);
+  }
+  return { startMinute: start, minutes: dur };
+}
+
 export function blockConflicts(state, block, day = state.day) {
   const reasons = [];
   const tasks = getDayTasks(state, day);
@@ -141,7 +190,11 @@ export function blockFace(state, block, worker) {
   const hours = minutesToHours(block.minutes);
   const fraction = passFractionForBlock(state, block, worker);
   const label = SURFACE_LABELS[task?.surface] ?? paletteLabel(block.taskId);
-  const machine = catalogMachineTitle(block.machineId) || (block.ownMower ? 'own' : '');
+  let machine = catalogMachineTitle(block.machineId) || (block.ownMower ? 'own' : '');
+  if (!machine && block.hiredMachine) {
+    const req = machineRequirementOf(task);
+    machine = `hired ${TASK_MACHINE_CLASS_LABELS[req.class] ?? 'machine'}`;
+  }
   return {
     label,
     machine,

@@ -1,8 +1,8 @@
-import { getTask, SURFACE_LABELS } from '../data/tasks.js';
+import { getTask, SURFACE_LABELS, machineRequirementOf, taskUsesMachine } from '../data/tasks.js';
 import { calendarFromDay } from './calendar.js';
 import { buildForecast, canBuyWeatherStation } from './weather.js';
 import { createRng } from './rng.js';
-import { buyFoley, buyMachine, buyUpgrade, grindInHouse, repairMachine, sendForGrind, machinePlanCheck, durationOnMachine, recomputePlannedMinutes, allowingMachines, pickMachine, pickMachineForTask, machineMinutesRemaining, MACHINE_BOOKED_REASON, NO_MACHINE_REASON, getMachine, normalizeMachineOverride, machineSuitability } from './equipment.js';
+import { buyFoley, buyMachine, buyUpgrade, grindInHouse, repairMachine, sendForGrind, machinePlanCheck, durationOnMachine, recomputePlannedMinutes, allowingMachines, pickMachine, pickMachineForTask, machineMinutesRemaining, MACHINE_BOOKED_REASON, NO_MACHINE_REASON, getMachine, normalizeMachineOverride, machineSuitability, canHireForTask, missingMachineReason } from './equipment.js';
 import { machineAllows } from '../data/equipment.js';
 import { machineTitle } from './machineDisplay.js';
 import { assignWorker, certifiedPresent, workerById, workerAllows, workerBringsOwnMower, isWorkerPresent } from './assignment.js';
@@ -27,6 +27,7 @@ import { migrateWorkerTier } from './staffTiers.js';
 import { applyNamedTemplate, copyYesterday, nextStartMinute, saveNamedTemplate, snapMinutes } from './slots.js';
 import {
   autoMachineFor,
+  clampBlockResize,
   defaultBlockMinutes,
 } from './dayPlanner.js';
 import { approveLeave, declineLeave } from './staffMorale.js';
@@ -86,7 +87,8 @@ import {
   PLAYER_QUALITY_SKILL,
   PLAYER_SPEED_SKILL,
   PLAYER_WAGE,
-  STARTING_OPENING_CASH,
+  STARTING_MAINTENANCE_BUDGET,
+  STARTING_CAPITAL_BUDGET,
   STARTING_DAY,
   STARTING_DAYS_WORKED_RUNNING,
   STARTING_MACHINE_CONDITION,
@@ -148,7 +150,7 @@ import { courseBounds, holesForCount } from '../data/course.js';
 import { clampView, defaultView } from './view.js';
 import { defaultSectionTabs, normalizeSection, normalizeTabs, tabListForSection } from './section.js';
 import { formatMoney } from './format.js';
-import { CAPEX_STATUS_PENDING, STARTING_CAPEX, STARTING_MONTHLY_BUDGET } from '../data/config.js';
+import { CAPEX_STATUS_PENDING, STARTING_CAPEX, STARTING_CASH, STARTING_MONTHLY_BUDGET, TASK_MACHINE_CLASS_MOWER } from '../data/config.js';
 import { buyUsed, rollUsedListings, sellMachine } from './market.js';
 import { acceptEvent, declineEvent } from './events.js';
 
@@ -210,7 +212,7 @@ export function createInitialState() {
     day: STARTING_DAY,
     season: calendar.season,
     year: calendar.year,
-    cash: STARTING_OPENING_CASH,
+    cash: STARTING_CASH + STARTING_MAINTENANCE_BUDGET + STARTING_CAPITAL_BUDGET,
     fuelSpendLog: [],
     holes: applyAreaQualityToHoles(holes, areaQuality),
     areaQuality,
@@ -286,9 +288,8 @@ export function createInitialState() {
     irrigation: { ...STARTING_IRRIGATION },
     hasAerator: false,
     lastPondDoseDay: STARTING_DAY,
-    moisture: emptyMoisture(HOLE_COUNT),
-    moistureReadDay: emptyMoistureReadDay(HOLE_COUNT),
-    handWaterTargets: allGreenIds(HOLE_COUNT),
+    moisture: emptyMoisture(),
+    moistureReadDay: emptyMoistureReadDay(),
     hasGreensSensors: false,
     hasTurfRad: false,
     hasWeatherStation: false,
@@ -435,8 +436,13 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
   const ownMowerReady = requested
     ? workerBringsOwnMower(requested, task.surface)
     : roster.some((item) => workerBringsOwnMower(item, task.surface));
-  if (task.mowing && !allowingMachines(state, task).length && !ownMowerReady) {
-    return { ok: false, reason: NO_MACHINE_REASON };
+  if (
+    taskUsesMachine(task) &&
+    !allowingMachines(state, task).length &&
+    !(machineRequirementOf(task).class === TASK_MACHINE_CLASS_MOWER && ownMowerReady) &&
+    !canHireForTask(state, task)
+  ) {
+    return { ok: false, reason: missingMachineReason(task) };
   }
 
   const worker = requested ?? assignWorker(state, task, holes);
@@ -511,6 +517,7 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
     holes,
     suitability,
     ownMower: Boolean(machineCheck.ownMower),
+    hiredMachine: Boolean(machineCheck.hired),
   };
 }
 
@@ -604,6 +611,7 @@ export function reducer(state, action) {
           startMinute: action.startMinute ?? nextStartMinute(getDayTasks(state, day), check.workerId),
           machineId: check.machineId ?? null,
           ownMower: Boolean(check.ownMower),
+          hiredMachine: Boolean(check.hiredMachine),
           holes: check.holes ?? [],
           ...(action.taskId === 'handWater'
             ? { greens: allGreenIds(holeCount(state)) }
@@ -625,6 +633,7 @@ export function reducer(state, action) {
       const machine = action.machineId
         ? getMachine(action.machineId)
         : autoMachineFor(view, task, worker);
+      const hiredMachine = Boolean(!machine && canHireForTask(view, task));
       const minutes = snapMinutes(
         action.minutes ?? defaultBlockMinutes(view, task.id, worker, machine?.id),
       );
@@ -641,6 +650,7 @@ export function reducer(state, action) {
           startMinute,
           machineId: machine?.id ?? null,
           ownMower: Boolean(worker.ownMower && !machine),
+          hiredMachine,
           holes: jobHolesFor(state, task),
         },
       ];
@@ -662,11 +672,14 @@ export function reducer(state, action) {
       const day = actionPlanDay(state, action);
       const edit = canEditPlanDay(state, day);
       if (!edit.ok) return state;
-      const minutes = snapMinutes(action.minutes);
-      if (!minutes) return state;
-      const startMinute = snapMinutes(action.startMinute ?? 0);
+      const current = getDayTasks(state, day).find((item) => item.planId === action.planId);
+      if (!current) return state;
+      const clamped = clampBlockResize(state, current, day, action.startMinute, action.minutes);
+      if (!clamped.minutes) return state;
       const tasks = getDayTasks(state, day).map((item) =>
-        item.planId === action.planId ? { ...item, startMinute, minutes } : item,
+        item.planId === action.planId
+          ? { ...item, startMinute: clamped.startMinute, minutes: clamped.minutes }
+          : item,
       );
       return commitDayTasks(state, tasks, day);
     }
@@ -982,28 +995,6 @@ export function reducer(state, action) {
     }
     case 'TOGGLE_MOISTURE_OVERLAY':
       return { ...state, moistureOverlay: !state.moistureOverlay };
-    case 'SET_HAND_WATER_TARGETS': {
-      const holes = holeCount(state);
-      const allowed = new Set(allGreenIds(holes));
-      const targets = [...new Set((action.targets ?? []).filter((id) => allowed.has(id)))].sort((a, b) => a - b);
-      let next = { ...state, handWaterTargets: targets };
-      if (getDayTasks(next, planningDayOf(next)).some((item) => item.taskId === 'handWater')) {
-        if (targets.length === 0) return removePlannedTask(next, 'handWater');
-        next = commitDayTasks(
-          next,
-          getDayTasks(next, planningDayOf(next)).map((item) =>
-            item.taskId === 'handWater' ? { ...item, greens: targets } : item,
-          ),
-        );
-        next = recomputePlanningDay(next);
-        const planned = getDayTasks(next, planningDayOf(next)).find((item) => item.taskId === 'handWater');
-        const worker = planned ? workersForPlanDay(next, planningDayOf(next)).find((item) => item.id === planned.workerId) : null;
-        if (worker && worker.minutesUsed > worker.minutesToday) {
-          return removePlannedTask(next, 'handWater');
-        }
-      }
-      return next;
-    }
     case 'SET_VIEW': {
       const layout = holesForCount(holeCount(state));
       return { ...state, view: clampView({ ...defaultView(), ...action.view }, courseBounds(layout)) };

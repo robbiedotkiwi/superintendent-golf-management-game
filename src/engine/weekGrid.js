@@ -1,6 +1,7 @@
 import { PLAYER_ID } from '../data/constants.js';
-import { getTask, SURFACE_LABELS, taskUsesMachine } from '../data/tasks.js';
-import { allowingMachines, durationOnMachine, NO_MACHINE_REASON, pickMachineForTask } from './equipment.js';
+import { TASK_MACHINE_CLASS_MOWER } from '../data/config.js';
+import { getTask, SURFACE_LABELS, machineRequirementOf, taskUsesMachine } from '../data/tasks.js';
+import { allowingMachines, canHireForTask, durationOnMachine, missingMachineReason, pickMachineForTask } from './equipment.js';
 import { defaultJobHoles } from './holes.js';
 import { migrateIrrigationValue } from './irrigation.js';
 import { daysSinceLastWorked } from './neglect.js';
@@ -68,9 +69,11 @@ export function workerAvailableOnDay(state, workerId, day) {
 export function jobLockReason(state, taskId) {
   const task = getTask(taskId);
   if (!task) return 'Unknown job.';
-  if (task.mowing && !allowingMachines(state, task).length) {
-    const ownMower = rosterPeople(state).some((worker) => workerBringsOwnMower(worker, task.surface));
-    if (!ownMower) return NO_MACHINE_REASON;
+  if (taskUsesMachine(task) && !allowingMachines(state, task).length) {
+    const ownMower =
+      machineRequirementOf(task).class === TASK_MACHINE_CLASS_MOWER &&
+      rosterPeople(state).some((worker) => workerBringsOwnMower(worker, task.surface));
+    if (!ownMower && !canHireForTask(state, task)) return missingMachineReason(task);
   }
   if (task.requiresSpray) {
     const certified = rosterPeople(state).some(
@@ -91,7 +94,7 @@ export function daysSinceFact(state, job) {
 
 export function courseHolesFor(state, taskId) {
   const task = getTask(taskId);
-  if (taskId === 'handWater') return [...(state.handWaterTargets ?? defaultJobHoles(state, 'greens'))];
+  if (taskId === 'handWater') return defaultJobHoles(state, 'greens');
   if (!task?.surface) return [];
   return defaultJobHoles(state, task.surface);
 }

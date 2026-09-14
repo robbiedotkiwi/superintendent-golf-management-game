@@ -43,7 +43,7 @@ import { applyDailyQualityDrift, applyMissedWeekPenalties } from './qualityDrift
 import { applyAreaQualityToHoles, applyWeekPasses, emptyAreaQuality, machineAllowsArea, passHoursFor, resolveDayPasses } from './passes.js';
 import { migrateWorkerTier } from './staffTiers.js';
 import { generateCandidates, generateCasuals } from '../data/staff.js';
-import { getTask, taskAppliesQuality } from '../data/tasks.js';
+import { getTask, hireCostFor, machineRequirementOf, taskAppliesQuality } from '../data/tasks.js';
 import { workerById, workerQualityMultiplier, qualityRandomFactor } from './assignment.js';
 import { workerBringsOwnMower } from './skills.js';
 import { enqueueGm, GM_MSG_CAPEX_MISSED, GM_MSG_CAPEX_RELEASED, GM_MSG_CORING, GM_MSG_DUTIES, tickGm } from './gm.js';
@@ -225,8 +225,8 @@ export function resolveDay(state) {
 
   const wearIncremented = new Set();
   const holeN = holeCount({ holes });
-  let moisture = state.moisture ?? emptyMoisture(holeN);
-  let moistureReadDay = state.moistureReadDay ?? emptyMoistureReadDay(holeN);
+  let moisture = state.moisture ?? emptyMoisture();
+  let moistureReadDay = state.moistureReadDay ?? emptyMoistureReadDay();
 
   for (const plannedTask of planned) {
     if (plannedTask.needsReassignment || !workerById(state, plannedTask.workerId)) {
@@ -274,6 +274,11 @@ export function resolveDay(state) {
       cash -= task.materialsCost;
       materialsSpent += task.materialsCost;
     }
+    if (plannedTask.hiredMachine || (machineRequirementOf(task).hireable && !machine)) {
+      const hire = hireCostFor(task);
+      cash -= hire;
+      materialsSpent += hire;
+    }
     if (task.surface && (taskAppliesQuality(task) || task.kind === 'prep')) {
       for (const id of jobHoles) workedHolesByType[task.surface].add(id);
       if (jobHoles.length) worked.add(task.surface);
@@ -282,13 +287,13 @@ export function resolveDay(state) {
       tournamentPrepScore += task.prepBonus ?? 0;
     }
     if (task.kind === 'moistureCheck' && task.surface) {
-      moistureReadDay = revealMoisture(moistureReadDay, task.surface, state.day, holeN, jobHoles);
+      moistureReadDay = revealMoisture(moistureReadDay, task.surface, state.day);
     }
     if (task.id === 'handWater') {
-      moisture = applyHandWater(moisture, plannedTask.greens ?? state.handWaterTargets, holeN);
+      moisture = applyHandWater(moisture);
     }
     if (task.mowing && state.hasTurfRad && task.surface) {
-      moistureReadDay = revealMoisture(moistureReadDay, task.surface, state.day, holeN);
+      moistureReadDay = revealMoisture(moistureReadDay, task.surface, state.day);
     }
 
     if (machine && runMinutes > 0 && (task.mowing || task.id === 'rollGreens')) markUsed(machine.id, runMinutes);
@@ -385,7 +390,7 @@ export function resolveDay(state) {
         });
         worked.add(surface);
         if (state.hasTurfRad) {
-          moistureReadDay = revealMoisture(moistureReadDay, surface, state.day, holeN);
+          moistureReadDay = revealMoisture(moistureReadDay, surface, state.day);
         }
         done.push({
           taskId: 'autonomousMower',

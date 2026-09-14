@@ -17,9 +17,9 @@ export const DAYS_PER_SEASON = 28;
 export const PASS_AREAS = ['greens', 'tees', 'fairways', 'rough'];
 
 export const PASSES_REQUIRED_PER_WEEK = {
-  greens: 5,
+  greens: 4,
   tees: 2,
-  fairways: 2,
+  fairways: 1,
   rough: 1,
 };
 
@@ -31,9 +31,11 @@ export const PASS_CLASS_RIDE_ON_REEL = 'rideOnReel';
 export const PASS_CLASS_RIDE_ON_ROTARY = 'rideOnRotary';
 export const PASS_CLASS_AUTONOMOUS = 'autonomous';
 export const PASS_CLASS_ROLLER = 'roller';
+export const PASS_CLASS_SPRAYER = 'sprayer';
+export const PASS_CLASS_CORER = 'corer';
 
 export const PASS_HOURS = {
-  [PASS_CLASS_PUSH_REEL]: { greens: 8, tees: 4 },
+  [PASS_CLASS_PUSH_REEL]: { greens: 6, tees: 4 },
   [PASS_CLASS_PUSH_ROTARY]: { tees: 6, fairways: 40, rough: 30 },
   [PASS_CLASS_RIDE_ON_REEL]: { greens: 4, tees: 2, fairways: 8 },
   [PASS_CLASS_RIDE_ON_ROTARY]: { tees: 3, fairways: 16, rough: 12 },
@@ -107,7 +109,7 @@ export const STAFF_RATING_SENIOR = 80;
 
 export const PLAYER_TIER = STAFF_TIER_SENIOR;
 export const VOLUNTEER_TIER = STAFF_TIER_UNSKILLED;
-export const VOLUNTEER_WEEKLY_HOURS = 4;
+export const VOLUNTEER_WEEKLY_HOURS = 8;
 export const VOLUNTEER_REWARD_DAYS = 2;
 export const VOLUNTEER_REWARD_SATISFACTION = 70;
 export const VOLUNTEER_SURFACES = ['fairways', 'rough', 'bunkers'];
@@ -171,11 +173,38 @@ export const GROW_IN_DAYS = 84;
 export const GROW_IN_AREAS = ['greens'];
 export const GM_REQUIRED_GRADE_BASE = 70;
 export const GM_REQUIRED_GRADE_PER_HOLE = 0.35;
+export const GM_TARGET_START_LETTER = 'D+';
+export const GM_TARGET_PLATEAU_LETTER = 'B+';
+export const GM_TARGET_RATCHET_STEPS_PER_SEASON = 1;
+export const BREAKDOWN_CASH_COST = 2500;
+export const BAD_WEEK_CASH_COST = 8000;
+export const STARTING_CASH = Math.max(BREAKDOWN_CASH_COST, BAD_WEEK_CASH_COST);
 export const PROJECT_OCCUPIES_PERSON = true;
 
 export const FORECAST_UNRELIABLE_FROM_DAY = 5;
 export const FORECAST_UNRELIABLE_ACCURACY = 0.45;
 export const WET_WEATHER = ['rain', 'storm'];
+
+export const TASK_MACHINE_REQUIRE_NONE = 'none';
+export const TASK_MACHINE_REQUIRE_CLASS = 'class';
+export const TASK_MACHINE_REQUIRE_TYPE = 'type';
+export const TASK_MACHINE_CLASS_MOWER = 'mower';
+export const TASK_MACHINE_CLASS_ROLLER = 'roller';
+export const TASK_MACHINE_CLASS_SPRAYER = 'sprayer';
+export const TASK_MACHINE_CLASS_CORER = 'corer';
+export const TASK_MACHINE_CLASS_LABELS = {
+  [TASK_MACHINE_CLASS_MOWER]: 'mower',
+  [TASK_MACHINE_CLASS_ROLLER]: 'roller',
+  [TASK_MACHINE_CLASS_SPRAYER]: 'sprayer',
+  [TASK_MACHINE_CLASS_CORER]: 'corer',
+};
+export const ROLLER_PURCHASE_COST = 2400;
+export const SPRAYER_PURCHASE_COST = 9000;
+export const CORER_PURCHASE_COST = 18000;
+export const CORER_HIRE_PER_USE_COST = 450;
+export const MACHINE_HIRE_COST_BY_CLASS = {
+  [TASK_MACHINE_CLASS_CORER]: CORER_HIRE_PER_USE_COST,
+};
 
 export const STARTING_AREA_QUALITY = {
   greens: 55,
@@ -190,6 +219,8 @@ export const WEEKLY_TARGET_QUALITY_SCALE = 100;
 export const PROJECT_FULL_TIME_MINUTES = WORK_DAY_MINUTES;
 export const BUNKER_COUNT_DEFAULT = 6;
 export const BUNKER_RAKE_QUALITY_GAIN = 2;
+export const BUNKER_RAKE_QUALITY = QUALITY_MAX;
+export const BUNKER_DECAY_PER_DAY = 8;
 export const AUTONOMOUS_NIGHT_MINUTES = 720;
 export const AUTONOMOUS_UNSTICK_CHANCE = 0.08;
 export const AUTONOMOUS_UNSTICK_MINUTES = 30;
@@ -261,6 +292,8 @@ import {
   MACHINE_CLASS_RIDING_GREENS_TRIPLEX,
   MACHINE_CLASS_ROLLER,
   MACHINE_CLASS_ROUGH_UTILITY,
+  MACHINE_CLASS_SPRAYER,
+  MACHINE_CLASS_CORER,
   MACHINE_CLASS_WALK_BEHIND_REEL,
 } from './constants.js';
 
@@ -272,4 +305,6 @@ export const PASS_CLASS_BY_CATALOG = {
   [MACHINE_CLASS_ROUGH_UTILITY]: PASS_CLASS_RIDE_ON_ROTARY,
   [MACHINE_CLASS_AUTONOMOUS]: PASS_CLASS_AUTONOMOUS,
   [MACHINE_CLASS_ROLLER]: PASS_CLASS_ROLLER,
+  [MACHINE_CLASS_SPRAYER]: PASS_CLASS_SPRAYER,
+  [MACHINE_CLASS_CORER]: PASS_CLASS_CORER,
 };

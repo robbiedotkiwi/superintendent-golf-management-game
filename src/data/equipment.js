@@ -3,6 +3,7 @@ import {
   AUTONOMOUS_COST,
   AUTONOMOUS_ID,
   COVERAGE_WALK_BEHIND_GREENS,
+  CORER_ID,
   DAMAGING_JOB_REASON,
   FAIRWAY_UNIT_CEILING,
   FAIRWAY_UNIT_COST,
@@ -10,7 +11,6 @@ import {
   GREENSMASTER_CEILING,
   GREENSMASTER_COST,
   GREENSMASTER_ID,
-  GREENS_ROLLER_COST,
   GREENS_ROLLER_ID,
   GROUNDSMASTER_CEILING,
   GROUNDSMASTER_COST,
@@ -32,6 +32,7 @@ import {
   RIDE_ON_REEL_COST,
   RIDE_ON_REEL_ID,
   ROLLER_GAIN_BONUS,
+  SPRAYER_ID,
   SUITABILITY_DAMAGING,
   TYPE_AUTONOMOUS,
   TYPE_AUTONOMOUS_RIDE_ON,
@@ -43,6 +44,8 @@ import {
   TYPE_RIDE_ON_ROLLER,
   TYPE_ROTARY_RIDE_ON,
   TYPE_ROUGH_UTILITY,
+  TYPE_SPRAYER,
+  TYPE_CORER,
   TYPE_UTILITY,
   TYPE_WALK_BEHIND_REEL,
   VENTRAC_COST,
@@ -53,7 +56,8 @@ import {
   WALK_BEHIND_COST,
   WALK_BEHIND_ID,
 } from './constants.js';
-import { PASS_CLASS_BY_CATALOG, PASS_HOURS, PASS_CLASS_ROLLER } from './config.js';
+import { PASS_CLASS_BY_CATALOG, PASS_HOURS, PASS_CLASS_ROLLER, ROLLER_PURCHASE_COST, SPRAYER_PURCHASE_COST, CORER_PURCHASE_COST, TASK_MACHINE_CLASS_CORER, TASK_MACHINE_CLASS_MOWER, TASK_MACHINE_CLASS_ROLLER, TASK_MACHINE_CLASS_SPRAYER, TASK_MACHINE_REQUIRE_CLASS, TASK_MACHINE_REQUIRE_NONE, TASK_MACHINE_REQUIRE_TYPE } from './config.js';
+import { machineRequirementOf } from './tasks.js';
 
 function defaultTimeMult(spec) {
   const coverage = spec.coverage ?? 0;
@@ -86,6 +90,8 @@ function machine(spec) {
     reel: Boolean(spec.reel),
     autonomous: Boolean(spec.autonomous),
     rollOnly: Boolean(spec.rollOnly),
+    sprayer: Boolean(spec.sprayer),
+    corer: Boolean(spec.corer),
     ballPicker: Boolean(spec.ballPicker),
     utility: Boolean(spec.utility),
     electric: Boolean(spec.electric),
@@ -105,6 +111,8 @@ const GREENS_TEES = { greens: true, tees: true, fairways: false, rough: false };
 const FAIRWAY_ROUGH = { greens: false, tees: false, fairways: true, rough: true };
 const GREENS_FAIRWAY = { greens: true, tees: false, fairways: true, rough: false };
 const ROLL_GREENS = { greens: 'roll', tees: false, fairways: false, rough: false };
+const SPRAY_SURFACES = { greens: true, tees: true, fairways: true, rough: false };
+const CORE_GREENS = { greens: true, tees: false, fairways: false, rough: false };
 const NONE = { greens: false, tees: false, fairways: false, rough: false };
 
 export const MACHINES = [
@@ -324,7 +332,7 @@ export const MACHINES = [
     brand: MACHINE_BRAND_SALSCO,
     model: 'Walk-Behind Roller',
     type: TYPE_GREENS_ROLLER,
-    cost: GREENS_ROLLER_COST,
+    cost: ROLLER_PURCHASE_COST,
     rollOnly: true,
     rollGainBonus: ROLLER_GAIN_BONUS,
     coverage: 2200,
@@ -389,6 +397,32 @@ export const MACHINES = [
     category: 'Rollers',
     tier: 'Flagship, wide-swath',
     description: 'Rolls fairways and approaches as easily as greens, in a fraction of the time.',
+  }),
+  machine({
+    id: SPRAYER_ID,
+    brand: MACHINE_BRAND_TORO,
+    model: 'Multi Pro 1750',
+    type: TYPE_SPRAYER,
+    cost: SPRAYER_PURCHASE_COST,
+    sprayer: true,
+    coverage: 0,
+    surfaces: SPRAY_SURFACES,
+    category: 'Spray & Cultivate',
+    tier: 'Vehicle',
+    description: 'A dedicated sprayer for greens, tees, and fairways.',
+  }),
+  machine({
+    id: CORER_ID,
+    brand: MACHINE_BRAND_TORO,
+    model: 'ProCore 648',
+    type: TYPE_CORER,
+    cost: CORER_PURCHASE_COST,
+    corer: true,
+    coverage: 0,
+    surfaces: CORE_GREENS,
+    category: 'Spray & Cultivate',
+    tier: 'Hire or buy',
+    description: 'Core greens in-house. Hire per use from day one, or buy for the shed.',
   }),
   machine({
     id: 'etriflex3360Geolink',
@@ -552,25 +586,53 @@ export function machineNativeCeiling(machine, surface) {
 }
 
 export function machineCanMow(machine) {
-  return Boolean(machine) && !machine.rollOnly && !machine.autonomous && !machine.utility && !machine.ballPicker;
+  return Boolean(machine) && !machine.rollOnly && !machine.sprayer && !machine.corer && !machine.autonomous && !machine.utility && !machine.ballPicker;
+}
+
+export function machineTaskClass(machine) {
+  if (!machine) return null;
+  const cls = machineClass(machine);
+  if (machine.sprayer || cls === TASK_MACHINE_CLASS_SPRAYER) return TASK_MACHINE_CLASS_SPRAYER;
+  if (machine.corer || cls === TASK_MACHINE_CLASS_CORER) return TASK_MACHINE_CLASS_CORER;
+  if (machine.rollOnly || cls === TASK_MACHINE_CLASS_ROLLER || PASS_CLASS_BY_CATALOG[cls] === PASS_CLASS_ROLLER) {
+    return TASK_MACHINE_CLASS_ROLLER;
+  }
+  if (machine.utility || machine.ballPicker) return null;
+  if (cls) return TASK_MACHINE_CLASS_MOWER;
+  return null;
+}
+
+function requirementOf(task) {
+  if (task?.machine) return task.machine;
+  return machineRequirementOf(task);
 }
 
 export function machineAllows(machine, surface, task) {
   if (!machine) return false;
   if (machine.utility || machine.ballPicker) return false;
-  if (machine.rollOnly || machineClass(machine) === PASS_CLASS_ROLLER || PASS_CLASS_BY_CATALOG[machineClass(machine)] === PASS_CLASS_ROLLER) {
-    return task?.id === 'rollGreens' && surface === 'greens';
+  const req = requirementOf(task);
+  if (!req || req.require === TASK_MACHINE_REQUIRE_NONE) return false;
+  if (req.require === TASK_MACHINE_REQUIRE_TYPE) return machine.type === req.type;
+  if (req.require !== TASK_MACHINE_REQUIRE_CLASS) return false;
+  if (machineTaskClass(machine) !== req.class) return false;
+  if (req.class === TASK_MACHINE_CLASS_MOWER) {
+    if (machine.autonomous) return false;
+    const passClass = PASS_CLASS_BY_CATALOG[machineClass(machine)] ?? machineClass(machine);
+    const hours = PASS_HOURS[passClass];
+    if (hours && surface in hours) {
+      const v = hours[surface];
+      return v != null && Number.isFinite(v) && v > 0;
+    }
+    if (HOC_SURFACES.includes(surface)) return false;
+    return machine.surfaces?.[surface] === true;
   }
-  if (task?.id === 'rollGreens') return false;
-  if (machine.autonomous) return false;
-  const passClass = PASS_CLASS_BY_CATALOG[machineClass(machine)] ?? machineClass(machine);
-  const hours = PASS_HOURS[passClass];
-  if (hours && surface in hours) {
-    const v = hours[surface];
-    return v != null && Number.isFinite(v) && v > 0;
+  if (req.class === TASK_MACHINE_CLASS_ROLLER) {
+    return surface === 'greens' || machine.surfaces?.[surface] === 'roll' || machine.surfaces?.[surface] === true;
   }
-  if (HOC_SURFACES.includes(surface)) return false;
-  return machine.surfaces?.[surface] === true;
+  if (req.class === TASK_MACHINE_CLASS_SPRAYER || req.class === TASK_MACHINE_CLASS_CORER) {
+    return Boolean(machine.surfaces?.[surface]);
+  }
+  return false;
 }
 
 export const TURF_DAMAGE_REASON = 'Would damage the turf.';

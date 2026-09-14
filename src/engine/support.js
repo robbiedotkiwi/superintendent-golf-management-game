@@ -1,6 +1,7 @@
 import {
   BUNKER_COUNT_DEFAULT,
   BUNKER_HOURS_EACH,
+  BUNKER_RAKE_QUALITY,
   CORING_CEILING_DROP,
   CORING_GM_STANDING_HIT,
   CORING_HOURS,
@@ -109,6 +110,10 @@ export function applySupportDay(state, planned) {
       coringUntilDay = state.day + CORING_RECOVERY_DAYS;
       coredThisSeason = true;
       events.push({ kind: 'coring' });
+    }
+    if (item.taskId === 'rakeBunkers') {
+      areaQuality.bunkers = BUNKER_RAKE_QUALITY;
+      events.push({ kind: 'rake' });
     }
   }
   if (coringUntilDay > state.day) {

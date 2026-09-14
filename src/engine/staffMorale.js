@@ -13,9 +13,6 @@ import {
   SICK_DAYS_MAX,
   SICK_DAYS_MIN,
   STANDARD_WORK_DAYS,
-  VOLUNTEER_REWARD_DAYS,
-  VOLUNTEER_REWARD_HOURS_PER_DAY,
-  VOLUNTEER_REWARD_SATISFACTION,
   VOLUNTEER_WEEKLY_HOURS,
   MINUTES_PER_HOUR,
 } from '../data/config.js';
@@ -35,20 +32,12 @@ export function sickChance(morale) {
   return SICK_CHANCE_AT_MORALE_0 + (SICK_CHANCE_AT_MORALE_100 - SICK_CHANCE_AT_MORALE_0) * t;
 }
 
-export function volunteerHoursFor(state) {
-  return (state.satisfaction ?? 0) >= VOLUNTEER_REWARD_SATISFACTION
-    ? VOLUNTEER_REWARD_HOURS_PER_DAY
-    : VOLUNTEER_WEEKLY_HOURS;
+export function volunteerHoursFor() {
+  return VOLUNTEER_WEEKLY_HOURS;
 }
 
 export function volunteerOnDuty(state, day) {
-  const weekday = weekdayOf(day);
-  const start = state.volunteerWeekday;
-  if ((state.satisfaction ?? 0) >= VOLUNTEER_REWARD_SATISFACTION) {
-    const second = (start % 7) + 1;
-    return weekday === start || weekday === second;
-  }
-  return weekday === start;
+  return weekdayOf(day) === state.volunteerWeekday;
 }
 
 export function volunteerMinutesForDay(state, day) {

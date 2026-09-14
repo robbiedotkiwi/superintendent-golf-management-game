@@ -16,19 +16,21 @@ import {
   blockFace,
   blockLeftPx,
   blockWidthPx,
+  clampBlockResize,
   conflictCopy,
   formatPlannerHours,
   hourFromClientX,
   hourTicks,
   overrideMachinesFor,
   paletteHoursFor,
+  paletteMachineStatus,
   plannerPalette,
   snapMinutes,
   surplusWastedHours,
   timelineWidthPx,
 } from '../engine/dayPlanner.js';
 import { hoursToMinutes, minutesToHours } from '../engine/duration.js';
-import { getTask, SURFACE_LABELS } from '../data/tasks.js';
+import { getTask, SURFACE_LABELS, taskUsesMachine } from '../data/tasks.js';
 import { catalogMachineTitle } from '../engine/machineDisplay.js';
 import { staffCanRunMachine } from '../engine/passes.js';
 import ForecastStrip from './ForecastStrip.jsx';
@@ -119,11 +121,12 @@ export default function DayPlanner({
         if (edge === 'left') nextStart = nextEnd - HOUR_INCREMENT * MINUTES_PER_HOUR;
         else nextEnd = nextStart + HOUR_INCREMENT * MINUTES_PER_HOUR;
       }
+      const clamped = clampBlockResize(state, block, day, nextStart, nextEnd - nextStart);
       onResizeBlock?.({
         day,
         planId: block.planId,
-        startMinute: nextStart,
-        minutes: nextEnd - nextStart,
+        startMinute: clamped.startMinute,
+        minutes: clamped.minutes,
       });
     }
     function up() {
@@ -185,6 +188,7 @@ export default function DayPlanner({
           <div className="text-[10px] uppercase tracking-wide text-[var(--sand)]">Tasks</div>
           {plannerPalette().map((item) => {
             const task = getTask(item.taskId);
+            const gate = paletteMachineStatus(state, task);
             const machine = paletteWorker ? autoMachineFor(state, task, paletteWorker) : null;
             const hours = paletteWorker
               ? paletteHoursFor(state, item.taskId, paletteWorker)
@@ -192,15 +196,23 @@ export default function DayPlanner({
             return (
               <div
                 key={item.taskId}
-                draggable={edit.ok}
+                draggable={edit.ok && gate.ok}
+                title={!gate.ok ? gate.reason : undefined}
                 onDragStart={(event) => {
+                  if (!gate.ok) {
+                    event.preventDefault();
+                    return;
+                  }
                   event.dataTransfer.setData(DRAG_MIME, JSON.stringify({ kind: 'palette', taskId: item.taskId }));
                   event.dataTransfer.setData('text/plain', JSON.stringify({ kind: 'palette', taskId: item.taskId }));
                   event.dataTransfer.effectAllowed = 'copy';
                 }}
-                className="cursor-grab border border-[var(--sand)] px-2 py-1 text-[11px] leading-tight active:cursor-grabbing"
+                className={`border border-[var(--sand)] px-2 py-1 text-[11px] leading-tight ${
+                  gate.ok ? 'cursor-grab active:cursor-grabbing' : 'cursor-not-allowed opacity-40'
+                }`}
                 data-palette-task={item.taskId}
                 data-palette-hours={formatPlannerHours(hours)}
+                data-palette-blocked={gate.ok ? undefined : 'true'}
               >
                 <div className="font-semibold">{item.label}</div>
                 <div className="text-[var(--sand)]">
@@ -256,10 +268,11 @@ export default function DayPlanner({
                   style={{ width, minHeight: PLANNER_ROW_PX, backgroundImage: `repeating-linear-gradient(to right, transparent 0, transparent ${PLANNER_HOUR_PX - 1}px, rgba(232,228,218,0.12) ${PLANNER_HOUR_PX - 1}px, rgba(232,228,218,0.12) ${PLANNER_HOUR_PX}px)` }}
                 >
                   {tasks.map((block) => {
+                    const task = getTask(block.taskId);
                     const face = blockFace(state, block, worker);
                     const conflicts = blockConflicts(state, block, day);
                     const wasted = surplusWastedHours(state, block, day);
-                    const machines = overrideMachinesFor(state, getTask(block.taskId));
+                    const machines = overrideMachinesFor(state, task);
                     return (
                       <div
                         key={block.planId}
@@ -304,7 +317,7 @@ export default function DayPlanner({
                           <div className="text-[var(--sand)]" data-block-machine>
                             {face.machine || 'No machine'}
                           </div>
-                          {machines.length ? (
+                          {taskUsesMachine(task) && machines.length ? (
                             <select
                               className="mt-0.5 w-full bg-[var(--soil)] text-[10px]"
                               value={block.machineId ?? ''}

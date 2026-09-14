@@ -4,8 +4,10 @@ import {
   CAPEX_STATUS_PENDING,
   CAPEX_STATUS_RELEASED,
   DAYS_PER_MONTH,
-  GM_REQUIRED_GRADE_BASE,
-  GM_REQUIRED_GRADE_PER_HOLE,
+  GM_TARGET_PLATEAU_LETTER,
+  GM_TARGET_RATCHET_STEPS_PER_SEASON,
+  GM_TARGET_START_LETTER,
+  GRADE_BANDS,
   MONTHLY_BUDGET_BASE,
   MONTHLY_BUDGET_PER_QUALITY,
   MONTHLY_GOLFERS_BASE,
@@ -19,6 +21,7 @@ import {
 import { DAYS_PER_WEEK } from '../data/constants.js';
 import { daysUntilSeasonEnd, seasonNumberFromDay, weekOfSeason } from './calendar.js';
 import { creditCapex, creditCash } from './cash.js';
+import { gradeFloor } from './grades.js';
 import { holeCount } from './holes.js';
 
 export function meanPassQuality(state) {
@@ -39,8 +42,19 @@ export function monthlyBudgetFor(state) {
   return Math.round(MONTHLY_BUDGET_BASE + MONTHLY_BUDGET_PER_QUALITY * meanPassQuality(state));
 }
 
+export function gmTargetLetter(state) {
+  const start = GRADE_BANDS.findIndex((band) => band.letter === GM_TARGET_START_LETTER);
+  const plateau = GRADE_BANDS.findIndex((band) => band.letter === GM_TARGET_PLATEAU_LETTER);
+  const startIndex = start < 0 ? GRADE_BANDS.length - 1 : start;
+  const plateauIndex = plateau < 0 ? 0 : plateau;
+  const season = Math.max(1, seasonNumberFromDay(state.day));
+  const steps = (season - 1) * GM_TARGET_RATCHET_STEPS_PER_SEASON;
+  const index = Math.max(plateauIndex, startIndex - steps);
+  return GRADE_BANDS[index]?.letter ?? GM_TARGET_START_LETTER;
+}
+
 export function gmRequiredGrade(state) {
-  return GM_REQUIRED_GRADE_BASE + holeCount(state) * GM_REQUIRED_GRADE_PER_HOLE;
+  return gradeFloor(gmTargetLetter(state));
 }
 
 export function isSeason1(state) {
@@ -74,7 +88,7 @@ export function tryReleaseSeason1Capex(state, hadGmMeeting) {
       capexReleasedDay: state.day,
     };
   }
-  return { ...state, capexStatus: CAPEX_STATUS_MISSED };
+  return state;
 }
 
 export function applySeasonCapexGrant(state) {
@@ -89,9 +103,7 @@ export function applySeasonCapexGrant(state) {
 }
 
 export function missSeason1CapexIfPending(state) {
-  if (!isSeason1(state)) return state;
-  if ((state.capexStatus ?? CAPEX_STATUS_PENDING) !== CAPEX_STATUS_PENDING) return state;
-  return { ...state, capexStatus: CAPEX_STATUS_MISSED };
+  return state;
 }
 
 export function monthsUntilNextCapex(state) {

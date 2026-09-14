@@ -592,6 +592,8 @@ export const MACHINE_CLASS_RIDING_GREENS_TRIPLEX = 'ridingGreensTriplex';
 export const MACHINE_CLASS_RIDING_FAIRWAY_UNIT = 'ridingFairwayUnit';
 export const MACHINE_CLASS_ROUGH_UTILITY = 'roughUtility';
 export const MACHINE_CLASS_ROLLER = 'roller';
+export const MACHINE_CLASS_SPRAYER = 'sprayer';
+export const MACHINE_CLASS_CORER = 'corer';
 export const MACHINE_CLASS_AUTONOMOUS = 'autonomous';
 export const MACHINE_CLASS_UTILITY = 'utility';
 export const COVERAGE_WALK_BEHIND_GREENS = 2600;
@@ -697,6 +699,8 @@ export const VENTRAC_TIME_MULT = COVERAGE_ENTRY_ROUGH / 28000;
 export const GREENS_ROLLER_ID = 'salscoWalkBehind';
 export const GREENS_ROLLER_COST = 2400;
 export const GREENS_ROLLER_TIME_MULT = 1;
+export const SPRAYER_ID = 'multiPro1750';
+export const CORER_ID = 'proCore648';
 export const AUTONOMOUS_ID = 'nexmowM2';
 export const AUTONOMOUS_COST = 19500;
 export const AUTONOMOUS_CEILING = 85;
@@ -732,6 +736,8 @@ export const TYPE_ROUGH_UTILITY = 'tractor + attachment';
 export const MODEL_GREENS_ROLLER = 'Walk-Behind Roller';
 export const TYPE_GREENS_ROLLER = 'push roller';
 export const TYPE_RIDE_ON_ROLLER = 'ride-on roller';
+export const TYPE_SPRAYER = 'sprayer';
+export const TYPE_CORER = 'corer';
 export const MODEL_AUTONOMOUS = 'M2';
 export const TYPE_AUTONOMOUS = 'autonomous robot';
 export const TYPE_AUTONOMOUS_RIDE_ON = 'autonomous ride-on';
@@ -746,6 +752,8 @@ export const MACHINE_CLASS_BY_TYPE = {
   [TYPE_ROUGH_UTILITY]: MACHINE_CLASS_ROUGH_UTILITY,
   [TYPE_GREENS_ROLLER]: MACHINE_CLASS_ROLLER,
   [TYPE_RIDE_ON_ROLLER]: MACHINE_CLASS_ROLLER,
+  [TYPE_SPRAYER]: MACHINE_CLASS_SPRAYER,
+  [TYPE_CORER]: MACHINE_CLASS_CORER,
   [TYPE_AUTONOMOUS]: MACHINE_CLASS_AUTONOMOUS,
   [TYPE_AUTONOMOUS_RIDE_ON]: MACHINE_CLASS_AUTONOMOUS,
   [TYPE_BALL_PICKER]: MACHINE_CLASS_AUTONOMOUS,
