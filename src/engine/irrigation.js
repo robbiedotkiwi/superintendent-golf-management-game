@@ -24,7 +24,7 @@ import {
   WEATHER_STORM,
 } from '../data/constants.js';
 import { holeCount } from './holes.js';
-import { needsCash } from './cash.js';
+import { needsCapital } from './cash.js';
 
 export const IRRIGATED_SURFACES = ['greens', 'tees', 'fairways'];
 
@@ -160,7 +160,7 @@ export function pondPercent(volume, capacity = POND_CAPACITY) {
 
 export function canBuyAerator(state) {
   if (state.hasAerator) return { ok: false, reason: 'Already in the pond.' };
-  const aeratorCash = needsCash(state, AERATOR_COST);
+  const aeratorCash = needsCapital(state, AERATOR_COST);
   if (!aeratorCash.ok) return aeratorCash;
   return { ok: true };
 }

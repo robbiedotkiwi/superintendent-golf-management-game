@@ -479,7 +479,7 @@ export const TEE_MARKER_RADIUS = HOLE_NUMBER_RADIUS;
 export const TEE_MARKER_FONT = 22;
 
 export const DAYS_PER_WEEK = 7;
-export const SEASON_WEEKS = 12;
+export const SEASON_WEEKS = 4;
 export const SEASON_MONTHS = 3;
 export const WEEKS_PER_MONTH = 4;
 export const DAYS_PER_SEASON = SEASON_WEEKS * DAYS_PER_WEEK;
@@ -1203,6 +1203,8 @@ export const VOLUNTEER_OFF_REASON = 'Volunteer — not in today';
 export const TRAINING_BACK_DAY_REASON = (name, backDay) => `${name} — training, back day ${backDay}`;
 export const MORALE_HOME_REASON = (name) => `${name} — staying home (morale)`;
 export const SICK_REASON = (name) => `${name} — off sick`;
+export const LEAVE_REASON = (name) => `${name} — on leave`;
+export const PROJECT_REASON = (name) => `${name} — on site work`;
 export const WORKER_ABSENT_REASON = 'Not in today';
 export const OVERRUN_DROP_COPY =
   'Top runs first. The last task is the one dropped if the day overruns.';

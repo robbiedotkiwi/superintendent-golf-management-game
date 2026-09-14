@@ -12,7 +12,7 @@ import { getTask } from '../data/tasks.js';
 import { PER_HOLE_MINUTES } from './courseArea.js';
 import { hocFactor, patternTimeMult } from './mowing.js';
 import { hocRangeFor } from './grass.js';
-import { defaultJobHoles, formatHoleSet, normalizeJobHoles, sameHoleSet } from './holes.js';
+import { defaultJobHoles, formatHoleSet, sameHoleSet } from './holes.js';
 import { getDayTasks, planningDayOf } from './week.js';
 
 function surfaceOf(taskOrSurface) {
@@ -41,9 +41,9 @@ export function setupMinutesFor(taskOrSurface, holeCount = 0) {
   return hitchMinutesFor(taskOrSurface) + travelMinutesPerHole(taskOrSurface) * n;
 }
 
-export function jobHolesFor(state, task, holeIds) {
+export function jobHolesFor(state, task, _holeIds) {
   if (!task?.surface) return [];
-  return normalizeJobHoles(state, task.surface, holeIds);
+  return defaultJobHoles(state, task.surface);
 }
 
 export function defaultHoleCountFor(state, task) {
@@ -120,10 +120,9 @@ export function applyRoute(state, routeId) {
   return { ...state, selectedHoles: [...route.holes] };
 }
 
-export function describeJob(taskId, holeIds) {
+export function describeJob(taskId) {
   const task = getTask(taskId);
-  const set = formatHoleSet(holeIds);
-  return set ? `${task?.name ?? taskId} on ${set}` : (task?.name ?? taskId);
+  return task?.name ?? taskId;
 }
 
-export { formatHoleSet, normalizeJobHoles, sameHoleSet };
+export { formatHoleSet, sameHoleSet };

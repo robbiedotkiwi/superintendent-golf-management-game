@@ -184,42 +184,15 @@ export default function CourseMap({
   onView,
   moistureState = null,
   highlight = null,
-  selectedHoles = [],
-  onToggleHole,
-  onAddHole,
 }) {
   const svgRef = useRef(null);
   const dragRef = useRef(null);
-  const holeDragRef = useRef(null);
   const viewRef = useRef(view);
-  const selectedSet = new Set(selectedHoles ?? []);
   const capacity = pondCapacity({ hasPondExpansion });
 
   function holeHandlers(hole, surface) {
     return {
-      onPointerDown: (event) => {
-        if (event.button !== 0) return;
-        holeDragRef.current = { start: hole.id, surface, dragged: false };
-        event.stopPropagation();
-      },
-      onPointerEnter: () => {
-        const drag = holeDragRef.current;
-        if (!drag) return;
-        if (drag.start !== hole.id) drag.dragged = true;
-        if (drag.dragged) {
-          onAddHole?.(drag.start);
-          onAddHole?.(hole.id);
-        }
-      },
       onClick: () => {
-        const drag = holeDragRef.current;
-        const dragged = Boolean(drag?.dragged);
-        holeDragRef.current = null;
-        if (dragged) {
-          onSelect(surface);
-          return;
-        }
-        onToggleHole?.(hole.id);
         onSelect(surface);
       },
       onDoubleClick: (event) => {
@@ -546,8 +519,8 @@ export default function CourseMap({
             cy={hole.marker.cy}
             r={HOLE_NUMBER_RADIUS}
             fill="none"
-            stroke={selectedSet.has(hole.id) ? 'var(--machine-orange)' : 'none'}
-            strokeWidth={selectedSet.has(hole.id) ? 4 : 0}
+            stroke="none"
+            strokeWidth={0}
           />
           <text
             x={hole.marker.cx}

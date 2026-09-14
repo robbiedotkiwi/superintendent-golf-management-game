@@ -10,23 +10,73 @@ import {
   FIRING_MORALE_HIT,
   FIRING_SEVERANCE_DAYS,
   PLAYER_ID,
-  PLAYER_WAGE,
   TRAINING_COST,
   TRAINING_DAYS,
   VOLUNTEER_DEFAULT_WEEKDAY,
-  VOLUNTEER_MINUTES,
 } from '../data/constants.js';
+import {
+  STANDARD_WORK_DAYS,
+  STAFF_TIER_LABELS,
+  VOLUNTEER_REWARD_SATISFACTION,
+  VOLUNTEER_SURFACES,
+  VOLUNTEER_WEEKLY_HOURS,
+} from '../data/config.js';
 import { useState } from 'react';
 import { canFireWorker, dayOfWeek, severanceCost } from '../engine/staff.js';
-import { mowingSpeedEfficiency } from '../engine/skills.js';
 import { workerAbsenceReason } from '../engine/availability.js';
 import { formatMoney } from '../engine/format.js';
 import { canBookCasual, casualDaysBooked, weekDays, weekdayLabel } from '../engine/week.js';
+import { daysScheduledThisWeek, volunteerHoursFor } from '../engine/staffMorale.js';
 import SectionTabs from './SectionTabs.jsx';
 
-function mowSpeedLabel(speedSkill) {
-  if (speedSkill == null) return 'Speed —';
-  return `Speed ${speedSkill} · ${Math.round(mowingSpeedEfficiency(speedSkill) * 100)}% mow`;
+function MoraleBar({ morale }) {
+  const value = Math.min(100, Math.max(0, Number(morale) || 0));
+  return (
+    <div className="mt-1 h-2 w-full border border-[var(--sand)]" data-morale-bar>
+      <div className="h-full bg-[var(--machine-orange)]" style={{ width: `${value}%` }} />
+    </div>
+  );
+}
+
+function StaffBadges({ worker }) {
+  const flags = [];
+  if (worker.sprayCertified) flags.push('Spray ticket');
+  if (worker.isMechanic) flags.push('Mechanic');
+  return (
+    <p className="text-sm text-[var(--sand)]">
+      {STAFF_TIER_LABELS[worker.tier] ?? worker.tier ?? 'Unskilled'} · Rating {Math.round(worker.rating ?? 0)}
+      {flags.length ? ` · ${flags.join(' · ')}` : ''}
+    </p>
+  );
+}
+
+export function LeaveRequests({ state, onApprove, onDecline }) {
+  const pending = (state.leaveRequests ?? []).filter((item) => !item.resolved);
+  if (!pending.length || !onApprove) return null;
+  return (
+    <div className="space-y-2 p-3" data-leave-requests>
+      {pending.map((request) => (
+        <section key={request.id} className="border border-[var(--machine-orange)] bg-[var(--soil)] p-3 text-sm">
+          <p>
+            {request.name} asked for {request.days} days of leave. Approve ({request.approveMorale >= 0 ? '+' : ''}
+            {request.approveMorale} morale) or decline ({request.declineMorale} morale).
+          </p>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              className="bg-[var(--machine-orange)] px-3 py-1 font-semibold"
+              onClick={() => onApprove(request.id)}
+            >
+              Approve
+            </button>
+            <button type="button" className="border border-[var(--sand)] px-3 py-1" onClick={() => onDecline(request.id)}>
+              Decline
+            </button>
+          </div>
+        </section>
+      ))}
+    </div>
+  );
 }
 
 export default function Crew({
@@ -37,6 +87,8 @@ export default function Crew({
   onHire,
   onTrain,
   onFire,
+  onApproveLeave,
+  onDeclineLeave,
   onDismissVolunteer,
   onVolunteerDay,
   onEarlyStart,
@@ -46,6 +98,8 @@ export default function Crew({
   const paid = state.workers.filter((worker) => !worker.isVolunteer && !worker.isCasual);
   const [confirmFireId, setConfirmFireId] = useState(null);
   const [confirmVolunteerGone, setConfirmVolunteerGone] = useState(false);
+  const volunteerHours = volunteerHoursFor(state);
+  const volunteerReward = (state.satisfaction ?? 0) >= VOLUNTEER_REWARD_SATISFACTION;
 
   return (
     <div className="h-full overflow-y-auto bg-[var(--soil)] px-6 py-5 text-[var(--paint)]">
@@ -59,6 +113,8 @@ export default function Crew({
 
       {tab === CREW_TAB_ROSTER ? (
         <>
+      <div data-crew-roster>
+      <LeaveRequests state={state} onApprove={onApproveLeave} onDecline={onDeclineLeave} />
       <label className="mb-6 flex items-center gap-3">
         <input
           type="checkbox"
@@ -72,30 +128,30 @@ export default function Crew({
       <div className="mt-3 space-y-4">
         {paid.map((worker) => {
           const reason = workerAbsenceReason(state, worker);
+          const scheduled = daysScheduledThisWeek(state, worker.id);
+          const overStandard = scheduled > STANDARD_WORK_DAYS;
           return (
           <section key={worker.id} className="border-2 border-[var(--sand)] p-4">
             <h3 className={`text-2xl font-semibold ${reason ? 'line-through' : ''}`}>{worker.name}</h3>
             {reason ? <p className="text-sm text-[var(--sand)]">{reason}</p> : null}
+            <StaffBadges worker={worker} />
             <p>
-              {mowSpeedLabel(worker.speedSkill)} · Quality {worker.qualitySkill} · Morale {Math.round(worker.morale)} · Wage {formatMoney(worker.wage)}/day
-              {worker.isMechanic ? ' · Mechanic' : ''}
-              {worker.sprayCertified ? ' · Spray ticket' : ''}
+              Morale {Math.round(worker.morale)} · Wage {formatMoney(worker.wage)}/day
+            </p>
+            <MoraleBar morale={worker.morale} />
+            <p className={`mt-2 text-sm ${overStandard ? 'text-red-400' : 'text-[var(--sand)]'}`} data-days-scheduled>
+              {scheduled} day{scheduled === 1 ? '' : 's'} scheduled this week
+              {overStandard ? ` — past ${STANDARD_WORK_DAYS} hits morale` : ''}
             </p>
             <p className="text-sm text-[var(--sand)]">
               {worker.trainingUntilDay && state.day < worker.trainingUntilDay
                 ? `Away on training until day ${worker.trainingUntilDay}`
-                : `${worker.minutesToday} min today`}
+                : worker.leaveUntilDay && state.day < worker.leaveUntilDay
+                  ? `On leave until day ${worker.leaveUntilDay}`
+                  : worker.sickUntilDay && state.day < worker.sickUntilDay
+                    ? `Off sick until day ${worker.sickUntilDay}`
+                    : `${worker.minutesToday} min today`}
             </p>
-            {worker.id !== PLAYER_ID ? (
-              <div className="mt-2 flex flex-wrap gap-2">
-                <button type="button" onClick={() => onTrain(worker.id, 'speedSkill')} className="border border-[var(--sand)] px-3 py-1">
-                  Train speed ({formatMoney(TRAINING_COST)}, {TRAINING_DAYS} days)
-                </button>
-                <button type="button" onClick={() => onTrain(worker.id, 'qualitySkill')} className="border border-[var(--sand)] px-3 py-1">
-                  Train quality ({formatMoney(TRAINING_COST)}, {TRAINING_DAYS} days)
-                </button>
-              </div>
-            ) : null}
             {!worker.sprayCertified ? (
               <button type="button" onClick={() => onTrain(worker.id, 'spray')} className="mt-2 border border-[var(--sand)] px-3 py-1">
                 Spray ticket ({formatMoney(TRAINING_COST)}, {TRAINING_DAYS} days)
@@ -153,9 +209,11 @@ export default function Crew({
             <p className={`mt-2 ${reason ? 'line-through' : ''}`}>{volunteer?.name ?? 'Volunteer'}</p>
             {reason ? <p className="text-sm text-[var(--sand)]">{reason}</p> : null}
             <p className="mt-2">
-              Comes on day {state.volunteerWeekday ?? VOLUNTEER_DEFAULT_WEEKDAY} of each {DAYS_PER_WEEK}-day week
-              with {VOLUNTEER_MINUTES} min. {mowSpeedLabel(volunteer?.speedSkill)} · Quality {volunteer?.qualitySkill} — all
-              surfaces, half a day. Wage {formatMoney(PLAYER_WAGE)}.
+              {volunteerHours} hours {volunteerReward ? 'on two days' : 'one day'} each week on{' '}
+              {VOLUNTEER_SURFACES.join(', ')}. Assign to general duties and bunkers.
+              {volunteerReward
+                ? ' Club satisfaction unlocked a second volunteer day.'
+                : ` ${VOLUNTEER_WEEKLY_HOURS} hours weekly until satisfaction hits ${VOLUNTEER_REWARD_SATISFACTION}.`}
             </p>
           </>
         );
@@ -204,8 +262,14 @@ export default function Crew({
       )}
       </>
       )}
+      </div>
+        </>
+      ) : null}
 
-      <h2 className="mt-10 font-condensed text-3xl">Casuals</h2>
+      {tab === CREW_TAB_HIRE ? (
+        <>
+      <div data-casual-hire>
+      <h2 className="font-condensed text-3xl">Casuals</h2>
       <p className="mt-2 text-sm text-[var(--sand)]">
         Book up to {CASUAL_MAX_DAYS_PER_WEEK} days this week at {CASUAL_WAGE_MULT}× a regular wage. They only cost the days they work.
       </p>
@@ -215,8 +279,9 @@ export default function Crew({
           return (
             <section key={casual.id} className="border-2 border-[var(--sand)] p-4">
               <h3 className="text-2xl font-semibold">{casual.name}</h3>
+              <StaffBadges worker={casual} />
               <p>
-                {mowSpeedLabel(casual.speedSkill)} · Quality {casual.qualitySkill} · {formatMoney(casual.wage)}/day
+                {formatMoney(casual.wage)}/day
                 {casual.ownMower ? ' · brings own mower' : ''}
               </p>
               {casual.ownMower ? (
@@ -249,19 +314,17 @@ export default function Crew({
           );
         })}
       </div>
-        </>
-      ) : null}
+      </div>
 
-      {tab === CREW_TAB_HIRE ? (
-        <>
       <h2 className="mt-10 font-condensed text-3xl">Hire</h2>
       <p className="text-sm text-[var(--sand)]">List refreshes each season.</p>
       <div className="mt-3 space-y-3">
         {state.candidates.map((candidate) => (
           <section key={candidate.id} className="border border-[var(--sand)] p-4">
             <h3 className="text-xl font-semibold">{candidate.name}</h3>
+            <StaffBadges worker={candidate} />
             <p>
-              {mowSpeedLabel(candidate.speedSkill)} · Quality {candidate.qualitySkill} · {formatMoney(candidate.wage)}/day
+              {formatMoney(candidate.wage)}/day
               {candidate.isMechanic ? ' · Mechanic' : ''}
             </p>
             <button

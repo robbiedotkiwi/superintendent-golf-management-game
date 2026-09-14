@@ -75,7 +75,11 @@ import { bumpCapitalSpent } from './history.js';
 import { workerTimeMultiplier, mowingOperatorTimeMultiplier, workerBringsOwnMower } from './skills.js';
 import { hasMechanic } from './staff.js';
 import { createRng } from './rng.js';
-import { needsCash, spendCash } from './cash.js';
+import { needsCapital, needsCash, spendCapital, spendCash } from './cash.js';
+import { OWN_MOWER_PASS_CLASS, PASS_AREAS } from '../data/config.js';
+import { supportMinutes } from './support.js';
+import { passMinutesFor } from './passes.js';
+import { snapMinutes } from './duration.js';
 
 function remainingMinutes(state) {
   return state.workers.reduce((total, worker) => total + (worker.minutesToday - worker.minutesUsed), 0);
@@ -385,6 +389,10 @@ export function machineAssignment(state, surface, worker) {
 }
 
 export function durationOnMachine(state, taskId, worker, machineId, holeIds) {
+  return snapMinutes(durationOnMachineUnrounded(state, taskId, worker, machineId, holeIds));
+}
+
+function durationOnMachineUnrounded(state, taskId, worker, machineId, holeIds) {
   const task = getTask(taskId);
   if (taskId === 'pickBalls') {
     const base = hasBallPicker(state) ? AUTO_PICK_MINUTES : BALL_PICK_MINUTES;
@@ -394,6 +402,30 @@ export function durationOnMachine(state, taskId, worker, machineId, holeIds) {
     const probe = holeIds?.length ? { ...state, handWaterTargets: holeIds } : state;
     const base = handWaterMinutes(probe);
     return worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
+  }
+  const support = supportMinutes(taskId, state);
+  if (support != null) {
+    if (taskId === 'rollGreens' || taskId === 'extraRoll') {
+      const resolvedId = machineId === undefined ? pickMachine(state, task)?.id ?? null : machineId;
+      const minutes = passMinutesFor(state, resolvedId, 'greens', worker, { skipWet: true });
+      if (minutes != null) return minutes;
+    }
+    return worker ? Math.round(support) : support;
+  }
+  if (task?.mowing && PASS_AREAS.includes(task.surface)) {
+    let resolvedId = machineId;
+    if (resolvedId === undefined) {
+      if (workerBringsOwnMower(worker, task.surface)) resolvedId = null;
+      else resolvedId = pickMachine(state, task)?.id ?? null;
+    }
+    if (workerBringsOwnMower(worker, task.surface) && !resolvedId) {
+      const minutes = passMinutesFor(state, null, task.surface, worker, {
+        passClass: OWN_MOWER_PASS_CLASS,
+      });
+      if (minutes != null) return minutes;
+    }
+    const minutes = passMinutesFor(state, resolvedId, task.surface, worker);
+    if (minutes != null) return minutes;
   }
   if (!task?.surface) {
     const base = TASK_MINUTES[taskId] ?? 0;
@@ -581,7 +613,7 @@ export function canBuyMachine(state, machineId) {
   if ((state.pendingDeliveries ?? []).some((item) => canonicalMachineId(item.machineId) === id)) {
     return { ok: false, reason: 'Already on a truck.' };
   }
-  if (!needsCash(state, machine.cost).ok) return needsCash(state, machine.cost);
+  if (!needsCapital(state, machine.cost).ok) return needsCapital(state, machine.cost);
   return { ok: true };
 }
 
@@ -597,14 +629,14 @@ export function canBuyUpgrade(state, machineId, upgradeId) {
   if (upgrade.slot && owned.some((item) => getUpgrade(item)?.slot === upgrade.slot)) {
     return { ok: false, reason: 'That slot is already fitted.' };
   }
-  const cash = needsCash(state, upgrade.cost);
+  const cash = needsCapital(state, upgrade.cost);
   if (!cash.ok) return cash;
   return { ok: true };
 }
 
 export function canBuyFoley(state) {
   if (state.hasFoleyGrinder) return { ok: false, reason: 'Already installed.' };
-  const foleyCash = needsCash(state, FOLEY_GRINDER_COST);
+  const foleyCash = needsCapital(state, FOLEY_GRINDER_COST);
   if (!foleyCash.ok) return foleyCash;
   return { ok: true };
 }
@@ -701,7 +733,7 @@ export function buyMachine(state, machineId) {
   const id = canonicalMachineId(machineId);
   const machine = getMachine(id);
   let next = {
-    ...spendCash(state, machine.cost),
+    ...spendCapital(state, machine.cost),
     ...stampOwnedMachine(state, id, NEW_PURCHASE_CONDITION),
     hasAutoPicker: machine.ballPicker ? true : state.hasAutoPicker,
   };
@@ -720,7 +752,7 @@ export function buyUpgrade(state, machineId, upgradeId) {
   const id = canonicalMachineId(machineId);
   const upgrade = getUpgrade(upgradeId);
   const next = {
-    ...spendCash(state, upgrade.cost),
+    ...spendCapital(state, upgrade.cost),
     machineUpgrades: {
       ...(state.machineUpgrades ?? {}),
       [id]: [...ownedUpgradeIds(state, id), upgrade.id],
@@ -732,7 +764,7 @@ export function buyUpgrade(state, machineId, upgradeId) {
 export function buyFoley(state) {
   const check = canBuyFoley(state);
   if (!check.ok) return state;
-  return bumpCapitalSpent(spendCash({ ...state, hasFoleyGrinder: true }, FOLEY_GRINDER_COST), FOLEY_GRINDER_COST);
+  return bumpCapitalSpent(spendCapital({ ...state, hasFoleyGrinder: true }, FOLEY_GRINDER_COST), FOLEY_GRINDER_COST);
 }
 
 export function sendForGrind(state, machineId) {

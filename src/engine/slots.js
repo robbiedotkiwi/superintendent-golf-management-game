@@ -1,0 +1,167 @@
+import {
+  COPY_FLAG_AWAY,
+  COPY_FLAG_SHED,
+  SLOT_MINUTES,
+  TEMPLATE_CAP,
+  TEMPLATE_NAME_MAX,
+  WORK_DAY_MINUTES,
+} from '../data/config.js';
+import { CUT_TASK_BY_SURFACE } from '../data/constants.js';
+import { getTask } from '../data/tasks.js';
+import { snapMinutes } from './duration.js';
+import { isMachineAvailable } from './equipment.js';
+import { getDayTasks, planningDayOf, setDayTasks, weekStartDay, workersForPlanDay } from './week.js';
+import { workerAvailableOnDay } from './weekGrid.js';
+
+export { snapMinutes };
+
+export function slotCount(dayLength = WORK_DAY_MINUTES) {
+  return Math.max(1, Math.round(dayLength / SLOT_MINUTES));
+}
+
+export function rangesOverlap(aStart, aMinutes, bStart, bMinutes) {
+  const a0 = aStart ?? 0;
+  const a1 = a0 + (aMinutes ?? 0);
+  const b0 = bStart ?? 0;
+  const b1 = b0 + (bMinutes ?? 0);
+  return a0 < b1 && b0 < a1;
+}
+
+export function tasksForWorker(tasks, workerId) {
+  return (tasks ?? []).filter((item) => item.workerId === workerId);
+}
+
+export function nextStartMinute(tasks, workerId, dayLength = WORK_DAY_MINUTES) {
+  const mine = [...tasksForWorker(tasks, workerId)].sort(
+    (a, b) => (a.startMinute ?? 0) - (b.startMinute ?? 0),
+  );
+  let cursor = 0;
+  for (const item of mine) {
+    const start = item.startMinute ?? cursor;
+    if (start - cursor >= SLOT_MINUTES) return cursor;
+    cursor = Math.max(cursor, start + (item.minutes ?? 0));
+  }
+  return cursor <= dayLength - SLOT_MINUTES ? cursor : cursor;
+}
+
+export function machineConflictsOnDay(tasks, machineId, startMinute, minutes, ignorePlanId) {
+  if (!machineId) return [];
+  return (tasks ?? []).filter(
+    (item) =>
+      item.machineId === machineId &&
+      item.planId !== ignorePlanId &&
+      rangesOverlap(startMinute, minutes, item.startMinute ?? 0, item.minutes ?? 0),
+  );
+}
+
+export function stampStartMinutes(tasks, dayLength = WORK_DAY_MINUTES) {
+  const used = {};
+  return (tasks ?? []).map((item) => {
+    if (item.startMinute != null) return item;
+    const cursor = used[item.workerId] ?? 0;
+    used[item.workerId] = cursor + (item.minutes ?? 0);
+    return { ...item, startMinute: cursor };
+  });
+}
+
+export function copyFlagsFor(state, day, task) {
+  const flags = [];
+  if (task.workerId && !workerAvailableOnDay(state, task.workerId, day)) flags.push(COPY_FLAG_AWAY);
+  if (task.machineId && !isMachineAvailable(state, task.machineId)) flags.push(COPY_FLAG_SHED);
+  return flags;
+}
+
+export function cloneTasksToDay(state, sourceTasks, destDay, nextPlanId) {
+  let id = nextPlanId ?? state.nextPlanId ?? 1;
+  const cloned = [];
+  for (const task of sourceTasks ?? []) {
+    const copyFlags = copyFlagsFor(state, destDay, task);
+    cloned.push({
+      ...task,
+      planId: id,
+      startMinute: snapMinutes(task.startMinute ?? 0),
+      copyFlags,
+    });
+    id += 1;
+  }
+  return { tasks: cloned, nextPlanId: id };
+}
+
+export function applyCopiedTasks(state, destDay, sourceTasks) {
+  const { tasks, nextPlanId } = cloneTasksToDay(state, sourceTasks, destDay, state.nextPlanId ?? 1);
+  const merged = stampStartMinutes([...getDayTasks(state, destDay), ...tasks]);
+  return { ...setDayTasks(state, destDay, merged), nextPlanId };
+}
+
+export function copyYesterday(state, destDay) {
+  const sourceDay = destDay - 1;
+  if (weekStartDay(sourceDay) !== weekStartDay(state.day)) {
+    return { ...state, lastCopyFlags: [] };
+  }
+  const source = getDayTasks(state, sourceDay);
+  const next = applyCopiedTasks(state, destDay, source);
+  return { ...next, lastCopyFlags: getDayTasks(next, destDay).flatMap((item) => item.copyFlags ?? []) };
+}
+
+export function saveNamedTemplate(state, name) {
+  const trimmed = String(name ?? '').trim().slice(0, TEMPLATE_NAME_MAX);
+  if (!trimmed) return state;
+  const day = planningDayOf(state);
+  const tasks = (getDayTasks(state, day) ?? []).map((item) => {
+    const rest = { ...item };
+    delete rest.planId;
+    delete rest.copyFlags;
+    return rest;
+  });
+  const templates = [...(state.planTemplates ?? [])];
+  const existing = templates.findIndex((item) => item.name === trimmed);
+  const entry = { id: existing >= 0 ? templates[existing].id : (state.nextTemplateId ?? 1), name: trimmed, tasks };
+  if (existing >= 0) templates[existing] = entry;
+  else templates.push(entry);
+  return {
+    ...state,
+    planTemplates: templates.slice(-TEMPLATE_CAP),
+    nextTemplateId: Math.max(state.nextTemplateId ?? 1, entry.id + 1),
+  };
+}
+
+export function tasksFromTemplate(template, day) {
+  if (Array.isArray(template?.tasks)) return template.tasks;
+  const weekday = ((day - 1) % 7) + 1;
+  return template?.days?.[weekday] ?? template?.days?.[String(weekday)] ?? [];
+}
+
+export function applyNamedTemplate(state, templateId) {
+  const template = (state.planTemplates ?? []).find((item) => item.id === templateId);
+  if (!template) return state;
+  const destDay = planningDayOf(state);
+  if (destDay < state.day) return { ...state, lastCopyFlags: [] };
+  const source = tasksFromTemplate(template, destDay);
+  const next = applyCopiedTasks(state, destDay, source);
+  return { ...next, lastCopyFlags: getDayTasks(next, destDay).flatMap((item) => item.copyFlags ?? []) };
+}
+
+export function mowTaskIdFor(surface) {
+  return CUT_TASK_BY_SURFACE[surface] ?? null;
+}
+
+export function emptySlotDraft() {
+  return { surface: 'greens', jobId: CUT_TASK_BY_SURFACE.greens, machineId: '', minutes: SLOT_MINUTES * 4 };
+}
+
+export function resolvePlannerJobId(draft) {
+  if (draft?.jobId && getTask(draft.jobId)) return draft.jobId;
+  return mowTaskIdFor(draft?.surface) ?? CUT_TASK_BY_SURFACE[draft?.surface] ?? null;
+}
+
+export function draftFromJobId(jobId, previous = emptySlotDraft()) {
+  const task = getTask(jobId);
+  return {
+    ...previous,
+    jobId: task?.id ?? jobId,
+    surface: task?.surface ?? previous.surface,
+    machineId: '',
+  };
+}
+
+export { workersForPlanDay };

@@ -1,5 +1,6 @@
 import { durationOnMachine, pickMachineForTask } from './equipment.js';
 import { isWorkerPresent, workerAllows, workerBringsOwnMower } from './skills.js';
+import { staffCanRunMachine } from './passes.js';
 
 export { workerAllows, workerBringsOwnMower, isWorkerPresent, workerTimeMultiplier, mowingSpeedEfficiency, mowingOperatorTimeMultiplier } from './skills.js';
 export { workerQualityMultiplier, qualityRandomFactor } from './skills.js';
@@ -20,6 +21,7 @@ export function assignWorker(state, task, holeIds) {
     const ownMower = workerBringsOwnMower(worker, task.surface);
     if (task.mowing && !ownMower && !pickMachineForTask(state, task, worker, undefined, holeIds)) continue;
     const machine = ownMower ? null : pickMachineForTask(state, task, worker, undefined, holeIds);
+    if (machine && !staffCanRunMachine(worker, machine)) continue;
     const minutes = durationOnMachine(state, task.id, worker, ownMower ? null : machine?.id, holeIds);
     if (worker.minutesToday - worker.minutesUsed >= minutes) return worker;
   }

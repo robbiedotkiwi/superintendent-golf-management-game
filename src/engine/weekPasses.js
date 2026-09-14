@@ -1,0 +1,72 @@
+import { PASS_AREAS } from '../data/config.js';
+import { gradeLetter } from './grades.js';
+import {
+  applyWeekPasses,
+  areaGradeCap,
+  bestMachineCap,
+  emptyAreaListMap,
+  emptyAreaMap,
+  passesRequired,
+  resolveDayPasses,
+  weeklyPassRatio,
+  weeklyTargetQuality,
+} from './passes.js';
+import { getDayTasks, weatherForPlanDay, weekDays, workersForPlanDay } from './week.js';
+
+export function projectedPassesFromPlan(state) {
+  let acc = {
+    weekPasses: { ...(state.weekPasses ?? emptyAreaMap(0)) },
+    weekWastedHours: { ...(state.weekWastedHours ?? emptyAreaMap(0)) },
+    weekPassDays: Object.fromEntries(
+      PASS_AREAS.map((area) => [area, [...(state.weekPassDays?.[area] ?? [])]]),
+    ),
+    weekRollPasses: { ...(state.weekRollPasses ?? emptyAreaMap(0)) },
+  };
+  for (const day of weekDays(state.day)) {
+    if (day < state.day) continue;
+    const dayState = { ...state, weather: weatherForPlanDay(state, day), day };
+    const jobs = getDayTasks(state, day);
+    const workers = workersForPlanDay(state, day);
+    const dayResult = resolveDayPasses(dayState, jobs, workers);
+    acc = applyWeekPasses(acc, dayResult, day);
+  }
+  return acc;
+}
+
+export function projectedWeeklyGrade(state) {
+  const projected = projectedPassesFromPlan(state);
+  return Object.fromEntries(
+    PASS_AREAS.map((area) => {
+      const cap = areaGradeCap(state, area);
+      const required = passesRequired(state, area);
+      const achieved = projected.weekPasses[area] ?? 0;
+      const roll = projected.weekRollPasses?.[area] ?? state.weekRollPasses?.[area] ?? 0;
+      const target = weeklyTargetQuality(weeklyPassRatio(achieved, area, required) + roll, cap);
+      const days = projected.weekPassDays[area] ?? [];
+      return [
+        area,
+        {
+          achieved,
+          required,
+          wastedHours: projected.weekWastedHours[area] ?? 0,
+          dailyCapped: days.includes(state.planningDay ?? state.day) || days.includes(state.day),
+          cappedDays: days,
+          target,
+          letter: gradeLetter(target),
+          cappedByMachine: weeklyPassRatio(achieved, area) * 100 > cap + 0.01,
+          capLetter: bestMachineCap(state, area)?.letter ?? null,
+          capScore: cap,
+        },
+      ];
+    }),
+  );
+}
+
+export function weekPassStrip(state) {
+  return PASS_AREAS.map((area) => {
+    const required = passesRequired(state, area);
+    const banked = Number(state.weekPasses?.[area] ?? 0);
+    const owed = Math.max(0, required - banked);
+    return { area, banked, required, owed };
+  });
+}

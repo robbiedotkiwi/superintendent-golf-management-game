@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import CourseMap from './components/CourseMap.jsx';
 import DaySummary from './components/DaySummary.jsx';
-import Crew from './components/Crew.jsx';
+import Crew, { LeaveRequests } from './components/Crew.jsx';
 import GameOver from './components/GameOver.jsx';
 import Office from './components/Office.jsx';
 import PlayoutBar from './components/PlayoutBar.jsx';
@@ -43,8 +43,6 @@ import {
 } from './engine/gameState.js';
 import { courseCondition } from './engine/simulation.js';
 import { holeCount } from './engine/holes.js';
-import HoleDetail from './components/HoleDetail.jsx';
-import MapSelectionBar from './components/MapSelectionBar.jsx';
 import {
   PLAYOUT_DONE,
   PLAYOUT_PLAYING,
@@ -188,14 +186,14 @@ export default function App() {
               machineId: options?.machineId,
               workerId: options?.workerId,
               day: options?.day,
+              minutes: options?.minutes,
             })
           }
           onRemove={(taskId, planId, day) => dispatch({ type: 'REMOVE_TASK', taskId, planId, day })}
-          onSelectHoles={(holes) => dispatch({ type: 'SET_SELECTED_HOLES', holes })}
-          onToggleHole={(holeId) => dispatch({ type: 'TOGGLE_HOLE', holeId })}
-          onAddHole={(holeId) => dispatch({ type: 'ADD_HOLE', holeId })}
-          onSaveRoute={(name) => dispatch({ type: 'SAVE_ROUTE', name })}
-          onApplyRoute={(id) => dispatch({ type: 'APPLY_ROUTE', id })}
+          onPlaceBlock={(payload) => dispatch({ type: 'PLACE_BLOCK', ...payload })}
+          onMoveBlock={(payload) => dispatch({ type: 'MOVE_BLOCK', ...payload })}
+          onResizeBlock={(payload) => dispatch({ type: 'RESIZE_BLOCK', ...payload })}
+          onSetBlockMachine={(payload) => dispatch({ type: 'SET_BLOCK_MACHINE', ...payload })}
           onRepeatLast={() => dispatch({ type: 'REPEAT_LAST' })}
           onEndDay={() => dispatch({ type: 'END_DAY' })}
           onDismissSummary={() => setSummary(null)}
@@ -218,6 +216,8 @@ export default function App() {
           onHire={(candidateId) => dispatch({ type: 'HIRE_WORKER', candidateId })}
           onTrain={(workerId, axis) => dispatch({ type: 'TRAIN_WORKER', workerId, axis })}
           onFire={(workerId) => dispatch({ type: 'FIRE_WORKER', workerId })}
+          onApproveLeave={(requestId) => dispatch({ type: 'APPROVE_LEAVE', requestId })}
+          onDeclineLeave={(requestId) => dispatch({ type: 'DECLINE_LEAVE', requestId })}
           onDismissVolunteer={() => dispatch({ type: 'DISMISS_VOLUNTEER' })}
           onVolunteerDay={(weekday) => dispatch({ type: 'SET_VOLUNTEER_WEEKDAY', weekday })}
           onEarlyStart={(value) => dispatch({ type: 'SET_EARLY_START', value })}
@@ -225,6 +225,9 @@ export default function App() {
           onBookCasual={(casualId, day) => dispatch({ type: 'BOOK_CASUAL', casualId, day })}
           onUnbookCasual={(casualId, day) => dispatch({ type: 'UNBOOK_CASUAL', casualId, day })}
           onSetWorker={(taskId, workerId, day) => dispatch({ type: 'SET_TASK_WORKER', taskId, workerId, day })}
+          onCopyYesterday={(day) => dispatch({ type: 'COPY_YESTERDAY', day })}
+          onSaveTemplate={(name) => dispatch({ type: 'SAVE_TEMPLATE', name })}
+          onApplyTemplate={(templateId) => dispatch({ type: 'APPLY_TEMPLATE', templateId })}
           onSetHoc={(surface, hoc) => dispatch({ type: 'SET_HOC', surface, hoc })}
           onSetPattern={(surface, pattern) => dispatch({ type: 'SET_PATTERN', surface, pattern })}
           onSetAngle={(surface, angle) => dispatch({ type: 'SET_ANGLE', surface, angle })}
@@ -240,9 +243,6 @@ export default function App() {
           onSetMachineOverride={(surface, machineId) =>
             dispatch({ type: 'SET_MACHINE_OVERRIDE', surface, machineId })
           }
-          onSetHoleOverride={(holeId, surface, override) =>
-            dispatch({ type: 'SET_HOLE_OVERRIDE', holeId, surface, override })
-          }
           onTab={(section, tab) => dispatch({ type: 'SET_TAB', section, tab })}
           onLease={(machineId) => dispatch({ type: 'LEASE_MACHINE', machineId })}
           onStopLease={(machineId) => dispatch({ type: 'STOP_LEASE', machineId })}
@@ -255,7 +255,9 @@ export default function App() {
           onDeclineTournament={() => dispatch({ type: 'DECLINE_TOURNAMENT_REQUEST' })}
           onAcceptEvent={(inviteId) => dispatch({ type: 'ACCEPT_EVENT', inviteId })}
           onDeclineEvent={(inviteId) => dispatch({ type: 'DECLINE_EVENT', inviteId })}
-          onStartProject={(projectId) => dispatch({ type: 'START_PROJECT', projectId })}
+          onStartProject={(projectId, workerId) => dispatch({ type: 'START_PROJECT', projectId, workerId })}
+          onPauseProject={(projectId) => dispatch({ type: 'PAUSE_PROJECT', projectId })}
+          onResumeProject={(projectId) => dispatch({ type: 'RESUME_PROJECT', projectId })}
           onStartGrassConversion={(surface, speciesId) =>
             dispatch({ type: 'START_GRASS_CONVERSION', surface, speciesId })
           }
@@ -316,11 +318,10 @@ function GameScreen({
   onSelect,
   onPlan,
   onRemove,
-  onSelectHoles,
-  onToggleHole,
-  onAddHole,
-  onSaveRoute,
-  onApplyRoute,
+  onPlaceBlock,
+  onMoveBlock,
+  onResizeBlock,
+  onSetBlockMachine,
   onRepeatLast,
   onEndDay,
   onDismissSummary,
@@ -343,6 +344,8 @@ function GameScreen({
   onHire,
   onTrain,
   onFire,
+  onApproveLeave,
+  onDeclineLeave,
   onDismissVolunteer,
   onVolunteerDay,
   onEarlyStart,
@@ -350,6 +353,9 @@ function GameScreen({
   onBookCasual,
   onUnbookCasual,
   onSetWorker,
+  onCopyYesterday,
+  onSaveTemplate,
+  onApplyTemplate,
   onSetHoc,
   onSetPattern,
   onSetAngle,
@@ -363,7 +369,6 @@ function GameScreen({
   onToggleMoistureOverlay,
   onSetHandWaterTargets,
   onSetMachineOverride,
-  onSetHoleOverride,
   onLease,
   onStopLease,
   onBuyUsed,
@@ -376,6 +381,8 @@ function GameScreen({
   onAcceptEvent,
   onDeclineEvent,
   onStartProject,
+  onPauseProject,
+  onResumeProject,
   onStartGrassConversion,
   onBuyPicker,
   onToggleSound,
@@ -491,10 +498,9 @@ function GameScreen({
         onToggleSound={onToggleSound}
         onDismissLockHint={onDismissLockHint}
         onSelectDay={onSelectDay}
-        onBookCasual={onBookCasual}
-        onUnbookCasual={onUnbookCasual}
       />
       <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+        <LeaveRequests state={state} onApprove={onApproveLeave} onDecline={onDeclineLeave} />
         {view === SECTION_SHED ? (
           <Shed
             state={state}
@@ -521,6 +527,8 @@ function GameScreen({
           onHire={onHire}
           onTrain={onTrain}
           onFire={onFire}
+          onApproveLeave={onApproveLeave}
+          onDeclineLeave={onDeclineLeave}
           onDismissVolunteer={onDismissVolunteer}
           onVolunteerDay={onVolunteerDay}
             onEarlyStart={onEarlyStart}
@@ -545,6 +553,8 @@ function GameScreen({
             onDeclineEvent={onDeclineEvent}
             onSetTournaments={onSetTournaments}
             onStartProject={onStartProject}
+            onPauseProject={onPauseProject}
+            onResumeProject={onResumeProject}
             onStartGrassConversion={onStartGrassConversion}
             onBuyPicker={onBuyPicker}
           />
@@ -555,6 +565,10 @@ function GameScreen({
             onTab={(tab) => onTab(SECTION_TURF, tab)}
             onBack={onCloseShed}
             onPlan={onPlan}
+            onPlaceBlock={onPlaceBlock}
+            onMoveBlock={onMoveBlock}
+            onResizeBlock={onResizeBlock}
+            onSetBlockMachine={onSetBlockMachine}
             onRemove={onRemove}
             onSelectDay={onSelectDay}
             onSetHoc={onSetHoc}
@@ -563,14 +577,15 @@ function GameScreen({
             onSetAutoRotate={onSetAutoRotate}
             onSetIrrigation={onSetIrrigation}
             onSetWorker={onSetWorker}
+            onCopyYesterday={onCopyYesterday}
+            onSaveTemplate={onSaveTemplate}
+            onApplyTemplate={onApplyTemplate}
             onBuyAerator={onBuyAerator}
             onBuyGreensSensors={onBuyGreensSensors}
             onBuyTurfRad={onBuyTurfRad}
             onBuyWeatherStation={onBuyWeatherStation}
             onSetHandWaterTargets={onSetHandWaterTargets}
             onSetMachineOverride={onSetMachineOverride}
-            onToggleHole={onToggleHole}
-            onSelectHoles={onSelectHoles}
           />
         ) : (
           <>
@@ -585,9 +600,6 @@ function GameScreen({
               showMower={showMower}
               selected={selected}
               highlight={event?.surface ?? selected}
-              selectedHoles={state.selectedHoles}
-              onToggleHole={onToggleHole}
-              onAddHole={onAddHole}
               onSelect={handleSelect}
               onOpenShed={onOpenShed}
               day={watching ? playout.day : state.day}
@@ -595,34 +607,13 @@ function GameScreen({
               onView={onSetView}
               moistureState={state}
             />
-            {!watching ? (
-              <MapSelectionBar
-                state={plan}
-                onSelectHoles={onSelectHoles}
-                onToggleHole={onToggleHole}
-                onSaveRoute={onSaveRoute}
-                onApplyRoute={onApplyRoute}
-                onRepeatLast={onRepeatLast}
-                onPlan={onPlan}
-                onRemove={onRemove}
-              />
-            ) : null}
             {SURFACE_KEYS.includes(selected) && !watching ? (
               <MapJobPopover
                 surface={selected}
                 state={plan}
-                holes={state.selectedHoles}
                 onPlan={onPlan}
                 onRemove={onRemove}
                 onSetWorker={onSetWorker}
-                onClose={() => onSelect(null)}
-              />
-            ) : null}
-            {selected?.holeId && !watching ? (
-              <HoleDetail
-                state={state}
-                holeId={selected.holeId}
-                onSetOverride={onSetHoleOverride}
                 onClose={() => onSelect(null)}
               />
             ) : null}

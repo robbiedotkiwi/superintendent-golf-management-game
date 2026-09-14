@@ -53,6 +53,7 @@ import {
   WALK_BEHIND_COST,
   WALK_BEHIND_ID,
 } from './constants.js';
+import { PASS_CLASS_BY_CATALOG, PASS_HOURS, PASS_CLASS_ROLLER } from './config.js';
 
 function defaultTimeMult(spec) {
   const coverage = spec.coverage ?? 0;
@@ -557,10 +558,18 @@ export function machineCanMow(machine) {
 export function machineAllows(machine, surface, task) {
   if (!machine) return false;
   if (machine.utility || machine.ballPicker) return false;
-  if (machine.rollOnly) return task?.id === 'rollGreens';
+  if (machine.rollOnly || machineClass(machine) === PASS_CLASS_ROLLER || PASS_CLASS_BY_CATALOG[machineClass(machine)] === PASS_CLASS_ROLLER) {
+    return task?.id === 'rollGreens' && surface === 'greens';
+  }
   if (task?.id === 'rollGreens') return false;
   if (machine.autonomous) return false;
-  if (machineCanMow(machine) && HOC_SURFACES.includes(surface)) return true;
+  const passClass = PASS_CLASS_BY_CATALOG[machineClass(machine)] ?? machineClass(machine);
+  const hours = PASS_HOURS[passClass];
+  if (hours && surface in hours) {
+    const v = hours[surface];
+    return v != null && Number.isFinite(v) && v > 0;
+  }
+  if (HOC_SURFACES.includes(surface)) return false;
   return machine.surfaces?.[surface] === true;
 }
 

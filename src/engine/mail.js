@@ -145,3 +145,12 @@ export function gmMissedTournamentMail(season) {
     body: `You never answered. We published nothing for ${season}. The committee noticed the empty calendar.`,
   };
 }
+
+export function resignMail(name) {
+  return {
+    from: 'crew',
+    kind: 'resigned',
+    subject: `${name} resigned`,
+    body: `${name} walked. Morale stayed too low for too long. They will not be in tomorrow.`,
+  };
+}

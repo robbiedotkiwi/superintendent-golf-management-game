@@ -19,7 +19,7 @@ import {
 import { getMachine, MACHINES } from '../data/equipment.js';
 import { bumpCapitalSpent } from './history.js';
 import { clampCondition, conditionOf, dropOwnedMachine, ensureAutoWeek, recomputePlannedMinutes, stampOwnedMachine } from './equipment.js';
-import { cashOnHand, needsCash, spendCash } from './cash.js';
+import { cashOnHand, needsCapital, spendCapital } from './cash.js';
 import { createRng } from './rng.js';
 
 export function clampRelationship(value) {
@@ -86,7 +86,7 @@ export function canBuyUsed(state, listingId) {
   if ((state.pendingDeliveries ?? []).some((item) => item.machineId === listing.machineId)) {
     return { ok: false, reason: 'Already on a truck.' };
   }
-  const usedCash = needsCash(state, listing.price);
+  const usedCash = needsCapital(state, listing.price);
   if (!usedCash.ok) return usedCash;
   return { ok: true, listing };
 }
@@ -96,7 +96,7 @@ export function buyUsed(state, listingId) {
   if (!check.ok) return state;
   const listing = check.listing;
   const next = {
-    ...spendCash(state, listing.price),
+    ...spendCapital(state, listing.price),
     usedListings: (state.usedListings ?? []).filter((item) => item.id !== listingId),
     pendingDeliveries: [
       ...(state.pendingDeliveries ?? []),

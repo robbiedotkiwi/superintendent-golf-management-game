@@ -47,7 +47,9 @@ import { emptyWeekPlan, weekStartDay } from './week.js';
 import { snapshotWeekStart } from './weekReview.js';
 import { migrateIrrigation } from './irrigation.js';
 import { hocRangeFor, normalizeGrass } from './grass.js';
-import { clampHoc } from './mowing.js';
+import { migrateWorkerTier } from './staffTiers.js';
+import { emptyAreaQuality, emptyWeekPassState, applyAreaQualityToHoles } from './passes.js';
+import { CAPEX_STATUS_PENDING, STARTING_CAPEX, STARTING_MONTHLY_BUDGET } from '../data/config.js';
 
 function clampGrassHoc(defaults, grass) {
   if (!defaults) return defaults;
@@ -310,22 +312,54 @@ export function withDefaults(state) {
       };
       return plan;
     })(),
-    casualPool: (Array.isArray(state.casualPool) && state.casualPool.length
-      ? state.casualPool
-      : generateCasuals(createRng((state.rngSeed ?? STARTING_RNG_SEED) + 17))
-    ).map((casual) => ({
-      ...casual,
-      ownMower: Boolean(casual.ownMower),
-      allowedSurfaces: casual.ownMower
-        ? (Array.isArray(casual.allowedSurfaces) ? casual.allowedSurfaces : ['fairways', 'rough', 'surrounds'])
-        : (casual.allowedSurfaces ?? 'all'),
-    })),
     morningDrops: Array.isArray(state.morningDrops) ? state.morningDrops : [],
     section: normalizeSection(state.section),
     tabs: normalizeTabs(state.tabs),
     log: Array.isArray(state.log) ? state.log : [],
-    workers: Array.isArray(state.workers) ? state.workers.map(migrateVolunteerWorker) : [],
+    workers: (Array.isArray(state.workers) ? state.workers.map(migrateVolunteerWorker) : []).map(migrateWorkerTier),
+    candidates: (Array.isArray(state.candidates) ? state.candidates : []).map(migrateWorkerTier),
+    casualPool: (Array.isArray(state.casualPool) && state.casualPool.length
+      ? state.casualPool
+      : generateCasuals(createRng((state.rngSeed ?? STARTING_RNG_SEED) + 17))
+    ).map((casual) =>
+      migrateWorkerTier({
+        ...casual,
+        ownMower: Boolean(casual.ownMower),
+        allowedSurfaces: casual.ownMower
+          ? (Array.isArray(casual.allowedSurfaces) ? casual.allowedSurfaces : ['fairways', 'rough', 'surrounds'])
+          : (casual.allowedSurfaces ?? 'all'),
+      }),
+    ),
+    areaQuality: emptyAreaQuality(state.areaQuality),
+    areaQualityPrev: emptyAreaQuality(state.areaQualityPrev ?? state.areaQuality),
+    ...(() => {
+      const week = emptyWeekPassState();
+      return {
+        weekPasses: state.weekPasses ?? week.weekPasses,
+        weekWastedHours: state.weekWastedHours ?? week.weekWastedHours,
+        weekPassDays: state.weekPassDays ?? week.weekPassDays,
+        weekRollPasses: state.weekRollPasses ?? week.weekRollPasses,
+        weekCupChanges: Number(state.weekCupChanges) || 0,
+        weekGeneralDutiesMinutes: Number(state.weekGeneralDutiesMinutes) || 0,
+      };
+    })(),
+    planTemplates: Array.isArray(state.planTemplates) ? state.planTemplates : [],
+    nextTemplateId: Number.isInteger(state.nextTemplateId) && state.nextTemplateId > 0 ? state.nextTemplateId : 1,
+    lastCopyFlags: Array.isArray(state.lastCopyFlags) ? state.lastCopyFlags : [],
+    coringUntilDay: Number(state.coringUntilDay) || 0,
+    coredThisSeason: Boolean(state.coredThisSeason),
+    coringSkipStreak: Number(state.coringSkipStreak) || 0,
+    greensCeilingPenalty: Number(state.greensCeilingPenalty) || 0,
+    generalDutiesSkipWeeks: Number(state.generalDutiesSkipWeeks) || 0,
+    leaveRequests: Array.isArray(state.leaveRequests) ? state.leaveRequests : [],
+    nextLeaveId: Number.isInteger(state.nextLeaveId) && state.nextLeaveId > 0 ? state.nextLeaveId : 1,
+    capex: Number.isFinite(Number(state.capex)) ? Number(state.capex) : STARTING_CAPEX,
+    capexStatus: state.capexStatus ?? CAPEX_STATUS_PENDING,
+    capexGrantedKey: state.capexGrantedKey ?? null,
+    growInUntil: state.growInUntil && typeof state.growInUntil === 'object' ? state.growInUntil : {},
+    lastMonthlyBudget: Number.isFinite(Number(state.lastMonthlyBudget)) ? Number(state.lastMonthlyBudget) : STARTING_MONTHLY_BUDGET,
   };
+  if (next.holes) next.holes = applyAreaQualityToHoles(next.holes, next.areaQuality);
   if (!next.weekStartSnapshot) next.weekStartSnapshot = snapshotWeekStart(next);
   delete next.customPresets;
   delete next.nextPresetId;

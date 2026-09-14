@@ -37,12 +37,16 @@ import {
   WET_GAIN_MULT,
   WEATHER_STORM,
 } from '../data/constants.js';
-import { PLAYER_ID } from '../data/constants.js';
+import { PASS_AREAS, AUTONOMOUS_AREAS, AUTONOMOUS_NIGHT_MINUTES, AUTONOMOUS_UNSTICK_CHANCE, AUTONOMOUS_UNSTICK_MINUTES, CAPEX_STATUS_MISSED, CAPEX_STATUS_RELEASED, MINUTES_PER_HOUR } from '../data/config.js';
+import { applyCoringSeasonTick, applySupportDay, applySupportWeekEnd } from './support.js';
+import { applyDailyQualityDrift, applyMissedWeekPenalties } from './qualityDrift.js';
+import { applyAreaQualityToHoles, applyWeekPasses, emptyAreaQuality, machineAllowsArea, passHoursFor, resolveDayPasses } from './passes.js';
+import { migrateWorkerTier } from './staffTiers.js';
 import { generateCandidates, generateCasuals } from '../data/staff.js';
 import { getTask, taskAppliesQuality } from '../data/tasks.js';
 import { workerById, workerQualityMultiplier, qualityRandomFactor } from './assignment.js';
 import { workerBringsOwnMower } from './skills.js';
-import { tickGm } from './gm.js';
+import { enqueueGm, GM_MSG_CAPEX_MISSED, GM_MSG_CAPEX_RELEASED, GM_MSG_CORING, GM_MSG_DUTIES, tickGm } from './gm.js';
 import { consumeJobFuel, jobBurnsFuel, replaceBurnSpend } from './fuel.js';
 import { applyMowingAftermath, hocStressApplies, mowingGain, rotatePatternAngle } from './mowing.js';
 import {
@@ -76,7 +80,8 @@ import {
   upgradeModifiers,
   wearMultiplier,
 } from './equipment.js';
-import { applyEarlyStartComplaints, applyMorale, prepareMorningWorkers, wageBill } from './staff.js';
+import { applyEarlyStartComplaints, applyMorale, departResignedWorkers, prepareMorningWorkers, wageBill } from './staff.js';
+import { maybeLeaveRequest } from './staffMorale.js';
 import { activateDayPlan, casualsBookedOn, getDayTasks, lockWeek, rollNewWeek, setDayTasks, weekStartDay } from './week.js';
 import { createRng } from './rng.js';
 import { applyFertiliser, applySpray, emptyDisease, resolveDisease, syncHoleDisease } from './disease.js';
@@ -94,7 +99,8 @@ import {
 } from './moisture.js';
 import { rollMorningWithRng } from './weather.js';
 import { closeSeason, seasonGrant } from './budget.js';
-import { golferMail, gmMissedTournamentMail, gmSeasonMail, gmTournamentRequestMail, grantForecastMail, meetingDue, pushMail, tickDaysSinceWorked } from './mail.js';
+import { applyMonthlyBudget, applySeasonCapexGrant, tryReleaseSeason1Capex } from './economy.js';
+import { golferMail, gmMissedTournamentMail, gmSeasonMail, gmTournamentRequestMail, grantForecastMail, meetingDue, pushMail, resignMail, tickDaysSinceWorked } from './mail.js';
 import { neglectMail, neglectSatisfactionDrain } from './neglect.js';
 import {
   applyScheduledTournament,
@@ -304,44 +310,11 @@ export function resolveDay(state) {
     }
 
     const live = workingState({ ...state, surfaceDefaults }, holes);
-    let gain = task.mowing
-      ? mowingGain(live, task.id, workerQualityMultiplier(worker))
-      : BASE_GAIN * workerQualityMultiplier(worker);
-    if (task.id === 'rollGreens') {
-      const roller = machine?.rollOnly ? machine : ownedRoller(state);
-      if (roller) {
-        gain += roller.rollGainBonus ?? ROLLER_GAIN_BONUS;
-        gain *= upgradeModifiers(state, roller.id).qualityMult;
-      } else if (machine && upgradeModifiers(state, machine.id).enablesRoll) {
-        gain += ROLLER_GAIN_BONUS;
-      }
-    }
-    if (machine) {
-      gain *= wearMultiplier(state, machine.id);
-      gain *= upgradeModifiers(state, machine.id).qualityMult;
-    } else if (ownMower && task.mowing) {
-      gain *= OWN_MOWER_QUALITY_MULT;
-    }
-    gain *= qualityRandomFactor(worker, rng);
-    if (isAboveBand(moisture, task.surface)) gain *= WET_GAIN_MULT;
-
     const qualityBefore = meanQuality(live, task.surface);
-    const suitability = machineSuitability(machine, task.surface);
+
     holes = mapHoleSurfaces(holes, task.surface, (record, hole) => {
       if (jobHoles.length && !jobHoles.includes(hole.id)) return record;
-      const ceiling = machine
-        ? jobCeiling({ ...live, fertiliserUntil, holes }, task.surface, machine.id, record)
-        : ownMower
-          ? Math.min(
-              OWN_MOWER_CEILING,
-              surfaceCeiling({ ...live, fertiliserUntil, holes }, task.surface, record),
-            )
-          : surfaceCeiling({ ...live, fertiliserUntil, holes }, task.surface, record);
-      let qualityAfter = applyGain(record.quality, gain, ceiling);
-      if (task.mowing && suitability === SUITABILITY_DAMAGING) {
-        qualityAfter = clampQuality(qualityAfter - SUITABILITY_DAMAGING_QUALITY_HIT);
-      }
-      let next = { ...record, quality: qualityAfter };
+      let next = record;
       if (task.mowing) {
         next = applyMowingAftermath(
           next,
@@ -378,21 +351,31 @@ export function resolveDay(state) {
     });
   }
 
-  if (autonomousReady(state) && !MOWING_WEATHER.includes(state.weather)) {
+  if (autonomousReady(state)) {
     for (const autoMachine of ownedAutonomousMowers(state)) {
       if (!isMachineAvailable(state, autoMachine.id)) continue;
       markUsed(autoMachine.id);
-      for (const surface of autonomousSurfacesOf(autoMachine)) {
+      for (const surface of AUTONOMOUS_AREAS) {
+        if (!machineAllowsArea(autoMachine, surface)) continue;
         const cutId = CUT_TASK_BY_SURFACE[surface];
-        if (!cutId || worked.has(surface)) continue;
+        if (!cutId) continue;
         const live = workingState({ ...state, surfaceDefaults }, holes);
         const qualityBefore = meanQuality(live, surface);
-        const gain = mowingGain(live, cutId, 1) * (isAboveBand(moisture, surface) ? WET_GAIN_MULT : 1);
-        const ceiling = surfaceCeiling({ ...live, fertiliserUntil }, surface);
+        const hours = passHoursFor(state, autoMachine.id, surface, null, { ignoreStaff: true });
+        const nightHours = AUTONOMOUS_NIGHT_MINUTES / MINUTES_PER_HOUR;
+        const bookedHours = Math.min(hours ?? 0, nightHours);
+        if (bookedHours > 0) {
+          planned.push({
+            taskId: 'autonomousMower',
+            surface,
+            minutes: bookedHours * MINUTES_PER_HOUR,
+            machineId: autoMachine.id,
+            ignoreStaff: true,
+          });
+        }
         holes = mapHoleSurfaces(holes, surface, (record, hole) => {
-          const qualityAfter = applyGain(record.quality, gain, ceiling);
           return applyMowingAftermath(
-            { ...record, quality: qualityAfter },
+            record,
             surface,
             state.day,
             wearIncremented,
@@ -408,12 +391,22 @@ export function resolveDay(state) {
           taskId: 'autonomousMower',
           name: 'Autonomous cut',
           surface,
-          minutes: 0,
+          minutes: bookedHours * MINUTES_PER_HOUR,
           before: qualityBefore,
           after: meanQuality(workingState({ ...state, surfaceDefaults }, holes), surface),
         });
       }
     }
+  }
+
+  const dayPasses = resolveDayPasses(state, planned, state.workers);
+  const weekPassState = applyWeekPasses(state, dayPasses, state.day);
+  let unstickMinutes = 0;
+  if (
+    ownedAutonomousMowers(state).some((machine) => isMachineAvailable(state, machine.id)) &&
+    rng.next() < AUTONOMOUS_UNSTICK_CHANCE
+  ) {
+    unstickMinutes = AUTONOMOUS_UNSTICK_MINUTES;
   }
 
   const skipped = [];
@@ -422,11 +415,20 @@ export function resolveDay(state) {
     const qualityBefore = meanQuality(live, key);
     const protectedHoles = workedHolesByType[key];
     let decayed = false;
-    holes = mapHoleSurfaces(holes, key, (record, hole) => {
-      if (protectedHoles.has(hole.id)) return record;
-      decayed = true;
-      return { ...record, quality: applyDecay(record.quality, state.season) };
-    });
+    if (!PASS_AREAS.includes(key)) {
+      holes = mapHoleSurfaces(holes, key, (record, hole) => {
+        if (protectedHoles.has(hole.id)) return record;
+        decayed = true;
+        return { ...record, quality: applyDecay(record.quality, state.season) };
+      });
+    } else if (![...protectedHoles].length) {
+      skipped.push({
+        surface: key,
+        before: qualityBefore,
+        after: qualityBefore,
+      });
+      continue;
+    }
     if (decayed) {
       skipped.push({
         surface: key,
@@ -447,6 +449,7 @@ export function resolveDay(state) {
   holes = writeMoistureToHoles(holes, moisture, moistureReadDay);
   const extraDecay = droughtDecay(moisture, { ...state, moisture, holes, surfaceDefaults });
   for (const [surface, amount] of Object.entries(extraDecay)) {
+    if (PASS_AREAS.includes(surface)) continue;
     holes = mapHoleSurfaces(holes, surface, (record) => ({
       ...record,
       quality: clampQuality(record.quality - amount),
@@ -465,7 +468,7 @@ export function resolveDay(state) {
           patternWear: Math.max(PATTERN_WEAR_DEFAULT, (next.patternWear ?? 0) - PATTERN_WEAR_DECAY),
         };
       }
-      if ((next.patternWear ?? 0) > PATTERN_WEAR_THRESHOLD) {
+      if ((next.patternWear ?? 0) > PATTERN_WEAR_THRESHOLD && !PASS_AREAS.includes(key)) {
         next = { ...next, quality: clampQuality(next.quality - PATTERN_WEAR_DAMAGE) };
       }
       return next;
@@ -473,6 +476,7 @@ export function resolveDay(state) {
   }
 
   for (const key of HOC_SURFACES) {
+    if (PASS_AREAS.includes(key)) continue;
     if (hocStressApplies({ ...state, surfaceDefaults, moisture }, key, isBelowBand(moisture, key))) {
       holes = mapHoleSurfaces(holes, key, (record) => ({
         ...record,
@@ -485,6 +489,7 @@ export function resolveDay(state) {
   disease = diseaseTick.disease;
   holes = syncHoleDisease(holes, { ...state, sprayedUntil, disease }, disease);
   for (const item of diseaseTick.ongoing) {
+    if (PASS_AREAS.includes(item.surface)) continue;
     holes = mapHoleSurfaces(holes, item.surface, (record) => ({
       ...record,
       quality: clampQuality(record.quality - item.drop),
@@ -492,6 +497,7 @@ export function resolveDay(state) {
     }));
   }
   for (const item of diseaseTick.outbreaks) {
+    if (PASS_AREAS.includes(item.surface)) continue;
     holes = mapHoleSurfaces(holes, item.surface, (record) => ({
       ...record,
       quality: clampQuality(record.quality - item.drop),
@@ -521,6 +527,8 @@ export function resolveDay(state) {
     );
   }
   workers = applyMorale(workers);
+  const afterMorale = departResignedWorkers({ ...state, workers });
+  workers = afterMorale.workers;
   const fuelSpend = replaceBurnSpend(fuelBurned);
   cash = cash - wageBill(state.workers) - irrigation.mainsCost - fuelSpend;
   const complaint = applyEarlyStartComplaints({ ...state, cash, workers, holes, surfaceDefaults });
@@ -542,7 +550,13 @@ export function resolveDay(state) {
     inbox: state.inbox ?? [],
     nextMailId: state.nextMailId ?? 1,
     pond,
+    weekPlan: afterMorale.weekPlan ?? state.weekPlan,
+    plannedTasks: afterMorale.plannedTasks ?? state.plannedTasks,
+    firingHistory: afterMorale.firingHistory ?? state.firingHistory,
   };
+  for (const person of afterMorale.resignedToday ?? []) {
+    mailed = pushMail(mailed, resignMail(person.name));
+  }
   for (const mail of golferMail(mailed)) {
     mailed = pushMail(mailed, mail);
   }
@@ -567,6 +581,21 @@ export function resolveDay(state) {
     },
   );
 
+  const drifted = applyDailyQualityDrift(
+    { ...state, holes, surfaceDefaults, weekRollPasses: weekPassState.weekRollPasses },
+    planned,
+    weekPassState.weekPasses,
+  );
+  const supported = applySupportDay({ ...state, areaQuality: drifted.areaQuality }, planned);
+  const areaQuality = supported.areaQuality;
+  const areaQualityPrev = drifted.areaQualityPrev;
+  holes = applyAreaQualityToHoles(holes, areaQuality);
+
+  const capexTick = tryReleaseSeason1Capex(
+    { ...state, areaQuality },
+    planned.some((item) => item.taskId === 'gmMeeting'),
+  );
+
   const day = state.day + 1;
   const calendar = calendarFromDay(day);
   const seasonChanged = calendar.season !== state.season;
@@ -578,6 +607,13 @@ export function resolveDay(state) {
     year: calendar.year,
     cash: tournament.state.cash,
     holes,
+    areaQuality,
+    areaQualityPrev,
+    ...weekPassState,
+    weekCupChanges: supported.weekCupChanges,
+    weekGeneralDutiesMinutes: supported.weekGeneralDutiesMinutes,
+    coringUntilDay: supported.coringUntilDay,
+    coredThisSeason: supported.coredThisSeason,
     surfaceDefaults,
     moisture,
     moistureReadDay,
@@ -596,8 +632,8 @@ export function resolveDay(state) {
     lastRepeatDropped: [],
     fuelSpendLog: [...(state.fuelSpendLog ?? []), { day: state.day, spend: fuelSpend }].slice(-30),
     workers,
-    satisfaction: tournament.state.satisfaction,
-    gmStanding,
+    satisfaction: supported.satisfaction ?? tournament.state.satisfaction,
+    gmStanding: supported.gmStanding ?? gmStanding,
     daysSinceWorked,
     snappedToday: false,
     tournamentPrepScore: tournament.state.tournamentPrepScore,
@@ -610,7 +646,12 @@ export function resolveDay(state) {
           wageBill(state.workers) + irrigation.mainsCost + materialsSpent + fuelSpend + (complaint.fine ?? 0),
       },
     ),
+    capex: capexTick.capex,
+    capexStatus: capexTick.capexStatus,
+    capexReleasedDay: capexTick.capexReleasedDay,
+    growInUntil: state.growInUntil ?? {},
   };
+  next = applyMonthlyBudget(next);
   next = tickMarket(next);
   next = tickEvents(next);
   let seasonClose = null;
@@ -618,7 +659,7 @@ export function resolveDay(state) {
     const ignored = next.pendingTournamentSetup;
     next = {
       ...next,
-      candidates: generateCandidates(rng),
+      candidates: generateCandidates(rng).map(migrateWorkerTier),
       candidatesSeason: calendar.season,
       volunteerDayChangedThisSeason: false,
       neighbourComplaintsThisSeason: 0,
@@ -638,6 +679,7 @@ export function resolveDay(state) {
     };
     seasonClose = closeSeason(next);
     next = seasonClose.state;
+    next = applySeasonCapexGrant(next);
     for (const mail of seasonClose.mail.concat(
       gmSeasonMail({
         grant: seasonClose.grant,
@@ -659,6 +701,7 @@ export function resolveDay(state) {
       };
     }
     next = { ...next, usedListings: rollUsedListings(next, rng) };
+    next = { ...next, ...applyCoringSeasonTick(next) };
   }
   const built = tickProjects(next);
   next = built.state;
@@ -688,6 +731,15 @@ export function resolveDay(state) {
   };
 
   if (weekStartDay(next.day) !== weekStartDay(state.day)) {
+    const missed = applyMissedWeekPenalties(next);
+    const supportWeek = applySupportWeekEnd({ ...next, areaQuality: missed.areaQuality });
+    next = {
+      ...next,
+      areaQuality: supportWeek.areaQuality,
+      holes: applyAreaQualityToHoles(next.holes, supportWeek.areaQuality),
+      generalDutiesSkipWeeks: supportWeek.generalDutiesSkipWeeks,
+    };
+    if (supportWeek.dutiesComment) next = enqueueGm(next, GM_MSG_DUTIES);
     const dayJobs = {
       day: state.day,
       planned: plannedJobs,
@@ -711,7 +763,8 @@ export function resolveDay(state) {
       pendingWeekReview: true,
       lastWeekReview: review,
     };
-    next = rollNewWeek(next, next.day, generateCasuals(rng));
+    next = rollNewWeek(next, next.day, generateCasuals(rng).map(migrateWorkerTier));
+    next = maybeLeaveRequest(next, rng);
     next = { ...next, weekStartSnapshot: snapshotWeekStart(next) };
   } else {
     next = lockWeek(next);
@@ -750,6 +803,13 @@ export function resolveDay(state) {
   }
 
   next = tickGm(next, { breakdowns });
+  if (supported.events.some((item) => item.kind === 'coring')) next = enqueueGm(next, GM_MSG_CORING);
+  if (capexTick.capexStatus === CAPEX_STATUS_RELEASED && state.capexStatus !== CAPEX_STATUS_RELEASED) {
+    next = enqueueGm(next, GM_MSG_CAPEX_RELEASED);
+  }
+  if (capexTick.capexStatus === CAPEX_STATUS_MISSED && state.capexStatus !== CAPEX_STATUS_MISSED) {
+    next = enqueueGm(next, GM_MSG_CAPEX_MISSED);
+  }
 
   const summary = {
     day: state.day,
@@ -788,6 +848,8 @@ export function resolveDay(state) {
     satisfactionAfter: next.satisfaction,
     gmStandingBefore,
     gmStandingAfter: next.gmStanding,
+    dayPasses,
+    unstickMinutes,
   };
 
   return { state: next, summary };
