@@ -228,6 +228,7 @@ export function withDefaults(state) {
       return undefined;
     })(),
     ...migrateMoisture(state),
+    handWaterTargets: undefined,
     cash: migrateCash(state),
     grantForecast: state.grantForecast ?? null,
     disease: state.disease ?? emptyDisease(),

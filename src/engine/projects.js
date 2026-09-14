@@ -345,16 +345,23 @@ function completeGrassConversion(state, project) {
   };
 }
 
-function padMoisture(state, n) {
-  const greens = Array.isArray(state.moisture?.greens) ? [...state.moisture.greens] : [];
-  while (greens.length < n) greens.push(emptyMoisture(1).greens[0]);
-  const read = Array.isArray(state.moistureReadDay?.greens) ? [...state.moistureReadDay.greens] : [];
-  const hidden = emptyMoistureReadDay(1).greens[0];
-  while (read.length < n) read.push(hidden);
-  return {
-    moisture: { ...(state.moisture ?? emptyMoisture(n)), greens },
-    moistureReadDay: { ...(state.moistureReadDay ?? emptyMoistureReadDay(n)), greens: read },
+function padMoisture(state) {
+  const moisture = emptyMoisture();
+  moisture.greens = Number.isFinite(Number(state.moisture?.greens))
+    ? Number(state.moisture.greens)
+    : moisture.greens;
+  moisture.tees = Number.isFinite(Number(state.moisture?.tees)) ? Number(state.moisture.tees) : moisture.tees;
+  moisture.fairways = Number.isFinite(Number(state.moisture?.fairways))
+    ? Number(state.moisture.fairways)
+    : moisture.fairways;
+  const moistureReadDay = {
+    ...emptyMoistureReadDay(),
+    ...(state.moistureReadDay ?? {}),
+    greens: Array.isArray(state.moistureReadDay?.greens)
+      ? emptyMoistureReadDay().greens
+      : (state.moistureReadDay?.greens ?? emptyMoistureReadDay().greens),
   };
+  return { moisture, moistureReadDay };
 }
 
 function applyGrowIn(state) {

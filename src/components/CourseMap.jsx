@@ -68,9 +68,9 @@ import {
   zoomBy,
 } from '../engine/view.js';
 
-function MoistureOverlayShape({ kind, d, cx, cy, rx, ry, x, y, width, height, surface, state, greenIndex }) {
+function MoistureOverlayShape({ kind, d, cx, cy, rx, ry, x, y, width, height, surface, state }) {
   if (!state?.moistureOverlay) return null;
-  const status = moistureStatus(state, surface, greenIndex);
+  const status = moistureStatus(state, surface);
   if (status.kind === 'hidden') return null;
   const color = moistureOverlayColor(status.value, surface);
   const opacity = status.kind === 'stale' ? MOISTURE_STALE_OPACITY : MOISTURE_OVERLAY_OPACITY;
@@ -475,7 +475,6 @@ export default function CourseMap({
               d={greenD}
               surface="greens"
               state={moistureState}
-              greenIndex={hole.id - 1}
             />
           </g>
         );

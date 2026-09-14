@@ -413,8 +413,7 @@ function durationOnMachineUnrounded(state, taskId, worker, machineId, holeIds) {
     return worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
   }
   if (taskId === 'handWater') {
-    const probe = holeIds?.length ? { ...state, handWaterTargets: holeIds } : state;
-    const base = handWaterMinutes(probe);
+    const base = handWaterMinutes(state);
     return worker ? Math.round(base * workerTimeMultiplier(worker)) : base;
   }
   const support = supportMinutes(taskId, state);

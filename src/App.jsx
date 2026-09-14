@@ -239,7 +239,6 @@ export default function App() {
           onBuyTurfRad={() => dispatch({ type: 'BUY_TURFRAD' })}
           onBuyWeatherStation={() => dispatch({ type: 'BUY_WEATHER_STATION' })}
           onToggleMoistureOverlay={() => dispatch({ type: 'TOGGLE_MOISTURE_OVERLAY' })}
-          onSetHandWaterTargets={(targets) => dispatch({ type: 'SET_HAND_WATER_TARGETS', targets })}
           onSetMachineOverride={(surface, machineId) =>
             dispatch({ type: 'SET_MACHINE_OVERRIDE', surface, machineId })
           }
@@ -367,7 +366,6 @@ function GameScreen({
   onBuyTurfRad,
   onBuyWeatherStation,
   onToggleMoistureOverlay,
-  onSetHandWaterTargets,
   onSetMachineOverride,
   onLease,
   onStopLease,
@@ -584,7 +582,6 @@ function GameScreen({
             onBuyGreensSensors={onBuyGreensSensors}
             onBuyTurfRad={onBuyTurfRad}
             onBuyWeatherStation={onBuyWeatherStation}
-            onSetHandWaterTargets={onSetHandWaterTargets}
             onSetMachineOverride={onSetMachineOverride}
           />
         ) : (

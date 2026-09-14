@@ -42,6 +42,7 @@ import { autoMachineFor, blockConflicts, clampBlockResize, paletteHoursFor, pale
 import { weekPassStrip } from '../src/engine/weekPasses.js';
 import { getDayTasks, workersForPlanDay } from '../src/engine/week.js';
 import { applySupportDay } from '../src/engine/support.js';
+import { migrateMoisture } from '../src/engine/moisture.js';
 import { allowingMachines } from '../src/engine/equipment.js';
 import { getTask, taskUsesMachine } from '../src/data/tasks.js';
 import { forecastDaysAhead, forecastIsUnreliable } from '../src/engine/weather.js';
@@ -436,5 +437,22 @@ const plannerUi = readFileSync(new URL('../src/components/DayPlanner.jsx', impor
 assert(plannerUi.includes('taskUsesMachine(task)'), 'planner hides selector from the task property');
 assert(plannerUi.includes('paletteMachineStatus'), 'planner reads machine requirement for palette gating');
 assert(!plannerUi.includes("taskId === 'sprayGreens'"), 'no per-task machine special cases in the planner');
+
+assert(typeof state.moisture.greens === 'number', 'moisture greens is one area value');
+assert(typeof state.moisture.tees === 'number', 'moisture tees is one area value');
+assert(typeof state.moisture.fairways === 'number', 'moisture fairways is one area value');
+assert(state.handWaterTargets == null, 'per-hole hand water targets removed');
+const migratedMoist = migrateMoisture({
+  moisture: { greens: [40, 50, 60], tees: 45, fairways: 42 },
+  moistureReadDay: { greens: [1, 2, 3], tees: 1, fairways: 1 },
+});
+assert(migratedMoist.moisture.greens === 50, 'old per-hole greens moisture averages');
+assert(!Array.isArray(migratedMoist.moisture.greens), 'migrated greens moisture is a number');
+const moistureEngine = readFileSync(new URL('../src/engine/moisture.js', import.meta.url), 'utf8');
+assert(!moistureEngine.includes('greensStatuses'), 'per-hole moisture statuses removed');
+const moistureUi = readFileSync(new URL('../src/components/MoistureReadout.jsx', import.meta.url), 'utf8');
+assert(!moistureUi.includes('GreensMoistureList'), 'per-hole moisture list UI removed');
+const irrigationUi = readFileSync(new URL('../src/components/IrrigationWeekTab.jsx', import.meta.url), 'utf8');
+assert(irrigationUi.includes('MoistureLine'), 'irrigation tab shows area moisture');
 
 console.log('passes-check phase 7 ok');

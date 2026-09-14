@@ -287,9 +287,8 @@ export function createInitialState() {
     irrigation: { ...STARTING_IRRIGATION },
     hasAerator: false,
     lastPondDoseDay: STARTING_DAY,
-    moisture: emptyMoisture(HOLE_COUNT),
-    moistureReadDay: emptyMoistureReadDay(HOLE_COUNT),
-    handWaterTargets: allGreenIds(HOLE_COUNT),
+    moisture: emptyMoisture(),
+    moistureReadDay: emptyMoistureReadDay(),
     hasGreensSensors: false,
     hasTurfRad: false,
     hasWeatherStation: false,
@@ -995,28 +994,6 @@ export function reducer(state, action) {
     }
     case 'TOGGLE_MOISTURE_OVERLAY':
       return { ...state, moistureOverlay: !state.moistureOverlay };
-    case 'SET_HAND_WATER_TARGETS': {
-      const holes = holeCount(state);
-      const allowed = new Set(allGreenIds(holes));
-      const targets = [...new Set((action.targets ?? []).filter((id) => allowed.has(id)))].sort((a, b) => a - b);
-      let next = { ...state, handWaterTargets: targets };
-      if (getDayTasks(next, planningDayOf(next)).some((item) => item.taskId === 'handWater')) {
-        if (targets.length === 0) return removePlannedTask(next, 'handWater');
-        next = commitDayTasks(
-          next,
-          getDayTasks(next, planningDayOf(next)).map((item) =>
-            item.taskId === 'handWater' ? { ...item, greens: targets } : item,
-          ),
-        );
-        next = recomputePlanningDay(next);
-        const planned = getDayTasks(next, planningDayOf(next)).find((item) => item.taskId === 'handWater');
-        const worker = planned ? workersForPlanDay(next, planningDayOf(next)).find((item) => item.id === planned.workerId) : null;
-        if (worker && worker.minutesUsed > worker.minutesToday) {
-          return removePlannedTask(next, 'handWater');
-        }
-      }
-      return next;
-    }
     case 'SET_VIEW': {
       const layout = holesForCount(holeCount(state));
       return { ...state, view: clampView({ ...defaultView(), ...action.view }, courseBounds(layout)) };

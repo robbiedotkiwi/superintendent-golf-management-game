@@ -3,6 +3,7 @@ import { canEditPlanDay, planDayChrome, weekDays, weekdayLabel } from '../engine
 import { irrigationCells } from '../engine/weekGrid.js';
 import { IRRIGATED_SURFACES, clampIrrigationMm, irrigationMmRange } from '../engine/irrigation.js';
 import ForecastStrip from './ForecastStrip.jsx';
+import { MoistureLine } from './MoistureReadout.jsx';
 
 function IrrigationDayCell({ cell, surface, onSetIrrigation, locked }) {
   const range = irrigationMmRange(surface);
@@ -70,6 +71,9 @@ export default function IrrigationWeekTab({ state, onSetIrrigation, onSelectDay 
             <tr key={`irrigate-${surface}`} data-grid-row={`irrigate-${surface}`}>
               <th className="sticky left-0 z-10 border border-[var(--sand)] bg-[var(--soil)] p-2 align-top">
                 <div className="font-semibold">Irrigate {SURFACE_LABELS[surface]}</div>
+                <p className="mt-1 text-xs text-[var(--sand)]">
+                  Moisture <MoistureLine state={state} surface={surface} />
+                </p>
                 <p className="mt-1 text-xs text-[var(--sand)]">Nightly millimetres. Not a timed job.</p>
               </th>
               {irrigationCells(state, surface).map((cell) => {

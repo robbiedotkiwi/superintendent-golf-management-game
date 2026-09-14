@@ -94,7 +94,7 @@ export function daysSinceFact(state, job) {
 
 export function courseHolesFor(state, taskId) {
   const task = getTask(taskId);
-  if (taskId === 'handWater') return [...(state.handWaterTargets ?? defaultJobHoles(state, 'greens'))];
+  if (taskId === 'handWater') return defaultJobHoles(state, 'greens');
   if (!task?.surface) return [];
   return defaultJobHoles(state, task.surface);
 }

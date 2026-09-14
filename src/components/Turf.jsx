@@ -76,7 +76,7 @@ import { grassSpeciesFor, hocRangeFor, isGrassDormant } from '../engine/grass.js
 import { BASELINE_MOW_FREQUENCY_PER_WEEK } from '../data/grass.js';
 import { mowingStatus } from '../engine/mowingStatus.js';
 import { inputsStatus } from '../engine/inputsStatus.js';
-import { GreensMoistureList, MoistureLine } from './MoistureReadout.jsx';
+import { MoistureLine } from './MoistureReadout.jsx';
 import SectionTabs from './SectionTabs.jsx';
 import DayPlanner from './DayPlanner.jsx';
 import IrrigationWeekTab from './IrrigationWeekTab.jsx';
@@ -178,7 +178,6 @@ export default function Turf({
   onBuyGreensSensors,
   onBuyTurfRad,
   onBuyWeatherStation,
-  onSetHandWaterTargets,
   onSetMachineOverride,
   onToggleHole,
   onSelectHoles,
@@ -501,7 +500,6 @@ function IrrigationStatus({ state, surface, onPlan, onRemove, onToggleHole, onSe
         Target band {band.min}–{band.max}%
       </p>
       <p>{stale}</p>
-      {surface === 'greens' ? <GreensMoistureList state={state} /> : null}
       <div className="pointer-events-auto">
         <PlanJob
           state={state}
