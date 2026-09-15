@@ -15,20 +15,20 @@ import {
   TURF_TAB_WEEK,
   VOLUNTEER_ID,
   WEATHER_FINE,
-} from '../src/data/constants.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { migrateSave } from '../src/engine/save.js';
+} from '../src/data/constants.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { migrateSave } from '../src/engine/save.ts';
 import {
   canEditPlanDay,
   getDayTasks,
   weekDays,
   weekStartDay,
-} from '../src/engine/week.js';
+} from '../src/engine/week.ts';
 import {
   deriveJobRow,
   personCapacityForDay,
   workerAvailableOnDay,
-} from '../src/engine/weekGrid.js';
+} from '../src/engine/weekGrid.ts';
 
 const fineDay = {
   type: WEATHER_FINE,
@@ -184,15 +184,15 @@ const migrated = migrateSave({
 });
 assert.equal(migrated.lastWeek, null);
 
-const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+const turfSrc = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
 assert.match(turfSrc, /TURF_TAB_WEEK/);
 assert.match(turfSrc, /TURF_SHOW_LEGACY_TABS/);
 assert.match(turfSrc, /WeekPlanGrid/);
 assert.doesNotMatch(turfSrc, /<ForecastStrip/);
-const appSrc = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+const appSrc = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 const gameScreen = appSrc.slice(appSrc.indexOf('function GameScreen'));
 assert.doesNotMatch(gameScreen, /\bdispatch\b/);
-const constantsSrc = readFileSync(new URL('../src/data/constants.js', import.meta.url), 'utf8');
+const constantsSrc = readFileSync(new URL('../src/data/constants.ts', import.meta.url), 'utf8');
 assert.doesNotMatch(constantsSrc, /courseArea/);
 
 console.log('week grid checks passed');

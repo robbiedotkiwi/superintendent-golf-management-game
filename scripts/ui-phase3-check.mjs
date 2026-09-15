@@ -4,9 +4,9 @@
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { HOLE_COUNT, HOLE_NUMBER_FONT, POND_CX, POND_CY, TEE_MARKER_RADIUS } from '../src/data/constants.js';
-import { HOLES, SHED_WIDTH, SHED_X, SHED_Y, courseBoundaryPath } from '../src/data/course.js';
-import { boundaryFill, healthyFill, luminance } from '../src/engine/color.js';
+import { HOLE_COUNT, HOLE_NUMBER_FONT, POND_CX, POND_CY, TEE_MARKER_RADIUS } from '../src/data/constants.ts';
+import { HOLES, SHED_WIDTH, SHED_X, SHED_Y, courseBoundaryPath } from '../src/data/course.ts';
+import { boundaryFill, healthyFill, luminance } from '../src/engine/color.ts';
 
 function dist(ax, ay, bx, by) {
   return Math.hypot(ax - bx, ay - by);
@@ -46,7 +46,7 @@ assert.ok(boundary.split(' L').length >= 6, 'boundary is an irregular closed sha
 
 assert.ok(luminance(boundaryFill()) < luminance(healthyFill('rough')), 'boundary darker than rough');
 
-const map = readFileSync(new URL('../src/components/CourseMap.jsx', import.meta.url), 'utf8');
+const map = readFileSync(new URL('../src/components/CourseMap.tsx', import.meta.url), 'utf8');
 assert.match(map, /courseBoundaryPath/);
 assert.match(map, /FLAG_POLE/);
 assert.match(map, /SHED_ROOF/);

@@ -4,7 +4,7 @@
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { EXPANDED_HOLE_COUNT, HOLE_COUNT, MAP_VIEW_PADDING, POND_CX, POND_CY } from '../src/data/constants.js';
+import { EXPANDED_HOLE_COUNT, HOLE_COUNT, MAP_VIEW_PADDING, POND_CX, POND_CY } from '../src/data/constants.ts';
 import {
   BACK_NINE,
   HOLES,
@@ -15,7 +15,7 @@ import {
   courseBounds,
   holesForCount,
   mapViewBoxForHoles,
-} from '../src/data/course.js';
+} from '../src/data/course.ts';
 
 function viewBoxParts(box) {
   const [minX, minY, width, height] = box.split(' ').map(Number);
@@ -42,11 +42,11 @@ assert.ok(inside(nineBox, POND_CX, POND_CY));
 assert.equal(nineBox.minX, nine.minX);
 assert.ok(nine.width > MAP_VIEW_PADDING);
 
-const map = readFileSync(new URL('../src/components/CourseMap.jsx', import.meta.url), 'utf8');
+const map = readFileSync(new URL('../src/components/CourseMap.tsx', import.meta.url), 'utf8');
 assert.match(map, /preserveAspectRatio="xMidYMid meet"/);
 assert.match(map, /courseBounds/);
 
-const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert.match(app, /overflow-hidden/);
 assert.match(app, /h-screen/);
 

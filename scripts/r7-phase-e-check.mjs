@@ -20,11 +20,11 @@ import {
   STARTING_WEATHER,
   WALK_BEHIND_COST,
   WALK_BEHIND_ID,
-} from '../src/data/constants.js';
-import { closeSeason, grantAdjustment, seasonGrant } from '../src/engine/budget.js';
-import { daysUntilSeasonEnd } from '../src/engine/calendar.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { migrateSave } from '../src/engine/save.js';
+} from '../src/data/constants.ts';
+import { closeSeason, grantAdjustment, seasonGrant } from '../src/engine/budget.ts';
+import { daysUntilSeasonEnd } from '../src/engine/calendar.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { migrateSave } from '../src/engine/save.ts';
 
 assert.equal(SEASON_GRANT_BASE, 30000);
 assert.equal(GRANT_FORECAST_LEAD_DAYS, 7);
@@ -141,14 +141,14 @@ const refused = migrateSave({
 });
 assert.equal(refused, null);
 
-const hud = readFileSync(new URL('../src/components/Hud.jsx', import.meta.url), 'utf8');
+const hud = readFileSync(new URL('../src/components/Hud.tsx', import.meta.url), 'utf8');
 assert.doesNotMatch(hud, /maintenanceBudget/);
 assert.doesNotMatch(hud, /capitalBudget/);
-const office = readFileSync(new URL('../src/components/Office.jsx', import.meta.url), 'utf8');
+const office = readFileSync(new URL('../src/components/Office.tsx', import.meta.url), 'utf8');
 assert.match(office, /formatMoney\(state\.cash\)/);
 assert.doesNotMatch(office, /maintenanceBudget/);
 assert.doesNotMatch(office, /capitalBudget/);
-const shed = readFileSync(new URL('../src/components/Shed.jsx', import.meta.url), 'utf8');
+const shed = readFileSync(new URL('../src/components/Shed.tsx', import.meta.url), 'utf8');
 assert.doesNotMatch(shed, /maintenanceBudget/);
 assert.doesNotMatch(shed, /capitalBudget/);
 

@@ -11,7 +11,7 @@ import {
   SECTION_SHED,
   SECTION_TURF,
   SECTIONS,
-} from '../src/data/constants.js';
+} from '../src/data/constants.ts';
 
 assert.equal(SECTION_MAP, 'course');
 assert.equal(SECTION_TURF, 'turf');
@@ -20,7 +20,7 @@ assert.equal(SECTION_CREW, 'crew');
 assert.equal(SECTION_SHED, 'shed');
 assert.deepEqual(SECTIONS, [SECTION_MAP, SECTION_TURF, SECTION_OFFICE, SECTION_CREW, SECTION_SHED]);
 
-const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert.match(app, /<Sidebar/);
 assert.doesNotMatch(app, /if \(view === SECTION_SHED\) \{\s*return \(/);
 assert.doesNotMatch(app, /if \(view === 'shed'\) \{\s*return \(/);
@@ -37,10 +37,10 @@ assert.doesNotMatch(pane, /<IrrigationPanel/);
 const afterSidebar = app.slice(app.indexOf('<Sidebar'));
 assert.ok(afterSidebar.indexOf('<Sidebar') < afterSidebar.indexOf('<Shed'), 'sidebar mounts before section pane');
 
-const office = readFileSync(new URL('../src/components/Office.jsx', import.meta.url), 'utf8');
-const crew = readFileSync(new URL('../src/components/Crew.jsx', import.meta.url), 'utf8');
-const shed = readFileSync(new URL('../src/components/Shed.jsx', import.meta.url), 'utf8');
-const sidebar = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
+const office = readFileSync(new URL('../src/components/Office.tsx', import.meta.url), 'utf8');
+const crew = readFileSync(new URL('../src/components/Crew.tsx', import.meta.url), 'utf8');
+const shed = readFileSync(new URL('../src/components/Shed.tsx', import.meta.url), 'utf8');
+const sidebar = readFileSync(new URL('../src/components/Sidebar.tsx', import.meta.url), 'utf8');
 assert.match(office, /h-full overflow-y-auto/);
 assert.match(crew, /h-full overflow-y-auto/);
 assert.match(shed, /h-full overflow-y-auto/);

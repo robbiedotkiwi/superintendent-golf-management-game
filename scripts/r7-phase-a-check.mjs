@@ -12,8 +12,8 @@ import {
   STARTING_QUALITY_GREENS,
   SURFACE_SINGULAR,
   TRACKED_SURFACES_NINE,
-} from '../src/data/constants.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
+} from '../src/data/constants.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
 import {
   courseCondition,
   holeCount,
@@ -21,10 +21,10 @@ import {
   isHoleModel,
   meanQuality,
   surfaceSettings,
-} from '../src/engine/holes.js';
-import { migrateSave } from '../src/engine/save.js';
-import { COMPLAINT_HOLE_CUT_BODY } from '../src/data/constants.js';
-import { neglectMail } from '../src/engine/neglect.js';
+} from '../src/engine/holes.ts';
+import { migrateSave } from '../src/engine/save.ts';
+import { COMPLAINT_HOLE_CUT_BODY } from '../src/data/constants.ts';
+import { neglectMail } from '../src/engine/neglect.ts';
 
 assert.equal(SAVE_VERSION, 4);
 assert.equal(TRACKED_SURFACES_NINE, 45);
@@ -137,7 +137,7 @@ try {
 const leftover = grep
   .trim()
   .split('\n')
-  .filter((line) => line && !line.includes('src/engine/save.js') && !line.includes('src/engine/holes.js'));
+  .filter((line) => line && !line.includes('src/engine/save.ts') && !line.includes('src/engine/holes.ts'));
 assert.equal(leftover.join('\n'), '', leftover.join('\n'));
 
 console.log('GREP old grouped access: clean (only save/holes migration readers remain)');

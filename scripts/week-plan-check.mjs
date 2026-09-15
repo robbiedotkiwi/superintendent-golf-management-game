@@ -19,18 +19,18 @@ import {
   STARTING_WIND_SPEED,
   VOLUNTEER_ID,
   WEATHER_FINE,
-} from '../src/data/constants.js';
+} from '../src/data/constants.ts';
 import {
   combinedMinutesCapacity,
   combinedMinutesRemaining,
   combinedMinutesUsed,
   createInitialState,
   reducer,
-} from '../src/engine/gameState.js';
-import { durationOnMachine } from '../src/engine/equipment.js';
-import { holeSurface, meanQuality } from '../src/engine/holes.js';
-import { daysSinceLastWorked } from '../src/engine/neglect.js';
-import { getDayTasks, planViewState, weekDays, weekStartDay } from '../src/engine/week.js';
+} from '../src/engine/gameState.ts';
+import { durationOnMachine } from '../src/engine/equipment.ts';
+import { holeSurface, meanQuality } from '../src/engine/holes.ts';
+import { daysSinceLastWorked } from '../src/engine/neglect.ts';
+import { getDayTasks, planViewState, weekDays, weekStartDay } from '../src/engine/week.ts';
 import {
   cellMinutesFor,
   daysMatchingWorker,
@@ -39,8 +39,8 @@ import {
   personCapacityForDay,
   rosterWorker,
   rowsForPerson,
-} from '../src/engine/weekGrid.js';
-import { timeBarLabel, timeBarOverflow, timeBarRemaining } from '../src/engine/timeBar.js';
+} from '../src/engine/weekGrid.ts';
+import { timeBarLabel, timeBarOverflow, timeBarRemaining } from '../src/engine/timeBar.ts';
 
 const fineDay = {
   type: WEATHER_FINE,
@@ -73,12 +73,12 @@ function endDay(state) {
   return withFineWeek(reducer(state, { type: 'END_DAY' }));
 }
 
-const assignSrc = readFileSync(new URL('../src/engine/assignment.js', import.meta.url), 'utf8');
-const mowingSrc = readFileSync(new URL('../src/engine/mowing.js', import.meta.url), 'utf8');
-const gridSrc = readFileSync(new URL('../src/components/WeekPlanGrid.jsx', import.meta.url), 'utf8');
-const weekGridSrc = readFileSync(new URL('../src/engine/weekGrid.js', import.meta.url), 'utf8');
-const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
-const irrigationSrc = readFileSync(new URL('../src/components/IrrigationWeekTab.jsx', import.meta.url), 'utf8');
+const assignSrc = readFileSync(new URL('../src/engine/assignment.ts', import.meta.url), 'utf8');
+const mowingSrc = readFileSync(new URL('../src/engine/mowing.ts', import.meta.url), 'utf8');
+const gridSrc = readFileSync(new URL('../src/components/WeekPlanGrid.tsx', import.meta.url), 'utf8');
+const weekGridSrc = readFileSync(new URL('../src/engine/weekGrid.ts', import.meta.url), 'utf8');
+const turfSrc = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
+const irrigationSrc = readFileSync(new URL('../src/components/IrrigationWeekTab.tsx', import.meta.url), 'utf8');
 assert.doesNotMatch(assignSrc, /durationForTask|mowingMinutes|baseTaskMinutes/);
 assert.doesNotMatch(mowingSrc, /function mowingMinutes/);
 assert.doesNotMatch(weekGridSrc, /jobMinutes/);

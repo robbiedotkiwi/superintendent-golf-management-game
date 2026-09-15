@@ -41,16 +41,16 @@ import {
   TURF_TAB_MOWING,
   TURF_TAB_OTHER,
   TURF_TABS,
-} from '../src/data/constants.js';
-import { MACHINES, getMachine } from '../src/data/equipment.js';
-import { getTask } from '../src/data/tasks.js';
-import { surfaceCeiling } from '../src/engine/equipment.js';
-import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
-import { holeSurface } from '../src/engine/holes.js';
-import { greensStatuses } from '../src/engine/moisture.js';
-import { isPondDoseCurrent, resolveIrrigation } from '../src/engine/irrigation.js';
-import { migrateSave } from '../src/engine/save.js';
-import { applyWeatherToWorkers } from '../src/engine/weather.js';
+} from '../src/data/constants.ts';
+import { MACHINES, getMachine } from '../src/data/equipment.ts';
+import { getTask } from '../src/data/tasks.ts';
+import { surfaceCeiling } from '../src/engine/equipment.ts';
+import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.ts';
+import { holeSurface } from '../src/engine/holes.ts';
+import { greensStatuses } from '../src/engine/moisture.ts';
+import { isPondDoseCurrent, resolveIrrigation } from '../src/engine/irrigation.ts';
+import { migrateSave } from '../src/engine/save.ts';
+import { applyWeatherToWorkers } from '../src/engine/weather.ts';
 
 assert.equal(SAVE_VERSION, 4);
 assert.equal(FERTILISER_DAYS, 21);
@@ -91,7 +91,7 @@ assert.equal(getTask(POND_RESCUE_TASK).kind, 'pondRescue');
 assert.equal(getTask(POND_DOSE_TASK).kind, 'pondDose');
 assert.equal(getTask('checkMoistureGreens').kind, 'moistureCheck');
 
-const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+const turfSrc = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
 assert.match(turfSrc, /TURF_TAB_INPUTS/);
 assert.match(turfSrc, /InputsTab/);
 assert.match(turfSrc, /ROLL_GREENS_TASK/);
@@ -102,11 +102,11 @@ assert.match(turfSrc, /POND_RESCUE_TASK/);
 assert.doesNotMatch(turfSrc, /tab === TURF_TAB_BUNKERS \?/);
 assert.match(turfSrc, new RegExp(`${TURF_TAB_MOWING}|ROLL_GREENS`));
 
-const mapBar = readFileSync(new URL('../src/components/MapSelectionBar.jsx', import.meta.url), 'utf8');
+const mapBar = readFileSync(new URL('../src/components/MapSelectionBar.tsx', import.meta.url), 'utf8');
 assert.match(mapBar, /CHECK_MOISTURE_BY_SURFACE/);
 assert.match(mapBar, /CHECK_MOISTURE_LABEL/);
 
-const shedSrc = readFileSync(new URL('../src/components/Shed.jsx', import.meta.url), 'utf8');
+const shedSrc = readFileSync(new URL('../src/components/Shed.tsx', import.meta.url), 'utf8');
 assert.match(shedSrc, /ownedMachines/);
 assert.match(shedSrc, /MACHINES\.filter/);
 

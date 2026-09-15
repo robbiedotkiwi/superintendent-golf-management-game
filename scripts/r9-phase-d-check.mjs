@@ -5,13 +5,13 @@
  */
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
-import { DISEASE_OUTBREAK_WARN, FERTILISER_DAYS, INPUTS_SURFACES, SPRAY_SUPPRESS_DAYS } from '../src/data/constants.js';
-import { createInitialState } from '../src/engine/gameState.js';
-import { holeSurface, mapHoleSurfaces } from '../src/engine/holes.js';
-import { inputsStatus } from '../src/engine/inputsStatus.js';
-import { approachingOutbreak } from '../src/engine/disease.js';
+import { DISEASE_OUTBREAK_WARN, FERTILISER_DAYS, INPUTS_SURFACES, SPRAY_SUPPRESS_DAYS } from '../src/data/constants.ts';
+import { createInitialState } from '../src/engine/gameState.ts';
+import { holeSurface, mapHoleSurfaces } from '../src/engine/holes.ts';
+import { inputsStatus } from '../src/engine/inputsStatus.ts';
+import { approachingOutbreak } from '../src/engine/disease.ts';
 
-const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+const turfSrc = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
 assert.match(turfSrc, /function InputsSurface/);
 assert.match(turfSrc, /function InputsStatus/);
 assert.match(turfSrc, /data-inputs-status/);

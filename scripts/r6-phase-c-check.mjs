@@ -3,7 +3,7 @@
  * Run: node scripts/r6-phase-c-check.mjs
  */
 import assert from 'node:assert/strict';
-import { BASE_MINUTES } from '../src/engine/courseArea.js';
+import { BASE_MINUTES } from '../src/engine/courseArea.ts';
 import {
   DAY_LENGTH_MINUTES,
   DEFAULT_DAY_OVERLOAD_MINUTES,
@@ -19,16 +19,16 @@ import {
   REELMASTER_TIME_MULT,
   STARTING_MACHINE_IDS,
   TASK_MINUTES,
-} from '../src/data/constants.js';
-import { getMachine } from '../src/data/equipment.js';
-import { durationOnMachine, mowingOperatorTimeMultiplier } from '../src/engine/assignment.js';
+} from '../src/data/constants.ts';
+import { getMachine } from '../src/data/equipment.ts';
+import { durationOnMachine, mowingOperatorTimeMultiplier } from '../src/engine/assignment.ts';
 import {
   canBuyMachine,
   machineMultiplierFor,
   mowConditionTimeMultiplier,
-} from '../src/engine/equipment.js';
-import { canPlanTask, createInitialState } from '../src/engine/gameState.js';
-import { setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.js';
+} from '../src/engine/equipment.ts';
+import { canPlanTask, createInitialState } from '../src/engine/gameState.ts';
+import { setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.ts';
 
 assert.deepEqual(STARTING_MACHINE_IDS, [GREENSMASTER_ID, REELMASTER_ID]);
 assert.equal(GREENSMASTER_CEILING, 68);

@@ -26,13 +26,13 @@ import {
   STARTING_WEATHER,
   SUMMER_UNDERWATER_DECAY,
   WEATHER_RAIN,
-} from '../src/data/constants.js';
-import { TASKS } from '../src/data/tasks.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { irrigationDemand, irrigationMmToM3, pondPercent, resolveIrrigation } from '../src/engine/irrigation.js';
-import { clampQuality, decayAmount } from '../src/engine/simulation.js';
-import { applyWeatherToWorkers } from '../src/engine/weather.js';
-import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+} from '../src/data/constants.ts';
+import { TASKS } from '../src/data/tasks.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { irrigationDemand, irrigationMmToM3, pondPercent, resolveIrrigation } from '../src/engine/irrigation.ts';
+import { clampQuality, decayAmount } from '../src/engine/simulation.ts';
+import { applyWeatherToWorkers } from '../src/engine/weather.ts';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.ts';
 
 
 function endKeep(state, extras = {}) {

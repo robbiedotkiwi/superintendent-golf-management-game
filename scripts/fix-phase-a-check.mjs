@@ -19,16 +19,16 @@ import {
   PATTERN_WEAR_THRESHOLD,
   STARTING_WEATHER,
   TASK_MINUTES,
-} from '../src/data/constants.js';
-import { durationOnMachine } from '../src/engine/assignment.js';
-import { surfaceCeiling } from '../src/engine/equipment.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { hocFactor, inHocStressBand } from '../src/engine/mowing.js';
-import { variableJobMinutes } from '../src/engine/jobs.js';
-import { hocRangeFor } from '../src/engine/grass.js';
-import { migrateSave } from '../src/engine/save.js';
-import { applyWeatherToWorkers } from '../src/engine/weather.js';
-import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+} from '../src/data/constants.ts';
+import { durationOnMachine } from '../src/engine/assignment.ts';
+import { surfaceCeiling } from '../src/engine/equipment.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { hocFactor, inHocStressBand } from '../src/engine/mowing.ts';
+import { variableJobMinutes } from '../src/engine/jobs.ts';
+import { hocRangeFor } from '../src/engine/grass.ts';
+import { migrateSave } from '../src/engine/save.ts';
+import { applyWeatherToWorkers } from '../src/engine/weather.ts';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.ts';
 
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
@@ -116,7 +116,7 @@ high = endKeep(high, { season: 'summer' });
 low = endKeep(low, { season: 'summer' });
 assert.equal(meanQuality(high, 'greens') - meanQuality(low, 'greens'), HOC_STRESS_DAMAGE);
 
-const panel = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+const panel = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
 assert.match(panel, /inHocStressBand/);
 assert.match(panel, /HOC_STRESS_DAMAGE/);
 assert.doesNotMatch(panel, /LEVEL_KEYS|LEVEL_LABELS|usesQualityLevel/);

@@ -11,25 +11,25 @@ import {
   POND_DOSE_COST,
   PUSH_ROTARY_ID,
   SIDEBAR_FIT_HEIGHT,
-} from '../src/data/constants.js';
-import { leaseCost, loanRepayment, seasonGrant } from '../src/engine/budget.js';
-import { daysUntilSeasonEnd } from '../src/engine/calendar.js';
-import { projectedFuelSpend, seasonCashForecast } from '../src/engine/forecast.js';
-import { createInitialState } from '../src/engine/gameState.js';
+} from '../src/data/constants.ts';
+import { leaseCost, loanRepayment, seasonGrant } from '../src/engine/budget.ts';
+import { daysUntilSeasonEnd } from '../src/engine/calendar.ts';
+import { projectedFuelSpend, seasonCashForecast } from '../src/engine/forecast.ts';
+import { createInitialState } from '../src/engine/gameState.ts';
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 
 assert.equal(FORECAST_FUEL_LOOKBACK_DAYS, 7);
 assert.equal(SIDEBAR_FIT_HEIGHT, 720);
 
-const sidebar = read('src/components/Sidebar.jsx');
+const sidebar = read('src/components/Sidebar.tsx');
 assert.match(sidebar, /Condition/);
 assert.match(sidebar, /formatMoney\(state\.cash\)/);
 assert.ok(sidebar.indexOf('Condition') < sidebar.indexOf('formatMoney(state.cash)'));
 
-const office = read('src/components/Office.jsx');
+const office = read('src/components/Office.tsx');
 assert.match(office, /<CashForecast/);
-const forecastSrc = read('src/components/CashForecast.jsx');
+const forecastSrc = read('src/components/CashForecast.tsx');
 assert.match(forecastSrc, />Cash now</);
 assert.match(forecastSrc, /Committed outgoings to season end/);
 assert.match(forecastSrc, /Projected fuel spend/);

@@ -6,14 +6,14 @@ import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { formatMoney } from '../src/engine/format.js';
+import { formatMoney } from '../src/engine/format.ts';
 
 assert.equal(formatMoney(8000), '$8,000');
 assert.equal(formatMoney(1234.4), '$1,234');
 assert.equal(formatMoney(0), '$0');
 
 const repoRoot = fileURLToPath(new URL('..', import.meta.url));
-const formatFile = fileURLToPath(new URL('../src/engine/format.js', import.meta.url));
+const formatFile = fileURLToPath(new URL('../src/engine/format.ts', import.meta.url));
 const thisFile = fileURLToPath(import.meta.url);
 
 function walk(dir, files = []) {
@@ -51,9 +51,9 @@ for (const file of walk(join(repoRoot, 'src'))) {
 console.log('GREP_HITS', hits.length ? hits.join('\n') : 'none');
 assert.deepEqual(hits, [], hits.join('\n'));
 
-const hud = readFileSync(new URL('../src/components/Hud.jsx', import.meta.url), 'utf8');
-const shed = readFileSync(new URL('../src/components/Shed.jsx', import.meta.url), 'utf8');
-const office = readFileSync(new URL('../src/components/Office.jsx', import.meta.url), 'utf8');
+const hud = readFileSync(new URL('../src/components/Hud.tsx', import.meta.url), 'utf8');
+const shed = readFileSync(new URL('../src/components/Shed.tsx', import.meta.url), 'utf8');
+const office = readFileSync(new URL('../src/components/Office.tsx', import.meta.url), 'utf8');
 assert.match(hud, /formatMoney\(state\.cash\)/);
 assert.match(shed, /formatMoney\(state\.cash\)/);
 assert.match(office, /formatMoney\(state\.cash\)/);

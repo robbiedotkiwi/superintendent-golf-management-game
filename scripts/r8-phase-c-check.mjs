@@ -10,17 +10,17 @@ import {
   FIRING_SEVERANCE_DAYS,
   PLAYER_ID,
   VOLUNTEER_ID,
-} from '../src/data/constants.js';
-import { canFireWorker, severanceCost } from '../src/engine/staff.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { migrateSave } from '../src/engine/save.js';
+} from '../src/data/constants.ts';
+import { canFireWorker, severanceCost } from '../src/engine/staff.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { migrateSave } from '../src/engine/save.ts';
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 
 assert.equal(FIRING_SEVERANCE_DAYS, 14);
 assert.equal(FIRING_MORALE_HIT, 15);
 
-const crew = read('src/components/Crew.jsx');
+const crew = read('src/components/Crew.tsx');
 assert.match(crew, /Confirm fire/);
 assert.match(crew, /FIRING_SEVERANCE_DAYS/);
 assert.match(crew, /FIRING_MORALE_HIT/);

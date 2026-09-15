@@ -20,11 +20,11 @@ import {
   USED_LISTING_COUNT,
   USED_PRICE_FRACTION,
   USED_RELATIONSHIP_DISCOUNT_PER_POINT,
-} from '../src/data/constants.js';
-import { conditionOf } from '../src/engine/equipment.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { buyUsed, canBuyUsed, canSellMachine, salePrice, sellMachine } from '../src/engine/market.js';
-import { migrateSave } from '../src/engine/save.js';
+} from '../src/data/constants.ts';
+import { conditionOf } from '../src/engine/equipment.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { buyUsed, canBuyUsed, canSellMachine, salePrice, sellMachine } from '../src/engine/market.ts';
+import { migrateSave } from '../src/engine/save.ts';
 
 assert.equal(SALESMAN_RELATIONSHIP_MIN, 0);
 assert.equal(SALESMAN_RELATIONSHIP_MAX, 100);
@@ -125,10 +125,10 @@ assert.deepEqual(migrated.usedListings, []);
 assert.deepEqual(migrated.pendingDeliveries, []);
 assert.deepEqual(migrated.activeSales, []);
 
-const marketSrc = readFileSync(new URL('../src/engine/market.js', import.meta.url), 'utf8');
-const gameSrc = readFileSync(new URL('../src/engine/gameState.js', import.meta.url), 'utf8');
-const shedSrc = readFileSync(new URL('../src/components/Shed.jsx', import.meta.url), 'utf8');
-const appSrc = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+const marketSrc = readFileSync(new URL('../src/engine/market.ts', import.meta.url), 'utf8');
+const gameSrc = readFileSync(new URL('../src/engine/gameState.ts', import.meta.url), 'utf8');
+const shedSrc = readFileSync(new URL('../src/components/Shed.tsx', import.meta.url), 'utf8');
+const appSrc = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert.match(marketSrc, /export function canBuyUsed/);
 assert.match(marketSrc, /export function buyUsed/);
 assert.match(marketSrc, /export function canSellMachine/);

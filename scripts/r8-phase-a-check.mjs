@@ -11,9 +11,9 @@ import {
   SELECT_ALL_LABEL,
   SELECT_CLEAR_LABEL,
   SELECT_FRONT_NINE_LABEL,
-} from '../src/data/constants.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { defaultJobHoles, frontNineIds } from '../src/engine/holes.js';
+} from '../src/data/constants.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { defaultJobHoles, frontNineIds } from '../src/engine/holes.ts';
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 
@@ -23,11 +23,11 @@ assert.equal(SELECT_ALL_LABEL, 'All');
 assert.equal(SELECT_FRONT_NINE_LABEL, 'Front nine');
 assert.equal(SELECT_CLEAR_LABEL, 'Clear');
 
-const holeSel = read('src/components/HoleSelector.jsx');
-const map = read('src/components/MapSelectionBar.jsx');
-const turf = read('src/components/Turf.jsx');
-const constants = read('src/data/constants.js');
-const app = read('src/App.jsx');
+const holeSel = read('src/components/HoleSelector.tsx');
+const map = read('src/components/MapSelectionBar.tsx');
+const turf = read('src/components/Turf.tsx');
+const constants = read('src/data/constants.ts');
+const app = read('src/App.tsx');
 
 assert.match(constants, /export const HOLE_SELECTOR_COUNT = HOLE_COUNT/);
 
