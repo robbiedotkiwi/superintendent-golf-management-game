@@ -13,29 +13,19 @@ import {
   SHED_TABS,
   TURF_PRIMARY_TAB_LABELS,
   TURF_PRIMARY_TABS,
-  TURF_SHOW_LEGACY_TABS,
-  TURF_TAB_DEFAULT,
-  TURF_TAB_LABELS,
-  TURF_TAB_LEGACY_BUNKERS,
-  TURF_TAB_LEGACY_POND,
-  TURF_TAB_MOWING,
-  TURF_TAB_OTHER,
-  TURF_TAB_PATTERNS,
   TURF_TAB_WEEK,
-  TURF_TABS,
 } from '../data/constants.js';
 
 export function visibleTurfTabs() {
-  if (!TURF_SHOW_LEGACY_TABS) return [...TURF_PRIMARY_TABS];
-  return [...TURF_PRIMARY_TABS, ...TURF_TABS.filter((tab) => !TURF_PRIMARY_TABS.includes(tab))];
+  return [...TURF_PRIMARY_TABS];
 }
 
 export function turfTabLabels() {
-  return { ...TURF_PRIMARY_TAB_LABELS, ...TURF_TAB_LABELS };
+  return { ...TURF_PRIMARY_TAB_LABELS };
 }
 
 export function turfTabDefault() {
-  return TURF_SHOW_LEGACY_TABS ? TURF_TAB_DEFAULT : TURF_TAB_WEEK;
+  return TURF_TAB_WEEK;
 }
 
 export function defaultSectionTabs() {
@@ -52,17 +42,8 @@ export function normalizeSection(section) {
 }
 
 function normalizeTurfTab(tab) {
-  if (tab === TURF_TAB_LEGACY_BUNKERS || tab === TURF_TAB_LEGACY_POND) {
-    return TURF_SHOW_LEGACY_TABS ? TURF_TAB_OTHER : TURF_TAB_WEEK;
-  }
-  if (tab === 'summary' || tab === 'presets') {
-    return TURF_SHOW_LEGACY_TABS ? TURF_TAB_MOWING : TURF_TAB_WEEK;
-  }
-  if (visibleTurfTabs().includes(tab)) return tab;
-  if (TURF_TABS.includes(tab)) {
-    return TURF_SHOW_LEGACY_TABS ? tab : TURF_TAB_WEEK;
-  }
-  return turfTabDefault();
+  if (TURF_PRIMARY_TABS.includes(tab)) return tab;
+  return TURF_TAB_WEEK;
 }
 
 export function normalizeTabs(tabs) {
@@ -76,7 +57,7 @@ export function normalizeTabs(tabs) {
 }
 
 export function tabListForSection(section) {
-  if (section === SECTION_TURF) return [...TURF_PRIMARY_TABS, ...TURF_TABS];
+  if (section === SECTION_TURF) return [...TURF_PRIMARY_TABS];
   if (section === SECTION_OFFICE) return OFFICE_TABS;
   if (section === SECTION_CREW) return CREW_TABS;
   if (section === SECTION_SHED) return SHED_TABS;

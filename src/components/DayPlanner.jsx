@@ -38,6 +38,8 @@ import SeasonBar from './SeasonBar.jsx';
 import GradeStrip from './GradeStrip.jsx';
 import MachinePassPanel from './MachinePassPanel.jsx';
 import { weekPassStrip } from '../engine/weekPasses.js';
+import { taskWindowCheck } from '../engine/gameState.js';
+import { WEATHER_STORM } from '../data/constants.js';
 
 const DRAG_MIME = 'application/x-greenkeeper-block';
 
@@ -144,6 +146,12 @@ export default function DayPlanner({
       <SeasonBar state={state} />
       <GradeStrip state={state} />
       <MachinePassPanel state={state} />
+      {state.weather === WEATHER_STORM &&
+      !(state.plannedTasks ?? []).some((item) => item.taskId === 'clearDebris') ? (
+        <p className="text-sm text-[var(--machine-orange)]" data-storm-debris>
+          Storm debris is blocking the day. Drag Clear debris onto the plan first.
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <button
           type="button"
@@ -183,12 +191,21 @@ export default function DayPlanner({
           </div>
         ))}
       </div>
-      <div className="flex gap-3" style={{ minHeight: PLANNER_ROW_PX * Math.max(2, crew.length + 1) }}>
-        <aside className="shrink-0 space-y-1 overflow-y-auto border border-[var(--sand)] p-2" style={{ width: PLANNER_PALETTE_PX }} data-task-palette>
+      <div className="flex items-start gap-3">
+        <aside
+          className="shrink-0 space-y-1 overflow-y-auto border border-[var(--sand)] p-2"
+          style={{ width: PLANNER_PALETTE_PX, maxHeight: 'min(36rem, calc(100vh - 14rem))' }}
+          data-task-palette
+        >
           <div className="text-[10px] uppercase tracking-wide text-[var(--sand)]">Tasks</div>
           {plannerPalette().map((item) => {
             const task = getTask(item.taskId);
-            const gate = paletteMachineStatus(state, task);
+            const machineGate = paletteMachineStatus(state, task);
+            const windowGate = taskWindowCheck(state, item.taskId);
+            const gate = {
+              ok: machineGate.ok && windowGate.ok,
+              reason: !windowGate.ok ? windowGate.reason : machineGate.reason,
+            };
             const machine = paletteWorker ? autoMachineFor(state, task, paletteWorker) : null;
             const hours = paletteWorker
               ? paletteHoursFor(state, item.taskId, paletteWorker)

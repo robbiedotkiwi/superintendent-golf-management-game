@@ -4,8 +4,6 @@ import {
   HOC_TIME_MULT,
   JOB_SETUP_MINUTES_BY_TYPE,
   JOB_TRAVEL_MINUTES_BY_TYPE,
-  ROUTE_NAME_MAX,
-  SAVED_ROUTE_CAP,
   TASK_MINUTES,
 } from '../data/constants.js';
 import { getTask } from '../data/tasks.js';
@@ -102,22 +100,6 @@ export function snapshotDayJobs(plannedTasks) {
     holes: [...(item.holes ?? [])],
     machineId: item.machineId ?? null,
   }));
-}
-
-export function canSaveRoute(state, name) {
-  const trimmed = String(name ?? '').trim();
-  if (!trimmed) return { ok: false, reason: 'Name the route.' };
-  if ((state.savedRoutes ?? []).length >= SAVED_ROUTE_CAP) {
-    return { ok: false, reason: `Only ${SAVED_ROUTE_CAP} saved routes.` };
-  }
-  if (!(state.selectedHoles ?? []).length) return { ok: false, reason: 'Select holes first.' };
-  return { ok: true, name: trimmed.slice(0, ROUTE_NAME_MAX) };
-}
-
-export function applyRoute(state, routeId) {
-  const route = (state.savedRoutes ?? []).find((item) => item.id === routeId);
-  if (!route) return state;
-  return { ...state, selectedHoles: [...route.holes] };
 }
 
 export function describeJob(taskId) {

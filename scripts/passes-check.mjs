@@ -38,6 +38,7 @@ import {
   WEAR_TIME_MULT_HEAVY,
   WEAR_TIME_MULT_LIGHT,
   WEAR_TIME_MULT_NONE,
+  PLANNER_PALETTE,
 } from '../src/data/config.js';
 import { monthlyBudgetFor, golferNumbers, gmRequiredGrade, gmTargetLetter, tryReleaseSeason1Capex } from '../src/engine/economy.js';
 import { draftFromJobId, emptySlotDraft, mowTaskIdFor, resolvePlannerJobId } from '../src/engine/slots.js';
@@ -369,7 +370,7 @@ let gapResize = reducer(state, {
 });
 gapResize = reducer(gapResize, {
   type: 'PLACE_BLOCK',
-  taskId: 'gmMeeting',
+  taskId: 'weedEat',
   workerId: state.workers[0].id,
   startMinute: 180,
   minutes: 60,
@@ -458,6 +459,28 @@ const moistureUi = readFileSync(new URL('../src/components/MoistureReadout.jsx',
 assert(!moistureUi.includes('GreensMoistureList'), 'per-hole moisture list UI removed');
 const irrigationUi = readFileSync(new URL('../src/components/IrrigationWeekTab.jsx', import.meta.url), 'utf8');
 assert(irrigationUi.includes('MoistureLine'), 'irrigation tab shows area moisture');
+assert(irrigationUi.includes('data-pond-kit'), 'irrigation tab hosts pond and kit buys');
+assert(irrigationUi.includes('onBuyWeatherStation'), 'weather station buy is on irrigation');
+
+const paletteIds = PLANNER_PALETTE.map((item) => item.taskId);
+for (const taskId of [
+  'clearDebris',
+  'handWater',
+  'checkMoistureTees',
+  'checkMoistureFairways',
+  'fertiliseGreens',
+  'pondDose',
+  'pondRescue',
+  'doubleCutGreens',
+]) {
+  assert(paletteIds.includes(taskId), `${taskId} belongs on the week-plan palette`);
+}
+const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+assert(!turfSrc.includes('TURF_SHOW_LEGACY_TABS'), 'legacy turf tabs removed');
+assert(!turfSrc.includes('MapJobPopover'), 'turf does not host the old map job popover');
+const appSrc = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+assert(!appSrc.includes('MapJobPopover'), 'map job popover removed');
+assert(!appSrc.includes('WeatherStrip'), 'unused weather strip stays gone');
 
 assert(PASSES_REQUIRED_PER_WEEK.greens === 4, 'A greens needs 4 passes');
 assert(PASSES_REQUIRED_PER_WEEK.tees === 2, 'A tees needs 2 passes');
