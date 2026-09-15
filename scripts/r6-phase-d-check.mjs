@@ -23,16 +23,16 @@ import {
   REELMASTER_ID,
   USED_DELIVERY_DAYS,
   WALK_BEHIND_ID,
-} from '../src/data/constants.js';
-import { MACHINES, getMachine } from '../src/data/equipment.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
+} from '../src/data/constants.ts';
+import { MACHINES, getMachine } from '../src/data/equipment.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
 import {
   deliveryDaysRemaining,
   machineStatusLine,
   machineTitle,
   machineTypeLine,
-} from '../src/engine/machineDisplay.js';
-import { migrateSave } from '../src/engine/save.js';
+} from '../src/engine/machineDisplay.ts';
+import { migrateSave } from '../src/engine/save.ts';
 
 assert.equal(MACHINE_BRAND_TORO, 'Toro');
 assert.equal(MACHINE_BRAND_VENTRAC, 'Ventrac');
@@ -99,7 +99,7 @@ const migrated = migrateSave({
 });
 assert.ok(Number.isInteger(migrated.machineHours[GREENSMASTER_ID]));
 
-const shedSrc = readFileSync(new URL('../src/components/Shed.jsx', import.meta.url), 'utf8');
+const shedSrc = readFileSync(new URL('../src/components/Shed.tsx', import.meta.url), 'utf8');
 assert.match(shedSrc, /machineTitle/);
 assert.match(shedSrc, /machineTypeLine/);
 assert.match(shedSrc, /machineStatusLine/);

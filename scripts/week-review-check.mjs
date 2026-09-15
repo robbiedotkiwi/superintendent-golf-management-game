@@ -14,19 +14,19 @@ import {
   STARTING_WIND_SPEED,
   VOLUNTEER_ID,
   WEATHER_FINE,
-} from '../src/data/constants.js';
-import { claimedMinutesByMachine, conditionOf, durationOnMachine } from '../src/engine/equipment.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { meanQuality } from '../src/engine/holes.js';
-import { daysSinceLastWorked } from '../src/engine/neglect.js';
-import { canBookCasual, getDayTasks, weekDays, weekStartDay } from '../src/engine/week.js';
+} from '../src/data/constants.ts';
+import { claimedMinutesByMachine, conditionOf, durationOnMachine } from '../src/engine/equipment.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { meanQuality } from '../src/engine/holes.ts';
+import { daysSinceLastWorked } from '../src/engine/neglect.ts';
+import { canBookCasual, getDayTasks, weekDays, weekStartDay } from '../src/engine/week.ts';
 import {
   deriveJobRow,
   jobsThatWontFit,
   personCapacityForDay,
   rowsForPerson,
-} from '../src/engine/weekGrid.js';
-import { aggregateWeekJobs } from '../src/engine/weekReview.js';
+} from '../src/engine/weekGrid.ts';
+import { aggregateWeekJobs } from '../src/engine/weekReview.ts';
 
 const fineDay = {
   type: WEATHER_FINE,

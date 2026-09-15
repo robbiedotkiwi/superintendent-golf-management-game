@@ -31,11 +31,11 @@ import {
   WEEKLY_ROLL_JOBS,
   WEEKLY_WORK_DAYS,
   nzPrice,
-} from '../src/data/constants.js';
-import { PER_HOLE_MINUTES } from '../src/engine/courseArea.js';
-import { durationOnMachine } from '../src/engine/equipment.js';
-import { createInitialState } from '../src/engine/gameState.js';
-import { GREENSMASTER_ID, REELMASTER_ID } from '../src/data/constants.js';
+} from '../src/data/constants.ts';
+import { PER_HOLE_MINUTES } from '../src/engine/courseArea.ts';
+import { durationOnMachine } from '../src/engine/equipment.ts';
+import { createInitialState } from '../src/engine/gameState.ts';
+import { GREENSMASTER_ID, REELMASTER_ID } from '../src/data/constants.ts';
 
 assert.equal(WEEKLY_WORK_DAYS, 6);
 assert.equal(WEEKLY_MINUTES, 2880);

@@ -25,8 +25,8 @@ import {
   USED_LISTING_COUNT,
   WALK_BEHIND_ID,
   WALK_BEHIND_TIME_MULT,
-} from '../src/data/constants.js';
-import { durationOnMachine, mowingOperatorTimeMultiplier } from '../src/engine/assignment.js';
+} from '../src/data/constants.ts';
+import { durationOnMachine, mowingOperatorTimeMultiplier } from '../src/engine/assignment.ts';
 import {
   conditionOf,
   conditionTimeMultiplier,
@@ -34,11 +34,11 @@ import {
   machineTimeMultiplier,
   mowConditionEfficiency,
   mowConditionTimeMultiplier,
-} from '../src/engine/equipment.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.js';
-import { migrateSave } from '../src/engine/save.js';
-import { getTask } from '../src/data/tasks.js';
+} from '../src/engine/equipment.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.ts';
+import { migrateSave } from '../src/engine/save.ts';
+import { getTask } from '../src/data/tasks.ts';
 
 assert.equal(CONDITION_MIN, 0);
 assert.equal(CONDITION_MAX, 100);
@@ -156,12 +156,12 @@ assert.equal(
   ),
 );
 
-const shedSrc = readFileSync(new URL('../src/components/Shed.jsx', import.meta.url), 'utf8');
+const shedSrc = readFileSync(new URL('../src/components/Shed.tsx', import.meta.url), 'utf8');
 assert.match(shedSrc, /conditionOf/);
 assert.match(shedSrc, /CONDITION_MAX/);
 assert.match(shedSrc, /CONDITION_SLOW_THRESHOLD/);
 
-const equipmentSrc = readFileSync(new URL('../src/engine/equipment.js', import.meta.url), 'utf8');
+const equipmentSrc = readFileSync(new URL('../src/engine/equipment.ts', import.meta.url), 'utf8');
 assert.match(equipmentSrc, /conditionTimeMultiplier/);
 
 console.log('GATE A1 PASS named condition constants exported');

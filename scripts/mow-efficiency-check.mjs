@@ -20,18 +20,18 @@ import {
   PLAYER_SPEED_SKILL,
   SPEED_SKILL_BASE,
   SPEED_SKILL_STEP,
-} from '../src/data/constants.js';
-import { mowingOperatorTimeMultiplier, mowingSpeedEfficiency } from '../src/engine/assignment.js';
+} from '../src/data/constants.ts';
+import { mowingOperatorTimeMultiplier, mowingSpeedEfficiency } from '../src/engine/assignment.ts';
 import {
   conditionTimeMultiplier,
   durationOnMachine,
   machineMultiplierFor,
   mowConditionEfficiency,
   mowConditionTimeMultiplier,
-} from '../src/engine/equipment.js';
-import { createInitialState } from '../src/engine/gameState.js';
-import { setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.js';
-import { workerTimeMultiplier } from '../src/engine/skills.js';
+} from '../src/engine/equipment.ts';
+import { createInitialState } from '../src/engine/gameState.ts';
+import { setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.ts';
+import { workerTimeMultiplier } from '../src/engine/skills.ts';
 
 assert.equal(MOW_SPEED_EFFICIENCY_AT_1, 0.5);
 assert.equal(MOW_SPEED_EFFICIENCY_AT_5, 0.7);
@@ -135,9 +135,9 @@ console.log(
   `COND0=${durationOnMachine(wrecked, 'cutGreens', player)} COND28=${nineMin} COND100=${durationOnMachine(mint, 'cutGreens', player)}`,
 );
 
-const crewSrc = readFileSync(new URL('../src/components/Crew.jsx', import.meta.url), 'utf8');
+const crewSrc = readFileSync(new URL('../src/components/Crew.tsx', import.meta.url), 'utf8');
 assert.match(crewSrc, /mowSpeedLabel/);
-const shedSrc = readFileSync(new URL('../src/components/Shed.jsx', import.meta.url), 'utf8');
+const shedSrc = readFileSync(new URL('../src/components/Shed.tsx', import.meta.url), 'utf8');
 assert.match(shedSrc, /mowConditionEfficiency/);
 
 console.log('GATE M1 PASS speed 1/5 mow at 50%/70% and player speed 3 at 60%');

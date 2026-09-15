@@ -11,10 +11,10 @@ import {
   VIEW_ZOOM_DEFAULT,
   VIEW_ZOOM_MAX,
   VIEW_ZOOM_MIN,
-} from '../src/data/constants.js';
-import { HOLES, courseBounds } from '../src/data/course.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { withDefaults } from '../src/engine/save.js';
+} from '../src/data/constants.ts';
+import { HOLES, courseBounds } from '../src/data/course.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { withDefaults } from '../src/engine/save.ts';
 import {
   clampZoom,
   defaultView,
@@ -25,7 +25,7 @@ import {
   panBy,
   viewBoxFromView,
   zoomAround,
-} from '../src/engine/view.js';
+} from '../src/engine/view.ts';
 
 assert.equal(VIEW_ZOOM_MIN, 0.5);
 assert.equal(VIEW_ZOOM_MAX, 4);
@@ -65,14 +65,14 @@ assert.equal(reset.view.panX, VIEW_PAN_X_DEFAULT);
 const migrated = withDefaults({ day: 1, holes: createInitialState().holes, surfaceDefaults: createInitialState().surfaceDefaults });
 assert.equal(migrated.view.zoom, VIEW_ZOOM_DEFAULT);
 
-const map = readFileSync(new URL('../src/components/CourseMap.jsx', import.meta.url), 'utf8');
+const map = readFileSync(new URL('../src/components/CourseMap.tsx', import.meta.url), 'utf8');
 assert.match(map, /onPointerDown/);
 assert.match(map, /onClickCapture/);
 assert.match(map, /onDoubleClick/);
 assert.match(map, /VIEW_DRAG_THRESHOLD|isDrag/);
 assert.match(map, /event\.key === '0'/);
 
-const sidebar = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
+const sidebar = readFileSync(new URL('../src/components/Sidebar.tsx', import.meta.url), 'utf8');
 assert.match(sidebar, /Fit/);
 
 console.log('fix phase E checks passed');

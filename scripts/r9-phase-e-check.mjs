@@ -18,17 +18,17 @@ import {
   POND_START_VOLUME,
   STARTING_DAY,
   TASK_MINUTES,
-} from '../src/data/constants.js';
-import { getTask } from '../src/data/tasks.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
+} from '../src/data/constants.ts';
+import { getTask } from '../src/data/tasks.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
 import {
   isPondDoseCurrent,
   isPondDoseDue,
   pondCapacity,
   pondDoseBriefing,
   resolveIrrigation,
-} from '../src/engine/irrigation.js';
-import { migrateSave } from '../src/engine/save.js';
+} from '../src/engine/irrigation.ts';
+import { migrateSave } from '../src/engine/save.ts';
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 
@@ -87,20 +87,20 @@ assert.equal(oldOn.lastPondDoseDay, 20);
 assert.equal(oldOn.pondDosing, undefined);
 assert.equal(isPondDoseCurrent(oldOn), true);
 
-const turfSrc = read('src/components/Turf.jsx');
+const turfSrc = read('src/components/Turf.tsx');
 assert.match(turfSrc, /POND_DOSE_TASK/);
 assert.match(turfSrc, /PondLevelBar/);
 assert.doesNotMatch(turfSrc, /SET_POND_DOSING|pondDosing|Dosing on/);
 
-const bar = read('src/components/PondLevelBar.jsx');
+const bar = read('src/components/PondLevelBar.tsx');
 assert.match(bar, /POND_LOW_FRACTION/);
 assert.match(bar, /data-pond-low-mark/);
 assert.equal(POND_LOW_FRACTION, 0.35);
 
-const staffSrc = read('src/engine/staff.js');
+const staffSrc = read('src/engine/staff.ts');
 assert.doesNotMatch(staffSrc, /pondDoseMinutes/);
 
-const dialog = read('src/components/StartDayDialog.jsx');
+const dialog = read('src/components/StartDayDialog.tsx');
 assert.match(dialog, /pondDoseBriefing/);
 assert.match(dialog, /data-morning-briefing/);
 

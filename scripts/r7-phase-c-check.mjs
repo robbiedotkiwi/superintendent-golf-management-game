@@ -23,9 +23,9 @@ import {
   SUITABILITY_IDEAL,
   SUITABILITY_LABELS,
   SUITABILITY_PENALTY_COPY,
-} from '../src/data/constants.js';
-import { getMachine, machineAllows, machineCanMow, machineSuitability, machineTimeMult, MACHINES } from '../src/data/equipment.js';
-import { getTask } from '../src/data/tasks.js';
+} from '../src/data/constants.ts';
+import { getMachine, machineAllows, machineCanMow, machineSuitability, machineTimeMult, MACHINES } from '../src/data/equipment.ts';
+import { getTask } from '../src/data/tasks.ts';
 import {
   durationOnMachine,
   ineligibleMachines,
@@ -34,10 +34,10 @@ import {
   overrideCandidates,
   pickMachine,
   surfaceCeiling,
-} from '../src/engine/equipment.js';
-import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
-import { holeSurface, setTypeQuality } from '../src/engine/holes.js';
-import { setupMinutesFor } from '../src/engine/jobs.js';
+} from '../src/engine/equipment.ts';
+import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.ts';
+import { holeSurface, setTypeQuality } from '../src/engine/holes.ts';
+import { setupMinutesFor } from '../src/engine/jobs.ts';
 
 assert.equal(MACHINE_TIME_MULT.walkBehindReel, MACHINE_TIME_MULT_WALK_BEHIND_REEL);
 assert.equal(MACHINE_TIME_MULT.ridingGreensTriplex, MACHINE_TIME_MULT_RIDING_GREENS_TRIPLEX);
@@ -78,9 +78,9 @@ const blocked = ineligibleMachines(fleet, greensTask);
 assert.ok(blocked.some((item) => item.machine.id === REELMASTER_ID));
 assert.match(blocked.find((item) => item.machine.id === REELMASTER_ID).reason, /damage/i);
 
-const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
-const panelSrc = readFileSync(new URL('../src/components/TaskPanel.jsx', import.meta.url), 'utf8');
-const confirmSrc = readFileSync(new URL('../src/components/PlanConfirmButton.jsx', import.meta.url), 'utf8');
+const turfSrc = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
+const panelSrc = readFileSync(new URL('../src/components/TaskPanel.tsx', import.meta.url), 'utf8');
+const confirmSrc = readFileSync(new URL('../src/components/PlanConfirmButton.tsx', import.meta.url), 'utf8');
 assert.match(turfSrc, /SUITABILITY_PENALTY_COPY/);
 assert.match(turfSrc, /SUITABILITY_LABELS/);
 assert.match(panelSrc, /SUITABILITY_PENALTY_COPY/);

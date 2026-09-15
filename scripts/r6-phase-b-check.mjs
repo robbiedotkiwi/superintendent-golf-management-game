@@ -26,19 +26,19 @@ import {
   TURF_TAB_WEEK,
   VENTRAC_ID,
   WALK_BEHIND_ID,
-} from '../src/data/constants.js';
-import { getMachine } from '../src/data/equipment.js';
-import { getTask } from '../src/data/tasks.js';
-import { machineTitle } from '../src/engine/machineDisplay.js';
+} from '../src/data/constants.ts';
+import { getMachine } from '../src/data/equipment.ts';
+import { getTask } from '../src/data/tasks.ts';
+import { machineTitle } from '../src/engine/machineDisplay.ts';
 import {
   machineAssignment,
   overrideCandidates,
   pickMachine,
   pickMachineForTask,
-} from '../src/engine/equipment.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { migrateSave } from '../src/engine/save.js';
-import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+} from '../src/engine/equipment.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { migrateSave } from '../src/engine/save.ts';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.ts';
 
 
 assert.deepEqual(TURF_TABS, [
@@ -54,7 +54,7 @@ assert.equal(PLAN_THIS_CUT_LABEL, 'Plan this cut');
 assert.equal(MACHINE_OVERRIDE_AUTO, 'auto');
 assert.equal(MACHINE_OVERRIDE_FALLBACK('Walk-behind reel'), 'Walk-behind reel unavailable — auto');
 
-const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+const turfSrc = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
 assert.match(turfSrc, /PLAN_THIS_CUT_LABEL/);
 assert.match(turfSrc, /TURF_TAB_MOWING/);
 assert.doesNotMatch(turfSrc, /MATCH_LAST_MOWING/);
@@ -66,7 +66,7 @@ assert.match(turfSrc, /BunkerTab/);
 assert.match(turfSrc, /PondPanel/);
 assert.doesNotMatch(turfSrc, /tab === TURF_TAB_BUNKERS \?/);
 
-const planSrc = readFileSync(new URL('../src/components/PlanList.jsx', import.meta.url), 'utf8');
+const planSrc = readFileSync(new URL('../src/components/PlanList.tsx', import.meta.url), 'utf8');
 assert.match(planSrc, /machineTitle/);
 
 const start = createInitialState();

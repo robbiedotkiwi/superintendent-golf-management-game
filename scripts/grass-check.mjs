@@ -12,18 +12,18 @@ import {
   HOC_SURFACES,
   PROJECT_GRASS_CONVERSION,
   STARTING_QUALITY_GREENS,
-} from '../src/data/constants.js';
-import { GRASS_TYPES, STARTING_GRASS } from '../src/data/grass.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
+} from '../src/data/constants.ts';
+import { GRASS_TYPES, STARTING_GRASS } from '../src/data/grass.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
 import {
   grassGrowthFactor,
   grassIdFor,
   hocRangeFor,
   speciesAllowedOn,
-} from '../src/engine/grass.js';
-import { holeGrassLengthMm } from '../src/engine/mowingStatus.js';
-import { canStartGrassConversion, grassConversionOptions, tickProjects } from '../src/engine/projects.js';
-import { holeSurface, meanQuality } from '../src/engine/holes.js';
+} from '../src/engine/grass.ts';
+import { holeGrassLengthMm } from '../src/engine/mowingStatus.ts';
+import { canStartGrassConversion, grassConversionOptions, tickProjects } from '../src/engine/projects.ts';
+import { holeSurface, meanQuality } from '../src/engine/holes.ts';
 
 const start = createInitialState();
 assert.deepEqual(start.grass, STARTING_GRASS);
@@ -100,10 +100,10 @@ ended = reducer(ended, { type: 'END_DAY' });
 assert.equal(ended.grass.greens, 'creeping_bent');
 assert.equal(ended.projects.length, 0);
 
-const office = readFileSync(new URL('../src/components/Office.jsx', import.meta.url), 'utf8');
+const office = readFileSync(new URL('../src/components/Office.tsx', import.meta.url), 'utf8');
 assert.match(office, /Object\.values\(PROJECTS\)/);
 assert.match(office, /START_GRASS_CONVERSION|onStartGrassConversion/);
-const turf = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+const turf = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
 assert.match(turf, /typicalCuts|cuts\/week/);
 
 console.log('grass-check: ok');

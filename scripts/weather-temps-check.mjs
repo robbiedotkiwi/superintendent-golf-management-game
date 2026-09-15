@@ -16,10 +16,10 @@ import {
   WEATHER_FROST,
   WEATHER_STORM,
   WEATHER_WEIGHTS,
-} from '../src/data/constants.js';
-import { COLD_WEATHER_TIP_TITLE, coldWeatherCopy, WEATHER_LABELS } from '../src/data/events.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { migrateSave } from '../src/engine/save.js';
+} from '../src/data/constants.ts';
+import { COLD_WEATHER_TIP_TITLE, coldWeatherCopy, WEATHER_LABELS } from '../src/data/events.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { migrateSave } from '../src/engine/save.ts';
 import {
   applyTempsForWeather,
   canonicalWeather,
@@ -27,8 +27,8 @@ import {
   isColdWeather,
   moistureEtTempFactor,
   rollTrueDay,
-} from '../src/engine/weather.js';
-import { createRng } from '../src/engine/rng.js';
+} from '../src/engine/weather.ts';
+import { createRng } from '../src/engine/rng.ts';
 
 assert.equal(WEATHER_LABELS.storm, 'Storm');
 assert.equal(WEATHER_LABELS.heavyRain, undefined);
@@ -96,10 +96,10 @@ for (let seed = 1; seed <= 4000 && !sawFrost; seed += 1) {
 }
 assert.ok(sawFrost, 'winter can roll frost');
 
-const appSrc = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+const appSrc = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert.match(appSrc, /COLD_WEATHER_TIP_TITLE/);
 assert.match(appSrc, /DISMISS_COLD_WEATHER_TIP/);
-const sidebarSrc = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
+const sidebarSrc = readFileSync(new URL('../src/components/Sidebar.tsx', import.meta.url), 'utf8');
 assert.match(sidebarSrc, /formatTempRange/);
 assert.doesNotMatch(sidebarSrc, /HEAT_LABELS/);
 

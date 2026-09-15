@@ -12,11 +12,11 @@ import {
   STARTING_DAY,
   STARTING_QUALITY_GREENS,
   STARTING_WEATHER,
-} from '../src/data/constants.js';
-import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
-import { migrateSave } from '../src/engine/save.js';
-import { playBirds, playMower, prefersReducedMotion } from '../src/engine/sound.js';
-import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+} from '../src/data/constants.ts';
+import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.ts';
+import { migrateSave } from '../src/engine/save.ts';
+import { playBirds, playMower, prefersReducedMotion } from '../src/engine/sound.ts';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.ts';
 
 
 assert.equal(SOUND_DEFAULT_ON, false);
@@ -24,7 +24,7 @@ assert.equal(createInitialState().soundEnabled, false);
 assert.equal(createInitialState().tutorialDone, false);
 assert.equal(createInitialState().saveVersion, SAVE_VERSION);
 
-const tutorial = readFileSync(new URL('../src/components/Tutorial.jsx', import.meta.url), 'utf8');
+const tutorial = readFileSync(new URL('../src/components/Tutorial.tsx', import.meta.url), 'utf8');
 assert.match(tutorial, /DAY_LENGTH_MINUTES/);
 assert.match(tutorial, /start the day/i);
 
@@ -84,7 +84,7 @@ assert.equal(typeof year.lastYearReview.capitalSpent, 'number');
 const dismissed = reducer(year, { type: 'DISMISS_YEAR_REVIEW' });
 assert.equal(dismissed.pendingYearReview, false);
 
-const reviewUi = readFileSync(new URL('../src/components/YearReview.jsx', import.meta.url), 'utf8');
+const reviewUi = readFileSync(new URL('../src/components/YearReview.tsx', import.meta.url), 'utf8');
 assert.match(reviewUi, /Year .* in review/);
 assert.match(reviewUi, /staffRetained/);
 assert.match(reviewUi, /maintenanceSpent/);

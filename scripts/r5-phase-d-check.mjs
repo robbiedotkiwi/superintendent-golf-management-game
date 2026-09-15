@@ -14,17 +14,17 @@ import {
   TRAINING_DAYS,
   VOLUNTEER_ID,
   VOLUNTEER_OFF_REASON,
-} from '../src/data/constants.js';
-import { assignWorker } from '../src/engine/assignment.js';
-import { workerAbsenceReason } from '../src/engine/availability.js';
-import { getTask } from '../src/data/tasks.js';
+} from '../src/data/constants.ts';
+import { assignWorker } from '../src/engine/assignment.ts';
+import { workerAbsenceReason } from '../src/engine/availability.ts';
+import { getTask } from '../src/data/tasks.ts';
 import {
   canPlanTask,
   combinedMinutesCapacity,
   createInitialState,
   reducer,
-} from '../src/engine/gameState.js';
-import { resolveDay } from '../src/engine/simulation.js';
+} from '../src/engine/gameState.ts';
+import { resolveDay } from '../src/engine/simulation.ts';
 
 assert.equal(VOLUNTEER_OFF_REASON, 'Volunteer — not in today');
 assert.equal(TRAINING_BACK_DAY_REASON('Sam', 34), 'Sam — training, back day 34');
@@ -100,13 +100,13 @@ const { summary } = resolveDay({
 assert.ok(summary.dropped.some((item) => item.taskId === lastId), `dropped should include last task ${lastId}`);
 assert.equal(summary.dropped.at(-1).taskId, lastId);
 
-const panel = readFileSync(new URL('../src/components/TaskPanel.jsx', import.meta.url), 'utf8');
+const panel = readFileSync(new URL('../src/components/TaskPanel.tsx', import.meta.url), 'utf8');
 assert.match(panel, /line-through/);
 assert.match(panel, /workerAbsenceReason/);
 assert.match(panel, /disabled=\{!selectable\}/);
 assert.doesNotMatch(panel, /[↑↓]/);
 
-const plan = readFileSync(new URL('../src/components/PlanList.jsx', import.meta.url), 'utf8');
+const plan = readFileSync(new URL('../src/components/PlanList.tsx', import.meta.url), 'utf8');
 assert.match(plan, /OVERRUN_DROP_COPY/);
 assert.match(plan, /data-plan-task/);
 assert.match(plan, /onPointerDown/);
@@ -115,20 +115,20 @@ assert.match(plan, /REORDER_TASKS|onReorder/);
 assert.match(plan, /\{index \+ 1\}/);
 assert.doesNotMatch(plan, /[↑↓]/);
 
-const dialog = readFileSync(new URL('../src/components/StartDayDialog.jsx', import.meta.url), 'utf8');
+const dialog = readFileSync(new URL('../src/components/StartDayDialog.tsx', import.meta.url), 'utf8');
 assert.match(dialog, /<PlanList/);
 assert.match(dialog, /onReorder/);
 
-const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert.match(app, /REORDER_TASKS/);
 assert.match(app, /<PlanList/);
 assert.doesNotMatch(app, /[↑↓]/);
 
-const sidebar = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
+const sidebar = readFileSync(new URL('../src/components/Sidebar.tsx', import.meta.url), 'utf8');
 assert.doesNotMatch(sidebar, /[↑↓]/);
 assert.doesNotMatch(sidebar, /<PlanList/);
 
-const sim = readFileSync(new URL('../src/engine/simulation.js', import.meta.url), 'utf8');
+const sim = readFileSync(new URL('../src/engine/simulation.ts', import.meta.url), 'utf8');
 assert.match(sim, /planned\.pop\(\)/);
 
 console.log('GATE D1 PASS unavailable workers have a stated reason and cannot be selected');

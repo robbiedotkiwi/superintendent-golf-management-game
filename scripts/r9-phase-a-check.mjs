@@ -16,10 +16,10 @@ import {
   TURF_TAB_DEFAULT,
   TURF_TAB_LABELS,
   TURF_TAB_WEEK,
-} from '../src/data/constants.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { migrateSave } from '../src/engine/save.js';
-import { courseSettings } from '../src/engine/holes.js';
+} from '../src/data/constants.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { migrateSave } from '../src/engine/save.ts';
+import { courseSettings } from '../src/engine/holes.ts';
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 
@@ -70,7 +70,7 @@ const presetsTab = migrateSave({
 });
 assert.equal(presetsTab.tabs[SECTION_TURF], TURF_TAB_WEEK);
 
-const turfSrc = read('src/components/Turf.jsx');
+const turfSrc = read('src/components/Turf.tsx');
 assert.match(turfSrc, /TURF_TAB_MOWING/);
 assert.match(turfSrc, /TURF_TAB_IRRIGATION/);
 assert.match(turfSrc, /TURF_TAB_INPUTS/);
@@ -81,10 +81,10 @@ assert.doesNotMatch(turfSrc, /<ForecastStrip/);
 assert.doesNotMatch(turfSrc, /MATCH_LAST/);
 assert.doesNotMatch(turfSrc, /onSavePreset|onApplyPreset|SHIPPED_PRESETS|PresetsTab/);
 
-const dialog = read('src/components/StartDayDialog.jsx');
+const dialog = read('src/components/StartDayDialog.tsx');
 assert.match(dialog, /<ForecastStrip/);
 
-const app = read('src/App.jsx');
+const app = read('src/App.tsx');
 assert.doesNotMatch(app, /SAVE_PRESET|MATCH_LAST_MOWING|onSavePreset|onMatchLastMowing/);
 
 const banned = [
@@ -105,11 +105,11 @@ const banned = [
   'MATCH_LAST_MOWING_LABEL',
 ];
 const grep = execSync(
-  `rg -n ${banned.map((term) => `-e '${term}'`).join(' ')} -g '!src/engine/save.js' src || true`,
+  `rg -n ${banned.map((term) => `-e '${term}'`).join(' ')} -g '!src/engine/save.ts' src || true`,
   { encoding: 'utf8', cwd: new URL('..', import.meta.url).pathname },
 );
 assert.equal(grep.trim(), '', `leftover Summary/Presets hits:\n${grep}`);
-const saveSrc = read('src/engine/save.js');
+const saveSrc = read('src/engine/save.ts');
 assert.match(saveSrc, /delete next\.customPresets/);
 assert.match(saveSrc, /delete next\.nextPresetId/);
 assert.doesNotMatch(saveSrc, /customPresets:/);

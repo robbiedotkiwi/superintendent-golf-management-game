@@ -4,13 +4,13 @@
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { BUNKER_DULL, paint, sand, soil, turf, turfStressed } from '../src/data/constants.js';
+import { BUNKER_DULL, paint, sand, soil, turf, turfStressed } from '../src/data/constants.ts';
 import {
   healthyFill,
   inPaletteRange,
   luminance,
   surfaceFill,
-} from '../src/engine/color.js';
+} from '../src/engine/color.ts';
 
 const PALETTE = [turf, turfStressed, paint, soil, sand];
 const TURF_SURFACES = ['greens', 'tees', 'fairways', 'rough'];
@@ -42,7 +42,7 @@ assert.ok(healthy.greens > healthy.tees, 'greens lighter than tees');
 assert.ok(healthy.tees > healthy.fairways, 'tees lighter than fairways');
 assert.ok(healthy.fairways > healthy.rough, 'fairways lighter than rough');
 
-const map = readFileSync(new URL('../src/components/CourseMap.jsx', import.meta.url), 'utf8');
+const map = readFileSync(new URL('../src/components/CourseMap.tsx', import.meta.url), 'utf8');
 assert.match(map, /<rect/);
 assert.match(map, /surfaceFill\('bunkers'/);
 assert.match(map, /greenOutline/);

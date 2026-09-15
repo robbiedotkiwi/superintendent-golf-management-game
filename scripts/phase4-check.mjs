@@ -20,17 +20,17 @@ import {
   VOLUNTEER_ID,
   VOLUNTEER_MINUTES,
   WALK_BEHIND_ID,
-} from '../src/data/constants.js';
-import { getTask } from '../src/data/tasks.js';
-import { assignWorker, durationOnMachine, workerAllows } from '../src/engine/assignment.js';
-import { canRepair } from '../src/engine/equipment.js';
+} from '../src/data/constants.ts';
+import { getTask } from '../src/data/tasks.ts';
+import { assignWorker, durationOnMachine, workerAllows } from '../src/engine/assignment.ts';
+import { canRepair } from '../src/engine/equipment.ts';
 import {
   combinedMinutesRemaining,
   createInitialState,
   reducer,
-} from '../src/engine/gameState.js';
-import { dayOfWeek } from '../src/engine/staff.js';
-import { applyWeatherToWorkers } from '../src/engine/weather.js';
+} from '../src/engine/gameState.ts';
+import { dayOfWeek } from '../src/engine/staff.ts';
+import { applyWeatherToWorkers } from '../src/engine/weather.ts';
 
 function end(state) {
   const next = reducer(state, { type: 'END_DAY' });

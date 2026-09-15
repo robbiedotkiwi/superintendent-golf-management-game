@@ -17,9 +17,9 @@ import {
   DAY_LENGTH_MINUTES,
   WEAR_PER_USE,
   WEAR_THRESHOLD,
-} from '../src/data/constants.js';
-import { getTask } from '../src/data/tasks.js';
-import { durationOnMachine, mowingOperatorTimeMultiplier } from '../src/engine/assignment.js';
+} from '../src/data/constants.ts';
+import { getTask } from '../src/data/tasks.ts';
+import { durationOnMachine, mowingOperatorTimeMultiplier } from '../src/engine/assignment.ts';
 import {
   canBuyMachine,
   ineligibleMachines,
@@ -28,15 +28,15 @@ import {
   pickMachine,
   surfaceCeiling,
   wearMultiplier,
-} from '../src/engine/equipment.js';
+} from '../src/engine/equipment.ts';
 import {
   combinedMinutesRemaining,
   createInitialState,
   reducer,
-} from '../src/engine/gameState.js';
-import { setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.js';
-import { applyWeatherToWorkers } from '../src/engine/weather.js';
-import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+} from '../src/engine/gameState.ts';
+import { setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.ts';
+import { applyWeatherToWorkers } from '../src/engine/weather.ts';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.ts';
 
 
 function plan(state, taskId) {

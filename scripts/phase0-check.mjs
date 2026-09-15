@@ -17,14 +17,14 @@ import {
   STARTING_QUALITY_TEES,
   STARTING_SEASON,
   STARTING_YEAR,
-} from '../src/data/constants.js';
+} from '../src/data/constants.ts';
 import {
   combinedMinutesRemaining,
   createInitialState,
   initialState,
   reducer,
-} from '../src/engine/gameState.js';
-import { holeCount, meanQuality } from '../src/engine/holes.js';
+} from '../src/engine/gameState.ts';
+import { holeCount, meanQuality } from '../src/engine/holes.ts';
 
 const state = createInitialState();
 

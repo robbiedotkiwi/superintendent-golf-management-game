@@ -13,16 +13,16 @@ import {
   WEATHER_FROST,
   WEATHER_RAIN,
   WEATHER_STORM,
-} from '../src/data/constants.js';
-import { calendarFromDay } from '../src/engine/calendar.js';
+} from '../src/data/constants.ts';
+import { calendarFromDay } from '../src/engine/calendar.ts';
 import {
   canPlanTask,
   combinedMinutesRemaining,
   createInitialState,
   reducer,
-} from '../src/engine/gameState.js';
-import { applyDecay } from '../src/engine/simulation.js';
-import { applyWeatherToWorkers } from '../src/engine/weather.js';
+} from '../src/engine/gameState.ts';
+import { applyDecay } from '../src/engine/simulation.ts';
+import { applyWeatherToWorkers } from '../src/engine/weather.ts';
 
 function end(state) {
   return reducer(state, { type: 'END_DAY' });

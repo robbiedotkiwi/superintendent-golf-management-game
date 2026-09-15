@@ -11,12 +11,12 @@ import {
   STARTING_DAY,
   STARTING_WEATHER,
   SURFACE_KEYS,
-} from '../src/data/constants.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { daysSinceLastWorked, isDoubleNeglected, neglectSatisfactionDrain } from '../src/engine/neglect.js';
-import { migrateSave } from '../src/engine/save.js';
-import { applyWeatherToWorkers } from '../src/engine/weather.js';
-import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+} from '../src/data/constants.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { daysSinceLastWorked, isDoubleNeglected, neglectSatisfactionDrain } from '../src/engine/neglect.ts';
+import { migrateSave } from '../src/engine/save.ts';
+import { applyWeatherToWorkers } from '../src/engine/weather.ts';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.ts';
 
 
 function endKeep(state) {

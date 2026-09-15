@@ -21,24 +21,24 @@ import {
   STARTING_WEATHER,
   TASK_TIME_MULT_18,
   JOB_SETUP_MINUTES,
-} from '../src/data/constants.js';
-import { holesForCount } from '../src/data/course.js';
-import { durationOnMachine } from '../src/engine/assignment.js';
-import { surfaceCeiling } from '../src/engine/equipment.js';
-import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
-import { holeCount } from '../src/engine/holes.js';
+} from '../src/data/constants.ts';
+import { holesForCount } from '../src/data/course.ts';
+import { durationOnMachine } from '../src/engine/assignment.ts';
+import { surfaceCeiling } from '../src/engine/equipment.ts';
+import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.ts';
+import { holeCount } from '../src/engine/holes.ts';
 import {
   absorbNote,
   canStartProject,
   constructionMinutes,
-} from '../src/engine/projects.js';
+} from '../src/engine/projects.ts';
 
 const start = createInitialState();
 assert.ok(start.satisfaction < EXPAND_18_SATISFACTION_MIN);
 assert.equal(canStartProject(start, PROJECT_EXPAND_18).hidden, true);
 assert.equal(canPlanTask(start, 'pickBalls').ok, false);
 
-const office = readFileSync(new URL('../src/components/Office.jsx', import.meta.url), 'utf8');
+const office = readFileSync(new URL('../src/components/Office.tsx', import.meta.url), 'utf8');
 assert.match(office, /check\.hidden/);
 assert.match(office, /absorbNote/);
 assert.match(office, /dueDay/);

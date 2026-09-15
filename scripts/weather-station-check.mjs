@@ -12,17 +12,17 @@ import {
   WEATHER_RAIN,
   WEATHER_STORM,
   WEATHER_STATION_COST,
-} from '../src/data/constants.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { moistureFromMm } from '../src/engine/irrigation.js';
-import { surfaceEtMm, surfaceEtPoints } from '../src/engine/moisture.js';
-import { migrateSave } from '../src/engine/save.js';
+} from '../src/data/constants.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { moistureFromMm } from '../src/engine/irrigation.ts';
+import { surfaceEtMm, surfaceEtPoints } from '../src/engine/moisture.ts';
+import { migrateSave } from '../src/engine/save.ts';
 import {
   canBuyWeatherStation,
   dewPointC,
   relativeHumidity,
   stationAtmosphere,
-} from '../src/engine/weather.js';
+} from '../src/engine/weather.ts';
 
 const start = createInitialState();
 assert.equal(start.hasWeatherStation, false);
@@ -77,26 +77,26 @@ assert.ok(
 );
 assert.equal(MOISTURE_PER_MM.green, 1.4);
 
-const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+const turfSrc = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
 assert.match(turfSrc, /WeatherStation/);
 assert.match(turfSrc, /onBuyWeatherStation/);
 assert.doesNotMatch(turfSrc, /dispatch/);
 
-const stationSrc = readFileSync(new URL('../src/components/WeatherStation.jsx', import.meta.url), 'utf8');
+const stationSrc = readFileSync(new URL('../src/components/WeatherStation.tsx', import.meta.url), 'utf8');
 assert.match(stationSrc, /formatMoney\(WEATHER_STATION_COST\)/);
 assert.match(stationSrc, /dew point/);
 assert.match(stationSrc, /data-weather-station-et/);
 
-const sliderSrc = readFileSync(new URL('../src/components/IrrigationMmSlider.jsx', import.meta.url), 'utf8');
+const sliderSrc = readFileSync(new URL('../src/components/IrrigationMmSlider.tsx', import.meta.url), 'utf8');
 assert.match(sliderSrc, /hasWeatherStation/);
 assert.match(sliderSrc, /data-irrigation-et/);
 
-const appSrc = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+const appSrc = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert.match(appSrc, /BUY_WEATHER_STATION/);
 const gameScreen = appSrc.slice(appSrc.indexOf('function GameScreen'));
 assert.doesNotMatch(gameScreen, /\bdispatch\b/);
 
-const constantsSrc = readFileSync(new URL('../src/data/constants.js', import.meta.url), 'utf8');
+const constantsSrc = readFileSync(new URL('../src/data/constants.ts', import.meta.url), 'utf8');
 assert.doesNotMatch(constantsSrc, /courseArea/);
 
 console.log('GATE WS1 PASS buy spends cash and is one-shot');

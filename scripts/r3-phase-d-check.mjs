@@ -4,11 +4,11 @@
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { SECTION_MAP } from '../src/data/constants.js';
+import { SECTION_MAP } from '../src/data/constants.ts';
 
 assert.equal(SECTION_MAP, 'course');
 
-const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert.match(app, /event\.key !== 'Escape'/);
 assert.match(app, /view !== SECTION_MAP/);
 assert.match(app, /onCloseShed\(\)/);

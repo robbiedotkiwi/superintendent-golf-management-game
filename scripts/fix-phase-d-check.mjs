@@ -19,12 +19,12 @@ import {
   ROUGH_GAP_MIN,
   sand,
   soil,
-} from '../src/data/constants.js';
-import { HOLES } from '../src/data/course.js';
-import { collidingRoughPairs, maxTurnDegrees } from '../src/engine/geometry.js';
-import { fairwayHalfWidth, fairwayWidthVaries } from '../src/engine/holeShape.js';
-import { luminance, surfaceFill } from '../src/engine/color.js';
-import { patternOpacity, patternRotate } from '../src/engine/pattern.js';
+} from '../src/data/constants.ts';
+import { HOLES } from '../src/data/course.ts';
+import { collidingRoughPairs, maxTurnDegrees } from '../src/engine/geometry.ts';
+import { fairwayHalfWidth, fairwayWidthVaries } from '../src/engine/holeShape.ts';
+import { luminance, surfaceFill } from '../src/engine/color.ts';
+import { patternOpacity, patternRotate } from '../src/engine/pattern.ts';
 
 assert.equal(surfaceFill('bunkers', 100).toLowerCase(), sand.toLowerCase());
 assert.notEqual(surfaceFill('bunkers', 0).toLowerCase(), soil.toLowerCase());
@@ -62,7 +62,7 @@ assert.ok(patternOpacity(1, NEGLECT_THRESHOLD.greens) > patternOpacity(2, NEGLEC
 assert.equal(patternRotate(PATTERN_STRIPES, 40), 40);
 assert.equal(patternRotate(PATTERN_DIAMOND, 40), 85);
 
-const map = readFileSync(new URL('../src/components/CourseMap.jsx', import.meta.url), 'utf8');
+const map = readFileSync(new URL('../src/components/CourseMap.tsx', import.meta.url), 'utf8');
 assert.match(map, /mow-greens/);
 assert.match(map, /patternTransform/);
 assert.match(map, /surfacePatternOpacity/);
@@ -70,10 +70,10 @@ assert.doesNotMatch(map, /hole\.bunker\?/);
 assert.match(map, /hole\.bunkers/);
 assert.doesNotMatch(map, /from '\.\.\/engine\/holeShape/);
 
-const layout = readFileSync(new URL('../src/data/courseLayout.js', import.meta.url), 'utf8');
+const layout = readFileSync(new URL('../src/data/courseLayout.ts', import.meta.url), 'utf8');
 assert.match(layout, /centerline/);
 
-const color = readFileSync(new URL('../src/engine/color.js', import.meta.url), 'utf8');
+const color = readFileSync(new URL('../src/engine/color.ts', import.meta.url), 'utf8');
 assert.match(color, /BUNKER_DULL/);
 assert.doesNotMatch(color, /lerpHex\(sand, soil/);
 

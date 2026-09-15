@@ -19,17 +19,17 @@ import {
   POND_START_VOLUME,
   PROJECT_POND_EXPANSION,
   SEASON_GROWTH,
-} from '../src/data/constants.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
+} from '../src/data/constants.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
 import {
   groundwaterM3,
   pondCapacity,
   pondHealthDecayMult,
   resolveIrrigation,
-} from '../src/engine/irrigation.js';
-import { canStartProject, constructionMinutes, PROJECTS } from '../src/engine/projects.js';
+} from '../src/engine/irrigation.ts';
+import { canStartProject, constructionMinutes, PROJECTS } from '../src/engine/projects.ts';
 
-const office = readFileSync(new URL('../src/components/Office.jsx', import.meta.url), 'utf8');
+const office = readFileSync(new URL('../src/components/Office.tsx', import.meta.url), 'utf8');
 assert.match(office, /Object\.values\(PROJECTS\)/);
 assert.equal(PROJECTS[PROJECT_POND_EXPANSION].cost, POND_EXPANSION_COST);
 assert.equal(PROJECTS[PROJECT_POND_EXPANSION].days, POND_EXPANSION_DAYS);

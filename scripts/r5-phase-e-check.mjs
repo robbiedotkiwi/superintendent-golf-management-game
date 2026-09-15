@@ -13,13 +13,13 @@ import {
   WEATHER_FINE,
   WEATHER_HEAVY_RAIN_LEGACY,
   WEATHER_STORM,
-} from '../src/data/constants.js';
-import { inDiseaseGrace, seasonNumberFromDay } from '../src/engine/calendar.js';
-import { pressureGain, resolveDisease } from '../src/engine/disease.js';
-import { rollBreakdowns } from '../src/engine/equipment.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { createRng } from '../src/engine/rng.js';
-import { applyWeatherGrace, makeWeatherQueue, rollTrueDay } from '../src/engine/weather.js';
+} from '../src/data/constants.ts';
+import { inDiseaseGrace, seasonNumberFromDay } from '../src/engine/calendar.ts';
+import { pressureGain, resolveDisease } from '../src/engine/disease.ts';
+import { rollBreakdowns } from '../src/engine/equipment.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { createRng } from '../src/engine/rng.ts';
+import { applyWeatherGrace, makeWeatherQueue, rollTrueDay } from '../src/engine/weather.ts';
 
 assert.equal(GRACE_FINE_DAYS, 5);
 assert.equal(GRACE_NO_STORM_DAYS, 10);
