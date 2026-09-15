@@ -191,8 +191,12 @@ export default function DayPlanner({
           </div>
         ))}
       </div>
-      <div className="flex gap-3" style={{ minHeight: PLANNER_ROW_PX * Math.max(2, crew.length + 1) }}>
-        <aside className="shrink-0 space-y-1 overflow-y-auto border border-[var(--sand)] p-2" style={{ width: PLANNER_PALETTE_PX }} data-task-palette>
+      <div className="flex items-start gap-3">
+        <aside
+          className="shrink-0 space-y-1 overflow-y-auto border border-[var(--sand)] p-2"
+          style={{ width: PLANNER_PALETTE_PX, maxHeight: 'min(36rem, calc(100vh - 14rem))' }}
+          data-task-palette
+        >
           <div className="text-[10px] uppercase tracking-wide text-[var(--sand)]">Tasks</div>
           {plannerPalette().map((item) => {
             const task = getTask(item.taskId);
