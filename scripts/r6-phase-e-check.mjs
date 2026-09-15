@@ -16,14 +16,14 @@ import {
   VOLUNTEER_LEGACY_WEEKDAY,
   VOLUNTEER_MINUTES,
   VOLUNTEER_OFF_REASON,
-} from '../src/data/constants.js';
-import { getTask } from '../src/data/tasks.js';
-import { assignWorker, workerAllows } from '../src/engine/assignment.js';
-import { isVolunteerOnDuty, workerAbsenceReason } from '../src/engine/availability.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { migrateSave } from '../src/engine/save.js';
-import { dayOfWeek } from '../src/engine/staff.js';
-import { applyWeatherToWorkers } from '../src/engine/weather.js';
+} from '../src/data/constants.ts';
+import { getTask } from '../src/data/tasks.ts';
+import { assignWorker, workerAllows } from '../src/engine/assignment.ts';
+import { isVolunteerOnDuty, workerAbsenceReason } from '../src/engine/availability.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { migrateSave } from '../src/engine/save.ts';
+import { dayOfWeek } from '../src/engine/staff.ts';
+import { applyWeatherToWorkers } from '../src/engine/weather.ts';
 
 assert.equal(VOLUNTEER_DAY, 3);
 assert.equal(VOLUNTEER_DEFAULT_WEEKDAY, VOLUNTEER_DAY);
@@ -128,7 +128,7 @@ assert.equal(upgradedVolunteer.speedSkill, PLAYER_SPEED_SKILL);
 assert.equal(upgradedVolunteer.qualitySkill, PLAYER_QUALITY_SKILL);
 assert.equal(upgradedVolunteer.allowedSurfaces, 'all');
 
-const crewSrc = readFileSync(new URL('../src/components/Crew.jsx', import.meta.url), 'utf8');
+const crewSrc = readFileSync(new URL('../src/components/Crew.tsx', import.meta.url), 'utf8');
 assert.match(crewSrc, /VOLUNTEER_OFF_REASON|not in today|weekday/);
 assert.match(crewSrc, /all\s+surfaces, half a day/);
 

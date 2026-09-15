@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
-import { createInitialState, canPlanTask, reducer } from '../src/engine/gameState.js';
-import { machineAllows, getMachine } from '../src/data/equipment.js';
-import { GREENSMASTER_ID, GROUNDSMASTER_ID, GREENS_ROLLER_ID, SPRAYER_ID, CORER_ID } from '../src/data/constants.js';
-import { gradeLetter, gradeCapScore, clampQuality } from '../src/engine/grades.js';
+import { createInitialState, canPlanTask, reducer } from '../src/engine/gameState.ts';
+import { machineAllows, getMachine } from '../src/data/equipment.ts';
+import { GREENSMASTER_ID, GROUNDSMASTER_ID, GREENS_ROLLER_ID, SPRAYER_ID, CORER_ID } from '../src/data/constants.ts';
+import { gradeLetter, gradeCapScore, clampQuality } from '../src/engine/grades.ts';
 import {
   hoursToPassFraction,
   applyDailyPassCap,
@@ -12,10 +12,10 @@ import {
   staffCanRunMachine,
   wearTimeMult,
   weeklyTargetQuality,
-} from '../src/engine/passes.js';
-import { applyDurationModifier, minutesToHours, roundDurationHours } from '../src/engine/duration.js';
-import { driftQuality, applyDailyQualityDrift } from '../src/engine/qualityDrift.js';
-import { migrateWorkerTier } from '../src/engine/staffTiers.js';
+} from '../src/engine/passes.ts';
+import { applyDurationModifier, minutesToHours, roundDurationHours } from '../src/engine/duration.ts';
+import { driftQuality, applyDailyQualityDrift } from '../src/engine/qualityDrift.ts';
+import { migrateWorkerTier } from '../src/engine/staffTiers.ts';
 import {
   BUNKER_DECAY_PER_DAY,
   BUNKER_RAKE_QUALITY,
@@ -39,18 +39,18 @@ import {
   WEAR_TIME_MULT_LIGHT,
   WEAR_TIME_MULT_NONE,
   PLANNER_PALETTE,
-} from '../src/data/config.js';
-import { monthlyBudgetFor, golferNumbers, gmRequiredGrade, gmTargetLetter, tryReleaseSeason1Capex } from '../src/engine/economy.js';
-import { draftFromJobId, emptySlotDraft, mowTaskIdFor, resolvePlannerJobId } from '../src/engine/slots.js';
-import { autoMachineFor, blockConflicts, clampBlockResize, paletteHoursFor, paletteMachineStatus, surplusWastedHours } from '../src/engine/dayPlanner.js';
-import { weekPassStrip } from '../src/engine/weekPasses.js';
-import { getDayTasks, workersForPlanDay } from '../src/engine/week.js';
-import { applySupportDay } from '../src/engine/support.js';
-import { volunteerHoursFor, volunteerOnDuty } from '../src/engine/staffMorale.js';
-import { migrateMoisture } from '../src/engine/moisture.js';
-import { allowingMachines } from '../src/engine/equipment.js';
-import { getTask, taskUsesMachine } from '../src/data/tasks.js';
-import { forecastDaysAhead, forecastIsUnreliable } from '../src/engine/weather.js';
+} from '../src/data/config.ts';
+import { monthlyBudgetFor, golferNumbers, gmRequiredGrade, gmTargetLetter, tryReleaseSeason1Capex } from '../src/engine/economy.ts';
+import { draftFromJobId, emptySlotDraft, mowTaskIdFor, resolvePlannerJobId } from '../src/engine/slots.ts';
+import { autoMachineFor, blockConflicts, clampBlockResize, paletteHoursFor, paletteMachineStatus, surplusWastedHours } from '../src/engine/dayPlanner.ts';
+import { weekPassStrip } from '../src/engine/weekPasses.ts';
+import { getDayTasks, workersForPlanDay } from '../src/engine/week.ts';
+import { applySupportDay } from '../src/engine/support.ts';
+import { volunteerHoursFor, volunteerOnDuty } from '../src/engine/staffMorale.ts';
+import { migrateMoisture } from '../src/engine/moisture.ts';
+import { allowingMachines } from '../src/engine/equipment.ts';
+import { getTask, taskUsesMachine } from '../src/data/tasks.ts';
+import { forecastDaysAhead, forecastIsUnreliable } from '../src/engine/weather.ts';
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -159,8 +159,8 @@ assert(site.projects[0].paused, 'expansion can pause');
 site = reducer(site, { type: 'RESUME_PROJECT', projectId: PROJECT_EXPAND_3 });
 assert(!site.projects[0].paused, 'expansion can resume');
 
-const forecastSrc = readFileSync(new URL('../src/components/ForecastStrip.jsx', import.meta.url), 'utf8');
-assert(forecastSrc.includes("from '../engine/weather.js'"), 'ForecastStrip imports weather helpers');
+const forecastSrc = readFileSync(new URL('../src/components/ForecastStrip.tsx', import.meta.url), 'utf8');
+assert(forecastSrc.includes("from '../engine/weather.ts'"), 'ForecastStrip imports weather helpers');
 assert(forecastSrc.includes('formatTempRange'), 'ForecastStrip uses formatTempRange');
 assert(forecastSrc.includes('forecastOpacity'), 'ForecastStrip uses forecastOpacity');
 assert(forecastSrc.includes('forecastIsUnreliable'), 'strip uses days-ahead reliability');
@@ -210,7 +210,7 @@ assert(canvas.plannedTasks[0].startMinute === 60, 'block moves to 1.0 hr');
 canvas = reducer(canvas, { type: 'RESIZE_BLOCK', planId: placed.planId, startMinute: 60, minutes: 90 });
 assert(canvas.plannedTasks[0].minutes === 90, 'block resizes to 1.5 hr');
 
-const plannerSrc = readFileSync(new URL('../src/components/DayPlanner.jsx', import.meta.url), 'utf8');
+const plannerSrc = readFileSync(new URL('../src/components/DayPlanner.tsx', import.meta.url), 'utf8');
 assert(plannerSrc.includes('data-day-planner'), 'day canvas is the planner');
 assert(plannerSrc.includes('data-task-palette'), 'task palette is present');
 
@@ -347,8 +347,8 @@ assert(
   'casual is absent on days they are not booked',
 );
 
-const crewSrc = readFileSync(new URL('../src/components/Crew.jsx', import.meta.url), 'utf8');
-const sidebarSrc = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
+const crewSrc = readFileSync(new URL('../src/components/Crew.tsx', import.meta.url), 'utf8');
+const sidebarSrc = readFileSync(new URL('../src/components/Sidebar.tsx', import.meta.url), 'utf8');
 assert(crewSrc.includes('data-casual-hire'), 'casuals live in the hiring area');
 assert(crewSrc.indexOf('data-casual-hire') < crewSrc.indexOf('>Casuals<'), 'casuals heading is in the hire tab');
 assert(!sidebarSrc.includes('onBookCasual'), 'casuals are off the crew sidebar');
@@ -438,7 +438,7 @@ assert(getMachine(SPRAYER_ID).cost === SPRAYER_PURCHASE_COST, 'sprayer priced fr
 assert(getMachine(CORER_ID).cost === CORER_PURCHASE_COST, 'corer priced from config');
 assert(CORER_HIRE_PER_USE_COST > 0, 'corer hire cost is in config');
 
-const plannerUi = readFileSync(new URL('../src/components/DayPlanner.jsx', import.meta.url), 'utf8');
+const plannerUi = readFileSync(new URL('../src/components/DayPlanner.tsx', import.meta.url), 'utf8');
 assert(plannerUi.includes('taskUsesMachine(task)'), 'planner hides selector from the task property');
 assert(plannerUi.includes('paletteMachineStatus'), 'planner reads machine requirement for palette gating');
 assert(!plannerUi.includes("taskId === 'sprayGreens'"), 'no per-task machine special cases in the planner');
@@ -453,11 +453,11 @@ const migratedMoist = migrateMoisture({
 });
 assert(migratedMoist.moisture.greens === 50, 'old per-hole greens moisture averages');
 assert(!Array.isArray(migratedMoist.moisture.greens), 'migrated greens moisture is a number');
-const moistureEngine = readFileSync(new URL('../src/engine/moisture.js', import.meta.url), 'utf8');
+const moistureEngine = readFileSync(new URL('../src/engine/moisture.ts', import.meta.url), 'utf8');
 assert(!moistureEngine.includes('greensStatuses'), 'per-hole moisture statuses removed');
-const moistureUi = readFileSync(new URL('../src/components/MoistureReadout.jsx', import.meta.url), 'utf8');
+const moistureUi = readFileSync(new URL('../src/components/MoistureReadout.tsx', import.meta.url), 'utf8');
 assert(!moistureUi.includes('GreensMoistureList'), 'per-hole moisture list UI removed');
-const irrigationUi = readFileSync(new URL('../src/components/IrrigationWeekTab.jsx', import.meta.url), 'utf8');
+const irrigationUi = readFileSync(new URL('../src/components/IrrigationWeekTab.tsx', import.meta.url), 'utf8');
 assert(irrigationUi.includes('MoistureLine'), 'irrigation tab shows area moisture');
 assert(irrigationUi.includes('data-pond-kit'), 'irrigation tab hosts pond and kit buys');
 assert(irrigationUi.includes('onBuyWeatherStation'), 'weather station buy is on irrigation');
@@ -475,10 +475,10 @@ for (const taskId of [
 ]) {
   assert(paletteIds.includes(taskId), `${taskId} belongs on the week-plan palette`);
 }
-const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+const turfSrc = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
 assert(!turfSrc.includes('TURF_SHOW_LEGACY_TABS'), 'legacy turf tabs removed');
 assert(!turfSrc.includes('MapJobPopover'), 'turf does not host the old map job popover');
-const appSrc = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+const appSrc = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert(!appSrc.includes('MapJobPopover'), 'map job popover removed');
 assert(!appSrc.includes('WeatherStrip'), 'unused weather strip stays gone');
 

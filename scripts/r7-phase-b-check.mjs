@@ -9,12 +9,12 @@ import {
   JOB_SETUP_MINUTES_BY_TYPE,
   JOB_TRAVEL_MINUTES,
   SAVED_ROUTE_CAP,
-} from '../src/data/constants.js';
-import { PER_HOLE_MINUTES } from '../src/engine/courseArea.js';
-import { createInitialState, reducer, canPlanTask } from '../src/engine/gameState.js';
-import { durationOnMachine } from '../src/engine/assignment.js';
-import { jobMinutes, setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.js';
-import { defaultJobHoles, frontNineIds, holeSurface } from '../src/engine/holes.js';
+} from '../src/data/constants.ts';
+import { PER_HOLE_MINUTES } from '../src/engine/courseArea.ts';
+import { createInitialState, reducer, canPlanTask } from '../src/engine/gameState.ts';
+import { durationOnMachine } from '../src/engine/assignment.ts';
+import { jobMinutes, setupMinutesFor, variableJobMinutes } from '../src/engine/jobs.ts';
+import { defaultJobHoles, frontNineIds, holeSurface } from '../src/engine/holes.ts';
 
 assert.deepEqual(JOB_SETUP_MINUTES, { green: 6, tee: 5, fairway: 8, rough: 8, bunker: 5 });
 assert.equal(JOB_SETUP_MINUTES_BY_TYPE.greens, 6);
@@ -99,14 +99,14 @@ assert.equal(holeSurface(partial, 1, 'greens').heightAtLastCut, start.surfaceDef
 assert.equal(holeSurface(partial, 7, 'greens').heightAtLastCut, null);
 assert.ok(holeSurface(partial, 1, 'greens').quality > holeSurface(partial, 7, 'greens').quality);
 
-const map = readFileSync(new URL('../src/components/MapSelectionBar.jsx', import.meta.url), 'utf8');
-const holeSel = readFileSync(new URL('../src/components/HoleSelector.jsx', import.meta.url), 'utf8');
+const map = readFileSync(new URL('../src/components/MapSelectionBar.tsx', import.meta.url), 'utf8');
+const holeSel = readFileSync(new URL('../src/components/HoleSelector.tsx', import.meta.url), 'utf8');
 assert.match(map, /HoleSelector/);
 assert.match(holeSel, /SELECT_ALL_LABEL/);
 assert.match(holeSel, /SELECT_FRONT_NINE_LABEL/);
 assert.match(holeSel, /SELECT_CLEAR_LABEL/);
-assert.match(readFileSync(new URL('../src/components/CourseMap.jsx', import.meta.url), 'utf8'), /onToggleHole/);
-assert.match(readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8'), /MapSelectionBar/);
+assert.match(readFileSync(new URL('../src/components/CourseMap.tsx', import.meta.url), 'utf8'), /onToggleHole/);
+assert.match(readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8'), /MapSelectionBar/);
 
 assert.ok(canPlanTask(start, 'cutGreens', undefined, { holes: [1] }).ok);
 

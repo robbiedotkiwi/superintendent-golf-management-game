@@ -10,10 +10,10 @@ import {
   SECTION_MAP,
   SECTION_OFFICE,
   SHED_TAB_DEFAULT,
-} from '../src/data/constants.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { migrateSave } from '../src/engine/save.js';
-import { defaultSectionTabs, normalizeSection, normalizeTabs } from '../src/engine/section.js';
+} from '../src/data/constants.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { migrateSave } from '../src/engine/save.ts';
+import { defaultSectionTabs, normalizeSection, normalizeTabs } from '../src/engine/section.ts';
 
 const start = createInitialState();
 assert.equal(start.section, SECTION_MAP);

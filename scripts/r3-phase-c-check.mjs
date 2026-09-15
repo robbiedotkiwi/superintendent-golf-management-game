@@ -18,7 +18,7 @@ import {
   SHED_TAB_DEFAULT,
   SHED_TAB_YARD,
   SHED_TABS,
-} from '../src/data/constants.js';
+} from '../src/data/constants.ts';
 
 assert.deepEqual(OFFICE_TABS, [OFFICE_TAB_INBOX, OFFICE_TAB_MONEY, OFFICE_TAB_PROJECTS]);
 assert.equal(OFFICE_TAB_DEFAULT, OFFICE_TAB_INBOX);
@@ -27,10 +27,10 @@ assert.equal(CREW_TAB_DEFAULT, CREW_TAB_ROSTER);
 assert.deepEqual(SHED_TABS, [SHED_TAB_YARD, SHED_TAB_BUY]);
 assert.equal(SHED_TAB_DEFAULT, SHED_TAB_YARD);
 
-const office = readFileSync(new URL('../src/components/Office.jsx', import.meta.url), 'utf8');
-const crew = readFileSync(new URL('../src/components/Crew.jsx', import.meta.url), 'utf8');
-const shed = readFileSync(new URL('../src/components/Shed.jsx', import.meta.url), 'utf8');
-const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+const office = readFileSync(new URL('../src/components/Office.tsx', import.meta.url), 'utf8');
+const crew = readFileSync(new URL('../src/components/Crew.tsx', import.meta.url), 'utf8');
+const shed = readFileSync(new URL('../src/components/Shed.tsx', import.meta.url), 'utf8');
+const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert.match(office, /<SectionTabs/);
 assert.match(office, /tab === OFFICE_TAB_INBOX/);
 assert.match(office, /tab === OFFICE_TAB_MONEY/);

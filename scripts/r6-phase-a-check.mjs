@@ -11,10 +11,10 @@ import {
   SECTION_TURF_DESCRIPTION,
   SIDEBAR_FIT_HEIGHT,
   SIDEBAR_NAV_GAP,
-} from '../src/data/constants.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { migrateSave } from '../src/engine/save.js';
-import { sectionBadge } from '../src/engine/badges.js';
+} from '../src/data/constants.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { migrateSave } from '../src/engine/save.ts';
+import { sectionBadge } from '../src/engine/badges.ts';
 
 assert.equal(SIDEBAR_FIT_HEIGHT, 720);
 assert.equal(SIDEBAR_NAV_GAP, 8);
@@ -23,7 +23,7 @@ assert.equal(SECTION_OFFICE_DESCRIPTION, 'Mail, money, tournaments');
 assert.equal(SECTION_CREW_DESCRIPTION, 'Roster, hiring, training');
 assert.equal(SECTION_SHED_DESCRIPTION, 'Fleet, service, buying');
 
-const sidebar = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
+const sidebar = readFileSync(new URL('../src/components/Sidebar.tsx', import.meta.url), 'utf8');
 assert.match(sidebar, /flex flex-col/);
 assert.match(sidebar, /SIDEBAR_NAV_GAP/);
 assert.doesNotMatch(sidebar, /grid-cols-2/);

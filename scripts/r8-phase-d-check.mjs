@@ -11,17 +11,17 @@ import {
   FUEL_PRICE_PER_L,
   GREENSMASTER_ID,
   MACHINE_CLASS_ROLLER,
-} from '../src/data/constants.js';
-import { getMachine } from '../src/data/equipment.js';
-import { projectedFuelSpend } from '../src/engine/forecast.js';
+} from '../src/data/constants.ts';
+import { getMachine } from '../src/data/equipment.ts';
+import { projectedFuelSpend } from '../src/engine/forecast.ts';
 import {
   burnLitresPerHour,
   fuelCost,
   litresForMinutes,
   plannedDayFuel,
-} from '../src/engine/fuel.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { migrateSave } from '../src/engine/save.js';
+} from '../src/engine/fuel.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { migrateSave } from '../src/engine/save.ts';
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 
@@ -55,13 +55,13 @@ const later = {
 };
 assert.ok(projectedFuelSpend(later) > 0);
 
-const shed = read('src/components/Shed.jsx');
+const shed = read('src/components/Shed.tsx');
 assert.doesNotMatch(shed, /FUEL_TANK_CAPACITY/);
 assert.doesNotMatch(shed, /onBuyFuel/);
-const dialog = read('src/components/StartDayDialog.jsx');
+const dialog = read('src/components/StartDayDialog.tsx');
 assert.match(dialog, /plannedDayFuel/);
 assert.doesNotMatch(dialog, /Short \{fuel\.shortfall/);
-const forecast = read('src/components/CashForecast.jsx');
+const forecast = read('src/components/CashForecast.tsx');
 assert.match(forecast, /Projected fuel spend/);
 
 const old = migrateSave({

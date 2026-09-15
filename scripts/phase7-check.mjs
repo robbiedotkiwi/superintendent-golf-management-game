@@ -18,16 +18,16 @@ import {
   STARTING_WEATHER,
   WALK_BEHIND_COST,
   WALK_BEHIND_ID,
-} from '../src/data/constants.js';
+} from '../src/data/constants.ts';
 import {
   leaseCost,
   loanRepayment,
   maxLoan,
   seasonGrant,
-} from '../src/engine/budget.js';
-import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
-import { courseCondition } from '../src/engine/simulation.js';
-import { applyWeatherToWorkers } from '../src/engine/weather.js';
+} from '../src/engine/budget.ts';
+import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.ts';
+import { courseCondition } from '../src/engine/simulation.ts';
+import { applyWeatherToWorkers } from '../src/engine/weather.ts';
 
 function endKeep(state, extras = {}) {
   const next = reducer(state, { type: 'END_DAY' });

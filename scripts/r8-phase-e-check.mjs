@@ -13,7 +13,7 @@ import {
   SECTION_CREW,
   SECTION_OFFICE,
   VOLUNTEER_DAY,
-} from '../src/data/constants.js';
+} from '../src/data/constants.ts';
 import {
   GM_MESSAGE_IDS,
   GM_MESSAGES,
@@ -26,10 +26,10 @@ import {
   GM_TRIGGER_RAIN,
   GM_TRIGGER_SAT,
   tickGm,
-} from '../src/engine/gm.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { migrateSave } from '../src/engine/save.js';
-import { WEATHER_RAIN } from '../src/data/constants.js';
+} from '../src/engine/gm.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { migrateSave } from '../src/engine/save.ts';
+import { WEATHER_RAIN } from '../src/data/constants.ts';
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 
@@ -101,11 +101,11 @@ assert.deepEqual(old.sectionUnlocks, { crew: true, office: true });
 assert.deepEqual(old.gmQueue, []);
 assert.equal(old.gmSeen[GM_MSG_DAY1], true);
 
-const sidebar = read('src/components/Sidebar.jsx');
+const sidebar = read('src/components/Sidebar.tsx');
 assert.match(sidebar, /LockIcon/);
 assert.match(sidebar, /isSectionLocked/);
 assert.match(sidebar, /GM_LOCK_HINT/);
-const app = read('src/App.jsx');
+const app = read('src/App.tsx');
 assert.match(app, /<GmTalk/);
 assert.match(app, /DISMISS_GM/);
 

@@ -12,10 +12,10 @@ import {
   HOLE_NUMBER_RADIUS,
   SHED_CLEARANCE,
   TEE_SIZE,
-} from '../src/data/constants.js';
-import { HOLES } from '../src/data/course.js';
-import { SHED } from '../src/data/courseLayout.js';
-import { formatPlacementReport, placementReport } from '../src/engine/placement.js';
+} from '../src/data/constants.ts';
+import { HOLES } from '../src/data/course.ts';
+import { SHED } from '../src/data/courseLayout.ts';
+import { formatPlacementReport, placementReport } from '../src/engine/placement.ts';
 
 assert.equal(TEE_SIZE.w, 34);
 assert.equal(TEE_SIZE.h, 20);
@@ -57,12 +57,12 @@ for (const hole of HOLES) {
 
 assert.equal(HOLES.filter((hole) => hole.bent).length, 0, 'Figma holes are straight');
 
-const map = readFileSync(new URL('../src/components/CourseMap.jsx', import.meta.url), 'utf8');
+const map = readFileSync(new URL('../src/components/CourseMap.tsx', import.meta.url), 'utf8');
 assert.doesNotMatch(map, /key=\{`centreline-/);
 assert.match(map, /HOLE_NUMBER_RADIUS/);
 assert.match(map, /hole\.flag/);
 
-const layout = readFileSync(new URL('../src/data/courseLayout.js', import.meta.url), 'utf8');
+const layout = readFileSync(new URL('../src/data/courseLayout.ts', import.meta.url), 'utf8');
 assert.match(layout, /greenShape/);
 assert.match(layout, /tee:/);
 assert.match(layout, /green:/);

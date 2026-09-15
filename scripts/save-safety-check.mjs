@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { createInitialState } from '../src/engine/gameState.js';
-import { clearSave, hasSave, loadGame, migrateSave, saveGame } from '../src/engine/save.js';
+import { createInitialState } from '../src/engine/gameState.ts';
+import { clearSave, hasSave, loadGame, migrateSave, saveGame } from '../src/engine/save.ts';
 
 const throws = {
   getItem() {

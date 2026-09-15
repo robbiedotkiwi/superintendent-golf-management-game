@@ -12,13 +12,13 @@ import {
   PATTERN_WEAR_DEFAULT,
   PATTERN_WEAR_INCREMENT,
   SEASON_GROWTH,
-} from '../src/data/constants.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { holeKind, holeSurface, mapHoleSurfaces } from '../src/engine/holes.js';
-import { mowingStatus, laggingHoleIds, holeGrassLengthMm } from '../src/engine/mowingStatus.js';
-import { surfaceCeiling } from '../src/engine/equipment.js';
+} from '../src/data/constants.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { holeKind, holeSurface, mapHoleSurfaces } from '../src/engine/holes.ts';
+import { mowingStatus, laggingHoleIds, holeGrassLengthMm } from '../src/engine/mowingStatus.ts';
+import { surfaceCeiling } from '../src/engine/equipment.ts';
 
-const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+const turfSrc = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
 assert.match(turfSrc, /TwoColumn/);
 assert.match(turfSrc, /MowingStatus/);
 assert.match(turfSrc, /pointer-events-none/);

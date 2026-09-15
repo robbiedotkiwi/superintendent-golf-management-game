@@ -8,9 +8,9 @@ import {
   DAYS_PER_SEASON,
   STARTING_DAY,
   TOURNAMENT_SETUP_LEAD_DAYS,
-} from '../src/data/constants.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { comingSeason, isTournamentPromptDay, tournamentPromptDay } from '../src/engine/tournament.js';
+} from '../src/data/constants.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { comingSeason, isTournamentPromptDay, tournamentPromptDay } from '../src/engine/tournament.ts';
 
 const start = createInitialState();
 assert.equal(start.day, STARTING_DAY);
@@ -18,7 +18,7 @@ assert.equal(start.pendingTournamentSetup, false);
 assert.equal(start.tournaments.length, 1);
 assert.ok(!start.inbox.some((item) => item.kind === 'tournamentRequest'));
 
-const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert.doesNotMatch(app, /SeasonStart/);
 assert.doesNotMatch(app, /pendingTournamentSetup/);
 
@@ -46,10 +46,10 @@ assert.ok(request);
 assert.equal(request.from, 'gm');
 assert.equal(request.deadlineDay, DAYS_PER_SEASON);
 
-const office = readFileSync(new URL('../src/components/Office.jsx', import.meta.url), 'utf8');
+const office = readFileSync(new URL('../src/components/Office.tsx', import.meta.url), 'utf8');
 assert.match(office, /SeasonStart/);
 assert.match(office, /deadlineDay/);
-const seasonStart = readFileSync(new URL('../src/components/SeasonStart.jsx', import.meta.url), 'utf8');
+const seasonStart = readFileSync(new URL('../src/components/SeasonStart.tsx', import.meta.url), 'utf8');
 assert.doesNotMatch(seasonStart, /fixed inset-0/);
 assert.doesNotMatch(seasonStart, /z-40/);
 

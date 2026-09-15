@@ -17,7 +17,7 @@ import {
   TURF_TAB_POND,
   TURF_TABS,
   TURF_TAB_WEEK,
-} from '../src/data/constants.js';
+} from '../src/data/constants.ts';
 import {
   crewBadgeCount,
   crewDot,
@@ -28,10 +28,10 @@ import {
   shedDot,
   turfBadgeCount,
   turfDot,
-} from '../src/engine/badges.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { migrateSave } from '../src/engine/save.js';
-import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+} from '../src/engine/badges.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { migrateSave } from '../src/engine/save.ts';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.ts';
 
 
 assert.equal(SECTION_TURF, 'turf');
@@ -129,7 +129,7 @@ assert.equal(mid.day, 40);
 assert.equal(typeof turfBadgeCount(mid), 'number');
 assert.equal(typeof officeBadgeCount(mid), 'number');
 
-const sidebar = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
+const sidebar = readFileSync(new URL('../src/components/Sidebar.tsx', import.meta.url), 'utf8');
 assert.match(sidebar, /Day \{state\.day\}/);
 assert.match(sidebar, /WEATHER_LABELS\[state\.weather\]/);
 assert.match(sidebar, /Tomorrow/);
@@ -155,7 +155,7 @@ assert.doesNotMatch(sidebar, /DiseaseReadout/);
 assert.doesNotMatch(sidebar, /pond\.volume/);
 assert.doesNotMatch(sidebar, /<TaskPanel/);
 
-const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+const turfSrc = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
 assert.match(turfSrc, /TURF_TAB_MOWING/);
 assert.match(turfSrc, /TURF_TAB_IRRIGATION/);
 assert.match(turfSrc, /TURF_TAB_INPUTS/);
@@ -166,7 +166,7 @@ assert.doesNotMatch(turfSrc, /<ForecastStrip/);
 assert.doesNotMatch(turfSrc, /onSavePreset/);
 assert.doesNotMatch(turfSrc, /SHIPPED_PRESETS/);
 
-const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert.match(app, /<Turf/);
 assert.match(app, /<MapJobPopover/);
 assert.match(app, /SURFACE_KEYS\.includes\(selected\)/);

@@ -14,10 +14,10 @@ import {
   EVENT_RESPONSE_ACCEPT,
   EVENT_RESPONSE_DECLINE,
   STARTING_MACHINE_ID,
-} from '../src/data/constants.js';
-import { acceptEvent, canRespondToEvent, declineEvent, tickEvents } from '../src/engine/events.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { migrateSave } from '../src/engine/save.js';
+} from '../src/data/constants.ts';
+import { acceptEvent, canRespondToEvent, declineEvent, tickEvents } from '../src/engine/events.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { migrateSave } from '../src/engine/save.ts';
 
 assert.equal(EVENT_KIND_MEMBER_DAY, 'memberDay');
 assert.equal(EVENT_MAIL_KIND, 'eventInvite');
@@ -79,9 +79,9 @@ const migrated = migrateSave({
 });
 assert.deepEqual(migrated.eventInvitations, []);
 
-const officeSrc = readFileSync(new URL('../src/components/Office.jsx', import.meta.url), 'utf8');
-const appSrc = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
-const gameSrc = readFileSync(new URL('../src/engine/gameState.js', import.meta.url), 'utf8');
+const officeSrc = readFileSync(new URL('../src/components/Office.tsx', import.meta.url), 'utf8');
+const appSrc = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
+const gameSrc = readFileSync(new URL('../src/engine/gameState.ts', import.meta.url), 'utf8');
 assert.match(officeSrc, /EVENT_MAIL_KIND/);
 assert.match(officeSrc, /onAcceptEvent/);
 assert.match(officeSrc, /onDeclineEvent/);

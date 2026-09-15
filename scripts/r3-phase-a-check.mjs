@@ -13,8 +13,8 @@ import {
   PLAYOUT_SPEED_DEFAULT,
   PLAYOUT_SPEEDS,
   STARTING_QUALITY_GREENS,
-} from '../src/data/constants.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
+} from '../src/data/constants.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
 import {
   PLAYOUT_DONE,
   PLAYOUT_PLAYING,
@@ -25,9 +25,9 @@ import {
   shouldSkipPlayout,
   skipPlayout,
   tickPlayout,
-} from '../src/engine/playout.js';
-import { migrateSave } from '../src/engine/save.js';
-import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+} from '../src/engine/playout.ts';
+import { migrateSave } from '../src/engine/save.ts';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.ts';
 
 
 function fingerprint(state) {
@@ -73,7 +73,7 @@ function watchFilm(summary) {
   return film;
 }
 
-const playoutSrc = readFileSync(new URL('../src/engine/playout.js', import.meta.url), 'utf8');
+const playoutSrc = readFileSync(new URL('../src/engine/playout.ts', import.meta.url), 'utf8');
 assert.doesNotMatch(playoutSrc, /resolveDay/);
 assert.doesNotMatch(playoutSrc, /from '\.\/simulation/);
 assert.doesNotMatch(playoutSrc, /from '\.\/gameState/);
@@ -154,7 +154,7 @@ assert.equal(afterFirst.cursor, 1);
 const surfacesAfter = playoutSurfaces(watchedState.log.at(-1), afterFirst);
 assert.equal(meanQuality({ holes: surfacesAfter }, 'greens'), first.after);
 
-const appSrc = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+const appSrc = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert.match(appSrc, /buildPlayout/);
 assert.match(appSrc, /skipPlayout/);
 assert.match(appSrc, /onEndDay=\{\(\) => dispatch\(\{ type: 'END_DAY' \}\)\}/);

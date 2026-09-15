@@ -19,18 +19,18 @@ import {
   TURFRAD_COST,
   WET_DISEASE_MULT,
   WET_GAIN_MULT,
-} from '../src/data/constants.js';
-import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
-import { irrigationDemand } from '../src/engine/irrigation.js';
-import { migrateSave } from '../src/engine/save.js';
+} from '../src/data/constants.ts';
+import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.ts';
+import { irrigationDemand } from '../src/engine/irrigation.ts';
+import { migrateSave } from '../src/engine/save.ts';
 import {
   dryingFactorForGreen,
   greensStatuses,
   handWaterMinutes,
   isAboveBand,
   moistureStatus,
-} from '../src/engine/moisture.js';
-import { pressureGain } from '../src/engine/disease.js';
+} from '../src/engine/moisture.ts';
+import { pressureGain } from '../src/engine/disease.ts';
 
 const start = createInitialState();
 assert.equal(moistureStatus(start, 'greens').kind, 'hidden');
@@ -113,10 +113,10 @@ const playerTimeMult = SPEED_SKILL_BASE - PLAYER_SPEED_SKILL * SPEED_SKILL_STEP;
 assert.equal(three.plannedTasks[0].minutes, Math.round(HAND_WATER_MINUTES_PER_GREEN * 3 * playerTimeMult));
 assert.deepEqual(three.plannedTasks[0].greens, [1, 4, 9]);
 
-const irrigationSrc = readFileSync(new URL('../src/engine/irrigation.js', import.meta.url), 'utf8');
+const irrigationSrc = readFileSync(new URL('../src/engine/irrigation.ts', import.meta.url), 'utf8');
 assert.doesNotMatch(irrigationSrc, /summerUnderwaterDecay/);
 assert.doesNotMatch(irrigationSrc, /watered/);
-const simSrc = readFileSync(new URL('../src/engine/simulation.js', import.meta.url), 'utf8');
+const simSrc = readFileSync(new URL('../src/engine/simulation.ts', import.meta.url), 'utf8');
 assert.match(simSrc, /droughtDecay/);
 assert.match(simSrc, /tickMoisture/);
 assert.doesNotMatch(simSrc, /summerUnderwaterDecay/);
@@ -133,11 +133,11 @@ assert.equal(old.hasGreensSensors, false);
 assert.equal(old.hasTurfRad, false);
 assert.equal(old.hasWeatherStation, false);
 
-const turf = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+const turf = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
 assert.match(turf, /MoistureLine/);
-const sidebar = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
+const sidebar = readFileSync(new URL('../src/components/Sidebar.tsx', import.meta.url), 'utf8');
 assert.match(sidebar, /onToggleMoistureOverlay/);
-const map = readFileSync(new URL('../src/components/CourseMap.jsx', import.meta.url), 'utf8');
+const map = readFileSync(new URL('../src/components/CourseMap.tsx', import.meta.url), 'utf8');
 assert.match(map, /moisture-hatch/);
 assert.match(map, /MoistureOverlayShape/);
 

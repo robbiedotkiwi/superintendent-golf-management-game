@@ -19,13 +19,13 @@ import {
   STARTING_WEATHER,
   TRAINING_DAYS,
   WEATHER_RAIN,
-} from '../src/data/constants.js';
-import { TASKS } from '../src/data/tasks.js';
-import { surfaceCeiling } from '../src/engine/equipment.js';
-import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
-import { decayAmount, clampQuality } from '../src/engine/simulation.js';
-import { applyWeatherToWorkers } from '../src/engine/weather.js';
-import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+} from '../src/data/constants.ts';
+import { TASKS } from '../src/data/tasks.ts';
+import { surfaceCeiling } from '../src/engine/equipment.ts';
+import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.ts';
+import { decayAmount, clampQuality } from '../src/engine/simulation.ts';
+import { applyWeatherToWorkers } from '../src/engine/weather.ts';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.ts';
 
 
 function endKeep(state, extras = {}) {

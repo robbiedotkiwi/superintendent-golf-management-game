@@ -5,9 +5,9 @@
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { migrateSave } from '../src/engine/save.js';
-import { courseSettings } from '../src/engine/holes.js';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { migrateSave } from '../src/engine/save.ts';
+import { courseSettings } from '../src/engine/holes.ts';
 
 const start = createInitialState();
 assert.equal(start.customPresets, undefined);
@@ -33,9 +33,9 @@ const after = reducer(start, { type: 'SAVE_PRESET', surface: 'greens', name: 'To
 assert.equal(after, start);
 assert.equal(courseSettings(after, 'greens').hoc, hoc);
 
-const turf = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+const turf = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
 assert.doesNotMatch(turf, /onSavePreset/);
 assert.doesNotMatch(turf, /onApplyPreset/);
-assert.doesNotMatch(readFileSync(new URL('../src/engine/mowing.js', import.meta.url), 'utf8'), /SAVE_PRESET/);
+assert.doesNotMatch(readFileSync(new URL('../src/engine/mowing.ts', import.meta.url), 'utf8'), /SAVE_PRESET/);
 
 console.log('round 3 phase E checks passed');

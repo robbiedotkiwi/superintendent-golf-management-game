@@ -14,19 +14,19 @@ import {
   STARTING_SEASON,
   STARTING_WEATHER,
   TASK_MINUTES,
-} from '../src/data/constants.js';
+} from '../src/data/constants.ts';
 import {
   canPlanTask,
   combinedMinutesRemaining,
   createInitialState,
   reducer,
-} from '../src/engine/gameState.js';
-import { durationOnMachine } from '../src/engine/assignment.js';
-import { surfaceCeiling } from '../src/engine/equipment.js';
-import { mowingGain } from '../src/engine/mowing.js';
-import { applyDecay, applyGain, clampQuality } from '../src/engine/simulation.js';
-import { applyWeatherToWorkers } from '../src/engine/weather.js';
-import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+} from '../src/engine/gameState.ts';
+import { durationOnMachine } from '../src/engine/assignment.ts';
+import { surfaceCeiling } from '../src/engine/equipment.ts';
+import { mowingGain } from '../src/engine/mowing.ts';
+import { applyDecay, applyGain, clampQuality } from '../src/engine/simulation.ts';
+import { applyWeatherToWorkers } from '../src/engine/weather.ts';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.ts';
 
 
 function plan(state, taskId) {

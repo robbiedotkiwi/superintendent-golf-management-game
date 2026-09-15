@@ -10,17 +10,17 @@ import {
   PLAYER_ID,
   REELMASTER_ID,
   STARTING_MACHINE_ID,
-} from '../src/data/constants.js';
-import { durationOnMachine } from '../src/engine/assignment.js';
+} from '../src/data/constants.ts';
+import { durationOnMachine } from '../src/engine/assignment.ts';
 import {
   MACHINE_BOOKED_REASON,
   NO_MACHINE_REASON,
   claimedMinutesByMachine,
   machineMinutesRemaining,
   pickMachineForTask,
-} from '../src/engine/equipment.js';
-import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
-import { getTask } from '../src/data/tasks.js';
+} from '../src/engine/equipment.ts';
+import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.ts';
+import { getTask } from '../src/data/tasks.ts';
 
 assert.equal(MACHINE_DAILY_MINUTES, 480);
 assert.equal(NO_MACHINE_REASON, 'No machine available. Check the shed.');
@@ -88,12 +88,12 @@ assert.equal(extra.machineId, 'ventrac');
 two = reducer(two, { type: 'PLAN_TASK', taskId: 'cutRough', workerId: hireTwo.id, holes: PARTIAL_ROUGH });
 assert.equal(two.plannedTasks.find((item) => item.taskId === 'cutRough').machineId, 'ventrac');
 
-const gameSrc = readFileSync(new URL('../src/engine/gameState.js', import.meta.url), 'utf8');
+const gameSrc = readFileSync(new URL('../src/engine/gameState.ts', import.meta.url), 'utf8');
 assert.match(gameSrc, /machinePlanCheck/);
 assert.match(gameSrc, /MACHINE_BOOKED_REASON/);
-const assignSrc = readFileSync(new URL('../src/engine/assignment.js', import.meta.url), 'utf8');
+const assignSrc = readFileSync(new URL('../src/engine/assignment.ts', import.meta.url), 'utf8');
 assert.match(assignSrc, /pickMachineForTask/);
-const shedSrc = readFileSync(new URL('../src/components/Shed.jsx', import.meta.url), 'utf8');
+const shedSrc = readFileSync(new URL('../src/components/Shed.tsx', import.meta.url), 'utf8');
 assert.match(shedSrc, /machineDailyMinutesOf/);
 assert.match(shedSrc, /claimedMinutesByMachine/);
 

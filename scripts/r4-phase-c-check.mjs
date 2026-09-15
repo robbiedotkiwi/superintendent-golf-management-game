@@ -3,7 +3,7 @@
  * Run: node scripts/r4-phase-c-check.mjs
  */
 import assert from 'node:assert/strict';
-import { BASE_MINUTES } from '../src/engine/courseArea.js';
+import { BASE_MINUTES } from '../src/engine/courseArea.ts';
 import {
   DAY_LENGTH_MINUTES,
   DEFAULT_DAY_OVERLOAD_MINUTES,
@@ -19,10 +19,10 @@ import {
   REELMASTER_START_CONDITION,
   STARTING_MACHINE_IDS,
   TASK_MINUTES,
-} from '../src/data/constants.js';
-import { durationOnMachine } from '../src/engine/assignment.js';
-import { createInitialState } from '../src/engine/gameState.js';
-import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.js';
+} from '../src/data/constants.ts';
+import { durationOnMachine } from '../src/engine/assignment.ts';
+import { createInitialState } from '../src/engine/gameState.ts';
+import { holeCount, meanQuality, courseSettings, holeSurface, legacySurfaces, setTypeQuality } from '../src/engine/holes.ts';
 
 
 assert.equal(PATTERN_SURFACE_DEFAULT.greens, PATTERN_STRIPES);

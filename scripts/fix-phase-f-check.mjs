@@ -8,10 +8,10 @@ import {
   FORECAST_ACCURACY,
   FORECAST_DAYS,
   FORECAST_OPACITY_MIN,
-} from '../src/data/constants.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { createRng } from '../src/engine/rng.js';
-import { deriveForecastStrip, forecastOpacity, makeWeatherQueue } from '../src/engine/weather.js';
+} from '../src/data/constants.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { createRng } from '../src/engine/rng.ts';
+import { deriveForecastStrip, forecastOpacity, makeWeatherQueue } from '../src/engine/weather.ts';
 
 assert.equal(FORECAST_DAYS, 7);
 assert.equal(FORECAST_ACCURACY.length, 7);
@@ -49,11 +49,11 @@ rolling = reducer(rolling, { type: 'END_DAY' });
 assert.notEqual(JSON.stringify(rolling.forecastStrip), firstStrip);
 assert.equal(rolling.forecastStrip.length, 7);
 
-const dialog = readFileSync(new URL('../src/components/StartDayDialog.jsx', import.meta.url), 'utf8');
+const dialog = readFileSync(new URL('../src/components/StartDayDialog.tsx', import.meta.url), 'utf8');
 assert.match(dialog, /<ForecastStrip/);
-const turf = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
+const turf = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
 assert.doesNotMatch(turf, /<ForecastStrip/);
-const stripSrc = readFileSync(new URL('../src/components/ForecastStrip.jsx', import.meta.url), 'utf8');
+const stripSrc = readFileSync(new URL('../src/components/ForecastStrip.tsx', import.meta.url), 'utf8');
 assert.match(stripSrc, /id="forecast-strip"/);
 assert.match(stripSrc, /forecastOpacity/);
 assert.doesNotMatch(stripSrc, /%/);

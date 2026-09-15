@@ -29,9 +29,9 @@ import {
   WEATHER_FINE,
   WEATHER_RAIN,
   WEATHER_WEIGHTS,
-} from '../src/data/constants.js';
-import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.js';
-import { courseCondition } from '../src/engine/simulation.js';
+} from '../src/data/constants.ts';
+import { canPlanTask, createInitialState, reducer } from '../src/engine/gameState.ts';
+import { courseCondition } from '../src/engine/simulation.ts';
 import {
   applyScheduledTournament,
   applySnapTournament,
@@ -44,9 +44,9 @@ import {
   comingSeasonStartDay,
   tournamentResult,
   tournamentScore,
-} from '../src/engine/tournament.js';
-import { applyWeatherToWorkers } from '../src/engine/weather.js';
-import { setQualities, setTypeQuality } from '../src/engine/holes.js';
+} from '../src/engine/tournament.ts';
+import { applyWeatherToWorkers } from '../src/engine/weather.ts';
+import { setQualities, setTypeQuality } from '../src/engine/holes.ts';
 
 
 function surfaces(values) {
@@ -80,7 +80,7 @@ function withSetup(state, season = 'summer', startDay = comingSeasonStartDay(sta
   };
 }
 
-const seasonStart = readFileSync(new URL('../src/components/SeasonStart.jsx', import.meta.url), 'utf8');
+const seasonStart = readFileSync(new URL('../src/components/SeasonStart.tsx', import.meta.url), 'utf8');
 assert.match(seasonStart, /scheduleTournamentDays/);
 assert.match(seasonStart, /risky/);
 assert.match(seasonStart, /TOURNAMENT_SEASON_MAX/);
@@ -282,7 +282,7 @@ const afterSeason = reducer(kept, { type: 'END_DAY' });
 assert.equal(afterSeason.season, 'summer');
 assert.equal(afterSeason.tournaments.filter((item) => item.season === 'summer').length, 2);
 
-const weather = readFileSync(new URL('../src/components/WeatherStrip.jsx', import.meta.url), 'utf8');
+const weather = readFileSync(new URL('../src/components/WeatherStrip.tsx', import.meta.url), 'utf8');
 assert.match(weather, /daysUntilNextTournament/);
 assert.match(weather, /Tournament in/);
 

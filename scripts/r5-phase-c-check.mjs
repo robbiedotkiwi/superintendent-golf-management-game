@@ -6,9 +6,9 @@ import assert from 'node:assert/strict';
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { DAY_FULLY_COMMITTED_COPY, START_DAY_LABEL } from '../src/data/constants.js';
-import { skippedOverdueSurfaces, unusedTimeCopy } from '../src/engine/badges.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
+import { DAY_FULLY_COMMITTED_COPY, START_DAY_LABEL } from '../src/data/constants.ts';
+import { skippedOverdueSurfaces, unusedTimeCopy } from '../src/engine/badges.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
 
 assert.equal(START_DAY_LABEL, 'Start day');
 assert.equal(unusedTimeCopy(30), 'You still have 30 minutes unused.');
@@ -43,17 +43,17 @@ const grep = execSync(`rg -n -F ${JSON.stringify(needle)} src DECISIONS.md BUILD
 });
 assert.equal(grep.trim(), '', grep);
 
-const sidebar = readFileSync(new URL('../src/components/Sidebar.jsx', import.meta.url), 'utf8');
+const sidebar = readFileSync(new URL('../src/components/Sidebar.tsx', import.meta.url), 'utf8');
 assert.match(sidebar, /START_DAY_LABEL/);
 assert.doesNotMatch(sidebar, /End [dD]ay/);
 
-const app = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert.match(app, /<StartDayDialog/);
 assert.match(app, /setStartDayOpen\(true\)/);
 assert.match(app, /onCloseShed\(\);\s*onEndDay\(\);/);
 assert.match(app, /onEndDay=\{\(\) => dispatch\(\{ type: 'END_DAY' \}\)\}/);
 
-const dialog = readFileSync(new URL('../src/components/StartDayDialog.jsx', import.meta.url), 'utf8');
+const dialog = readFileSync(new URL('../src/components/StartDayDialog.tsx', import.meta.url), 'utf8');
 assert.match(dialog, /unusedTimeCopy/);
 assert.match(dialog, /skippedOverdueSurfaces/);
 assert.match(dialog, /Tonight's irrigation/);
@@ -63,7 +63,7 @@ assert.match(dialog, /IrrigationMmSlider/);
 assert.doesNotMatch(dialog, /IRRIGATION_POLICIES/);
 assert.match(dialog, /onRemove/);
 
-const tutorial = readFileSync(new URL('../src/components/Tutorial.jsx', import.meta.url), 'utf8');
+const tutorial = readFileSync(new URL('../src/components/Tutorial.tsx', import.meta.url), 'utf8');
 assert.match(tutorial, /start the day/);
 assert.doesNotMatch(tutorial, /end the day/);
 

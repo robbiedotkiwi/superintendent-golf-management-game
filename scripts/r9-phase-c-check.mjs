@@ -12,8 +12,8 @@ import {
   IRRIGATION_MM_RANGE,
   MOISTURE_PER_MM,
   STARTING_IRRIGATION,
-} from '../src/data/constants.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
+} from '../src/data/constants.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
 import {
   clampIrrigationMm,
   irrigationDemand,
@@ -22,8 +22,8 @@ import {
   migrateIrrigationValue,
   moistureFromMm,
   projectedPondVolume,
-} from '../src/engine/irrigation.js';
-import { migrateSave } from '../src/engine/save.js';
+} from '../src/engine/irrigation.ts';
+import { migrateSave } from '../src/engine/save.ts';
 
 const read = (p) => readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 
@@ -78,7 +78,7 @@ const old = migrateSave({
 });
 assert.deepEqual(old.irrigation, { greens: 0, tees: 2, fairways: 3 });
 
-const turfSrc = read('src/components/Turf.jsx');
+const turfSrc = read('src/components/Turf.tsx');
 assert.match(turfSrc, /IrrigationMmSlider/);
 assert.match(turfSrc, /data-irrigation-status/);
 assert.match(turfSrc, /rightInteractive/);
@@ -90,14 +90,14 @@ assert.doesNotMatch(turfSrc, /\bOff\b/);
 assert.doesNotMatch(turfSrc, /\bLight\b/);
 assert.doesNotMatch(turfSrc, /\bFull\b/);
 
-const dialog = read('src/components/StartDayDialog.jsx');
+const dialog = read('src/components/StartDayDialog.tsx');
 assert.match(dialog, /IrrigationMmSlider/);
 assert.doesNotMatch(dialog, /IRRIGATION_POLICIES/);
 assert.doesNotMatch(dialog, /\bOff\b/);
 assert.doesNotMatch(dialog, /\bLight\b/);
 assert.doesNotMatch(dialog, /\bFull\b/);
 
-const slider = read('src/components/IrrigationMmSlider.jsx');
+const slider = read('src/components/IrrigationMmSlider.tsx');
 assert.match(slider, /irrigationMmRange/);
 assert.match(slider, /data-irrigation-m3/);
 assert.match(slider, /data-projected-pond/);

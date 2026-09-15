@@ -19,9 +19,9 @@ import {
   VOLUNTEER_ID,
   WEAR_PER_USE,
   WEATHER_FINE,
-} from '../src/data/constants.js';
-import { createInitialState, reducer } from '../src/engine/gameState.js';
-import { visibleTurfTabs } from '../src/engine/section.js';
+} from '../src/data/constants.ts';
+import { createInitialState, reducer } from '../src/engine/gameState.ts';
+import { visibleTurfTabs } from '../src/engine/section.ts';
 import {
   dayLengthMinutes,
   dropInvalidDayTasks,
@@ -33,12 +33,12 @@ import {
   setDayTasks,
   simViewState,
   weekdayLabel,
-} from '../src/engine/week.js';
+} from '../src/engine/week.ts';
 import {
   WEEK_GRID_JOBS,
   machineCapacityForDay,
   personCapacityForDay,
-} from '../src/engine/weekGrid.js';
+} from '../src/engine/weekGrid.ts';
 
 const fineDay = {
   type: WEATHER_FINE,
@@ -79,11 +79,11 @@ assert.ok(jobIds.includes('checkMoistureTees'));
 assert.ok(jobIds.includes('checkMoistureFairways'));
 assert.deepEqual(visibleTurfTabs(), [TURF_TAB_WEEK, TURF_TAB_IRRIGATION, TURF_TAB_PATTERNS]);
 
-const gridSrc = readFileSync(new URL('../src/components/WeekPlanGrid.jsx', import.meta.url), 'utf8');
-const turfSrc = readFileSync(new URL('../src/components/Turf.jsx', import.meta.url), 'utf8');
-const irrigationSrc = readFileSync(new URL('../src/components/IrrigationWeekTab.jsx', import.meta.url), 'utf8');
-const dialogSrc = readFileSync(new URL('../src/components/StartDayDialog.jsx', import.meta.url), 'utf8');
-const appSrc = readFileSync(new URL('../src/App.jsx', import.meta.url), 'utf8');
+const gridSrc = readFileSync(new URL('../src/components/WeekPlanGrid.tsx', import.meta.url), 'utf8');
+const turfSrc = readFileSync(new URL('../src/components/Turf.tsx', import.meta.url), 'utf8');
+const irrigationSrc = readFileSync(new URL('../src/components/IrrigationWeekTab.tsx', import.meta.url), 'utf8');
+const dialogSrc = readFileSync(new URL('../src/components/StartDayDialog.tsx', import.meta.url), 'utf8');
+const appSrc = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert.doesNotMatch(gridSrc, /data-irrigation-table/);
 assert.match(irrigationSrc, /data-irrigation-table/);
 assert.match(turfSrc, /IrrigationWeekTab/);
