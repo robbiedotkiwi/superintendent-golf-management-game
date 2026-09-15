@@ -1,9 +1,27 @@
+import {
+  AERATOR_COST,
+  GREENS_SENSORS_COST,
+  TURFRAD_COST,
+} from '../data/constants.js';
 import { SURFACE_LABELS } from '../data/tasks.js';
 import { canEditPlanDay, planDayChrome, weekDays, weekdayLabel } from '../engine/week.js';
 import { irrigationCells } from '../engine/weekGrid.js';
-import { IRRIGATED_SURFACES, clampIrrigationMm, irrigationMmRange } from '../engine/irrigation.js';
+import {
+  IRRIGATED_SURFACES,
+  canBuyAerator,
+  clampIrrigationMm,
+  irrigationDemand,
+  irrigationMmRange,
+  pondCapacity,
+  pondDoseBriefing,
+  pondPercent,
+} from '../engine/irrigation.js';
+import { canBuyGreensSensors, canBuyTurfRad } from '../engine/moisture.js';
+import { formatMoney } from '../engine/format.js';
 import ForecastStrip from './ForecastStrip.jsx';
 import { MoistureLine } from './MoistureReadout.jsx';
+import PondLevelBar from './PondLevelBar.jsx';
+import WeatherStation from './WeatherStation.jsx';
 
 function IrrigationDayCell({ cell, surface, onSetIrrigation, locked }) {
   const range = irrigationMmRange(surface);
@@ -38,7 +56,111 @@ function dayColumnClass(state, day) {
   return `min-w-[7.5rem] border border-[var(--sand)] p-2 ${today} ${planning} ${past ? 'opacity-40' : ''}`;
 }
 
-export default function IrrigationWeekTab({ state, onSetIrrigation, onSelectDay }) {
+function KitBuy({ owned, ownedCopy, cost, check, onBuy, title, emptyCopy, buyLabel }) {
+  return (
+    <section className="border border-[var(--sand)] p-3">
+      <h3 className="text-lg font-semibold">{title}</h3>
+      {owned ? (
+        <p className="mt-2">{ownedCopy}</p>
+      ) : (
+        <>
+          <p className="mt-2 text-sm text-[var(--sand)]">
+            {emptyCopy} {formatMoney(cost)} from cash.
+          </p>
+          <button
+            type="button"
+            disabled={!check.ok}
+            onClick={onBuy}
+            className="mt-2 border border-[var(--sand)] px-3 py-2 disabled:opacity-40"
+            title={check.ok ? undefined : check.reason}
+          >
+            {buyLabel} · {formatMoney(cost)}
+          </button>
+        </>
+      )}
+    </section>
+  );
+}
+
+function PondKit({ state, onBuyAerator, onBuyGreensSensors, onBuyTurfRad, onBuyWeatherStation }) {
+  const capacity = pondCapacity(state);
+  const percent = pondPercent(state.pond.volume, capacity);
+  const demand = irrigationDemand(state);
+  const aerator = canBuyAerator(state);
+  const sensors = canBuyGreensSensors(state);
+  const turfrad = canBuyTurfRad(state);
+  const briefing = pondDoseBriefing(state);
+
+  return (
+    <div className="grid gap-3 lg:grid-cols-2" data-pond-kit>
+      <section className="border border-[var(--sand)] p-3 space-y-3">
+        <h3 className="text-lg font-semibold">Pond</h3>
+        <div>
+          <div className="text-sm text-[var(--sand)]">Volume</div>
+          <div className="font-condensed text-4xl font-bold leading-none">{Math.round(state.pond.volume)}</div>
+          <p className="mt-1 text-sm text-[var(--sand)]">
+            {Math.round(percent)}% of {capacity} m³ · health {Math.round(state.pond.health)}
+          </p>
+          <PondLevelBar volume={state.pond.volume} capacity={capacity} />
+        </div>
+        <p className="text-sm text-[var(--sand)]">
+          Nightly draw {demand.total.toFixed(1)} m³. Dose and rescue are timed jobs on the week plan.
+        </p>
+        {briefing ? <p className="text-sm text-[var(--machine-orange)]">{briefing}</p> : null}
+        <p>Aerator {state.hasAerator ? 'running' : 'not installed'}.</p>
+        {state.hasAerator ? (
+          <p>In the pond. Holds health up.</p>
+        ) : (
+          <>
+            <p className="text-sm text-[var(--sand)]">Keeps pond health from falling. {formatMoney(AERATOR_COST)} from cash.</p>
+            <button
+              type="button"
+              disabled={!aerator.ok}
+              onClick={onBuyAerator}
+              className="border border-[var(--sand)] px-3 py-2 disabled:opacity-40"
+              title={aerator.ok ? undefined : aerator.reason}
+            >
+              Buy aerator · {formatMoney(AERATOR_COST)}
+            </button>
+          </>
+        )}
+      </section>
+      <div className="space-y-3">
+        <WeatherStation state={state} onBuyWeatherStation={onBuyWeatherStation} />
+        <KitBuy
+          title="Greens sensors"
+          owned={state.hasGreensSensors}
+          ownedCopy="Live greens moisture. Never stale."
+          emptyCopy="Continuous greens readings."
+          cost={GREENS_SENSORS_COST}
+          check={sensors}
+          onBuy={onBuyGreensSensors}
+          buyLabel="Buy sensors"
+        />
+        <KitBuy
+          title="TurfRad"
+          owned={state.hasTurfRad}
+          ownedCopy="Mowers report moisture on anything cut today."
+          emptyCopy="Readings when you mow."
+          cost={TURFRAD_COST}
+          check={turfrad}
+          onBuy={onBuyTurfRad}
+          buyLabel="Buy TurfRad"
+        />
+      </div>
+    </div>
+  );
+}
+
+export default function IrrigationWeekTab({
+  state,
+  onSetIrrigation,
+  onSelectDay,
+  onBuyAerator,
+  onBuyGreensSensors,
+  onBuyTurfRad,
+  onBuyWeatherStation,
+}) {
   const days = weekDays(state.day);
   return (
     <div className="space-y-3" data-irrigation-tab>
@@ -93,6 +215,13 @@ export default function IrrigationWeekTab({ state, onSetIrrigation, onSelectDay 
           ))}
         </tbody>
       </table>
+      <PondKit
+        state={state}
+        onBuyAerator={onBuyAerator}
+        onBuyGreensSensors={onBuyGreensSensors}
+        onBuyTurfRad={onBuyTurfRad}
+        onBuyWeatherStation={onBuyWeatherStation}
+      />
     </div>
   );
 }

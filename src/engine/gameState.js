@@ -6,7 +6,7 @@ import { buyFoley, buyMachine, buyUpgrade, grindInHouse, repairMachine, sendForG
 import { machineAllows } from '../data/equipment.js';
 import { machineTitle } from './machineDisplay.js';
 import { assignWorker, certifiedPresent, workerById, workerAllows, workerBringsOwnMower, isWorkerPresent } from './assignment.js';
-import { findPlannedJob, jobHolesFor, applyRoute, canSaveRoute } from './jobs.js';
+import { findPlannedJob, jobHolesFor } from './jobs.js';
 import {
   getDayTasks,
   planningDayOf,
@@ -377,18 +377,13 @@ function actionPlanDay(state, actionOrDay) {
   return day;
 }
 
-export function canPlanTask(state, taskId, workerId, options = {}) {
+export function taskWindowCheck(state, taskId, options = {}) {
   const day = actionPlanDay(state, options);
   const edit = canEditPlanDay(state, day);
   if (!edit.ok) return edit;
-  const roster = [...(state.workers ?? []), ...(state.casualPool ?? [])];
   state = planViewState({ ...state, planningDay: day });
   const task = getTask(taskId);
   if (!task) return { ok: false, reason: 'Unknown job.' };
-  const holes =
-    task.id === 'handWater'
-      ? allGreenIds(holeCount(state))
-      : jobHolesFor(state, task, options.holes);
 
   if (task.id === 'clearDebris' && state.weather !== WEATHER_STORM) {
     return { ok: false, reason: 'No debris to clear.' };
@@ -402,11 +397,11 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
   if (task.id === 'gmMeeting' && !meetingDue(planningDayOf(state))) {
     return { ok: false, reason: 'No GM meeting that day.' };
   }
-  if (task.kind === 'moistureCheck' && !isDrySpell(state, actionPlanDay(state, options))) {
+  if (task.kind === 'moistureCheck' && !isDrySpell(state, day)) {
     return { ok: false, reason: 'Moisture checks are for dry spells.' };
   }
   if (task.kind === 'spray') {
-    const window = sprayWindowOk(state, actionPlanDay(state, options));
+    const window = sprayWindowOk(state, day);
     if (!window.ok) return window;
   }
   if (task.kind === 'coring') {
@@ -421,6 +416,35 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
   if (task.kind === 'prep' && !inPrepWindow({ ...state, day: planningDayOf(state) })) {
     return { ok: false, reason: 'Prep only in the three days before a tournament.' };
   }
+
+  if (task.requiresSpray && !certifiedPresent(state, task.surface)) {
+    return { ok: false, reason: 'No spray-certified worker available.' };
+  }
+
+  if (task.materialsCost) {
+    const alreadyCost = state.plannedTasks.reduce((sum, item) => {
+      const planned = getTask(item.taskId);
+      return sum + (planned?.materialsCost ?? 0);
+    }, 0);
+    if (alreadyCost + task.materialsCost > (state.cash ?? 0)) {
+      return { ok: false, reason: `Needs ${formatMoney(task.materialsCost)}, only ${formatMoney(state.cash ?? 0)}.` };
+    }
+  }
+
+  return { ok: true, task, day };
+}
+
+export function canPlanTask(state, taskId, workerId, options = {}) {
+  const window = taskWindowCheck(state, taskId, options);
+  if (!window.ok) return window;
+  const day = window.day;
+  const task = window.task;
+  const roster = [...(state.workers ?? []), ...(state.casualPool ?? [])];
+  state = planViewState({ ...state, planningDay: day });
+  const holes =
+    task.id === 'handWater'
+      ? allGreenIds(holeCount(state))
+      : jobHolesFor(state, task, options.holes);
 
   if (!task.mowing && (task.surface ? findPlannedJob(state, taskId, holes) : state.plannedTasks.some((planned) => planned.taskId === taskId))) {
     return { ok: false, reason: 'Already planned. Take it off the list first.' };
@@ -446,20 +470,6 @@ export function canPlanTask(state, taskId, workerId, options = {}) {
   }
 
   const worker = requested ?? assignWorker(state, task, holes);
-
-  if (task.requiresSpray && !certifiedPresent(state, task.surface)) {
-    return { ok: false, reason: 'No spray-certified worker available.' };
-  }
-
-  if (task.materialsCost) {
-    const already = state.plannedTasks.reduce((sum, item) => {
-      const planned = getTask(item.taskId);
-      return sum + (planned?.materialsCost ?? 0);
-    }, 0);
-    if (already + task.materialsCost > (state.cash ?? 0)) {
-      return { ok: false, reason: `Needs ${formatMoney(task.materialsCost)}, only ${formatMoney(state.cash ?? 0)}.` };
-    }
-  }
 
   if (task.requiresSpray && worker && !worker.sprayCertified) {
     return { ok: false, reason: 'No spray-certified worker available.' };
@@ -625,6 +635,8 @@ export function reducer(state, action) {
       const edit = canEditPlanDay(state, day);
       const task = getTask(action.taskId);
       if (!edit.ok || !task) return state;
+      const window = taskWindowCheck(state, action.taskId, { day });
+      if (!window.ok) return state;
       const view = planViewState({ ...state, planningDay: day });
       const worker =
         workersForPlanDay(view, day).find((item) => item.id === action.workerId) ??
@@ -691,64 +703,6 @@ export function reducer(state, action) {
         item.planId === action.planId ? { ...item, machineId: action.machineId || null, ownMower: !action.machineId } : item,
       );
       return commitDayTasks(state, tasks, day);
-    }
-    case 'SET_SELECTED_HOLES': {
-      const holes = Array.isArray(action.holes) ? [...new Set(action.holes.map(Number))].sort((a, b) => a - b) : [];
-      return { ...state, selectedHoles: holes };
-    }
-    case 'TOGGLE_HOLE': {
-      const id = Number(action.holeId);
-      if (!Number.isInteger(id) || id < 1) return state;
-      const current = state.selectedHoles ?? [];
-      const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id].sort((a, b) => a - b);
-      return { ...state, selectedHoles: next };
-    }
-    case 'ADD_HOLE': {
-      const id = Number(action.holeId);
-      if (!Number.isInteger(id) || id < 1) return state;
-      if ((state.selectedHoles ?? []).includes(id)) return state;
-      return { ...state, selectedHoles: [...(state.selectedHoles ?? []), id].sort((a, b) => a - b) };
-    }
-    case 'SAVE_ROUTE': {
-      const check = canSaveRoute(state, action.name);
-      if (!check.ok) return state;
-      return {
-        ...state,
-        nextRouteId: (state.nextRouteId ?? 1) + 1,
-        savedRoutes: [
-          ...(state.savedRoutes ?? []),
-          { id: state.nextRouteId ?? 1, name: check.name, holes: [...state.selectedHoles] },
-        ],
-      };
-    }
-    case 'APPLY_ROUTE':
-      return applyRoute(state, action.id);
-    case 'DELETE_ROUTE':
-      return {
-        ...state,
-        savedRoutes: (state.savedRoutes ?? []).filter((item) => item.id !== action.id),
-      };
-    case 'REPEAT_LAST': {
-      const dropped = [];
-      let next = { ...state, lastRepeatDropped: [] };
-      for (const job of state.lastDayJobs ?? []) {
-        const check = canPlanTask(next, job.taskId, undefined, {
-          holes: job.holes,
-          machineId: job.machineId,
-          confirmDamaging: true,
-        });
-        if (!check.ok) {
-          dropped.push({ taskId: job.taskId, holes: job.holes, reason: check.reason });
-          continue;
-        }
-        next = reducer(next, {
-          type: 'PLAN_TASK',
-          taskId: job.taskId,
-          holes: job.holes,
-          machineId: job.machineId,
-        });
-      }
-      return { ...next, lastRepeatDropped: dropped };
     }
     case 'REMOVE_TASK':
       return removePlannedTask(state, action.taskId, action.planId, actionPlanDay(state, action));

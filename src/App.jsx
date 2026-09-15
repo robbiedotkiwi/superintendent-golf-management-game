@@ -5,10 +5,8 @@ import Crew, { LeaveRequests } from './components/Crew.jsx';
 import GameOver from './components/GameOver.jsx';
 import Office from './components/Office.jsx';
 import PlayoutBar from './components/PlayoutBar.jsx';
-import MapJobPopover from './components/MapJobPopover.jsx';
 import StartDayDialog from './components/StartDayDialog.jsx';
 import Sidebar from './components/Sidebar.jsx';
-import PlanList from './components/PlanList.jsx';
 import Tutorial from './components/Tutorial.jsx';
 import GmTalk from './components/GmTalk.jsx';
 import Turf from './components/Turf.jsx';
@@ -22,8 +20,7 @@ import {
   SECTION_OFFICE,
   SECTION_SHED,
   SECTION_TURF,
-  SURFACE_KEYS,
-  TURF_TAB_POND,
+  TURF_TAB_IRRIGATION,
   WEATHER_FINE,
   machineOrange,
   paint,
@@ -57,7 +54,7 @@ import {
 import { playBirds, playMower, prefersReducedMotion } from './engine/sound.js';
 import { clearSave, hasSave, loadGame, saveGame } from './engine/save.js';
 import { currentGmMessage } from './engine/gm.js';
-import { planViewState, simViewState } from './engine/week.js';
+import { simViewState } from './engine/week.js';
 import { isColdWeather } from './engine/weather.js';
 import { COLD_WEATHER_TIP_TITLE, coldWeatherCopy } from './data/events.js';
 
@@ -128,7 +125,6 @@ export default function App() {
     }
   }, [playout, state.log]);
 
-  const plan = useMemo(() => planViewState(state), [state]);
   const today = useMemo(() => simViewState(state), [state]);
   const minutesRemaining = useMemo(() => combinedMinutesRemaining(today), [today]);
   const minutesUsed = useMemo(() => combinedMinutesUsed(today), [today]);
@@ -167,7 +163,6 @@ export default function App() {
       ) : (
         <GameScreen
           state={state}
-          plan={plan}
           today={today}
           selected={selected}
           summary={summary}
@@ -194,7 +189,6 @@ export default function App() {
           onMoveBlock={(payload) => dispatch({ type: 'MOVE_BLOCK', ...payload })}
           onResizeBlock={(payload) => dispatch({ type: 'RESIZE_BLOCK', ...payload })}
           onSetBlockMachine={(payload) => dispatch({ type: 'SET_BLOCK_MACHINE', ...payload })}
-          onRepeatLast={() => dispatch({ type: 'REPEAT_LAST' })}
           onEndDay={() => dispatch({ type: 'END_DAY' })}
           onDismissSummary={() => setSummary(null)}
           onSkipPlayout={() => setPlayout((current) => skipPlayout(current))}
@@ -211,7 +205,6 @@ export default function App() {
           onSendGrind={(machineId) => dispatch({ type: 'SEND_GRIND', machineId })}
           onGrindInHouse={(machineId) => dispatch({ type: 'GRIND_IN_HOUSE', machineId })}
           onRepair={(machineId) => dispatch({ type: 'REPAIR_MACHINE', machineId })}
-          onMove={(taskId, direction) => dispatch({ type: 'MOVE_TASK', taskId, direction })}
           onReorder={(order) => dispatch({ type: 'REORDER_TASKS', order })}
           onHire={(candidateId) => dispatch({ type: 'HIRE_WORKER', candidateId })}
           onTrain={(workerId, axis) => dispatch({ type: 'TRAIN_WORKER', workerId, axis })}
@@ -224,7 +217,6 @@ export default function App() {
           onSelectDay={(day) => dispatch({ type: 'SET_PLANNING_DAY', day })}
           onBookCasual={(casualId, day) => dispatch({ type: 'BOOK_CASUAL', casualId, day })}
           onUnbookCasual={(casualId, day) => dispatch({ type: 'UNBOOK_CASUAL', casualId, day })}
-          onSetWorker={(taskId, workerId, day) => dispatch({ type: 'SET_TASK_WORKER', taskId, workerId, day })}
           onCopyYesterday={(day) => dispatch({ type: 'COPY_YESTERDAY', day })}
           onSaveTemplate={(name) => dispatch({ type: 'SAVE_TEMPLATE', name })}
           onApplyTemplate={(templateId) => dispatch({ type: 'APPLY_TEMPLATE', templateId })}
@@ -239,9 +231,6 @@ export default function App() {
           onBuyTurfRad={() => dispatch({ type: 'BUY_TURFRAD' })}
           onBuyWeatherStation={() => dispatch({ type: 'BUY_WEATHER_STATION' })}
           onToggleMoistureOverlay={() => dispatch({ type: 'TOGGLE_MOISTURE_OVERLAY' })}
-          onSetMachineOverride={(surface, machineId) =>
-            dispatch({ type: 'SET_MACHINE_OVERRIDE', surface, machineId })
-          }
           onTab={(section, tab) => dispatch({ type: 'SET_TAB', section, tab })}
           onLease={(machineId) => dispatch({ type: 'LEASE_MACHINE', machineId })}
           onStopLease={(machineId) => dispatch({ type: 'STOP_LEASE', machineId })}
@@ -304,7 +293,6 @@ function EntryScreen({ savePresent, onNewGame, onContinue }) {
 
 function GameScreen({
   state,
-  plan = state,
   today = state,
   selected,
   summary,
@@ -321,7 +309,6 @@ function GameScreen({
   onMoveBlock,
   onResizeBlock,
   onSetBlockMachine,
-  onRepeatLast,
   onEndDay,
   onDismissSummary,
   onSkipPlayout,
@@ -338,7 +325,6 @@ function GameScreen({
   onSendGrind,
   onGrindInHouse,
   onRepair,
-  onMove,
   onReorder,
   onHire,
   onTrain,
@@ -351,7 +337,6 @@ function GameScreen({
   onSelectDay,
   onBookCasual,
   onUnbookCasual,
-  onSetWorker,
   onCopyYesterday,
   onSaveTemplate,
   onApplyTemplate,
@@ -366,7 +351,6 @@ function GameScreen({
   onBuyTurfRad,
   onBuyWeatherStation,
   onToggleMoistureOverlay,
-  onSetMachineOverride,
   onLease,
   onStopLease,
   onBuyUsed,
@@ -434,7 +418,7 @@ function GameScreen({
 
   function handleSelect(id) {
     if (id === 'pond') {
-      onTab(SECTION_TURF, TURF_TAB_POND);
+      onTab(SECTION_TURF, TURF_TAB_IRRIGATION);
       onOpenTurf();
       onSelect(null);
       return;
@@ -562,7 +546,6 @@ function GameScreen({
             tab={tabs[SECTION_TURF]}
             onTab={(tab) => onTab(SECTION_TURF, tab)}
             onBack={onCloseShed}
-            onPlan={onPlan}
             onPlaceBlock={onPlaceBlock}
             onMoveBlock={onMoveBlock}
             onResizeBlock={onResizeBlock}
@@ -574,7 +557,6 @@ function GameScreen({
             onSetAngle={onSetAngle}
             onSetAutoRotate={onSetAutoRotate}
             onSetIrrigation={onSetIrrigation}
-            onSetWorker={onSetWorker}
             onCopyYesterday={onCopyYesterday}
             onSaveTemplate={onSaveTemplate}
             onApplyTemplate={onApplyTemplate}
@@ -582,7 +564,6 @@ function GameScreen({
             onBuyGreensSensors={onBuyGreensSensors}
             onBuyTurfRad={onBuyTurfRad}
             onBuyWeatherStation={onBuyWeatherStation}
-            onSetMachineOverride={onSetMachineOverride}
           />
         ) : (
           <>
@@ -604,16 +585,6 @@ function GameScreen({
               onView={onSetView}
               moistureState={state}
             />
-            {SURFACE_KEYS.includes(selected) && !watching ? (
-              <MapJobPopover
-                surface={selected}
-                state={plan}
-                onPlan={onPlan}
-                onRemove={onRemove}
-                onSetWorker={onSetWorker}
-                onClose={() => onSelect(null)}
-              />
-            ) : null}
             <PlayoutBar
               playout={watching ? playout : null}
               speed={state.playoutSpeed}
@@ -622,16 +593,6 @@ function GameScreen({
               onSkip={onSkipPlayout}
               onSkipPref={onSetSkipPref}
             />
-            {!watching ? (
-              <div className="pointer-events-auto absolute bottom-3 left-3 z-20 w-80 max-h-[40%] overflow-y-auto border-2 border-[var(--sand)] bg-[var(--soil)] p-3">
-                <PlanList
-                  compact
-                  state={today}
-                  onReorder={onReorder}
-                  onRemove={onRemove}
-                />
-              </div>
-            ) : null}
           </>
         )}
       </div>

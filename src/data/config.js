@@ -110,8 +110,6 @@ export const STAFF_RATING_SENIOR = 80;
 export const PLAYER_TIER = STAFF_TIER_SENIOR;
 export const VOLUNTEER_TIER = STAFF_TIER_UNSKILLED;
 export const VOLUNTEER_WEEKLY_HOURS = 8;
-export const VOLUNTEER_REWARD_DAYS = 2;
-export const VOLUNTEER_REWARD_SATISFACTION = 70;
 export const VOLUNTEER_SURFACES = ['fairways', 'rough', 'bunkers'];
 
 export const SICK_CHANCE_AT_MORALE_0 = 0.35;
@@ -171,8 +169,6 @@ export const EXPAND_HOLE_COUNT_9 = 9;
 export const GROW_IN_QUALITY_OFFSET = -15;
 export const GROW_IN_DAYS = 84;
 export const GROW_IN_AREAS = ['greens'];
-export const GM_REQUIRED_GRADE_BASE = 70;
-export const GM_REQUIRED_GRADE_PER_HOLE = 0.35;
 export const GM_TARGET_START_LETTER = 'D+';
 export const GM_TARGET_PLATEAU_LETTER = 'B+';
 export const GM_TARGET_RATCHET_STEPS_PER_SEASON = 1;
@@ -182,7 +178,6 @@ export const STARTING_CASH = Math.max(BREAKDOWN_CASH_COST, BAD_WEEK_CASH_COST);
 export const PROJECT_OCCUPIES_PERSON = true;
 
 export const FORECAST_UNRELIABLE_FROM_DAY = 5;
-export const FORECAST_UNRELIABLE_ACCURACY = 0.45;
 export const WET_WEATHER = ['rain', 'storm'];
 
 export const TASK_MACHINE_REQUIRE_NONE = 'none';
@@ -218,7 +213,6 @@ export const GRADE_TREND_DELTA = 0.4;
 export const WEEKLY_TARGET_QUALITY_SCALE = 100;
 export const PROJECT_FULL_TIME_MINUTES = WORK_DAY_MINUTES;
 export const BUNKER_COUNT_DEFAULT = 6;
-export const BUNKER_RAKE_QUALITY_GAIN = 2;
 export const BUNKER_RAKE_QUALITY = QUALITY_MAX;
 export const BUNKER_DECAY_PER_DAY = 8;
 export const AUTONOMOUS_NIGHT_MINUTES = 720;
@@ -238,7 +232,6 @@ export const GENERAL_DUTIES_MINUTES_MAX = GENERAL_DUTIES_HOURS_MAX * MINUTES_PER
 export const SPRAY_PREVENTION_DAYS = 21;
 export const DRY_SPELL_DAYS = 4;
 export const DAYS_PER_MONTH = 28;
-export const VOLUNTEER_REWARD_HOURS_PER_DAY = 4;
 export const SCALP_HOC_STRESS_BAND = true;
 export const WEAR_STEP_MARKS = [WEAR_STEP_NONE_MAX, WEAR_STEP_LIGHT_MAX, WEAR_STEP_HEAVY_MAX, 100];
 export const ROLL_PASS_HOURS = ROLL_GREENS_HOURS;
@@ -249,14 +242,26 @@ export const SUPPORT_PLAN_JOBS = [
   { taskId: 'changeCups', label: 'Change cups' },
   { taskId: 'rakeBunkers', label: 'Rake bunkers' },
   { taskId: 'rollGreens', label: 'Roll greens' },
-  { taskId: 'checkMoistureGreens', label: 'Moisture meter' },
+  { taskId: 'checkMoistureGreens', label: 'Moisture greens' },
+  { taskId: 'checkMoistureTees', label: 'Moisture tees' },
+  { taskId: 'checkMoistureFairways', label: 'Moisture fairways' },
+  { taskId: 'handWater', label: 'Hand water' },
   { taskId: 'weedEat', label: 'Weed eating' },
   { taskId: 'generalDuties', label: 'General duties' },
   { taskId: 'gmMeeting', label: 'GM meeting' },
+  { taskId: 'clearDebris', label: 'Clear debris' },
   { taskId: 'sprayGreens', label: 'Spray greens' },
   { taskId: 'sprayTees', label: 'Spray tees' },
   { taskId: 'sprayFairways', label: 'Spray fairways' },
+  { taskId: 'fertiliseGreens', label: 'Fertilise greens' },
+  { taskId: 'fertiliseTees', label: 'Fertilise tees' },
+  { taskId: 'fertiliseFairways', label: 'Fertilise fairways' },
+  { taskId: 'pondDose', label: 'Pond dose' },
+  { taskId: 'pondRescue', label: 'Pond rescue' },
   { taskId: 'coreGreens', label: 'Core greens' },
+  { taskId: 'doubleCutGreens', label: 'Double-cut greens' },
+  { taskId: 'extraRoll', label: 'Extra roll' },
+  { taskId: 'edgeBunkers', label: 'Bunker edging' },
 ];
 export const PLANNER_MOW_JOBS = [
   { taskId: 'cutGreens', label: 'Mow greens' },
